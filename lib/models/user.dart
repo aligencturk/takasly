@@ -6,6 +6,8 @@ part 'user.g.dart';
 class User {
   final String id;
   final String name;
+  final String? firstName;
+  final String? lastName;
   final String email;
   final String? phone;
   final String? avatar;
@@ -18,10 +20,14 @@ class User {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? lastSeenAt;
+  final String? birthday;
+  final int? gender; // 1-Erkek, 2-Kadın, 3-Belirtilmemiş
 
   const User({
     required this.id,
     required this.name,
+    this.firstName,
+    this.lastName,
     required this.email,
     this.phone,
     this.avatar,
@@ -34,6 +40,8 @@ class User {
     required this.createdAt,
     required this.updatedAt,
     this.lastSeenAt,
+    this.birthday,
+    this.gender,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
@@ -42,6 +50,8 @@ class User {
   User copyWith({
     String? id,
     String? name,
+    String? firstName,
+    String? lastName,
     String? email,
     String? phone,
     String? avatar,
@@ -54,10 +64,14 @@ class User {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastSeenAt,
+    String? birthday,
+    int? gender,
   }) {
     return User(
       id: id ?? this.id,
       name: name ?? this.name,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       phone: phone ?? this.phone,
       avatar: avatar ?? this.avatar,
@@ -70,6 +84,8 @@ class User {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      birthday: birthday ?? this.birthday,
+      gender: gender ?? this.gender,
     );
   }
 
@@ -84,7 +100,7 @@ class User {
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, email: $email, rating: $rating)';
+    return 'User(id: $id, name: $name, firstName: $firstName, lastName: $lastName, email: $email, rating: $rating)';
   }
 }
 

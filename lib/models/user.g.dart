@@ -9,6 +9,8 @@ part of 'user.dart';
 User _$UserFromJson(Map<String, dynamic> json) => User(
   id: json['id'] as String,
   name: json['name'] as String,
+  firstName: json['firstName'] as String?,
+  lastName: json['lastName'] as String?,
   email: json['email'] as String,
   phone: json['phone'] as String?,
   avatar: json['avatar'] as String?,
@@ -25,11 +27,15 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
   lastSeenAt: json['lastSeenAt'] == null
       ? null
       : DateTime.parse(json['lastSeenAt'] as String),
+  birthday: json['birthday'] as String?,
+  gender: (json['gender'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'id': instance.id,
   'name': instance.name,
+  'firstName': instance.firstName,
+  'lastName': instance.lastName,
   'email': instance.email,
   'phone': instance.phone,
   'avatar': instance.avatar,
@@ -42,6 +48,8 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
   'lastSeenAt': instance.lastSeenAt?.toIso8601String(),
+  'birthday': instance.birthday,
+  'gender': instance.gender,
 };
 
 Location _$LocationFromJson(Map<String, dynamic> json) => Location(

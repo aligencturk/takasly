@@ -23,6 +23,10 @@ class ApiConstants {
   static const String profile = '/auth/profile';
   static const String logout = '/auth/logout';
   
+  // User Service Endpoints
+  static const String userProfile = '/service/user/id';
+  static const String updateAccount = '/service/user/update/account';
+  
   // Headers
   static const String contentType = 'Content-Type';
   static const String applicationJson = 'application/json';
@@ -123,4 +127,31 @@ class SuccessMessages {
   static const String emailVerified = 'E-posta doğrulandı, artık uygulamayı kullanabilirsiniz';
   static const String registrationComplete = 'Kayıt işlemi tamamlandı, giriş yapabilirsiniz';
   static const String verificationCodeResent = 'Doğrulama kodu tekrar gönderildi';
+}
+
+class Gender {
+  static const int male = 1;
+  static const int female = 2;
+  static const int unspecified = 3;
+  
+  static String getGenderText(int gender) {
+    switch (gender) {
+      case male:
+        return 'Erkek';
+      case female:
+        return 'Kadın';
+      case unspecified:
+        return 'Belirtilmemiş';
+      default:
+        return 'Belirtilmemiş';
+    }
+  }
+  
+  static List<Map<String, dynamic>> getGenderOptions() {
+    return [
+      {'value': male, 'text': 'Erkek'},
+      {'value': female, 'text': 'Kadın'},
+      {'value': unspecified, 'text': 'Belirtilmemiş'},
+    ];
+  }
 } 

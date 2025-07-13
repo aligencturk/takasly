@@ -30,7 +30,7 @@ class LoginView extends StatelessWidget {
                     child: Text(
                       'logo',
                       style: TextStyle(
-                        color: Colors.white,
+                    color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
@@ -197,7 +197,7 @@ class LoginView extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.apple,
-                          color: Colors.white,
+                    color: Colors.white,
                           size: 20,
                         ),
                         const SizedBox(width: 12),
@@ -400,11 +400,11 @@ class _EmailLoginViewState extends State<EmailLoginView> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+                      children: [
               const SizedBox(height: 40),
               
               // Başlık
@@ -507,11 +507,11 @@ class _EmailLoginViewState extends State<EmailLoginView> {
                       _isObscure ? Icons.visibility_off : Icons.visibility,
                       color: Colors.white70,
                     ),
-                    onPressed: () {
-                      setState(() {
+                                onPressed: () {
+                                  setState(() {
                         _isObscure = !_isObscure;
-                      });
-                    },
+                                  });
+                                },
                   ),
                 ),
                 obscureText: _isObscure,
@@ -531,8 +531,8 @@ class _EmailLoginViewState extends State<EmailLoginView> {
               // Şifremi unuttum linki
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
+                              child: TextButton(
+                                onPressed: () {
                     // Şifremi unuttum sayfasına yönlendir
                   },
                   child: const Text(
@@ -610,9 +610,9 @@ class _EmailLoginViewState extends State<EmailLoginView> {
                 child: const Text(
                   'Hesabın yok mu? Kayıt Ol',
                   style: TextStyle(color: Colors.white70),
-                ),
-              ),
-            ],
+                              ),
+                            ),
+                          ],
           ),
         ),
       ),
@@ -699,12 +699,12 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
               const SizedBox(height: 32),
               
               // Ad alanı
-              TextFormField(
-                controller: _firstNameController,
+                          TextFormField(
+                            controller: _firstNameController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Ad',
-                  hintText: 'Ad',
+                              labelText: 'Ad',
+                              hintText: 'Ad',
                   prefixIcon: const Icon(Icons.person_outline, color: Colors.white70),
                   labelStyle: const TextStyle(color: Colors.white70),
                   hintStyle: const TextStyle(color: Colors.white60),
@@ -726,24 +726,24 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Colors.red, width: 2),
                   ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
                     return 'Ad gereklidir';
-                  }
-                  return null;
-                },
-              ),
+                              }
+                              return null;
+                            },
+                          ),
               
-              const SizedBox(height: 16),
-              
+                          const SizedBox(height: 16),
+                          
               // Soyad alanı
-              TextFormField(
-                controller: _lastNameController,
+                          TextFormField(
+                            controller: _lastNameController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Soyad',
-                  hintText: 'Soyad',
+                              labelText: 'Soyad',
+                              hintText: 'Soyad',
                   prefixIcon: const Icon(Icons.person_outline, color: Colors.white70),
                   labelStyle: const TextStyle(color: Colors.white70),
                   hintStyle: const TextStyle(color: Colors.white60),
@@ -765,24 +765,24 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Colors.red, width: 2),
                   ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
                     return 'Soyad gereklidir';
-                  }
-                  return null;
-                },
-              ),
+                              }
+                              return null;
+                            },
+                          ),
               
-              const SizedBox(height: 16),
-              
+                          const SizedBox(height: 16),
+                          
               // Telefon alanı
-              TextFormField(
-                controller: _phoneController,
+                          TextFormField(
+                            controller: _phoneController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Telefon',
-                  hintText: '0555 123 45 67',
+                              labelText: 'Telefon',
+                              hintText: '0555 123 45 67',
                   prefixIcon: const Icon(Icons.phone_outlined, color: Colors.white70),
                   labelStyle: const TextStyle(color: Colors.white70),
                   hintStyle: const TextStyle(color: Colors.white60),
@@ -804,25 +804,25 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Colors.red, width: 2),
                   ),
-                ),
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
+                            ),
+                            keyboardType: TextInputType.phone,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
                     return 'Telefon gereklidir';
-                  }
-                  return null;
-                },
-              ),
+                              }
+                              return null;
+                            },
+                          ),
               
-              const SizedBox(height: 16),
-              
+                          const SizedBox(height: 16),
+                        
               // E-posta alanı
-              TextFormField(
-                controller: _emailController,
+                        TextFormField(
+                          controller: _emailController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'E-posta',
-                  hintText: 'E-posta adresiniz',
+                            labelText: 'E-posta',
+                            hintText: 'E-posta adresiniz',
                   prefixIcon: const Icon(Icons.email_outlined, color: Colors.white70),
                   labelStyle: const TextStyle(color: Colors.white70),
                   hintStyle: const TextStyle(color: Colors.white60),
@@ -844,28 +844,28 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Colors.red, width: 2),
                   ),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
                     return 'E-posta gereklidir';
-                  }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                            }
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                     return 'Geçerli bir e-posta adresi girin';
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
+                            }
+                            return null;
+                          },
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
               // Şifre alanı
-              TextFormField(
-                controller: _passwordController,
+                        TextFormField(
+                          controller: _passwordController,
                 style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Şifre',
-                  hintText: 'Şifreniz',
+                          decoration: InputDecoration(
+                            labelText: 'Şifre',
+                            hintText: 'Şifreniz',
                   prefixIcon: const Icon(Icons.lock_outline, color: Colors.white70),
                   labelStyle: const TextStyle(color: Colors.white70),
                   hintStyle: const TextStyle(color: Colors.white60),
@@ -887,40 +887,40 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Colors.red, width: 2),
                   ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isObscure ? Icons.visibility_off : Icons.visibility,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isObscure ? Icons.visibility_off : Icons.visibility,
                       color: Colors.white70,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isObscure = !_isObscure;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: _isObscure,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isObscure = !_isObscure;
+                                });
+                              },
+                            ),
+                          ),
+                          obscureText: _isObscure,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
                     return 'Şifre gereklidir';
-                  }
+                            }
                   if (value.length < 6) {
                     return 'Şifre en az 6 karakter olmalıdır';
-                  }
-                  return null;
-                },
-              ),
-              
+                            }
+                            return null;
+                          },
+                        ),
+                        
               const SizedBox(height: 24),
               
               // Checkbox'lar
               CheckboxListTile(
-                value: _policyAccepted,
-                onChanged: (value) {
-                  setState(() {
-                    _policyAccepted = value ?? false;
-                  });
-                },
+                                value: _policyAccepted,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _policyAccepted = value ?? false;
+                                  });
+                                },
                 title: const Text(
                   'Gizlilik Politikasını kabul ediyorum',
                   style: TextStyle(fontSize: 14, color: Colors.white70),
@@ -937,12 +937,12 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
               ),
               
               CheckboxListTile(
-                value: _kvkkAccepted,
-                onChanged: (value) {
-                  setState(() {
-                    _kvkkAccepted = value ?? false;
-                  });
-                },
+                                value: _kvkkAccepted,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _kvkkAccepted = value ?? false;
+                                  });
+                                },
                 title: const Text(
                   'KVKK metnini kabul ediyorum',
                   style: TextStyle(fontSize: 14, color: Colors.white70),
@@ -1021,7 +1021,7 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                    ),
+                          ),
                   );
                 },
               ),
