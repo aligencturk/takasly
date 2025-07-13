@@ -229,11 +229,8 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
               product: product,
               onTap: () {
                 print('🎨 ProductCard tapped: ${product.title}');
-                // Ürün detayına git
-                Navigator.of(context).pushNamed(
-                  '/product-detail',
-                  arguments: product,
-                );
+                // Ürün detaylarını modal ile göster
+                _showProductDetails(product);
               },
             );
           },
@@ -312,6 +309,144 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Kapat'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProductDetails(dynamic product) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          product.title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Ürün resmi (eğer varsa)
+              if (product.images.isNotEmpty)
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.grey.shade200,
+                  ),
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    size: 50,
+                    color: Colors.grey,
+                  ),
+                ),
+              
+              if (product.images.isNotEmpty) const SizedBox(height: 16),
+              
+              // Açıklama
+              const Text(
+                'Açıklama:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                product.description.isNotEmpty 
+                    ? product.description 
+                    : 'Açıklama belirtilmemiş',
+                style: const TextStyle(fontSize: 14),
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Durum
+              const Text(
+                'Durum:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Text(
+                  product.condition,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Kategori
+              const Text(
+                'Kategori:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                product.category.name,
+                style: const TextStyle(fontSize: 14),
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Takas tercihleri
+              if (product.tradePreferences.isNotEmpty) ...[
+                const Text(
+                  'Takas Tercihi:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  product.tradePreferences.join(', '),
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Kapat'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Takas teklifi gönderme işlemi
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Takas teklifi özelliği yakında aktif olacak'),
+                ),
+              );
+            },
+            child: const Text('Takas Teklifi Gönder'),
           ),
         ],
       ),
