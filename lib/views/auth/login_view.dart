@@ -16,14 +16,18 @@ class _LoginViewState extends State<LoginView> {
   final _passwordController = TextEditingController();
   bool _isObscure = true;
   bool _isLogin = true;
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
+  bool _policyAccepted = false;
+  bool _kvkkAccepted = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -114,6 +118,8 @@ class _LoginViewState extends State<LoginView> {
                                 onPressed: () {
                                   setState(() {
                                     _isLogin = true;
+                                    _policyAccepted = false;
+                                    _kvkkAccepted = false;
                                   });
                                 },
                                 style: TextButton.styleFrom(
@@ -133,6 +139,8 @@ class _LoginViewState extends State<LoginView> {
                                 onPressed: () {
                                   setState(() {
                                     _isLogin = false;
+                                    _policyAccepted = false;
+                                    _kvkkAccepted = false;
                                   });
                                 },
                                 style: TextButton.styleFrom(
@@ -154,10 +162,26 @@ class _LoginViewState extends State<LoginView> {
                         // Name Field (only for register)
                         if (!_isLogin) ...[
                           TextFormField(
-                            controller: _nameController,
+                            controller: _firstNameController,
                             decoration: const InputDecoration(
-                              labelText: 'Ad Soyad',
-                              hintText: 'Ad Soyad',
+                              labelText: 'Ad',
+                              hintText: 'Ad',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return ErrorMessages.fieldRequired;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          TextFormField(
+                            controller: _lastNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Soyad',
+                              hintText: 'Soyad',
                               prefixIcon: Icon(Icons.person_outline),
                             ),
                             validator: (value) {
@@ -172,11 +196,17 @@ class _LoginViewState extends State<LoginView> {
                           TextFormField(
                             controller: _phoneController,
                             decoration: const InputDecoration(
-                              labelText: 'Telefon (Opsiyonel)',
+                              labelText: 'Telefon',
                               hintText: '0555 123 45 67',
                               prefixIcon: Icon(Icons.phone_outlined),
                             ),
                             keyboardType: TextInputType.phone,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return ErrorMessages.fieldRequired;
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -232,6 +262,65 @@ class _LoginViewState extends State<LoginView> {
                             return null;
                           },
                         ),
+                        
+                        // Policy and KVKK checkboxes (only for register)
+                        if (!_isLogin) ...[
+                          const SizedBox(height: 16),
+                          
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Checkbox(
+                                value: _policyAccepted,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _policyAccepted = value ?? false;
+                                  });
+                                },
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _policyAccepted = !_policyAccepted;
+                                    });
+                                  },
+                                  child: const Text(
+                                    'Gizlilik Politikasını okudum ve kabul ediyorum',
+                                    style: TextStyle(fontSize: 14),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Checkbox(
+                                value: _kvkkAccepted,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _kvkkAccepted = value ?? false;
+                                  });
+                                },
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _kvkkAccepted = !_kvkkAccepted;
+                                    });
+                                  },
+                                  child: const Text(
+                                    'KVKK metnini okudum ve kabul ediyorum',
+                                    style: TextStyle(fontSize: 14),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         
                         const SizedBox(height: 24),
                         
@@ -296,6 +385,21 @@ class _LoginViewState extends State<LoginView> {
                             );
                           },
                         ),
+                        
+                        // Forgot Password Link (only for login)
+                        if (_isLogin) ...[
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () => _showForgotPasswordDialog(context),
+                            child: const Text(
+                              'Şifremi Unuttum',
+                              style: TextStyle(
+                                color: Color(0xFF2196F3),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -323,18 +427,116 @@ class _LoginViewState extends State<LoginView> {
         _passwordController.text.trim(),
       );
     } else {
-      success = await authViewModel.register(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty 
-            ? null 
-            : _phoneController.text.trim(),
-      );
+              success = await authViewModel.register(
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          phone: _phoneController.text.trim(),
+          policy: _policyAccepted,
+          kvkk: _kvkkAccepted,
+        );
     }
     
     if (success) {
       Navigator.pushReplacementNamed(context, '/home');
     }
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Şifremi Unuttum'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'E-posta adresinizi girin, şifre sıfırlama bağlantısını size göndereceğiz.',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'E-posta',
+                    hintText: 'E-posta adresiniz',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return ErrorMessages.fieldRequired;
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return ErrorMessages.invalidEmail;
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('İptal'),
+            ),
+            Consumer<AuthViewModel>(
+              builder: (context, authViewModel, child) {
+                return ElevatedButton(
+                  onPressed: authViewModel.isLoading
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            final success = await authViewModel.forgotPassword(
+                              emailController.text.trim(),
+                            );
+                            
+                            if (success) {
+                              Navigator.of(dialogContext).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(SuccessMessages.forgotPasswordSuccess),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    authViewModel.errorMessage ?? ErrorMessages.forgotPasswordFailed,
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: authViewModel.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Gönder'),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 } 

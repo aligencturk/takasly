@@ -76,12 +76,17 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<bool> register({
-    required String name,
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
-    String? phone,
+    required String phone,
+    required bool policy,
+    required bool kvkk,
   }) async {
-    if (name.trim().isEmpty || email.trim().isEmpty || password.trim().isEmpty) {
+    if (firstName.trim().isEmpty || lastName.trim().isEmpty || 
+        email.trim().isEmpty || password.trim().isEmpty || 
+        phone.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return false;
     }
@@ -96,8 +101,23 @@ class AuthViewModel extends ChangeNotifier {
       return false;
     }
 
-    if (name.length > AppConstants.maxUsernameLength) {
+    if (firstName.length > AppConstants.maxUsernameLength) {
       _setError('İsim çok uzun');
+      return false;
+    }
+
+    if (lastName.length > AppConstants.maxUsernameLength) {
+      _setError('Soyisim çok uzun');
+      return false;
+    }
+
+    if (!policy) {
+      _setError('Gizlilik politikasını kabul etmelisiniz');
+      return false;
+    }
+
+    if (!kvkk) {
+      _setError('KVKK metnini kabul etmelisiniz');
       return false;
     }
 
@@ -106,15 +126,107 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       final response = await _authService.register(
-        name: name,
+        firstName: firstName,
+        lastName: lastName,
         email: email,
         password: password,
         phone: phone,
+        policy: policy,
+        kvkk: kvkk,
       );
       
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data;
         _isLoggedIn = true;
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> forgotPassword(String email) async {
+    if (email.trim().isEmpty) {
+      _setError(ErrorMessages.fieldRequired);
+      return false;
+    }
+
+    if (!_isValidEmail(email)) {
+      _setError(ErrorMessages.invalidEmail);
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.forgotPassword(email);
+      
+      if (response.isSuccess) {
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> updatePassword({
+    required String email,
+    required String verificationCode,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    if (email.trim().isEmpty || verificationCode.trim().isEmpty || 
+        newPassword.trim().isEmpty || confirmPassword.trim().isEmpty) {
+      _setError(ErrorMessages.fieldRequired);
+      return false;
+    }
+
+    if (!_isValidEmail(email)) {
+      _setError(ErrorMessages.invalidEmail);
+      return false;
+    }
+
+    if (newPassword.length < AppConstants.minPasswordLength) {
+      _setError(ErrorMessages.weakPassword);
+      return false;
+    }
+
+    if (newPassword != confirmPassword) {
+      _setError('Şifreler eşleşmiyor');
+      return false;
+    }
+
+    if (verificationCode.length < 4) {
+      _setError('Doğrulama kodu en az 4 karakter olmalıdır');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.updatePassword(
+        email: email,
+        verificationCode: verificationCode,
+        newPassword: newPassword,
+      );
+      
+      if (response.isSuccess) {
         _setLoading(false);
         return true;
       } else {

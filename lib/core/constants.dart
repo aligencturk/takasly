@@ -1,7 +1,11 @@
 class ApiConstants {
-  static const String baseUrl = 'https://api.takasly.com';
-  static const String apiVersion = 'v1';
-  static const String fullUrl = '$baseUrl/$apiVersion';
+  static const String baseUrl = 'https://api.rivorya.com/takasly';
+  static const String apiVersion = '';
+  static const String fullUrl = baseUrl;
+  
+  // Basic Auth sabitleri (API'nin kendi credential'ları)
+  static const String basicAuthUsername = 'Tk2BULs2IC4HJN2nlvp9T5ycBoyMJD';
+  static const String basicAuthPassword = 'vRP4rTBAqm1tm2I17I1EI3PHFtE5l0';
   
   // Endpoints
   static const String products = '/products';
@@ -10,8 +14,10 @@ class ApiConstants {
   static const String categories = '/categories';
   static const String chat = '/chat';
   static const String auth = '/auth';
-  static const String login = '/auth/login';
-  static const String register = '/auth/register';
+  static const String login = '/service/auth/login';
+  static const String register = '/service/auth/register';
+  static const String forgotPassword = '/service/auth/forgotPassword';
+  static const String updatePassword = '/service/auth/forgotPassword/updatePass';
   static const String profile = '/auth/profile';
   static const String logout = '/auth/logout';
   
@@ -20,6 +26,7 @@ class ApiConstants {
   static const String applicationJson = 'application/json';
   static const String authorization = 'Authorization';
   static const String bearer = 'Bearer ';
+  static const String basic = 'Basic ';
   
   // Status Codes
   static const int success = 200;
@@ -83,6 +90,8 @@ class ErrorMessages {
   static const String tradeNotFound = 'Takas bulunamadı';
   static const String accessDenied = 'Erişim reddedildi';
   static const String sessionExpired = 'Oturumunuz sona erdi, lütfen tekrar giriş yapın';
+  static const String forgotPasswordFailed = 'Şifre sıfırlama talebi gönderilemedi';
+  static const String emailNotFound = 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı';
 }
 
 class SuccessMessages {
@@ -98,4 +107,6 @@ class SuccessMessages {
   static const String tradeRejected = 'Takas teklifi reddedildi';
   static const String tradeCanceled = 'Takas iptal edildi';
   static const String messagesSent = 'Mesaj gönderildi';
+  static const String forgotPasswordSuccess = 'Şifre sıfırlama bağlantısı e-postanıza gönderildi';
+  static const String passwordResetEmailSent = 'E-postanızı kontrol edin, şifre sıfırlama talimatları gönderildi';
 } 
