@@ -79,6 +79,35 @@ class HttpClient {
     }
   }
 
+  Future<ApiResponse<T>> getWithBasicAuth<T>(
+    String endpoint, {
+    Map<String, dynamic>? queryParams,
+    T Function(dynamic)? fromJson,
+  }) async {
+    try {
+      final uri = Uri.parse('${ApiConstants.fullUrl}$endpoint');
+      final uriWithParams = queryParams != null 
+          ? uri.replace(queryParameters: queryParams.map((k, v) => MapEntry(k, v.toString())))
+          : uri;
+      
+      final headers = _getBasicAuthHeaders();
+      
+      final response = await http
+          .get(uriWithParams, headers: headers)
+          .timeout(_timeout);
+      
+      return _handleResponse<T>(response, fromJson);
+    } on SocketException {
+      return ApiResponse<T>.error(ErrorMessages.networkError);
+    } on HttpException {
+      return ApiResponse<T>.error(ErrorMessages.networkError);
+    } on FormatException {
+      return ApiResponse<T>.error(ErrorMessages.unknownError);
+    } catch (e) {
+      return ApiResponse<T>.error(ErrorMessages.unknownError);
+    }
+  }
+
   Future<ApiResponse<T>> post<T>(
     String endpoint, {
     Map<String, dynamic>? body,
@@ -268,6 +297,32 @@ class HttpClient {
         return ApiResponse<T>.error(errorMessage);
       }
       
+      // Özel durum: 410 ama response'da success:true varsa başarılı say
+      if (response.statusCode == ApiConstants.gone) {
+        try {
+          final Map<String, dynamic> jsonData = json.decode(response.body);
+          if (jsonData['success'] == true && jsonData['data'] != null) {
+            print('✅ 410 Status - Treating as success');
+            print('✅ 410 - Response body: "${response.body}"');
+            print('✅ 410 - Response body isEmpty: ${response.body.isEmpty}');
+            print('✅ 410 - Parsed data: $jsonData');
+            
+            // 410 olsa bile data varsa success olarak handle et
+            try {
+              final T data = fromJson!(jsonData);
+              print('✅ 410 - Successfully parsed data: $data');
+              return ApiResponse.success(data);
+            } catch (e) {
+              print('! 410 - Failed to parse JSON: $e');
+              print('! 410 - Raw response body: "${response.body}"');
+              return ApiResponse<T>.error('Data parsing error: $e');
+            }
+          }
+        } catch (e) {
+          print('! 410 - Failed to handle as success: $e');
+        }
+      }
+
       // Başarılı durumlar (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
         print('✅ Success status: ${response.statusCode}');
@@ -364,6 +419,76 @@ class HttpClient {
     } catch (e) {
       print('💥 HandleResponse Exception: $e');
       return ApiResponse<T>.error(ErrorMessages.unknownError);
+    }
+  }
+
+  // Multipart form-data request method
+  Future<ApiResponse<T>> postMultipart<T>(
+    String endpoint, {
+    required Map<String, String> fields,
+    required Map<String, File> files,
+    required T Function(Map<String, dynamic>) fromJson,
+    bool useBasicAuth = false,
+  }) async {
+    try {
+      final url = Uri.parse('${ApiConstants.fullUrl}$endpoint');
+      final request = http.MultipartRequest('POST', url);
+      
+      // Headers ekle
+      if (useBasicAuth) {
+        request.headers.addAll(_getBasicAuthHeaders());
+      } else {
+        request.headers.addAll(await _getHeaders());
+      }
+      
+      // Form fields ekle
+      request.fields.addAll(fields);
+      
+      // Files ekle
+      for (String key in files.keys) {
+        final file = files[key]!;
+        final multipartFile = await http.MultipartFile.fromPath(
+          key,
+          file.path,
+        );
+        request.files.add(multipartFile);
+      }
+      
+      print('🌐 Multipart Request: ${request.method} ${request.url}');
+      print('📝 Fields: ${request.fields}');
+      print('📎 Files: ${request.files.map((f) => f.filename).toList()}');
+      
+      final streamedResponse = await request.send().timeout(_timeout);
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      print('📡 Response Status: ${response.statusCode}');
+      print('📡 Response Headers: ${response.headers}');
+      print('📡 Response Body: ${response.body}');
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        try {
+          final Map<String, dynamic> jsonData = json.decode(response.body);
+          final T data = fromJson(jsonData);
+          return ApiResponse.success(data);
+        } catch (e) {
+          print('❌ JSON parsing error: $e');
+          return ApiResponse.error('JSON parsing error: $e');
+        }
+      } else {
+        try {
+          final Map<String, dynamic> errorData = json.decode(response.body);
+          final errorMessage = errorData['message'] ?? 'Unknown error';
+          return ApiResponse.error(errorMessage);
+        } catch (e) {
+          return ApiResponse.error('HTTP ${response.statusCode}: ${response.body}');
+        }
+      }
+    } catch (e) {
+      print('❌ Network error: $e');
+      if (e is SocketException) {
+        return ApiResponse.error(ErrorMessages.networkError);
+      }
+      return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
 }

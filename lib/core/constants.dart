@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://api.rivorya.com/takasly';
+  static const String baseUrl = 'https://api.rivorya.com/takasly/';
   static const String apiVersion = '';
   static const String fullUrl = baseUrl;
   
@@ -26,6 +26,11 @@ class ApiConstants {
   // User Service Endpoints
   static const String userProfile = '/service/user/id';
   static const String updateAccount = '/service/user/update/account';
+  static const String updateUserPassword = '/service/user/update/password';
+  static const String deleteUser = '/service/user/delete';
+  static const String addProduct = '/service/user/product'; // {userId}/addProduct eklenecek
+  static const String userProducts = '/service/user/product'; // {userId}/productList eklenecek
+  static const String categoriesList = '/service/general/general/categories/0';
   
   // Headers
   static const String contentType = 'Content-Type';

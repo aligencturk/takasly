@@ -365,6 +365,92 @@ class UserService {
     return token != null && token.isNotEmpty && user != null;
   }
 
+  /// Kullanıcı şifresini günceller
+  /// PUT /service/user/update/password
+  Future<ApiResponse<Map<String, dynamic>>> updateUserPassword({
+    required String userToken,
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      print('🔄 UPDATE USER PASSWORD');
+      
+      final body = {
+        'userToken': userToken,
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+      };
+      
+      print('📤 Request Body: $body');
+      
+      final response = await _httpClient.put(
+        ApiConstants.updateUserPassword,
+        body: body,
+        fromJson: (json) {
+          print('🔍 Update Password fromJson - Raw data: $json');
+          
+          // Response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            return json;
+          }
+          
+          return {'success': true, 'message': 'Password updated successfully'};
+        },
+      );
+      
+      print('✅ Update Password Response: ${response.isSuccess}');
+      print('🔍 Response Data: ${response.data}');
+      print('🔍 Response Error: ${response.error}');
+      
+      return response;
+    } catch (e) {
+      print('❌ Update Password Error: $e');
+      return ApiResponse<Map<String, dynamic>>.error(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Kullanıcı hesabını siler
+  /// DELETE /service/user/delete
+  Future<ApiResponse<Map<String, dynamic>>> deleteUserAccount({
+    required String userToken,
+    required String password,
+  }) async {
+    try {
+      print('🗑️ DELETE USER ACCOUNT');
+      
+      final body = {
+        'userToken': userToken,
+        'password': password,
+      };
+      
+      print('📤 Request Body: $body');
+      
+      final response = await _httpClient.put(
+        ApiConstants.deleteUser,
+        body: body,
+        fromJson: (json) {
+          print('🔍 Delete User fromJson - Raw data: $json');
+          
+          // Response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            return json;
+          }
+          
+          return {'success': true, 'message': 'Account deleted successfully'};
+        },
+      );
+      
+      print('✅ Delete User Response: ${response.isSuccess}');
+      print('🔍 Response Data: ${response.data}');
+      print('🔍 Response Error: ${response.error}');
+      
+      return response;
+    } catch (e) {
+      print('❌ Delete User Error: $e');
+      return ApiResponse<Map<String, dynamic>>.error(ErrorMessages.unknownError);
+    }
+  }
+
   /// User service'ini test eder
   Future<bool> testUserService() async {
     try {

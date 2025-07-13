@@ -9,6 +9,7 @@ class TradeViewModel extends ChangeNotifier {
   List<Trade> _trades = [];
   List<Trade> _pendingTrades = [];
   List<Trade> _completedTrades = [];
+  List<Trade> _cancelledTrades = [];
   Trade? _selectedTrade;
   Map<String, int> _statistics = {};
   
@@ -24,7 +25,9 @@ class TradeViewModel extends ChangeNotifier {
   // Getters
   List<Trade> get trades => _trades;
   List<Trade> get pendingTrades => _pendingTrades;
+  List<Trade> get activeTrades => _pendingTrades; // Aktif takaslar pending'le aynı
   List<Trade> get completedTrades => _completedTrades;
+  List<Trade> get cancelledTrades => _cancelledTrades;
   Trade? get selectedTrade => _selectedTrade;
   Map<String, int> get statistics => _statistics;
   
@@ -47,8 +50,14 @@ class TradeViewModel extends ChangeNotifier {
       loadTrades(),
       loadPendingTrades(),
       loadCompletedTrades(),
+      loadCancelledTrades(),
       loadStatistics(),
     ]);
+  }
+
+  // Alias for loadInitialData for backward compatibility
+  Future<void> fetchMyTrades() async {
+    await loadInitialData();
   }
 
   Future<void> loadTrades({
@@ -150,6 +159,27 @@ class TradeViewModel extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
         _completedTrades = response.data!;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> loadCancelledTrades() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _tradeService.getMyTrades(
+        status: TradeStatus.cancelled,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _cancelledTrades = response.data!;
       } else {
         _setError(response.error ?? ErrorMessages.unknownError);
       }

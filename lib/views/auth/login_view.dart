@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/user_viewmodel.dart';
 import '../../core/constants.dart';
 
 class LoginView extends StatelessWidget {
@@ -559,6 +560,12 @@ class _EmailLoginViewState extends State<EmailLoginView> {
                           );
                           
                           if (success) {
+                            // Login başarılı - UserViewModel'a da kullanıcı bilgisini aktar
+                            final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                            if (auth.currentUser != null) {
+                              userViewModel.setCurrentUser(auth.currentUser!);
+                            }
+                            
                             Navigator.of(context).pushNamedAndRemoveUntil(
                               '/home',
                               (route) => false,
@@ -990,6 +997,12 @@ class _EmailRegisterViewState extends State<EmailRegisterView> {
                           );
                           
                           if (success) {
+                            // Kayıt başarılı - UserViewModel'a da kullanıcı bilgisini aktar
+                            final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                            if (auth.currentUser != null) {
+                              userViewModel.setCurrentUser(auth.currentUser!);
+                            }
+                            
                             Navigator.of(context).pushNamedAndRemoveUntil(
                               '/home',
                               (route) => false,

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/auth_viewmodel.dart';
+import 'viewmodels/user_viewmodel.dart';
 import 'viewmodels/product_viewmodel.dart';
 import 'viewmodels/trade_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/auth/login_view.dart';
+import 'views/auth/email_verification_view.dart';
+import 'views/auth/reset_password_view.dart';
 import 'views/home/home_view.dart';
 import 'views/product/product_detail_view.dart';
 import 'views/trade/trade_view.dart';
@@ -24,6 +27,9 @@ class TakaslyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (context) => AuthViewModel(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => UserViewModel(),
         ),
         ChangeNotifierProvider(
           create: (context) => ProductViewModel(),
@@ -126,6 +132,7 @@ class TakaslyApp extends StatelessWidget {
           '/home': (context) => const HomeView(),
           '/profile': (context) => const ProfileView(),
           '/trade': (context) => const TradeView(),
+          '/reset-password': (context) => const ResetPasswordView(),
         },
         onGenerateRoute: (settings) {
           switch (settings.name) {
@@ -133,6 +140,11 @@ class TakaslyApp extends StatelessWidget {
               final productId = settings.arguments as String;
               return MaterialPageRoute(
                 builder: (context) => ProductDetailView(productId: productId),
+              );
+            case '/email-verification':
+              final email = settings.arguments as String;
+              return MaterialPageRoute(
+                builder: (context) => EmailVerificationView(email: email),
               );
             default:
               return MaterialPageRoute(

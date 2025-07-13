@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/product.dart' as product_model;
 import '../models/user.dart';
@@ -126,13 +127,16 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshProducts() async {
-    await loadProducts(
-      categoryId: _currentCategoryId,
-      searchQuery: _currentSearchQuery,
-      city: _currentCity,
-      condition: _currentCondition,
-      refresh: true,
-    );
+    await Future.wait([
+      loadProducts(
+        categoryId: _currentCategoryId,
+        searchQuery: _currentSearchQuery,
+        city: _currentCity,
+        condition: _currentCondition,
+        refresh: true,
+      ),
+      loadCategories(),
+    ]);
   }
 
   Future<void> searchProducts(String query) async {
@@ -348,6 +352,83 @@ class ProductViewModel extends ChangeNotifier {
   void _clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  Future<bool> addProduct({
+    required String userToken,
+    required String userId,
+    required String productTitle,
+    required String productDescription,
+    required String categoryId,
+    required String conditionId,
+    required String tradeFor,
+    required List<File> productImages,
+  }) async {
+    if (productTitle.trim().isEmpty) {
+      _setError('Ürün başlığı boş olamaz');
+      return false;
+    }
+
+    if (productDescription.trim().isEmpty) {
+      _setError('Ürün açıklaması boş olamaz');
+      return false;
+    }
+
+    if (productImages.isEmpty) {
+      _setError('En az bir ürün resmi seçmelisiniz');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _productService.addProduct(
+        userToken: userToken,
+        userId: userId,
+        productTitle: productTitle,
+        productDescription: productDescription,
+        categoryId: categoryId,
+        conditionId: conditionId,
+        tradeFor: tradeFor,
+        productImages: productImages,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        // Yeni ürünü listeye ekle
+        _products.insert(0, response.data!);
+        _myProducts.insert(0, response.data!);
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<void> loadUserProducts(String userId) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _productService.getUserProducts(userId);
+
+      if (response.isSuccess && response.data != null) {
+        _myProducts = response.data!;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoading(false);
+    }
   }
 
   @override

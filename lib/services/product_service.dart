@@ -1,3 +1,4 @@
+import 'dart:io';
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/product.dart';
@@ -182,10 +183,16 @@ class ProductService {
 
   Future<ApiResponse<List<Category>>> getCategories() async {
     try {
-      final response = await _httpClient.get(
-        ApiConstants.categories,
-        fromJson: (json) => (json['categories'] as List)
-            .map((item) => Category.fromJson(item))
+      final response = await _httpClient.getWithBasicAuth(
+        ApiConstants.categoriesList,
+        fromJson: (json) => (json['data']['categories'] as List)
+            .map((item) => Category(
+              id: item['catID'].toString(),
+              name: item['catName'],
+              icon: item['catImage'] ?? '',
+              isActive: true,
+              order: 0,
+            ))
             .toList(),
       );
 
@@ -248,4 +255,61 @@ class ProductService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  Future<ApiResponse<Product>> addProduct({
+    required String userToken,
+    required String userId,
+    required String productTitle,
+    required String productDescription,
+    required String categoryId,
+    required String conditionId,
+    required String tradeFor,
+    required List<File> productImages,
+  }) async {
+    try {
+      // Form fields
+      final fields = <String, String>{
+        'userToken': userToken,
+        'productTitle': productTitle,
+        'productDesc': productDescription,
+        'categoryID': categoryId,
+        'conditionID': conditionId,
+        'tradeFor': tradeFor,
+      };
+
+      // Files
+      final files = <String, File>{};
+      for (int i = 0; i < productImages.length; i++) {
+        files['productImages'] = productImages[i];
+      }
+
+      final response = await _httpClient.postMultipart<Product>(
+        '${ApiConstants.addProduct}/$userId/addProduct',
+        fields: fields,
+        files: files,
+        fromJson: (json) => Product.fromJson(json),
+        useBasicAuth: true,
+      );
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<List<Product>>> getUserProducts(String userId) async {
+    try {
+      final response = await _httpClient.getWithBasicAuth(
+        '${ApiConstants.userProducts}/$userId/productList',
+        fromJson: (json) => (json['products'] as List)
+            .map((item) => Product.fromJson(item))
+            .toList(),
+      );
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
 } 

@@ -7,6 +7,7 @@ import '../../widgets/product_card.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/custom_bottom_nav.dart';
+import '../profile/profile_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -24,6 +25,13 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    
+    // Kategorileri yükle (ürünler endpoint'i belirlenmedi)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+      productViewModel.loadCategories();
+      // productViewModel.loadProducts(); // Geçici olarak kapatıldı
+    });
   }
 
   @override
@@ -38,6 +46,43 @@ class _HomeViewState extends State<HomeView> {
     if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
       final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
       productViewModel.loadMoreProducts();
+    }
+  }
+
+  IconData _getCategoryIcon(String iconName) {
+    switch (iconName.toLowerCase()) {
+      case 'phone':
+      case 'telefon':
+        return Icons.smartphone;
+      case 'computer':
+      case 'bilgisayar':
+        return Icons.computer;
+      case 'car':
+      case 'araba':
+        return Icons.directions_car;
+      case 'book':
+      case 'kitap':
+        return Icons.menu_book;
+      case 'clothes':
+      case 'kiyafet':
+        return Icons.checkroom;
+      case 'home':
+      case 'ev':
+        return Icons.home;
+      case 'sport':
+      case 'spor':
+        return Icons.sports_soccer;
+      case 'music':
+      case 'muzik':
+        return Icons.music_note;
+      case 'game':
+      case 'oyun':
+        return Icons.sports_esports;
+      case 'beauty':
+      case 'guzellik':
+        return Icons.face_retouching_natural;
+      default:
+        return Icons.category;
     }
   }
 
@@ -137,9 +182,55 @@ class _HomeViewState extends State<HomeView> {
                         height: 80,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: productViewModel.categories.length,
+                          itemCount: productViewModel.categories.length + 1, // +1 for "Tümü"
                           itemBuilder: (context, index) {
-                            final category = productViewModel.categories[index];
+                            // İlk item "Tümü" olacak
+                            if (index == 0) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    productViewModel.filterByCategory(null);
+                                  },
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: 56,
+                                        height: 56,
+                                        decoration: BoxDecoration(
+                                          color: productViewModel.currentCategoryId == null 
+                                              ? const Color(0xFF2196F3)
+                                              : const Color(0xFF2196F3).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          Icons.apps,
+                                          color: productViewModel.currentCategoryId == null 
+                                              ? Colors.white
+                                              : const Color(0xFF2196F3),
+                                          size: 24,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Tümü',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: productViewModel.currentCategoryId == null 
+                                              ? const Color(0xFF2196F3)
+                                              : Colors.grey.shade700,
+                                          fontWeight: productViewModel.currentCategoryId == null 
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            
+                            final category = productViewModel.categories[index - 1];
                             return Padding(
                               padding: const EdgeInsets.only(right: 12),
                               child: GestureDetector(
@@ -152,12 +243,16 @@ class _HomeViewState extends State<HomeView> {
                                       width: 56,
                                       height: 56,
                                       decoration: BoxDecoration(
-                                        color: Colors.grey.shade100,
+                                        color: productViewModel.currentCategoryId == category.id
+                                            ? const Color(0xFF2196F3)
+                                            : const Color(0xFF2196F3).withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Icon(
-                                        Icons.category,
-                                        color: Colors.grey.shade700,
+                                        _getCategoryIcon(category.icon),
+                                        color: productViewModel.currentCategoryId == category.id
+                                            ? Colors.white
+                                            : const Color(0xFF2196F3),
                                         size: 24,
                                       ),
                                     ),
@@ -166,7 +261,12 @@ class _HomeViewState extends State<HomeView> {
                                       category.name,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade700,
+                                        color: productViewModel.currentCategoryId == category.id
+                                            ? const Color(0xFF2196F3)
+                                            : Colors.grey.shade700,
+                                        fontWeight: productViewModel.currentCategoryId == category.id
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
                                       ),
                                     ),
                                   ],
@@ -191,7 +291,7 @@ class _HomeViewState extends State<HomeView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Güncel İlanlar',
+                        'Tüm Ürünler',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -208,43 +308,42 @@ class _HomeViewState extends State<HomeView> {
                 ),
               ),
               
-              // Products Grid
-              SliverPadding(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+              // Products Placeholder
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(AppConstants.defaultPadding),
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
                   ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      if (index == productViewModel.products.length) {
-                        return productViewModel.isLoadingMore
-                            ? const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            : const SizedBox.shrink();
-                      }
-                      
-                      final product = productViewModel.products[index];
-                      return ProductCard(
-                        product: product,
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/product-detail',
-                            arguments: product.id,
-                          );
-                        },
-                      );
-                    },
-                    childCount: productViewModel.products.length + 
-                        (productViewModel.isLoadingMore ? 1 : 0),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 64,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Ürünler Yükleniyor...',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Ana sayfa ürünleri için endpoint belirlendikten sonra\nürünler burada görüntülenecek.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -274,9 +373,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildProfileTab() {
-    return const Center(
-      child: Text('Profil'),
-    );
+    return const ProfileView();
   }
 }
 

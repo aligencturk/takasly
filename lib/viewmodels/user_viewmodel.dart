@@ -27,8 +27,40 @@ class UserViewModel extends ChangeNotifier {
       final user = await _userService.getCurrentUser();
       if (user != null) {
         _currentUser = user;
+        print('✅ UserViewModel - Local user loaded: ${user.name}');
+      } else {
+        print('⚠️ UserViewModel - No local user, checking token...');
+        final token = await _userService.getUserToken();
+        if (token != null && token.isNotEmpty) {
+          print('🔑 UserViewModel - Token found, fetching from API');
+          await refreshUser();
+        } else {
+          print('❌ UserViewModel - No token found, user needs to login');
+        }
       }
     } catch (e) {
+      print('❌ UserViewModel - Initialize error: $e');
+      _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Kullanıcı bilgilerini zorla yeniler (local storage boşsa API'den çeker)
+  Future<void> forceRefreshUser() async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      print('🔄 UserViewModel - Force refreshing user...');
+      final success = await getUserProfile();
+      if (success) {
+        print('✅ UserViewModel - User refreshed successfully');
+      } else {
+        print('❌ UserViewModel - Failed to refresh user');
+      }
+    } catch (e) {
+      print('❌ UserViewModel - Force refresh error: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
@@ -182,6 +214,78 @@ class UserViewModel extends ChangeNotifier {
   /// Kullanıcı giriş yapmış mı kontrol eder
   Future<bool> checkLoginStatus() async {
     return await _userService.isLoggedIn();
+  }
+
+  /// Kullanıcı şifresini günceller
+  Future<bool> updateUserPassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final token = await _userService.getUserToken();
+    if (token == null) {
+      _setError(ErrorMessages.sessionExpired);
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _userService.updateUserPassword(
+        userToken: token,
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+      
+      if (response.isSuccess) {
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Kullanıcı hesabını siler
+  Future<bool> deleteUserAccount({
+    required String password,
+  }) async {
+    final token = await _userService.getUserToken();
+    if (token == null) {
+      _setError(ErrorMessages.sessionExpired);
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _userService.deleteUserAccount(
+        userToken: token,
+        password: password,
+      );
+      
+      if (response.isSuccess) {
+        // Hesap silindikten sonra tüm local data'yı temizle
+        await logout();
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
   }
 
   /// User service'ini test eder
