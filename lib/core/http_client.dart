@@ -426,7 +426,8 @@ class HttpClient {
   Future<ApiResponse<T>> postMultipart<T>(
     String endpoint, {
     required Map<String, String> fields,
-    required Map<String, File> files,
+    Map<String, File>? files,
+    Map<String, List<File>>? multipleFiles,
     required T Function(Map<String, dynamic>) fromJson,
     bool useBasicAuth = false,
   }) async {
@@ -444,19 +445,35 @@ class HttpClient {
       // Form fields ekle
       request.fields.addAll(fields);
       
-      // Files ekle
-      for (String key in files.keys) {
-        final file = files[key]!;
-        final multipartFile = await http.MultipartFile.fromPath(
-          key,
-          file.path,
-        );
-        request.files.add(multipartFile);
+      // Single files ekle
+      if (files != null) {
+        for (String key in files.keys) {
+          final file = files[key]!;
+          final multipartFile = await http.MultipartFile.fromPath(
+            key,
+            file.path,
+          );
+          request.files.add(multipartFile);
+        }
+      }
+      
+      // Multiple files ekle (aynı key ile birden fazla dosya)
+      if (multipleFiles != null) {
+        for (String key in multipleFiles.keys) {
+          final fileList = multipleFiles[key]!;
+          for (File file in fileList) {
+            final multipartFile = await http.MultipartFile.fromPath(
+              key,
+              file.path,
+            );
+            request.files.add(multipartFile);
+          }
+        }
       }
       
       print('🌐 Multipart Request: ${request.method} ${request.url}');
       print('📝 Fields: ${request.fields}');
-      print('📎 Files: ${request.files.map((f) => f.filename).toList()}');
+      print('📎 Files (${request.files.length}): ${request.files.map((f) => '${f.field}: ${f.filename}').toList()}');
       
       final streamedResponse = await request.send().timeout(_timeout);
       final response = await http.Response.fromStream(streamedResponse);
@@ -465,21 +482,31 @@ class HttpClient {
       print('📡 Response Headers: ${response.headers}');
       print('📡 Response Body: ${response.body}');
       
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        try {
-          final Map<String, dynamic> jsonData = json.decode(response.body);
+      try {
+        final Map<String, dynamic> jsonData = json.decode(response.body);
+        
+        // API response'unda success field'ını kontrol et
+        // Bazı API'ler garip status code gönderebilir ama body'de success bilgisi doğru olur
+        final bool apiSuccess = jsonData['success'] == true || 
+                                 jsonData['error'] == false;
+        
+        if ((response.statusCode >= 200 && response.statusCode < 300) || 
+            (response.statusCode == 410 && apiSuccess)) {
+          print('✅ API Success detected - Status: ${response.statusCode}, API Success: $apiSuccess');
           final T data = fromJson(jsonData);
           return ApiResponse.success(data);
-        } catch (e) {
-          print('❌ JSON parsing error: $e');
-          return ApiResponse.error('JSON parsing error: $e');
+        } else {
+          print('❌ API Error detected - Status: ${response.statusCode}, API Success: $apiSuccess');
+          final errorMessage = jsonData['message'] ?? 
+                               jsonData['error'] ?? 
+                               'Unknown error';
+          return ApiResponse.error(errorMessage.toString());
         }
-      } else {
-        try {
-          final Map<String, dynamic> errorData = json.decode(response.body);
-          final errorMessage = errorData['message'] ?? 'Unknown error';
-          return ApiResponse.error(errorMessage);
-        } catch (e) {
+      } catch (e) {
+        print('❌ JSON parsing error: $e');
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return ApiResponse.error('JSON parsing error: $e');
+        } else {
           return ApiResponse.error('HTTP ${response.statusCode}: ${response.body}');
         }
       }

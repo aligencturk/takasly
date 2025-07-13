@@ -424,15 +424,6 @@ class AuthService {
     }
   }
 
-  Future<bool> isLoggedIn() async {
-    try {
-      final token = await getToken();
-      return token != null && token.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
-  }
-
   Future<void> _saveUserData(User user, String token) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -465,6 +456,27 @@ class AuthService {
       await prefs.remove(AppConstants.userDataKey);
     } catch (e) {
       // Hata durumunda sessizce geç
+    }
+  }
+
+  Future<String?> getCurrentUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(AppConstants.userIdKey);
+    } catch (e) {
+      print('❌ Error getting current user ID: $e');
+      return null;
+    }
+  }
+
+  Future<bool> isLoggedIn() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(AppConstants.userTokenKey);
+      final userId = prefs.getString(AppConstants.userIdKey);
+      return token != null && token.isNotEmpty && userId != null && userId.isNotEmpty;
+    } catch (e) {
+      return false;
     }
   }
 } 

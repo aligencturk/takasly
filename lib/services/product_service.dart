@@ -182,6 +182,7 @@ class ProductService {
   }
 
   Future<ApiResponse<List<Category>>> getCategories() async {
+    print('🏷️ ProductService: Getting categories from ${ApiConstants.categoriesList}');
     try {
       final response = await _httpClient.getWithBasicAuth(
         ApiConstants.categoriesList,
@@ -256,7 +257,7 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<Product>> addProduct({
+  Future<ApiResponse<Map<String, dynamic>>> addProduct({
     required String userToken,
     required String userId,
     required String productTitle,
@@ -277,17 +278,25 @@ class ProductService {
         'tradeFor': tradeFor,
       };
 
-      // Files
-      final files = <String, File>{};
-      for (int i = 0; i < productImages.length; i++) {
-        files['productImages'] = productImages[i];
+      // Multiple files için Map oluştur
+      final multipleFiles = <String, List<File>>{};
+      if (productImages.isNotEmpty) {
+        multipleFiles['productImages'] = productImages;
       }
 
-      final response = await _httpClient.postMultipart<Product>(
+      print('📸 Uploading ${productImages.length} images with key "productImages"');
+
+      final response = await _httpClient.postMultipart<Map<String, dynamic>>(
         '${ApiConstants.addProduct}/$userId/addProduct',
         fields: fields,
-        files: files,
-        fromJson: (json) => Product.fromJson(json),
+        multipleFiles: multipleFiles,
+        fromJson: (json) {
+          // API response'unda data field'ı varsa onu döndür, yoksa tüm json'u döndür
+          if (json.containsKey('data') && json['data'] != null) {
+            return json['data'] as Map<String, dynamic>;
+          }
+          return json;
+        },
         useBasicAuth: true,
       );
 

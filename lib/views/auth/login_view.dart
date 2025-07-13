@@ -553,31 +553,61 @@ class _EmailLoginViewState extends State<EmailLoginView> {
                     height: 52,
                     child: ElevatedButton(
                       onPressed: auth.isLoading ? null : () async {
-                        if (_formKey.currentState!.validate()) {
-                          final success = await auth.login(
-                            _emailController.text,
-                            _passwordController.text,
-                          );
-                          
-                          if (success) {
-                            // Login başarılı - UserViewModel'a da kullanıcı bilgisini aktar
-                            final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-                            if (auth.currentUser != null) {
-                              userViewModel.setCurrentUser(auth.currentUser!);
-                            }
+                        print('🔐 Login button pressed');
+                        try {
+                          if (_formKey.currentState!.validate()) {
+                            print('🔐 Form validated, attempting login...');
+                            final success = await auth.login(
+                              _emailController.text,
+                              _passwordController.text,
+                            );
                             
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                              '/home',
-                              (route) => false,
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(auth.errorMessage ?? 'Giriş başarısız'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                            print('🔐 Login result: $success');
+                            if (success) {
+                              print('🔐 Login successful, setting user data...');
+                              // Login başarılı - UserViewModel'a da kullanıcı bilgisini aktar
+                              try {
+                                final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                                if (auth.currentUser != null) {
+                                  print('🔐 Setting current user: ${auth.currentUser!.email}');
+                                  userViewModel.setCurrentUser(auth.currentUser!);
+                                }
+                                
+                                print('🔐 Navigating to home...');
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/home',
+                                  (route) => false,
+                                );
+                                print('🔐 Navigation completed');
+                              } catch (e, stackTrace) {
+                                print('❌ Error during user setup or navigation: $e');
+                                print('❌ Stack trace: $stackTrace');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Navigasyon hatası: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } else {
+                              print('🔐 Login failed: ${auth.errorMessage}');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(auth.errorMessage ?? 'Giriş başarısız'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
+                        } catch (e, stackTrace) {
+                          print('❌ Critical error during login: $e');
+                          print('❌ Stack trace: $stackTrace');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Kritik hata: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
                         }
                       },
                       style: ElevatedButton.styleFrom(

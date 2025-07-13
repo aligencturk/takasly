@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 import '../models/product.dart' as product_model;
 import '../models/user.dart';
 import '../services/product_service.dart';
+import '../services/auth_service.dart';
 import '../core/constants.dart';
 
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
+  final AuthService _authService = AuthService();
   
   List<product_model.Product> _products = [];
   List<product_model.Product> _favoriteProducts = [];
@@ -127,19 +129,28 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshProducts() async {
-    await Future.wait([
-      loadProducts(
-        categoryId: _currentCategoryId,
-        searchQuery: _currentSearchQuery,
-        city: _currentCity,
-        condition: _currentCondition,
-        refresh: true,
-      ),
-      loadCategories(),
-    ]);
+    try {
+      await Future.wait([
+        loadCategories(),
+        loadProducts(
+          categoryId: _currentCategoryId,
+          searchQuery: _currentSearchQuery,
+          city: _currentCity,
+          condition: _currentCondition,
+          refresh: true,
+        ),
+      ]);
+    } catch (e) {
+      print('❌ refreshProducts error: $e');
+      _errorMessage = 'Veri yenilenirken hata oluştu: $e';
+      notifyListeners();
+    }
   }
 
   Future<void> searchProducts(String query) async {
+    _currentSearchQuery = query;
+    notifyListeners();
+    
     await loadProducts(
       categoryId: _currentCategoryId,
       searchQuery: query,
@@ -150,6 +161,9 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> filterByCategory(String? categoryId) async {
+    _currentCategoryId = categoryId;
+    notifyListeners();
+    
     await loadProducts(
       categoryId: categoryId,
       searchQuery: _currentSearchQuery,
@@ -220,17 +234,23 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadCategories() async {
+    print('🏷️ Loading categories...');
     try {
       final response = await _productService.getCategories();
+      print('🏷️ Categories response: success=${response.isSuccess}, error=${response.error}');
 
       if (response.isSuccess && response.data != null) {
-        _categories = response.data!;
+        _categories = response.data ?? [];
+        print('🏷️ Categories loaded: ${_categories.length} items');
+        _categories.forEach((cat) => print('  - ${cat.name} (${cat.id})'));
         notifyListeners();
       } else {
-        _setError(response.error ?? ErrorMessages.unknownError);
+        print('🏷️ Categories failed: ${response.error}');
+        _setError(response.error ?? 'Kategoriler yüklenemedi');
       }
     } catch (e) {
-      _setError(ErrorMessages.unknownError);
+      print('❌ loadCategories error: $e');
+      _setError('Kategoriler yüklenirken hata oluştu: $e');
     }
   }
 
@@ -395,14 +415,21 @@ class ProductViewModel extends ChangeNotifier {
       );
 
       if (response.isSuccess && response.data != null) {
-        // Yeni ürünü listeye ekle
-        _products.insert(0, response.data!);
-        _myProducts.insert(0, response.data!);
-        _setLoading(false);
+        final responseData = response.data!;
+        final productId = responseData['productID']?.toString() ?? 'unknown';
+        final message = responseData['message']?.toString() ?? 'Ürün eklendi';
+        
+        print('✅ Product added successfully!');
+        print('🆔 Product ID: $productId');
+        print('💬 Message: $message');
+        
+        // Başarılı olduktan sonra ürün listesini yenile
+        print('🔄 Refreshing products...');
+        await refreshProducts();
         return true;
       } else {
-        _setError(response.error ?? ErrorMessages.unknownError);
-        _setLoading(false);
+        print('❌ Product add failed: ${response.error}');
+        _setError(response.error ?? 'Ürün eklenemedi');
         return false;
       }
     } catch (e) {
@@ -428,6 +455,124 @@ class ProductViewModel extends ChangeNotifier {
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Yeni addProductWithEndpoint method'u kullanıcının verdiği endpoint için
+  Future<bool> addProductWithEndpoint({
+    required String productTitle,
+    required String productDescription,
+    required String categoryId,
+    required String conditionId,
+    required String tradeFor,
+    required List<File> productImages,
+  }) async {
+    print('🚀 addProductWithEndpoint başlatıldı');
+    print('📝 Parametreler:');
+    print('  - productTitle: $productTitle');
+    print('  - productDescription: $productDescription');
+    print('  - categoryId: $categoryId');
+    print('  - conditionId: $conditionId');
+    print('  - tradeFor: $tradeFor');
+    print('  - productImages count: ${productImages.length}');
+    
+    // Validasyonlar
+    if (productTitle.trim().isEmpty || productDescription.trim().isEmpty) {
+      print('❌ Validation failed: Başlık ve açıklama zorunludur');
+      _setError('Başlık ve açıklama zorunludur');
+      return false;
+    }
+
+    if (tradeFor.trim().isEmpty) {
+      print('❌ Validation failed: Takas tercihi belirtmelisiniz');
+      _setError('Takas tercihi belirtmelisiniz');
+      return false;
+    }
+
+    // Resim durumu kontrolü
+    if (productImages.isNotEmpty) {
+      print('📸 ${productImages.length} resim yüklenecek:');
+      for (int i = 0; i < productImages.length; i++) {
+        print('  ${i + 1}. ${productImages[i].path.split('/').last}');
+      }
+    } else {
+      print('⚠️ Warning: Resim yok, devam ediliyor...');
+    }
+
+    print('🔄 Loading state ayarlanıyor...');
+    _setLoading(true);
+    _clearError();
+
+    try {
+      print('👤 Current user alınıyor...');
+      // Current user'ı al
+      final currentUser = await _authService.getCurrentUser();
+      if (currentUser == null) {
+        print('❌ Current user bulunamadı');
+        _setError('Kullanıcı oturumu bulunamadı');
+        return false;
+      }
+      print('✅ Current user: ${currentUser.id} - ${currentUser.name}');
+
+      print('🔑 User token alınıyor...');
+      // User token'ı al (stored token)
+      final userToken = await _authService.getToken();
+      if (userToken == null) {
+        print('❌ User token bulunamadı');
+        _setError('Kullanıcı token\'ı bulunamadı');
+        return false;
+      }
+      print('✅ User token alındı: ${userToken.substring(0, 20)}...');
+
+      print('🛍️ Adding product for user: ${currentUser.id}');
+      print('📝 Product title: $productTitle');
+      print('📂 Category ID: $categoryId');
+      print('🔄 Trade for: $tradeFor');
+
+      print('📡 API çağrısı yapılıyor...');
+      final response = await _productService.addProduct(
+        userToken: userToken,
+        userId: currentUser.id,
+        productTitle: productTitle,
+        productDescription: productDescription,
+        categoryId: categoryId,
+        conditionId: conditionId,
+        tradeFor: tradeFor,
+        productImages: productImages,
+      );
+
+      print('📡 API response alındı');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data}');
+
+      if (response.isSuccess && response.data != null) {
+        final responseData = response.data!;
+        final productId = responseData['productID']?.toString() ?? 'unknown';
+        final message = responseData['message']?.toString() ?? 'Ürün eklendi';
+        
+        print('✅ Product added successfully!');
+        print('🆔 Product ID: $productId');
+        print('💬 Message: $message');
+        
+        // Başarılı olduktan sonra ürün listesini yenile
+        print('🔄 Refreshing products...');
+        await refreshProducts();
+        return true;
+      } else {
+        print('❌ Product add failed: ${response.error}');
+        _setError(response.error ?? 'Ürün eklenemedi');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      print('❌ Product add exception: $e');
+      print('❌ Stack trace: $stackTrace');
+      _setError('Ürün eklenirken hata oluştu: $e');
+      return false;
+    } finally {
+      print('🏁 Loading state false yapılıyor...');
+      _setLoading(false);
+      print('🏁 addProductWithEndpoint tamamlandı');
     }
   }
 

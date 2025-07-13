@@ -312,9 +312,19 @@ class UserViewModel extends ChangeNotifier {
 
   /// Kullanıcı bilgilerini manuel olarak ayarlar
   void setCurrentUser(User user) {
-    _currentUser = user;
-    _userService.saveCurrentUser(user);
-    notifyListeners();
+    print('👤 UserViewModel: Setting current user: ${user.email}');
+    try {
+      _currentUser = user;
+      print('👤 UserViewModel: User object set in memory');
+      _userService.saveCurrentUser(user);
+      print('👤 UserViewModel: User saved to local storage');
+      notifyListeners();
+      print('👤 UserViewModel: Listeners notified');
+    } catch (e, stackTrace) {
+      print('❌ UserViewModel: Error in setCurrentUser: $e');
+      print('❌ UserViewModel: Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   /// Kullanıcı token'ını ayarlar
