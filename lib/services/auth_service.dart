@@ -461,10 +461,13 @@ class AuthService {
 
   Future<String?> getCurrentUserId() async {
     try {
+      print('🔄 AuthService.getCurrentUserId called');
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(AppConstants.userIdKey);
+      final userId = prefs.getString(AppConstants.userIdKey);
+      print('🔍 AuthService - Retrieved user ID: $userId');
+      return userId;
     } catch (e) {
-      print('❌ Error getting current user ID: $e');
+      print('❌ AuthService - Error getting current user ID: $e');
       return null;
     }
   }

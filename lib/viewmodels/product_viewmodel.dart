@@ -214,6 +214,35 @@ class ProductViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> loadUserProducts(String userId) async {
+    print('🔄 ProductViewModel.loadUserProducts started for user $userId');
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _productService.getProductsByUserId(userId);
+      print('🔍 ProductViewModel - Response isSuccess: ${response.isSuccess}');
+      print('🔍 ProductViewModel - Response data: ${response.data}');
+      print('🔍 ProductViewModel - Response error: ${response.error}');
+
+      if (response.isSuccess) {
+        _myProducts = response.data ?? [];
+        print('✅ ProductViewModel - Successfully loaded ${_myProducts.length} user products');
+      } else {
+        final errorMessage = response.error ?? ErrorMessages.unknownError;
+        _setError(errorMessage);
+        print('❌ ProductViewModel - Failed to load user products: $errorMessage');
+      }
+    } catch (e) {
+      final errorMessage = ErrorMessages.unknownError;
+      _setError(errorMessage);
+      print('💥 ProductViewModel - Exception in loadUserProducts: $e');
+    } finally {
+      _setLoading(false);
+      print('🔄 ProductViewModel.loadUserProducts completed');
+    }
+  }
+
   Future<void> loadFavoriteProducts() async {
     _setLoading(true);
     _clearError();
@@ -436,25 +465,6 @@ class ProductViewModel extends ChangeNotifier {
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
-    }
-  }
-
-  Future<void> loadUserProducts(String userId) async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      final response = await _productService.getUserProducts(userId);
-
-      if (response.isSuccess && response.data != null) {
-        _myProducts = response.data!;
-      } else {
-        _setError(response.error ?? ErrorMessages.unknownError);
-      }
-    } catch (e) {
-      _setError(ErrorMessages.unknownError);
-    } finally {
-      _setLoading(false);
     }
   }
 

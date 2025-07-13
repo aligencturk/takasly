@@ -22,25 +22,63 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
+    print('🔄 TradeView initState called');
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🔄 TradeView postFrameCallback - calling _loadData');
       _loadData();
     });
   }
 
   Future<void> _loadData() async {
+    print('🔄 TradeView _loadData started');
+    
+    // Önce kullanıcının login olup olmadığını kontrol et
+    final isLoggedIn = await _authService.isLoggedIn();
+    print('🔍 TradeView - Is user logged in: $isLoggedIn');
+    
+    if (!isLoggedIn) {
+      print('❌ TradeView - User not logged in, showing error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Oturum süresi doldu. Lütfen tekrar giriş yapın.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    
     final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
     final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
     
+    print('🔄 TradeView - calling tradeViewModel.fetchMyTrades()');
     tradeViewModel.fetchMyTrades();
     
     // Dinamik kullanıcı ID'sini al
+    print('🔄 TradeView - getting current user ID');
     final userId = await _authService.getCurrentUserId();
-    if (userId != null) {
-      productViewModel.loadUserProducts(userId);
+    print('🔍 TradeView - User ID: $userId');
+    
+    if (userId != null && userId.isNotEmpty) {
+      print('🔄 TradeView - calling productViewModel.loadUserProducts($userId)');
+      await productViewModel.loadUserProducts(userId);
     } else {
-      print('❌ User ID not found');
+      print('❌ TradeView - User ID is null or empty, user might not be logged in');
+      print('❌ TradeView - Redirecting to login or showing error');
+      
+      // Kullanıcı login olmamışsa hata göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lütfen giriş yapın'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
+    print('🔄 TradeView _loadData completed');
   }
 
   @override
@@ -65,17 +103,27 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
       ),
       body: Consumer2<TradeViewModel, ProductViewModel>(
         builder: (context, tradeViewModel, productViewModel, child) {
+          print('🎨 TradeView Consumer2 builder called');
+          print('🎨 TradeView - tradeViewModel.isLoading: ${tradeViewModel.isLoading}');
+          print('🎨 TradeView - productViewModel.isLoading: ${productViewModel.isLoading}');
+          print('🎨 TradeView - tradeViewModel.hasError: ${tradeViewModel.hasError}');
+          print('🎨 TradeView - productViewModel.hasError: ${productViewModel.hasError}');
+          print('🎨 TradeView - productViewModel.myProducts.length: ${productViewModel.myProducts.length}');
+          
           if (tradeViewModel.isLoading || productViewModel.isLoading) {
+            print('🎨 TradeView - Showing loading widget');
             return const LoadingWidget();
           }
 
           if (tradeViewModel.hasError || productViewModel.hasError) {
+            print('🎨 TradeView - Showing error widget');
             return CustomErrorWidget(
               message: tradeViewModel.errorMessage ?? productViewModel.errorMessage!,
               onRetry: _loadData,
             );
           }
 
+          print('🎨 TradeView - Building TabBarView');
           return TabBarView(
             controller: _tabController,
             children: [
@@ -94,7 +142,10 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
   }
 
   Widget _buildUserProductsList(List<dynamic> products) {
+    print('🎨 TradeView._buildUserProductsList called with ${products.length} products');
+    
     if (products.isEmpty) {
+      print('🎨 TradeView - No products, showing empty state');
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -126,6 +177,12 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
       );
     }
 
+    print('🎨 TradeView - Building grid with ${products.length} products');
+    for (int i = 0; i < products.length; i++) {
+      final product = products[i];
+      print('🎨 Product $i: ${product.toString()}');
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
         final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
@@ -146,9 +203,11 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
           itemCount: products.length,
           itemBuilder: (context, index) {
             final product = products[index];
+            print('🎨 Building ProductCard for index $index: ${product.title}');
             return ProductCard(
               product: product,
               onTap: () {
+                print('🎨 ProductCard tapped: ${product.title}');
                 // Ürün detayına git
                 Navigator.of(context).pushNamed(
                   '/product-detail',

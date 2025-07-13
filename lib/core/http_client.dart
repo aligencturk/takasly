@@ -27,6 +27,19 @@ class HttpClient {
     return headers;
   }
 
+  Future<void> _handleUnauthorized() async {
+    print('🚨 401 Unauthorized - Clearing user data and forcing logout');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppConstants.userTokenKey);
+      await prefs.remove(AppConstants.userIdKey);
+      await prefs.remove(AppConstants.userDataKey);
+      print('✅ User data cleared successfully');
+    } catch (e) {
+      print('❌ Error clearing user data: $e');
+    }
+  }
+
   Map<String, String> _getBasicAuthHeaders() {
     final rawCredentials = '${ApiConstants.basicAuthUsername}:${ApiConstants.basicAuthPassword}';
     final credentials = base64.encode(utf8.encode(rawCredentials));
@@ -67,7 +80,7 @@ class HttpClient {
           .get(uriWithParams, headers: headers)
           .timeout(_timeout);
       
-      return _handleResponse<T>(response, fromJson);
+      return await _handleResponse<T>(response, fromJson);
     } on SocketException {
       return ApiResponse<T>.error(ErrorMessages.networkError);
     } on HttpException {
@@ -96,7 +109,7 @@ class HttpClient {
           .get(uriWithParams, headers: headers)
           .timeout(_timeout);
       
-      return _handleResponse<T>(response, fromJson);
+      return await _handleResponse<T>(response, fromJson);
     } on SocketException {
       return ApiResponse<T>.error(ErrorMessages.networkError);
     } on HttpException {
@@ -125,7 +138,7 @@ class HttpClient {
           )
           .timeout(_timeout);
       
-      return _handleResponse<T>(response, fromJson);
+      return await _handleResponse<T>(response, fromJson);
     } on SocketException {
       return ApiResponse<T>.error(ErrorMessages.networkError);
     } on HttpException {
@@ -165,7 +178,7 @@ class HttpClient {
       print('📥 Response Headers: ${response.headers}');
       print('📥 Response Body: ${response.body}');
       
-      return _handleResponse<T>(response, fromJson);
+      return await _handleResponse<T>(response, fromJson);
     } on SocketException catch (e) {
       print('🚫 Socket Exception: $e');
       return ApiResponse<T>.error(ErrorMessages.networkError);
@@ -198,7 +211,7 @@ class HttpClient {
           )
           .timeout(_timeout);
       
-      return _handleResponse<T>(response, fromJson);
+      return await _handleResponse<T>(response, fromJson);
     } on SocketException {
       return ApiResponse<T>.error(ErrorMessages.networkError);
     } on HttpException {
@@ -222,7 +235,7 @@ class HttpClient {
           .delete(uri, headers: headers)
           .timeout(_timeout);
       
-      return _handleResponse<T>(response, fromJson);
+      return await _handleResponse<T>(response, fromJson);
     } on SocketException {
       return ApiResponse<T>.error(ErrorMessages.networkError);
     } on HttpException {
@@ -234,10 +247,10 @@ class HttpClient {
     }
   }
 
-  ApiResponse<T> _handleResponse<T>(
+  Future<ApiResponse<T>> _handleResponse<T>(
     http.Response response,
     T Function(dynamic)? fromJson,
-  ) {
+  ) async {
     try {
       print('🔍 Handling response - Status Code: ${response.statusCode}');
       print('🔍 Response Body: ${response.body}');
@@ -262,7 +275,7 @@ class HttpClient {
             print('⚠️ 410 - Failed to parse JSON: $e');
             print('⚠️ 410 - Raw response body: "${response.body}"');
             // JSON parse edilemiyorsa, raw response'u döndür
-            return ApiResponse<T>.success(response.body as T?);
+            return ApiResponse<T>.success(null);
           }
         } else {
           print('⚠️ 410 - Empty response body');
@@ -301,17 +314,21 @@ class HttpClient {
       if (response.statusCode == ApiConstants.gone) {
         try {
           final Map<String, dynamic> jsonData = json.decode(response.body);
-          if (jsonData['success'] == true && jsonData['data'] != null) {
+          if (jsonData['success'] == true) {
             print('✅ 410 Status - Treating as success');
             print('✅ 410 - Response body: "${response.body}"');
-            print('✅ 410 - Response body isEmpty: ${response.body.isEmpty}');
             print('✅ 410 - Parsed data: $jsonData');
             
-            // 410 olsa bile data varsa success olarak handle et
+            // 410 olsa bile success:true varsa başarılı say
             try {
-              final T data = fromJson!(jsonData);
-              print('✅ 410 - Successfully parsed data: $data');
-              return ApiResponse.success(data);
+              if (fromJson != null) {
+                final T data = fromJson(jsonData);
+                print('✅ 410 - Successfully parsed data: $data');
+                return ApiResponse.success(data);
+              } else {
+                print('✅ 410 - No fromJson function, returning raw data');
+                return ApiResponse<T>.success(jsonData as T?);
+              }
             } catch (e) {
               print('! 410 - Failed to parse JSON: $e');
               print('! 410 - Raw response body: "${response.body}"');
@@ -386,8 +403,10 @@ class HttpClient {
           }
           break;
         case ApiConstants.unauthorized:
+          // 401 hatası alındığında otomatik logout
+          await _handleUnauthorized();
           if (errorMessage == ErrorMessages.unknownError) {
-            errorMessage = 'Kimlik doğrulama hatası';
+            errorMessage = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.';
           }
           break;
         case ApiConstants.forbidden:

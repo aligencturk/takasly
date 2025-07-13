@@ -62,17 +62,90 @@ class ProductService {
 
   Future<ApiResponse<List<Product>>> getProductsByUserId(String userId) async {
     try {
-      final response = await _httpClient.get(
-        '${ApiConstants.users}/$userId/products',
-        fromJson: (json) => (json['products'] as List)
-            .map((item) => Product.fromJson(item))
-            .toList(),
+      final endpoint = 'service/user/product/$userId/productList';
+      print('🌐 ProductService - Calling endpoint: $endpoint');
+      print('🌐 ProductService - Full URL: ${ApiConstants.fullUrl}$endpoint');
+      print('🌐 ProductService - Base URL: ${ApiConstants.baseUrl}');
+      
+      // Çalışan categories endpoint ile karşılaştırma için
+      print('🔍 Categories endpoint for comparison: ${ApiConstants.categoriesList}');
+      
+      // Basic auth ile dene (endpoint basic auth gerektiriyor)
+      final response = await _httpClient.getWithBasicAuth(
+        endpoint,
+        fromJson: (json) {
+          print('🔍 ProductService - Raw response: $json');
+          // API'den dönen response formatına göre parsing
+          if (json case {'data': {'products': final List<dynamic> list}}) {
+            print('🔍 ProductService - Found ${list.length} products in response');
+            final products = list.map((item) => _transformApiProductToModel(item)).toList();
+            print('🔍 ProductService - Successfully parsed ${products.length} products');
+            return products;
+          }
+          // Fallback: Diğer olası formatlar
+          if (json case {'data': {'userProductList': final List<dynamic> list}}) {
+            print('🔍 ProductService - Found ${list.length} products in userProductList');
+            final products = list.map((item) => _transformApiProductToModel(item)).toList();
+            print('🔍 ProductService - Successfully parsed ${products.length} products');
+            return products;
+          }
+          if (json case {'products': final List<dynamic> list}) {
+            print('🔍 ProductService - Found ${list.length} products in root');
+            final products = list.map((item) => _transformApiProductToModel(item)).toList();
+            print('🔍 ProductService - Successfully parsed ${products.length} products');
+            return products;
+          }
+          print('❌ ProductService - No products found in response');
+          return <Product>[];
+        },
       );
 
       return response;
     } catch (e) {
+      print('💥 ProductService - Exception in getProductsByUserId: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
+  }
+
+  // API response'unu Product model formatına dönüştürür
+  Product _transformApiProductToModel(Map<String, dynamic> apiProduct) {
+    return Product(
+      id: apiProduct['productID']?.toString() ?? '',
+      title: apiProduct['productTitle'] ?? '',
+      description: apiProduct['productDesc'] ?? '',
+      images: apiProduct['productImage'] != null && apiProduct['productImage'].isNotEmpty 
+          ? [apiProduct['productImage']] 
+          : [],
+      categoryId: apiProduct['productCatID']?.toString() ?? '',
+      category: Category(
+        id: apiProduct['productCatID']?.toString() ?? '',
+        name: apiProduct['productCatname'] ?? '',
+        icon: '',
+        isActive: true,
+        order: 0,
+      ),
+      condition: apiProduct['productCondition'] ?? '',
+      ownerId: '', // API'de owner bilgisi yok, boş bırakıyoruz
+      owner: User(
+        id: '',
+        name: 'Kullanıcı',
+        email: '',
+        rating: 0.0,
+        totalTrades: 0,
+        isVerified: false,
+        isOnline: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      tradePreferences: apiProduct['productTradeFor'] != null 
+          ? [apiProduct['productTradeFor']] 
+          : [],
+      status: ProductStatus.active,
+      viewCount: 0,
+      favoriteCount: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
   }
 
   Future<ApiResponse<List<Product>>> getMyProducts() async {
@@ -308,15 +381,93 @@ class ProductService {
 
   Future<ApiResponse<List<Product>>> getUserProducts(String userId) async {
     try {
+      final endpoint = '${ApiConstants.userProducts}/$userId/productList';
+      print('🔄 ProductService.getUserProducts called with userId: $userId');
+      print('🔄 ProductService - calling endpoint: $endpoint');
+      
       final response = await _httpClient.getWithBasicAuth(
-        '${ApiConstants.userProducts}/$userId/productList',
-        fromJson: (json) => (json['products'] as List)
-            .map((item) => Product.fromJson(item))
-            .toList(),
+        endpoint,
+        fromJson: (json) {
+          print('🔍 ProductService - Raw response: $json');
+          
+          if (json == null) {
+            print('❌ ProductService - Response is null');
+            return <Product>[];
+          }
+          
+          // API response'u data field'ının içinde products array'i var
+          if (json['data'] == null) {
+            print('❌ ProductService - No data field in response');
+            return <Product>[];
+          }
+          
+          final dataField = json['data'];
+          if (dataField['products'] == null) {
+            print('❌ ProductService - No products field in data');
+            return <Product>[];
+          }
+          
+          final productsList = dataField['products'] as List;
+          print('🔍 ProductService - Found ${productsList.length} products in response');
+          
+          // API response'unu Product model'ine uygun hale getir
+          return productsList.map((apiProduct) {
+            print('🔄 ProductService - Converting API product: $apiProduct');
+            
+            // API field'larından Product model'i için gerekli field'ları oluştur
+            final productData = {
+              'id': apiProduct['productID']?.toString() ?? '',
+              'title': apiProduct['productTitle'] ?? '',
+              'description': apiProduct['productDesc'] ?? '',
+              'images': [
+                if (apiProduct['productImage'] != null && apiProduct['productImage'].toString().isNotEmpty)
+                  apiProduct['productImage'].toString(),
+                ...(apiProduct['extraImages'] as List? ?? []).map((img) => img.toString()),
+              ],
+              'categoryId': apiProduct['productCatID']?.toString() ?? '',
+              'category': {
+                'id': apiProduct['productCatID']?.toString() ?? '',
+                'name': apiProduct['productCatname'] ?? '',
+                'icon': 'category',
+              },
+              'condition': apiProduct['productCondition'] ?? '',
+              'brand': null,
+              'model': null,
+              'estimatedValue': null,
+              'ownerId': '2', // Kullanıcının kendi ürünü olduğu için
+              'owner': {
+                'id': '2',
+                'name': 'Kullanıcı',
+                'email': 'user@example.com',
+                'rating': 0.0,
+                'totalTrades': 0,
+                'isVerified': false,
+                'isOnline': true,
+                'createdAt': DateTime.now().toIso8601String(),
+                'updatedAt': DateTime.now().toIso8601String(),
+              },
+              'tradePreferences': [apiProduct['productTradeFor'] ?? ''],
+              'status': 'active',
+              'location': null,
+              'viewCount': 0,
+              'favoriteCount': 0,
+              'createdAt': DateTime.now().toIso8601String(),
+              'updatedAt': DateTime.now().toIso8601String(),
+              'expiresAt': null,
+            };
+            
+            print('🔄 ProductService - Converted product data: $productData');
+            return Product.fromJson(productData);
+          }).toList();
+        },
       );
 
+      print('🔍 ProductService - Response isSuccess: ${response.isSuccess}');
+      print('🔍 ProductService - Response error: ${response.error}');
+      
       return response;
     } catch (e) {
+      print('💥 ProductService - Exception in getUserProducts: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
