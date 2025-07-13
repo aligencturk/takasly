@@ -92,6 +92,9 @@ class ErrorMessages {
   static const String sessionExpired = 'Oturumunuz sona erdi, lütfen tekrar giriş yapın';
   static const String forgotPasswordFailed = 'Şifre sıfırlama talebi gönderilemedi';
   static const String emailNotFound = 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı';
+  static const String invalidVerificationCode = 'Geçersiz doğrulama kodu';
+  static const String passwordUpdateFailed = 'Şifre güncelleme başarısız';
+  static const String verificationCodeExpired = 'Doğrulama kodu süresi dolmuş';
 }
 
 class SuccessMessages {
@@ -109,4 +112,6 @@ class SuccessMessages {
   static const String messagesSent = 'Mesaj gönderildi';
   static const String forgotPasswordSuccess = 'Şifre sıfırlama bağlantısı e-postanıza gönderildi';
   static const String passwordResetEmailSent = 'E-postanızı kontrol edin, şifre sıfırlama talimatları gönderildi';
+  static const String passwordUpdateSuccess = 'Şifreniz başarıyla güncellendi';
+  static const String passwordChanged = 'Şifre değişikliği tamamlandı, giriş yapabilirsiniz';
 } 

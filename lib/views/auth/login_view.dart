@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/constants.dart';
+import 'reset_password_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -501,14 +502,23 @@ class _LoginViewState extends State<LoginView> {
                               emailController.text.trim(),
                             );
                             
-                            if (success) {
-                              Navigator.of(dialogContext).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(SuccessMessages.forgotPasswordSuccess),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
+                                                          if (success) {
+                                Navigator.of(dialogContext).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(SuccessMessages.forgotPasswordSuccess),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                                
+                                // Reset password sayfasına email ile birlikte yönlendir
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => ResetPasswordView(
+                                      email: emailController.text.trim(),
+                                    ),
+                                  ),
+                                );
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
