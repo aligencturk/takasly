@@ -115,8 +115,9 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
             return const LoadingWidget();
           }
 
-          if (tradeViewModel.hasError || productViewModel.hasError) {
-            print('🎨 TradeView - Showing error widget');
+          // Sadece her iki ViewModel'de de hata varsa error göster
+          if (tradeViewModel.hasError && productViewModel.hasError) {
+            print('🎨 TradeView - Showing error widget (both have errors)');
             return CustomErrorWidget(
               message: tradeViewModel.errorMessage ?? productViewModel.errorMessage!,
               onRetry: _loadData,
@@ -127,9 +128,29 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
           return TabBarView(
             controller: _tabController,
             children: [
-              _buildUserProductsList(productViewModel.myProducts),
-              _buildTradeList(tradeViewModel.completedTrades),
-              _buildTradeList(tradeViewModel.cancelledTrades),
+              // Aktif tab - ProductViewModel kullan
+              productViewModel.hasError 
+                ? CustomErrorWidget(
+                    message: productViewModel.errorMessage!,
+                    onRetry: _loadData,
+                  )
+                : _buildUserProductsList(productViewModel.myProducts),
+              
+              // Tamamlanan tab - TradeViewModel kullan
+              tradeViewModel.hasError 
+                ? CustomErrorWidget(
+                    message: tradeViewModel.errorMessage!,
+                    onRetry: _loadData,
+                  )
+                : _buildTradeList(tradeViewModel.completedTrades),
+              
+              // İptal edilen tab - TradeViewModel kullan
+              tradeViewModel.hasError 
+                ? CustomErrorWidget(
+                    message: tradeViewModel.errorMessage!,
+                    onRetry: _loadData,
+                  )
+                : _buildTradeList(tradeViewModel.cancelledTrades),
             ],
           );
         },
