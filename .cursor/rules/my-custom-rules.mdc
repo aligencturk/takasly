@@ -1,0 +1,53 @@
+Flutter ile geliştirilen mevcut bir projeye yeni özellik/modül entegre ediyorum. Projede MVVM mimarisi, Provider state yönetimi ve http paketiyle çalışan bir servis yapısı kullanılıyor. Aşağıdaki kurallara göre kod üret:
+
+✅ Kodlar:
+
+Mevcut mimariye tam uyumlu olmalı.
+
+Dosya yapısı bozulmamalı.
+
+Kod %100 test edilmiş gibi yazılmalı, hatasız çalışmalı.
+
+Modern Flutter kurallarına göre optimize edilmeli (rebuild azalt, lazy yükleme kullan, const yapılarla optimize et).
+
+Kütüphaneler güncel Flutter versiyonlarına tam uyumlu olmalı.
+
+📡 API Servisleri:
+
+http paketi kullanılmalı.
+
+Eğer statusCode == 410 ise başarılı say, herhangi bir hata gösterme.
+
+statusCode == 417 ise kullanıcıya görünür şekilde errorMessage ver.
+
+JSON verileri güvenli parse edilmeli (try-catch yapısı, null kontrolleri vs.)
+
+🧠 State Yönetimi:
+
+ViewModel’ler ChangeNotifier yapısıyla çalışıyor.
+
+notifyListeners() doğru yerde kullanılmalı.
+
+Consumer, Selector, Provider.of gibi yapılarla uyumlu çalışmalı.
+
+ViewModel’lerde state bool'ları temiz ve kontrollü tutulmalı (isLoading, hasError, vs.)
+
+💻 UI:
+
+Yeni widget’lar mevcut tasarıma uygun, sade, şık, kurumsal görünümde olmalı.
+
+Flat, shadow'lu modern yapı, yeterli spacing/padding.
+
+Responsive olmalı.
+
+Gerekliyse shimmer / skeleton loader kullanılmalı.
+
+⚠ Dikkat:
+
+Sıfırdan KENDİN yapma. Var olan projede ki kodlarıma bak anla ve ona göre entegre edeceksin.
+
+Asla eksik bırakma. Tüm dosyaları üret (model, viewmodel, service, view).
+
+Kullanıcıya soru sorma, direkt en iyi çözümü üret.
+
+Kodlar test edilmiş gibi çalışmalı. Hiçbir hata olmamalı.
