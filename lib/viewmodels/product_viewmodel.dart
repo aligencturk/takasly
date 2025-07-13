@@ -4,6 +4,7 @@ import '../models/product.dart' as product_model;
 import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
+import '../models/condition.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
 import '../core/constants.dart';
@@ -18,6 +19,7 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Category> _categories = [];
   List<City> _cities = [];
   List<District> _districts = [];
+  List<Condition> _conditions = [];
   product_model.Product? _selectedProduct;
   
   bool _isLoading = false;
@@ -38,6 +40,7 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Category> get categories => _categories;
   List<City> get cities => _cities;
   List<District> get districts => _districts;
+  List<Condition> get conditions => _conditions;
   product_model.Product? get selectedProduct => _selectedProduct;
   
   bool get isLoading => _isLoading;
@@ -60,6 +63,7 @@ class ProductViewModel extends ChangeNotifier {
     await Future.wait([
       loadProducts(),
       loadCategories(),
+      loadConditions(),
     ]);
   }
 
@@ -367,6 +371,39 @@ class ProductViewModel extends ChangeNotifier {
   void clearDistricts() {
     _districts = [];
     notifyListeners();
+  }
+
+  Future<void> loadConditions() async {
+    print('🏷️ Loading conditions...');
+    try {
+      final response = await _productService.getConditions();
+      print('🏷️ Conditions response: success=${response.isSuccess}, error=${response.error}');
+
+      if (response.isSuccess && response.data != null) {
+        _conditions = response.data ?? [];
+        print('🏷️ Conditions loaded: ${_conditions.length} items');
+        
+        // Tüm durumları logla
+        if (_conditions.isNotEmpty) {
+          print('🏷️ All conditions loaded:');
+          for (int i = 0; i < _conditions.length; i++) {
+            final condition = _conditions[i];
+            print('  ${i + 1}. ${condition.name} (ID: ${condition.id})');
+          }
+        } else {
+          print('⚠️ No conditions in the response data');
+        }
+        
+        notifyListeners();
+      } else {
+        print('🏷️ Conditions failed: ${response.error}');
+        print('🏷️ Response data: ${response.data}');
+        _setError(response.error ?? 'Ürün durumları yüklenemedi');
+      }
+    } catch (e) {
+      print('💥 Conditions error: $e');
+      _setError('Ürün durumları yüklenirken hata oluştu');
+    }
   }
 
   Future<bool> createProduct({

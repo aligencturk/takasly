@@ -5,6 +5,7 @@ import '../models/product.dart';
 import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
+import '../models/condition.dart';
 
 class ProductService {
   final HttpClient _httpClient = HttpClient();
@@ -382,6 +383,61 @@ class ProductService {
     }
   }
 
+  Future<ApiResponse<List<Condition>>> getConditions() async {
+    print('🏷️ ProductService: Getting conditions from service/general/general/productConditions');
+    final fullUrl = '${ApiConstants.fullUrl}service/general/general/productConditions';
+    print('🌐 Full URL: $fullUrl');
+    
+    try {
+      final response = await _httpClient.getWithBasicAuth(
+        'service/general/general/productConditions',
+        fromJson: (json) {
+          print('🔍 Raw Conditions API Response: $json');
+          
+          // JSON yapısını kontrol et
+          if (json == null) {
+            print('❌ Conditions API response is null');
+            return <Condition>[];
+          }
+          
+          if (json['data'] == null) {
+            print('❌ Conditions API response has no data field');
+            print('🔍 Available fields: ${json.keys}');
+            return <Condition>[];
+          }
+          
+          if (json['data']['conditions'] == null) {
+            print('❌ Conditions API response has no conditions field in data');
+            print('🔍 Available data fields: ${json['data'].keys}');
+            return <Condition>[];
+          }
+          
+          final conditionsList = json['data']['conditions'] as List;
+          print('🏷️ Conditions API returned ${conditionsList.length} conditions');
+          
+          // İlk birkaç durumu logla
+          if (conditionsList.isNotEmpty) {
+            print('🏷️ All conditions in API response:');
+            for (int i = 0; i < conditionsList.length; i++) {
+              final condition = conditionsList[i];
+              print('  ${i + 1}. ${condition['conditionName']} (ID: ${condition['conditionID']})');
+            }
+          }
+          
+          final conditions = conditionsList.map((item) => Condition.fromJson(item)).toList();
+          
+          print('🏷️ Parsed ${conditions.length} conditions successfully');
+          return conditions;
+        },
+      );
+
+      return response;
+    } catch (e) {
+      print('❌ ProductService: Error getting conditions: $e');
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
   Future<ApiResponse<void>> addToFavorites(String productId) async {
     try {
       final response = await _httpClient.post(
@@ -446,6 +502,17 @@ class ProductService {
     required String tradeFor,
     required List<File> productImages,
   }) async {
+    print('🚀 ProductService.addProduct called');
+    print('📝 Parameters:');
+    print('  - userToken: ${userToken.substring(0, 20)}...');
+    print('  - userId: $userId');
+    print('  - productTitle: $productTitle');
+    print('  - productDescription: $productDescription');
+    print('  - categoryId: $categoryId');
+    print('  - conditionId: $conditionId');
+    print('  - tradeFor: $tradeFor');
+    print('  - productImages count: ${productImages.length}');
+    
     try {
       // Form fields
       final fields = <String, String>{
@@ -457,30 +524,60 @@ class ProductService {
         'tradeFor': tradeFor,
       };
 
+      print('📋 Form fields prepared:');
+      fields.forEach((key, value) {
+        if (key == 'userToken') {
+          print('  - $key: ${value.substring(0, 20)}...');
+        } else {
+          print('  - $key: $value');
+        }
+      });
+
       // Multiple files için Map oluştur
       final multipleFiles = <String, List<File>>{};
       if (productImages.isNotEmpty) {
         multipleFiles['productImages'] = productImages;
+        print('📸 Multiple files prepared:');
+        for (int i = 0; i < productImages.length; i++) {
+          print('  - Image ${i + 1}: ${productImages[i].path.split('/').last}');
+        }
+      } else {
+        print('📸 No images to upload');
       }
 
       print('📸 Uploading ${productImages.length} images with key "productImages"');
 
+      final endpoint = '${ApiConstants.addProduct}/$userId/addProduct';
+      final fullUrl = '${ApiConstants.fullUrl}$endpoint';
+      print('🌐 Full URL: $fullUrl');
+
       final response = await _httpClient.postMultipart<Map<String, dynamic>>(
-        '${ApiConstants.addProduct}/$userId/addProduct',
+        endpoint,
         fields: fields,
         multipleFiles: multipleFiles,
         fromJson: (json) {
+          print('📥 ProductService.addProduct - Raw response: $json');
+          
           // API response'unda data field'ı varsa onu döndür, yoksa tüm json'u döndür
           if (json.containsKey('data') && json['data'] != null) {
+            print('📥 ProductService.addProduct - Using data field');
             return json['data'] as Map<String, dynamic>;
           }
+          print('📥 ProductService.addProduct - Using full json');
           return json;
         },
         useBasicAuth: true,
       );
 
+      print('📡 ProductService.addProduct - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data}');
+
       return response;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ ProductService.addProduct - Exception: $e');
+      print('❌ Stack trace: $stackTrace');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

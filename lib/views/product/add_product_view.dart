@@ -6,6 +6,7 @@ import '../../viewmodels/product_viewmodel.dart';
 import '../../core/constants.dart';
 import '../../models/city.dart';
 import '../../models/district.dart';
+import '../../models/condition.dart';
 
 class AddProductView extends StatefulWidget {
   const AddProductView({super.key});
@@ -36,22 +37,24 @@ class _AddProductViewState extends State<AddProductView> {
     {'id': '5', 'name': 'Spor'},
   ];
 
-  // Geçici durumlar
-  final List<Map<String, String>> _conditions = [
-    {'id': '1', 'name': 'Sıfır'},
-    {'id': '2', 'name': 'Çok İyi'},
-    {'id': '3', 'name': 'İyi'},
-    {'id': '4', 'name': 'Orta'},
-    {'id': '5', 'name': 'Kötü'},
-  ];
+  // Durumlar artık API'den geliyor
 
   @override
   void initState() {
     super.initState();
-    // İlleri yükle
+    print('🚀 AddProductView: initState called');
+    // İlleri ve durumları yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🚀 AddProductView: PostFrameCallback starting data load');
       final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+      
+      print('🚀 AddProductView: Loading cities...');
       productViewModel.loadCities();
+      
+      print('🚀 AddProductView: Loading conditions...');
+      productViewModel.loadConditions();
+      
+      print('🚀 AddProductView: PostFrameCallback completed');
     });
   }
 
@@ -100,25 +103,41 @@ class _AddProductViewState extends State<AddProductView> {
   }
 
   Future<void> _submitProduct() async {
+    print('🚀 AddProductView: _submitProduct called');
+    
     if (!_formKey.currentState!.validate()) {
+      print('❌ AddProductView: Form validation failed');
       return;
     }
+    print('✅ AddProductView: Form validation passed');
 
     if (_selectedCategoryId == null) {
+      print('❌ AddProductView: No category selected');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen kategori seçin')),
       );
       return;
     }
+    print('✅ AddProductView: Category selected: $_selectedCategoryId');
 
     if (_selectedConditionId == null) {
+      print('❌ AddProductView: No condition selected');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen ürün durumu seçin')),
       );
       return;
     }
+    print('✅ AddProductView: Condition selected: $_selectedConditionId');
 
     final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+
+    print('🚀 AddProductView: Calling addProductWithEndpoint with:');
+    print('  - Title: "${_titleController.text.trim()}"');
+    print('  - Description: "${_descriptionController.text.trim()}"');
+    print('  - Category ID: $_selectedCategoryId');
+    print('  - Condition ID: $_selectedConditionId');
+    print('  - Trade For: "${_tradeForController.text.trim()}"');
+    print('  - Images count: ${_selectedImages.length}');
 
     final success = await productViewModel.addProductWithEndpoint(
       productTitle: _titleController.text.trim(),
@@ -129,7 +148,10 @@ class _AddProductViewState extends State<AddProductView> {
       productImages: _selectedImages,
     );
 
+    print('🚀 AddProductView: addProductWithEndpoint result: $success');
+
     if (success) {
+      print('✅ AddProductView: Product added successfully');
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -138,6 +160,7 @@ class _AddProductViewState extends State<AddProductView> {
         ),
       );
     } else {
+      print('❌ AddProductView: Product add failed: ${productViewModel.errorMessage}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Hata: ${productViewModel.errorMessage}'),
@@ -239,14 +262,18 @@ class _AddProductViewState extends State<AddProductView> {
             const SizedBox(height: 16),
             
             // Durum Seçimi
-            _buildDropdown(
-              label: 'Ürün Durumu',
-              value: _selectedConditionId,
-              items: _conditions,
-              onChanged: (value) {
-                setState(() {
-                  _selectedConditionId = value;
-                });
+            Consumer<ProductViewModel>(
+              builder: (context, productViewModel, child) {
+                return _buildConditionDropdown(
+                  label: 'Ürün Durumu',
+                  value: _selectedConditionId,
+                  conditions: productViewModel.conditions,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedConditionId = value;
+                    });
+                  },
+                );
               },
             ),
             const SizedBox(height: 16),
@@ -626,6 +653,131 @@ class _AddProductViewState extends State<AddProductView> {
                                 selected: isSelected,
                                 onTap: () {
                                   onChanged(district.id);
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildConditionDropdown({
+    required String label,
+    required String? value,
+    required List<Condition> conditions,
+    required void Function(String?) onChanged,
+  }) {
+    // Seçili durumu bul
+    Condition? selectedCondition;
+    if (value != null) {
+      selectedCondition = conditions.firstWhere(
+        (condition) => condition.id == value,
+        orElse: () => Condition(id: '', name: ''),
+      );
+      if (selectedCondition.id.isEmpty) selectedCondition = null;
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () {
+            _showConditionPicker(context, conditions, selectedCondition, onChanged);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedCondition?.name ?? '$label seçin (${conditions.length} durum)',
+                  style: TextStyle(
+                    color: selectedCondition != null ? Colors.black : Colors.grey[600],
+                    fontSize: 16,
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down, color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showConditionPicker(BuildContext context, List<Condition> conditions, Condition? selectedCondition, void Function(String?) onChanged) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.8,
+          minChildSize: 0.3,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Ürün Durumu Seçin',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: conditions.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Ürün durumları yüklenemedi',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            itemCount: conditions.length,
+                            itemBuilder: (context, index) {
+                              final condition = conditions[index];
+                              final isSelected = selectedCondition?.id == condition.id;
+                              
+                              return ListTile(
+                                title: Text(condition.name),
+                                trailing: isSelected 
+                                    ? const Icon(Icons.check, color: Colors.green)
+                                    : null,
+                                selected: isSelected,
+                                onTap: () {
+                                  onChanged(condition.id);
                                   Navigator.pop(context);
                                 },
                               );

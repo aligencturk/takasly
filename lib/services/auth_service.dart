@@ -401,25 +401,41 @@ class AuthService {
 
   Future<String?> getToken() async {
     try {
+      print('🔑 AuthService.getToken called');
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(AppConstants.userTokenKey);
+      final token = prefs.getString(AppConstants.userTokenKey);
+      
+      if (token != null) {
+        print('✅ AuthService.getToken - Token found: ${token.substring(0, 20)}...');
+      } else {
+        print('❌ AuthService.getToken - No token found');
+      }
+      
+      return token;
     } catch (e) {
+      print('❌ AuthService.getToken - Exception: $e');
       return null;
     }
   }
 
   Future<User?> getCurrentUser() async {
     try {
+      print('👤 AuthService.getCurrentUser called');
       final prefs = await SharedPreferences.getInstance();
       final userDataString = prefs.getString(AppConstants.userDataKey);
       
       if (userDataString != null) {
+        print('✅ AuthService.getCurrentUser - User data found');
         final userData = json.decode(userDataString);
-        return User.fromJson(userData);
+        final user = User.fromJson(userData);
+        print('✅ AuthService.getCurrentUser - User: ${user.id} - ${user.name}');
+        return user;
       }
       
+      print('❌ AuthService.getCurrentUser - No user data found');
       return null;
     } catch (e) {
+      print('❌ AuthService.getCurrentUser - Exception: $e');
       return null;
     }
   }

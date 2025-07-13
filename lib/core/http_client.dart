@@ -450,22 +450,38 @@ class HttpClient {
     required T Function(Map<String, dynamic>) fromJson,
     bool useBasicAuth = false,
   }) async {
+    print('🚀 HttpClient.postMultipart called');
+    print('📝 Parameters:');
+    print('  - endpoint: $endpoint');
+    print('  - fields count: ${fields.length}');
+    print('  - files count: ${files?.length ?? 0}');
+    print('  - multipleFiles count: ${multipleFiles?.length ?? 0}');
+    print('  - useBasicAuth: $useBasicAuth');
+    
     try {
       final url = Uri.parse('${ApiConstants.fullUrl}$endpoint');
+      print('🌐 Full URL: $url');
+      
       final request = http.MultipartRequest('POST', url);
       
       // Headers ekle
       if (useBasicAuth) {
+        print('🔑 Adding basic auth headers');
         request.headers.addAll(_getBasicAuthHeaders());
       } else {
+        print('🔑 Adding bearer token headers');
         request.headers.addAll(await _getHeaders());
       }
       
+      print('📋 Request headers: ${request.headers}');
+      
       // Form fields ekle
       request.fields.addAll(fields);
+      print('📝 Form fields added: ${request.fields}');
       
       // Single files ekle
       if (files != null) {
+        print('📎 Adding ${files.length} single files');
         for (String key in files.keys) {
           final file = files[key]!;
           final multipartFile = await http.MultipartFile.fromPath(
@@ -473,19 +489,23 @@ class HttpClient {
             file.path,
           );
           request.files.add(multipartFile);
+          print('  - Added single file: $key -> ${file.path.split('/').last}');
         }
       }
       
       // Multiple files ekle (aynı key ile birden fazla dosya)
       if (multipleFiles != null) {
+        print('📎 Adding multiple files');
         for (String key in multipleFiles.keys) {
           final fileList = multipleFiles[key]!;
+          print('  - Key: $key, Files count: ${fileList.length}');
           for (File file in fileList) {
             final multipartFile = await http.MultipartFile.fromPath(
               key,
               file.path,
             );
             request.files.add(multipartFile);
+            print('    - Added file: ${file.path.split('/').last}');
           }
         }
       }
@@ -494,6 +514,7 @@ class HttpClient {
       print('📝 Fields: ${request.fields}');
       print('📎 Files (${request.files.length}): ${request.files.map((f) => '${f.field}: ${f.filename}').toList()}');
       
+      print('📡 Sending multipart request...');
       final streamedResponse = await request.send().timeout(_timeout);
       final response = await http.Response.fromStream(streamedResponse);
       
@@ -502,23 +523,31 @@ class HttpClient {
       print('📡 Response Body: ${response.body}');
       
       try {
+        print('📥 Parsing JSON response...');
         final Map<String, dynamic> jsonData = json.decode(response.body);
+        print('📥 Parsed JSON: $jsonData');
         
         // API response'unda success field'ını kontrol et
         // Bazı API'ler garip status code gönderebilir ama body'de success bilgisi doğru olur
         final bool apiSuccess = jsonData['success'] == true || 
                                  jsonData['error'] == false;
         
+        print('📊 API Success check: $apiSuccess');
+        print('📊 Status Code Success check: ${response.statusCode >= 200 && response.statusCode < 300}');
+        print('📊 410 Success check: ${response.statusCode == 410 && apiSuccess}');
+        
         if ((response.statusCode >= 200 && response.statusCode < 300) || 
             (response.statusCode == 410 && apiSuccess)) {
           print('✅ API Success detected - Status: ${response.statusCode}, API Success: $apiSuccess');
           final T data = fromJson(jsonData);
+          print('✅ Data parsed successfully: $data');
           return ApiResponse.success(data);
         } else {
           print('❌ API Error detected - Status: ${response.statusCode}, API Success: $apiSuccess');
           final errorMessage = jsonData['message'] ?? 
                                jsonData['error'] ?? 
                                'Unknown error';
+          print('❌ Error message: $errorMessage');
           return ApiResponse.error(errorMessage.toString());
         }
       } catch (e) {
@@ -529,8 +558,9 @@ class HttpClient {
           return ApiResponse.error('HTTP ${response.statusCode}: ${response.body}');
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Network error: $e');
+      print('❌ Stack trace: $stackTrace');
       if (e is SocketException) {
         return ApiResponse.error(ErrorMessages.networkError);
       }
