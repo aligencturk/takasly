@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/constants.dart';
 import 'reset_password_view.dart';
+import 'email_verification_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -440,7 +441,19 @@ class _LoginViewState extends State<LoginView> {
     }
     
     if (success) {
-      Navigator.pushReplacementNamed(context, '/home');
+      if (_isLogin) {
+        // Login başarılı - ana sayfaya git
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        // Register başarılı - email verification sayfasına git
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EmailVerificationView(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
+      }
     }
   }
 

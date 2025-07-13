@@ -18,6 +18,8 @@ class ApiConstants {
   static const String register = '/service/auth/register';
   static const String forgotPassword = '/service/auth/forgotPassword';
   static const String updatePassword = '/service/auth/forgotPassword/updatePass';
+  static const String checkCode = '/service/auth/code/checkCode';
+  static const String againSendCode = '/service/auth/code/againSendCode';
   static const String profile = '/auth/profile';
   static const String logout = '/auth/logout';
   
@@ -95,6 +97,9 @@ class ErrorMessages {
   static const String invalidVerificationCode = 'Geçersiz doğrulama kodu';
   static const String passwordUpdateFailed = 'Şifre güncelleme başarısız';
   static const String verificationCodeExpired = 'Doğrulama kodu süresi dolmuş';
+  static const String emailVerificationFailed = 'E-posta doğrulama başarısız';
+  static const String emailVerificationCodeInvalid = 'Geçersiz e-posta doğrulama kodu';
+  static const String emailVerificationCodeExpired = 'E-posta doğrulama kodu süresi dolmuş';
 }
 
 class SuccessMessages {
@@ -114,4 +119,8 @@ class SuccessMessages {
   static const String passwordResetEmailSent = 'E-postanızı kontrol edin, şifre sıfırlama talimatları gönderildi';
   static const String passwordUpdateSuccess = 'Şifreniz başarıyla güncellendi';
   static const String passwordChanged = 'Şifre değişikliği tamamlandı, giriş yapabilirsiniz';
+  static const String emailVerificationSuccess = 'E-posta adresiniz başarıyla doğrulandı';
+  static const String emailVerified = 'E-posta doğrulandı, artık uygulamayı kullanabilirsiniz';
+  static const String registrationComplete = 'Kayıt işlemi tamamlandı, giriş yapabilirsiniz';
+  static const String verificationCodeResent = 'Doğrulama kodu tekrar gönderildi';
 } 

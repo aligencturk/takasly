@@ -123,9 +123,40 @@ class AuthService {
           'policy': policy,
           'kvkk': kvkk,
         },
-        fromJson: (json) => {
-          'user': User.fromJson(json['user']),
-          'token': json['token'] ?? '',
+        fromJson: (json) {
+          print('🔍 Register fromJson - Raw data: $json');
+          
+          // 410 response formatını kontrol et
+          if (json['data'] != null && json['data']['userID'] != null) {
+            print('✅ Register - 410 response format detected');
+            final userData = json['data'];
+            
+            // Dummy user objesi oluştur (register için token olmayabilir)
+            final user = User(
+              id: userData['userID'].toString(),
+              name: '$firstName $lastName',
+              email: email,
+              phone: phone,
+              rating: 0.0,
+              totalTrades: 0,
+              isVerified: false, // Email verification gerekli
+              isOnline: true,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+            
+            return {
+              'user': user,
+              'token': userData['token'] ?? '', // Register'da token olmayabilir
+            };
+          } else {
+            // Standart format (eğer farklı response gelirse)
+            print('✅ Register - Standard response format');
+            return {
+              'user': User.fromJson(json['user']),
+              'token': json['token'] ?? '',
+            };
+          }
         },
       );
 
@@ -183,6 +214,78 @@ class AuthService {
       return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
     } catch (e) {
       print('💥 Forgot password exception: $e');
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<void>> checkEmailVerificationCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      print('✅ CHECK EMAIL CODE ATTEMPT: $email');
+      print('📤 Check Code Request Body: {"userEmail": "$email", "code": "$code"}');
+      
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.checkCode,
+        body: {
+          'userEmail': email,
+          'code': code,
+        },
+        fromJson: (json) {
+          print('🔍 CheckCode fromJson - Raw data: $json');
+          return null; // Email verification genelde sadece success/error döner
+        },
+      );
+
+      print('📥 CheckCode Response isSuccess: ${response.isSuccess}');
+      print('📥 CheckCode Response data: ${response.data}');
+      print('📥 CheckCode Response error: ${response.error}');
+
+      if (response.isSuccess) {
+        print('✅ Email verification successful');
+        return ApiResponse.success(null);
+      }
+
+      print('❌ Email verification failed: ${response.error}');
+      return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
+    } catch (e) {
+      print('💥 Check email code exception: $e');
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<void>> resendEmailVerificationCode({
+    required String email,
+  }) async {
+    try {
+      print('🔄 RESEND EMAIL CODE ATTEMPT: $email');
+      print('📤 Resend Code Request Body: {"userEmail": "$email"}');
+      
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.againSendCode,
+        body: {
+          'userEmail': email,
+        },
+        fromJson: (json) {
+          print('🔍 ResendCode fromJson - Raw data: $json');
+          return null; // Resend code genelde sadece success/error döner
+        },
+      );
+
+      print('📥 ResendCode Response isSuccess: ${response.isSuccess}');
+      print('📥 ResendCode Response data: ${response.data}');
+      print('📥 ResendCode Response error: ${response.error}');
+
+      if (response.isSuccess) {
+        print('✅ Resend email code successful');
+        return ApiResponse.success(null);
+      }
+
+      print('❌ Resend email code failed: ${response.error}');
+      return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
+    } catch (e) {
+      print('💥 Resend email code exception: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

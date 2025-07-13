@@ -184,6 +184,85 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> checkEmailVerificationCode({
+    required String email,
+    required String code,
+  }) async {
+    if (email.trim().isEmpty || code.trim().isEmpty) {
+      _setError(ErrorMessages.fieldRequired);
+      return false;
+    }
+
+    if (!_isValidEmail(email)) {
+      _setError(ErrorMessages.invalidEmail);
+      return false;
+    }
+
+    if (code.length < 4) {
+      _setError('Doğrulama kodu en az 4 karakter olmalıdır');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.checkEmailVerificationCode(
+        email: email,
+        code: code,
+      );
+      
+      if (response.isSuccess) {
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> resendEmailVerificationCode({
+    required String email,
+  }) async {
+    if (email.trim().isEmpty) {
+      _setError(ErrorMessages.fieldRequired);
+      return false;
+    }
+
+    if (!_isValidEmail(email)) {
+      _setError(ErrorMessages.invalidEmail);
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.resendEmailVerificationCode(
+        email: email,
+      );
+      
+      if (response.isSuccess) {
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
   Future<bool> updatePassword({
     required String email,
     required String verificationCode,
