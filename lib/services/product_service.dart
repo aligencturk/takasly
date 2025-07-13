@@ -3,6 +3,8 @@ import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/product.dart';
 import '../models/user.dart';
+import '../models/city.dart';
+import '../models/district.dart';
 
 class ProductService {
   final HttpClient _httpClient = HttpClient();
@@ -109,6 +111,11 @@ class ProductService {
 
   // API response'unu Product model formatına dönüştürür
   Product _transformApiProductToModel(Map<String, dynamic> apiProduct) {
+    final categoryId = apiProduct['productCatID']?.toString() ?? '';
+    final categoryName = apiProduct['productCatname'] ?? '';
+    
+    print('🏷️ Transforming product with category ID: $categoryId, name: $categoryName');
+    
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle'] ?? '',
@@ -116,10 +123,10 @@ class ProductService {
       images: apiProduct['productImage'] != null && apiProduct['productImage'].isNotEmpty 
           ? [apiProduct['productImage']] 
           : [],
-      categoryId: apiProduct['productCatID']?.toString() ?? '',
+      categoryId: categoryId,
       category: Category(
-        id: apiProduct['productCatID']?.toString() ?? '',
-        name: apiProduct['productCatname'] ?? '',
+        id: categoryId,
+        name: categoryName,
         icon: '',
         isActive: true,
         order: 0,
@@ -272,6 +279,105 @@ class ProductService {
 
       return response;
     } catch (e) {
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<List<City>>> getCities() async {
+    print('🏙️ ProductService: Getting cities from service/general/general/cities/all');
+    final fullUrl = '${ApiConstants.fullUrl}service/general/general/cities/all';
+    print('🌐 Full URL: $fullUrl');
+    
+    try {
+      final response = await _httpClient.getWithBasicAuth(
+        'service/general/general/cities/all',
+        fromJson: (json) {
+          print('🔍 Raw Cities API Response: $json');
+          
+          // JSON yapısını kontrol et
+          if (json == null) {
+            print('❌ Cities API response is null');
+            return <City>[];
+          }
+          
+          if (json['data'] == null) {
+            print('❌ Cities API response has no data field');
+            print('🔍 Available fields: ${json.keys}');
+            return <City>[];
+          }
+          
+          if (json['data']['cities'] == null) {
+            print('❌ Cities API response has no cities field in data');
+            print('🔍 Available data fields: ${json['data'].keys}');
+            return <City>[];
+          }
+          
+          final citiesList = json['data']['cities'] as List;
+          print('🏙️ Cities API returned ${citiesList.length} cities');
+          
+          // İlk birkaç şehri logla
+          if (citiesList.isNotEmpty) {
+            print('🏙️ First 5 cities in API response:');
+            for (int i = 0; i < (citiesList.length > 5 ? 5 : citiesList.length); i++) {
+              final city = citiesList[i];
+              print('  ${i + 1}. ${city['cityName']} (ID: ${city['cityID']}, Plate: ${city['plateCode']})');
+            }
+          }
+          
+                     final cities = citiesList.map((item) => City.fromJson(item)).toList();
+          
+          print('🏙️ Parsed ${cities.length} cities successfully');
+          return cities;
+        },
+      );
+
+      return response;
+    } catch (e) {
+      print('❌ ProductService: Error getting cities: $e');
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<List<District>>> getDistricts(String cityId) async {
+    print('🏘️ ProductService: Getting districts for city $cityId from service/general/general/districts/$cityId');
+    try {
+      final response = await _httpClient.getWithBasicAuth(
+        'service/general/general/districts/$cityId',
+        fromJson: (json) {
+          print('🏘️ Raw districts response: $json');
+          
+          // Farklı yanıt formatlarını kontrol et
+          if (json['data'] != null && json['data']['districts'] != null) {
+            final districtsList = json['data']['districts'] as List;
+            print('🏘️ Districts API returned ${districtsList.length} districts');
+            
+            // İlk birkaç ilçeyi logla
+            if (districtsList.isNotEmpty) {
+              print('🏘️ First 5 districts in API response:');
+              for (int i = 0; i < (districtsList.length > 5 ? 5 : districtsList.length); i++) {
+                final district = districtsList[i];
+                print('  ${i + 1}. ${district['districtName']} (No: ${district['districtNo']})');
+              }
+            }
+            
+            return districtsList
+                .map((item) => District.fromJson(item, cityId: cityId))
+                .toList();
+          } else if (json['districts'] != null) {
+            final districtsList = json['districts'] as List;
+            return districtsList
+                .map((item) => District.fromJson(item, cityId: cityId))
+                .toList();
+          } else {
+            print('🏘️ No districts found in response format');
+            return <District>[];
+          }
+        },
+      );
+
+      return response;
+    } catch (e) {
+      print('❌ ProductService: Error getting districts for city $cityId: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

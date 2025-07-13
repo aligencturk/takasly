@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../core/constants.dart';
+import '../../models/city.dart';
+import '../../models/district.dart';
 
 class AddProductView extends StatefulWidget {
   const AddProductView({super.key});
@@ -20,6 +22,8 @@ class _AddProductViewState extends State<AddProductView> {
   
   String? _selectedCategoryId;
   String? _selectedConditionId;
+  String? _selectedCityId;
+  String? _selectedDistrictId;
   List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -40,6 +44,16 @@ class _AddProductViewState extends State<AddProductView> {
     {'id': '4', 'name': 'Orta'},
     {'id': '5', 'name': 'Kötü'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // İlleri yükle
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+      productViewModel.loadCities();
+    });
+  }
 
   @override
   void dispose() {
@@ -237,6 +251,104 @@ class _AddProductViewState extends State<AddProductView> {
             ),
             const SizedBox(height: 16),
             
+            // İl Seçimi
+            Consumer<ProductViewModel>(
+              builder: (context, productViewModel, child) {
+                print('🏙️ UI: Cities count: ${productViewModel.cities.length}');
+                print('🏙️ UI: Is loading: ${productViewModel.isLoading}');
+                print('🏙️ UI: Error: ${productViewModel.errorMessage}');
+                if (productViewModel.cities.isNotEmpty) {
+                  print('🏙️ UI: All cities: ${productViewModel.cities.map((c) => '${c.name}(${c.id})').join(', ')}');
+                  print('🏙️ UI: City names only: ${productViewModel.cities.map((c) => c.name).join(', ')}');
+                }
+                
+                if (productViewModel.isLoading) {
+                  return const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'İl',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ],
+                  );
+                }
+                
+                if (productViewModel.hasError && productViewModel.cities.isEmpty) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'İl',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.red),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          productViewModel.errorMessage ?? 'Hata oluştu',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                
+                return _buildCityDropdown(
+                  label: 'İl',
+                  value: _selectedCityId,
+                  cities: productViewModel.cities,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCityId = value;
+                      _selectedDistrictId = null; // İl değiştiğinde ilçeyi sıfırla
+                    });
+                    
+                    if (value != null) {
+                      // Seçilen ile ait ilçeleri yükle
+                      productViewModel.loadDistricts(value);
+                    } else {
+                      // İl seçimi temizlendiğinde ilçeleri temizle
+                      productViewModel.clearDistricts();
+                    }
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // İlçe Seçimi
+            Consumer<ProductViewModel>(
+              builder: (context, productViewModel, child) {
+                return _buildDistrictDropdown(
+                  label: 'İlçe',
+                  value: _selectedDistrictId,
+                  districts: productViewModel.districts,
+                  enabled: _selectedCityId != null,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedDistrictId = value;
+                    });
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            
             // Takas Tercihi
             _buildTextField(
               controller: _tradeForController,
@@ -254,6 +366,278 @@ class _AddProductViewState extends State<AddProductView> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCityDropdown({
+    required String label,
+    required String? value,
+    required List<City> cities,
+    required void Function(String?) onChanged,
+  }) {
+    // Duplicate ID'leri temizle ve sadece unique olanları al
+    final uniqueCities = <String, City>{};
+    for (final city in cities) {
+      uniqueCities[city.id] = city;
+    }
+    final uniqueCityList = uniqueCities.values.toList();
+    
+    // Şehirleri alfabetik sıraya göre sırala
+    uniqueCityList.sort((a, b) => a.name.compareTo(b.name));
+    
+    // Seçili şehri bul
+    City? selectedCity;
+    if (value != null) {
+      selectedCity = uniqueCityList.firstWhere(
+        (city) => city.id == value,
+        orElse: () => City(id: '', name: '', plateCode: ''),
+      );
+      if (selectedCity.id.isEmpty) selectedCity = null;
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () {
+            _showCityPicker(context, uniqueCityList, selectedCity, onChanged);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedCity?.name ?? '$label seçin (${uniqueCityList.length} şehir)',
+                  style: TextStyle(
+                    color: selectedCity != null ? Colors.black : Colors.grey[600],
+                    fontSize: 16,
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down, color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showCityPicker(BuildContext context, List<City> cities, City? selectedCity, void Function(String?) onChanged) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.3,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'İl Seçin',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: cities.length,
+                      itemBuilder: (context, index) {
+                        final city = cities[index];
+                        final isSelected = selectedCity?.id == city.id;
+                        
+                        return ListTile(
+                          title: Text(city.name),
+                          trailing: isSelected 
+                              ? const Icon(Icons.check, color: Colors.green)
+                              : null,
+                          selected: isSelected,
+                          onTap: () {
+                            onChanged(city.id);
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDistrictDropdown({
+    required String label,
+    required String? value,
+    required List<District> districts,
+    required bool enabled,
+    required void Function(String?) onChanged,
+  }) {
+    // Duplicate ID'leri temizle ve sadece unique olanları al
+    final uniqueDistricts = <String, District>{};
+    for (final district in districts) {
+      uniqueDistricts[district.id] = district;
+    }
+    final uniqueDistrictList = uniqueDistricts.values.toList();
+    
+    // İlçeleri alfabetik sıraya göre sırala
+    uniqueDistrictList.sort((a, b) => a.name.compareTo(b.name));
+    
+    // Seçili ilçeyi bul
+    District? selectedDistrict;
+    if (value != null && enabled) {
+      selectedDistrict = uniqueDistrictList.firstWhere(
+        (district) => district.id == value,
+        orElse: () => District(id: '', name: '', cityId: ''),
+      );
+      if (selectedDistrict.id.isEmpty) selectedDistrict = null;
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: enabled ? Colors.black : Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: enabled ? () {
+            _showDistrictPicker(context, uniqueDistrictList, selectedDistrict, onChanged);
+          } : null,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: enabled ? Colors.grey : Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  enabled 
+                      ? (selectedDistrict?.name ?? '$label seçin (${uniqueDistrictList.length} ilçe)')
+                      : 'Önce il seçin',
+                  style: TextStyle(
+                    color: enabled 
+                        ? (selectedDistrict != null ? Colors.black : Colors.grey[600])
+                        : Colors.grey[400],
+                    fontSize: 16,
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_drop_down, 
+                  color: enabled ? Colors.grey : Colors.grey[400],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showDistrictPicker(BuildContext context, List<District> districts, District? selectedDistrict, void Function(String?) onChanged) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.3,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'İlçe Seçin',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: districts.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Bu il için ilçe bilgisi bulunamadı',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            itemCount: districts.length,
+                            itemBuilder: (context, index) {
+                              final district = districts[index];
+                              final isSelected = selectedDistrict?.id == district.id;
+                              
+                              return ListTile(
+                                title: Text(district.name),
+                                trailing: isSelected 
+                                    ? const Icon(Icons.check, color: Colors.green)
+                                    : null,
+                                selected: isSelected,
+                                onTap: () {
+                                  onChanged(district.id);
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

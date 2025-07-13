@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/product.dart' as product_model;
 import '../models/user.dart';
+import '../models/city.dart';
+import '../models/district.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
 import '../core/constants.dart';
@@ -14,6 +16,8 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Product> _favoriteProducts = [];
   List<product_model.Product> _myProducts = [];
   List<product_model.Category> _categories = [];
+  List<City> _cities = [];
+  List<District> _districts = [];
   product_model.Product? _selectedProduct;
   
   bool _isLoading = false;
@@ -32,6 +36,8 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Product> get favoriteProducts => _favoriteProducts;
   List<product_model.Product> get myProducts => _myProducts;
   List<product_model.Category> get categories => _categories;
+  List<City> get cities => _cities;
+  List<District> get districts => _districts;
   product_model.Product? get selectedProduct => _selectedProduct;
   
   bool get isLoading => _isLoading;
@@ -278,9 +284,89 @@ class ProductViewModel extends ChangeNotifier {
         _setError(response.error ?? 'Kategoriler yüklenemedi');
       }
     } catch (e) {
-      print('❌ loadCategories error: $e');
-      _setError('Kategoriler yüklenirken hata oluştu: $e');
+      print('💥 Categories error: $e');
+      _setError('Kategoriler yüklenirken hata oluştu');
     }
+  }
+
+  Future<void> loadCities() async {
+    print('🏙️ Loading cities...');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    
+    try {
+      final response = await _productService.getCities();
+      print('🏙️ Cities response: success=${response.isSuccess}, error=${response.error}');
+
+      if (response.isSuccess && response.data != null) {
+        _cities = response.data ?? [];
+        print('🏙️ Cities loaded: ${_cities.length} items');
+        
+        // Tüm şehirleri logla
+        if (_cities.isNotEmpty) {
+          print('🏙️ All cities loaded:');
+          for (int i = 0; i < _cities.length; i++) {
+            final city = _cities[i];
+            print('  ${i + 1}. ${city.name} (ID: ${city.id}, Plate: ${city.plateCode})');
+          }
+        } else {
+          print('⚠️ No cities in the response data');
+        }
+        
+        _isLoading = false;
+        notifyListeners();
+      } else {
+        print('🏙️ Cities failed: ${response.error}');
+        print('🏙️ Response data: ${response.data}');
+        _isLoading = false;
+        _setError(response.error ?? 'İller yüklenemedi');
+      }
+    } catch (e) {
+      print('💥 Cities error: $e');
+      _isLoading = false;
+      _setError('İller yüklenirken hata oluştu');
+    }
+  }
+
+  Future<void> loadDistricts(String cityId) async {
+    print('🏘️ Loading districts for city $cityId...');
+    try {
+      final response = await _productService.getDistricts(cityId);
+      print('🏘️ Districts response: success=${response.isSuccess}, error=${response.error}');
+
+      if (response.isSuccess && response.data != null) {
+        _districts = response.data ?? [];
+        print('🏘️ Districts loaded: ${_districts.length} items for city $cityId');
+        
+        // Tüm ilçeleri logla
+        if (_districts.isNotEmpty) {
+          print('🏘️ All districts loaded:');
+          for (int i = 0; i < _districts.length; i++) {
+            final district = _districts[i];
+            print('  ${i + 1}. ${district.name} (ID: ${district.id})');
+          }
+        } else {
+          print('⚠️ No districts in the response data');
+        }
+        
+        notifyListeners();
+      } else {
+        print('🏘️ Districts failed: ${response.error}');
+        print('🏘️ Response data: ${response.data}');
+        _districts = []; // Boş liste ata, hata gösterme
+        notifyListeners();
+      }
+    } catch (e) {
+      print('💥 Districts error: $e');
+      _districts = []; // Boş liste ata, hata gösterme
+      notifyListeners();
+    }
+  }
+
+  void clearDistricts() {
+    _districts = [];
+    notifyListeners();
   }
 
   Future<bool> createProduct({
