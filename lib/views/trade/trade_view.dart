@@ -15,7 +15,8 @@ class TradeView extends StatefulWidget {
   State<TradeView> createState() => _TradeViewState();
 }
 
-class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMixin {
+class _TradeViewState extends State<TradeView>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AuthService _authService = AuthService();
 
@@ -32,11 +33,11 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
 
   Future<void> _loadData() async {
     print('🔄 TradeView _loadData started');
-    
+
     // Önce kullanıcının login olup olmadığını kontrol et
     final isLoggedIn = await _authService.isLoggedIn();
     print('🔍 TradeView - Is user logged in: $isLoggedIn');
-    
+
     if (!isLoggedIn) {
       print('❌ TradeView - User not logged in, showing error');
       if (mounted) {
@@ -49,25 +50,32 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
       }
       return;
     }
-    
+
     final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
-    final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
-    
+    final productViewModel = Provider.of<ProductViewModel>(
+      context,
+      listen: false,
+    );
+
     print('🔄 TradeView - calling tradeViewModel.fetchMyTrades()');
     tradeViewModel.fetchMyTrades();
-    
+
     // Dinamik kullanıcı ID'sini al
     print('🔄 TradeView - getting current user ID');
     final userId = await _authService.getCurrentUserId();
     print('🔍 TradeView - User ID: $userId');
-    
+
     if (userId != null && userId.isNotEmpty) {
-      print('🔄 TradeView - calling productViewModel.loadUserProducts($userId)');
+      print(
+        '🔄 TradeView - calling productViewModel.loadUserProducts($userId)',
+      );
       await productViewModel.loadUserProducts(userId);
     } else {
-      print('❌ TradeView - User ID is null or empty, user might not be logged in');
+      print(
+        '❌ TradeView - User ID is null or empty, user might not be logged in',
+      );
       print('❌ TradeView - Redirecting to login or showing error');
-      
+
       // Kullanıcı login olmamışsa hata göster
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -104,12 +112,22 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
       body: Consumer2<TradeViewModel, ProductViewModel>(
         builder: (context, tradeViewModel, productViewModel, child) {
           print('🎨 TradeView Consumer2 builder called');
-          print('🎨 TradeView - tradeViewModel.isLoading: ${tradeViewModel.isLoading}');
-          print('🎨 TradeView - productViewModel.isLoading: ${productViewModel.isLoading}');
-          print('🎨 TradeView - tradeViewModel.hasError: ${tradeViewModel.hasError}');
-          print('🎨 TradeView - productViewModel.hasError: ${productViewModel.hasError}');
-          print('🎨 TradeView - productViewModel.myProducts.length: ${productViewModel.myProducts.length}');
-          
+          print(
+            '🎨 TradeView - tradeViewModel.isLoading: ${tradeViewModel.isLoading}',
+          );
+          print(
+            '🎨 TradeView - productViewModel.isLoading: ${productViewModel.isLoading}',
+          );
+          print(
+            '🎨 TradeView - tradeViewModel.hasError: ${tradeViewModel.hasError}',
+          );
+          print(
+            '🎨 TradeView - productViewModel.hasError: ${productViewModel.hasError}',
+          );
+          print(
+            '🎨 TradeView - productViewModel.myProducts.length: ${productViewModel.myProducts.length}',
+          );
+
           if (tradeViewModel.isLoading || productViewModel.isLoading) {
             print('🎨 TradeView - Showing loading widget');
             return const LoadingWidget();
@@ -119,7 +137,8 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
           if (tradeViewModel.hasError && productViewModel.hasError) {
             print('🎨 TradeView - Showing error widget (both have errors)');
             return CustomErrorWidget(
-              message: tradeViewModel.errorMessage ?? productViewModel.errorMessage!,
+              message:
+                  tradeViewModel.errorMessage ?? productViewModel.errorMessage!,
               onRetry: _loadData,
             );
           }
@@ -129,33 +148,34 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
             controller: _tabController,
             children: [
               // Aktif tab - ProductViewModel kullan
-              productViewModel.hasError 
-                ? CustomErrorWidget(
-                    message: productViewModel.errorMessage!,
-                    onRetry: _loadData,
-                  )
-                : _buildUserProductsList(productViewModel.myProducts),
-              
+              productViewModel.hasError
+                  ? CustomErrorWidget(
+                      message: productViewModel.errorMessage!,
+                      onRetry: _loadData,
+                    )
+                  : _buildUserProductsList(productViewModel.myProducts),
+
               // Tamamlanan tab - TradeViewModel kullan
-              tradeViewModel.hasError 
-                ? CustomErrorWidget(
-                    message: tradeViewModel.errorMessage!,
-                    onRetry: _loadData,
-                  )
-                : _buildTradeList(tradeViewModel.completedTrades),
-              
+              tradeViewModel.hasError
+                  ? CustomErrorWidget(
+                      message: tradeViewModel.errorMessage!,
+                      onRetry: _loadData,
+                    )
+                  : _buildTradeList(tradeViewModel.completedTrades),
+
               // İptal edilen tab - TradeViewModel kullan
-              tradeViewModel.hasError 
-                ? CustomErrorWidget(
-                    message: tradeViewModel.errorMessage!,
-                    onRetry: _loadData,
-                  )
-                : _buildTradeList(tradeViewModel.cancelledTrades),
+              tradeViewModel.hasError
+                  ? CustomErrorWidget(
+                      message: tradeViewModel.errorMessage!,
+                      onRetry: _loadData,
+                    )
+                  : _buildTradeList(tradeViewModel.cancelledTrades),
             ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: "trade_fab",
         onPressed: () => _showNewTradeDialog(),
         child: const Icon(Icons.add),
       ),
@@ -163,19 +183,17 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
   }
 
   Widget _buildUserProductsList(List<dynamic> products) {
-    print('🎨 TradeView._buildUserProductsList called with ${products.length} products');
-    
+    print(
+      '🎨 TradeView._buildUserProductsList called with ${products.length} products',
+    );
+
     if (products.isEmpty) {
       print('🎨 TradeView - No products, showing empty state');
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inventory_2_outlined,
-              size: 64,
-              color: Colors.grey,
-            ),
+            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
               'Henüz ürün eklemediniz',
@@ -188,10 +206,7 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
             SizedBox(height: 8),
             Text(
               'Takas yapmak için ürün ekleyin',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],
         ),
@@ -206,7 +221,10 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
 
     return RefreshIndicator(
       onRefresh: () async {
-        final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+        final productViewModel = Provider.of<ProductViewModel>(
+          context,
+          listen: false,
+        );
         final userId = await _authService.getCurrentUserId();
         if (userId != null) {
           await productViewModel.loadUserProducts(userId);
@@ -245,11 +263,7 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.swap_horiz,
-              size: 64,
-              color: Colors.grey,
-            ),
+            Icon(Icons.swap_horiz, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
               'Henüz takas yok',
@@ -266,7 +280,10 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
 
     return RefreshIndicator(
       onRefresh: () async {
-        final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+        final tradeViewModel = Provider.of<TradeViewModel>(
+          context,
+          listen: false,
+        );
         await tradeViewModel.fetchMyTrades();
       },
       child: ListView.builder(
@@ -321,10 +338,7 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
       builder: (context) => AlertDialog(
         title: Text(
           product.title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -346,41 +360,32 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
                     color: Colors.grey,
                   ),
                 ),
-              
+
               if (product.images.isNotEmpty) const SizedBox(height: 16),
-              
+
               // Açıklama
               const Text(
                 'Açıklama:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 4),
               Text(
-                product.description.isNotEmpty 
-                    ? product.description 
+                product.description.isNotEmpty
+                    ? product.description
                     : 'Açıklama belirtilmemiş',
                 style: const TextStyle(fontSize: 14),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Durum
               const Text(
                 'Durum:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(4),
@@ -388,39 +393,27 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
                 ),
                 child: Text(
                   product.condition,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.blue.shade700,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.blue.shade700),
                 ),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Kategori
               const Text(
                 'Kategori:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 4),
-              Text(
-                product.category.name,
-                style: const TextStyle(fontSize: 14),
-              ),
-              
+              Text(product.category.name, style: const TextStyle(fontSize: 14)),
+
               const SizedBox(height: 12),
-              
+
               // Takas tercihleri
               if (product.tradePreferences.isNotEmpty) ...[
                 const Text(
                   'Takas Tercihi:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -468,4 +461,4 @@ class _TradeViewState extends State<TradeView> with SingleTickerProviderStateMix
       ),
     );
   }
-} 
+}

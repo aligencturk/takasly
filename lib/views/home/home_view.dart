@@ -29,7 +29,10 @@ class _HomeViewState extends State<HomeView> {
     _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+      final productViewModel = Provider.of<ProductViewModel>(
+        context,
+        listen: false,
+      );
       productViewModel.loadInitialData(); // Tüm başlangıç verilerini yükle
     });
   }
@@ -42,7 +45,8 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
       Provider.of<ProductViewModel>(context, listen: false).loadMoreProducts();
     }
   }
@@ -53,8 +57,12 @@ class _HomeViewState extends State<HomeView> {
       backgroundColor: AppTheme.background,
       body: _buildPage(_currentIndex),
       floatingActionButton: FloatingActionButton(
+        heroTag: "home_fab",
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const AddProductView()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddProductView()),
+          );
         },
         backgroundColor: AppTheme.accent,
         child: const Icon(Icons.add, color: Colors.white),
@@ -83,10 +91,13 @@ class _HomeViewState extends State<HomeView> {
         return _buildHomeTab();
     }
   }
-  
+
   Widget _buildHomeTab() {
     return RefreshIndicator(
-      onRefresh: () => Provider.of<ProductViewModel>(context, listen: false).refreshProducts(),
+      onRefresh: () => Provider.of<ProductViewModel>(
+        context,
+        listen: false,
+      ).refreshProducts(),
       color: AppTheme.primary,
       child: CustomScrollView(
         controller: _scrollController,
@@ -158,7 +169,7 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
-  
+
   Widget _buildBottomNavBar() {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
@@ -168,17 +179,37 @@ class _HomeViewState extends State<HomeView> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavBarItem(icon: Icons.home_filled, index: 0, label: 'Ana Sayfa'),
-          _buildNavBarItem(icon: Icons.explore_outlined, index: 1, label: 'Keşfet'),
+          _buildNavBarItem(
+            icon: Icons.home_filled,
+            index: 0,
+            label: 'Ana Sayfa',
+          ),
+          _buildNavBarItem(
+            icon: Icons.explore_outlined,
+            index: 1,
+            label: 'Keşfet',
+          ),
           const SizedBox(width: 48), // FAB için boşluk
-          _buildNavBarItem(icon: Icons.swap_horiz, index: 3, label: 'Takaslarım'),
-          _buildNavBarItem(icon: Icons.person_outline, index: 4, label: 'Profil'),
+          _buildNavBarItem(
+            icon: Icons.swap_horiz,
+            index: 3,
+            label: 'Takaslarım',
+          ),
+          _buildNavBarItem(
+            icon: Icons.person_outline,
+            index: 4,
+            label: 'Profil',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildNavBarItem({required IconData icon, required int index, required String label}) {
+  Widget _buildNavBarItem({
+    required IconData icon,
+    required int index,
+    required String label,
+  }) {
     final bool isSelected = _currentIndex == index;
     return IconButton(
       icon: Icon(
@@ -187,7 +218,8 @@ class _HomeViewState extends State<HomeView> {
         size: 28,
       ),
       onPressed: () {
-        if (index != 2) { // Ortadaki boşluk tıklanabilir değil
+        if (index != 2) {
+          // Ortadaki boşluk tıklanabilir değil
           setState(() {
             _currentIndex = index;
           });
@@ -196,4 +228,4 @@ class _HomeViewState extends State<HomeView> {
       tooltip: label,
     );
   }
-} 
+}
