@@ -54,8 +54,10 @@ class HttpClient {
 
     final headers = {
       ApiConstants.contentType: ApiConstants.applicationJson,
-      'Accept': ApiConstants.applicationJson,
+      'Accept': '*/*',
       ApiConstants.authorization: authHeader,
+      'User-Agent': 'Takasly-App/1.0.0',
+      'Cache-Control': 'no-cache',
     };
 
     print('🔐 Final Auth Header: $authHeader');
@@ -118,7 +120,7 @@ class HttpClient {
           .get(uriWithParams, headers: headers)
           .timeout(_timeout);
 
-      return await _handleResponse<T>(response, fromJson);
+      return await _handleResponse<T>(response, fromJson, isBasicAuth: true);
     } on SocketException {
       return ApiResponse<T>.error(ErrorMessages.networkError);
     } on HttpException {
@@ -183,7 +185,7 @@ class HttpClient {
       print('📥 Response Headers: ${response.headers}');
       print('📥 Response Body: ${response.body}');
 
-      return await _handleResponse<T>(response, fromJson);
+      return await _handleResponse<T>(response, fromJson, isBasicAuth: true);
     } on SocketException catch (e) {
       print('🚫 Socket Exception: $e');
       return ApiResponse<T>.error(ErrorMessages.networkError);
@@ -392,11 +394,21 @@ class HttpClient {
         } catch (e) {
           print('⚠️ Failed to parse error response JSON: $e');
 
-          // JSON parse edilemiyorsa, response body'yi kontrol et
-          if (response.body.contains('Yetkisiz giriş')) {
+          // JSON parse edilemiyorsa, response body'yi kontrol et ve temizle
+          String cleanBody = response.body.trim();
+
+          if (cleanBody.contains('Yetkisiz giriş') ||
+              cleanBody.contains('401')) {
             errorMessage = 'Kimlik doğrulama hatası';
-          } else if (response.body.contains('401')) {
-            errorMessage = 'Yetkisiz erişim';
+          } else if (cleanBody.contains('403')) {
+            errorMessage = 'Erişim reddedildi';
+          } else if (cleanBody.contains('404')) {
+            errorMessage = 'Kaynak bulunamadı';
+          } else if (cleanBody.contains('500')) {
+            errorMessage = 'Sunucu hatası';
+          } else if (cleanBody.isNotEmpty && cleanBody.length < 200) {
+            // Kısa mesajları olduğu gibi göster (çok uzun değilse)
+            errorMessage = cleanBody;
           } else {
             errorMessage = 'Sunucu hatası';
           }

@@ -499,10 +499,14 @@ class AuthService {
   Future<void> _saveUserData(User user, String token) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
-      await prefs.setString(AppConstants.userTokenKey, token);
-      await prefs.setString(AppConstants.userIdKey, user.id);
-      await prefs.setString(AppConstants.userDataKey, json.encode(user.toJson()));
+      if (user.id != null && user.id.isNotEmpty && token != null && token.isNotEmpty) {
+        print('Login sonrası userId kaydediliyor: [${user.id}], token: [${token.substring(0, 10)}...]');
+        await prefs.setString(AppConstants.userTokenKey, token);
+        await prefs.setString(AppConstants.userIdKey, user.id);
+        await prefs.setString(AppConstants.userDataKey, json.encode(user.toJson()));
+      } else {
+        print('HATA: Login sonrası userId veya token null/boş! userId: [${user.id}], token: [${token}]');
+      }
     } catch (e) {
       // Hata durumunda sessizce geç
     }
@@ -511,8 +515,12 @@ class AuthService {
   Future<void> _saveUserDataOnly(User user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
-      await prefs.setString(AppConstants.userIdKey, user.id);
+      if (user.id != null && user.id.isNotEmpty) {
+        print('Profil güncelleme sonrası userId kaydediliyor:  [32m${user.id} [0m');
+        await prefs.setString(AppConstants.userIdKey, user.id);
+      } else {
+        print('Profil güncelleme sonrası userId boş, eski id korunuyor.');
+      }
       await prefs.setString(AppConstants.userDataKey, json.encode(user.toJson()));
     } catch (e) {
       // Hata durumunda sessizce geç
@@ -549,8 +557,10 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.userTokenKey);
       final userId = prefs.getString(AppConstants.userIdKey);
+      print('isLoggedIn kontrolü: userId=[$userId], token=[$token]');
       return token != null && token.isNotEmpty && userId != null && userId.isNotEmpty;
     } catch (e) {
+      print('isLoggedIn exception: $e');
       return false;
     }
   }
