@@ -83,6 +83,50 @@ class LoginView extends StatelessWidget {
                   onPressed: () => _handleAppleLogin(context),
                 ),
 
+                const SizedBox(height: 24),
+
+                // Test Butonları
+                const Divider(),
+                const SizedBox(height: 16),
+                Text(
+                  'Test Hesapları',
+                  textAlign: TextAlign.center,
+                  style: textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _handleTestLogin(context, 'ali'),
+                        icon: const Icon(Icons.person, size: 16),
+                        label: const Text('Ali Test'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade100,
+                          foregroundColor: Colors.blue.shade800,
+                          elevation: 1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _handleTestLogin(context, 'ridvan'),
+                        icon: const Icon(Icons.person, size: 16),
+                        label: const Text('Rıdvan Test'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade100,
+                          foregroundColor: Colors.green.shade800,
+                          elevation: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 40),
 
                 // Kayıt Ol Butonu
@@ -144,6 +188,43 @@ class LoginView extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Apple ile giriş özelliği yakında!')),
     );
+  }
+
+  // Test login
+  Future<void> _handleTestLogin(BuildContext context, String testUser) async {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+
+    String email, password;
+    if (testUser == 'ali') {
+      email = 'alitalipgencturk@gmail.com';
+      password = '151281';
+    } else {
+      email = 'ridvan.dasdelen@gmail.com';
+      password = '123a';
+    }
+
+    print('🧪 Test login başlatılıyor: $testUser ($email)');
+
+    final success = await authViewModel.login(email, password);
+
+    if (context.mounted) {
+      if (success) {
+        print('🧪 Test login başarılı: $testUser');
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        print(
+          '🧪 Test login başarısız: $testUser - ${authViewModel.errorMessage}',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Test login başarısız: ${authViewModel.errorMessage ?? 'Bilinmeyen hata'}',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   // Kayıt ekranını göster

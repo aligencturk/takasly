@@ -133,10 +133,17 @@ class ProductService {
 
   Future<ApiResponse<List<Product>>> getProductsByUserId(String userId) async {
     try {
-      final endpoint = 'service/user/product/$userId/productList';
+      final endpoint = '${ApiConstants.userProducts}/$userId/productList';
+      print(
+        '🌐 ProductService - ApiConstants.userProducts: ${ApiConstants.userProducts}',
+      );
+      print('🌐 ProductService - User ID: $userId');
       print('🌐 ProductService - Calling endpoint: $endpoint');
-      print('🌐 ProductService - Full URL: ${ApiConstants.fullUrl}$endpoint');
       print('🌐 ProductService - Base URL: ${ApiConstants.baseUrl}');
+      print('🌐 ProductService - Full URL: ${ApiConstants.fullUrl}$endpoint');
+      print(
+        '🌐 ProductService - Expected Postman URL: https://api.rivorya.com/takasly/service/user/product/$userId/productList',
+      );
 
       // Çalışan categories endpoint ile karşılaştırma için
       print(

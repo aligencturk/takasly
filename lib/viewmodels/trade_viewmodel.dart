@@ -8,19 +8,19 @@ import '../core/constants.dart';
 
 class TradeViewModel extends ChangeNotifier {
   final TradeService _tradeService = TradeService();
-  
+
   List<Trade> _trades = [];
   List<Trade> _pendingTrades = [];
   List<Trade> _completedTrades = [];
   List<Trade> _cancelledTrades = [];
   Trade? _selectedTrade;
   Map<String, int> _statistics = {};
-  
+
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
   String? _errorMessage;
-  
+
   int _currentPage = 1;
   TradeStatus? _currentStatus;
   bool? _currentAsOfferer;
@@ -28,18 +28,19 @@ class TradeViewModel extends ChangeNotifier {
   // Getters
   List<Trade> get trades => _trades;
   List<Trade> get pendingTrades => _pendingTrades;
-  List<Trade> get activeTrades => _pendingTrades; // Aktif takaslar pending'le aynı
+  List<Trade> get activeTrades =>
+      _pendingTrades; // Aktif takaslar pending'le aynı
   List<Trade> get completedTrades => _completedTrades;
   List<Trade> get cancelledTrades => _cancelledTrades;
   Trade? get selectedTrade => _selectedTrade;
   Map<String, int> get statistics => _statistics;
-  
+
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get hasMore => _hasMore;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
-  
+
   int get currentPage => _currentPage;
   TradeStatus? get currentStatus => _currentStatus;
   bool? get currentAsOfferer => _currentAsOfferer;
@@ -97,7 +98,7 @@ class TradeViewModel extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
         final newTrades = response.data!;
-        
+
         if (_currentPage == 1) {
           _trades = newTrades;
         } else {
@@ -120,10 +121,7 @@ class TradeViewModel extends ChangeNotifier {
   Future<void> loadMoreTrades() async {
     if (!_hasMore || _isLoadingMore) return;
 
-    await loadTrades(
-      status: _currentStatus,
-      asOfferer: _currentAsOfferer,
-    );
+    await loadTrades(status: _currentStatus, asOfferer: _currentAsOfferer);
   }
 
   Future<void> refreshTrades() async {
@@ -380,7 +378,9 @@ class TradeViewModel extends ChangeNotifier {
     }
 
     // Update in pending trades list
-    final pendingIndex = _pendingTrades.indexWhere((t) => t.id == updatedTrade.id);
+    final pendingIndex = _pendingTrades.indexWhere(
+      (t) => t.id == updatedTrade.id,
+    );
     if (pendingIndex != -1) {
       if (updatedTrade.status == TradeStatus.pending) {
         _pendingTrades[pendingIndex] = updatedTrade;
@@ -390,7 +390,9 @@ class TradeViewModel extends ChangeNotifier {
     }
 
     // Update in completed trades list
-    final completedIndex = _completedTrades.indexWhere((t) => t.id == updatedTrade.id);
+    final completedIndex = _completedTrades.indexWhere(
+      (t) => t.id == updatedTrade.id,
+    );
     if (completedIndex != -1) {
       _completedTrades[completedIndex] = updatedTrade;
     }
@@ -429,4 +431,4 @@ class TradeViewModel extends ChangeNotifier {
   void dispose() {
     super.dispose();
   }
-} 
+}
