@@ -52,10 +52,22 @@ class UserViewModel extends ChangeNotifier {
     _clearError();
     
     try {
-      print('🔄 UserViewModel - Force refreshing user...');
+      print('🔄 UserViewModel.forceRefreshUser - Starting...');
+      
+      // Önce local storage'daki mevcut kullanıcıyı kontrol et
+      final localUser = await _userService.getCurrentUser();
+      if (localUser != null) {
+        print('📱 UserViewModel - Found local user: ${localUser.name} (ID: ${localUser.id})');
+        print('📱 UserViewModel - Local user details: firstName=${localUser.firstName}, lastName=${localUser.lastName}');
+      } else {
+        print('📱 UserViewModel - No local user found');
+      }
+      
       final success = await getUserProfile();
       if (success) {
         print('✅ UserViewModel - User refreshed successfully');
+        print('✅ UserViewModel - Current user: ${_currentUser?.name} (ID: ${_currentUser?.id})');
+        print('✅ UserViewModel - User details: firstName=${_currentUser?.firstName}, lastName=${_currentUser?.lastName}');
       } else {
         print('❌ UserViewModel - Failed to refresh user');
       }
@@ -160,6 +172,7 @@ class UserViewModel extends ChangeNotifier {
   }) async {
     final token = await _userService.getUserToken();
     if (token == null) {
+      print('❌ UserViewModel.getUserProfile - No token found');
       _setError(ErrorMessages.sessionExpired);
       return false;
     }
@@ -168,23 +181,35 @@ class UserViewModel extends ChangeNotifier {
     _clearError();
 
     try {
+      print('🔄 UserViewModel.getUserProfile - Calling API with token: ${token.substring(0, 20)}...');
+      
       final response = await _userService.getUserProfile(
         userToken: token,
         platform: platform,
         version: version,
       );
       
+      print('📡 UserViewModel.getUserProfile - API response received');
+      print('📡 Response isSuccess: ${response.isSuccess}');
+      print('📡 Response error: ${response.error}');
+      
       if (response.isSuccess && response.data != null) {
+        print('✅ UserViewModel.getUserProfile - API returned user data');
+        print('✅ User data: name=${response.data!.name}, firstName=${response.data!.firstName}, lastName=${response.data!.lastName}');
+        print('✅ User data: email=${response.data!.email}, phone=${response.data!.phone}');
+        
         _currentUser = response.data;
         await _userService.saveCurrentUser(response.data!);
         _setLoading(false);
         return true;
       } else {
+        print('❌ UserViewModel.getUserProfile - API failed or returned null');
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
+      print('❌ UserViewModel.getUserProfile - Exception: $e');
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;

@@ -1,135 +1,113 @@
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../models/product.dart' as product_model;
-import '../core/constants.dart';
+import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:takasly/core/app_theme.dart';
+import 'package:takasly/models/product.dart';
+import 'package:takasly/views/product/product_detail_view.dart';
 
 class ProductCard extends StatelessWidget {
-  final product_model.Product product;
-  final VoidCallback onTap;
+  final Product product;
+  final VoidCallback? onTap;
 
   const ProductCard({
     super.key,
     required this.product,
-    required this.onTap,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppTheme.borderRadius,
+        ),
+        elevation: 2,
+        color: AppTheme.surface,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image
+            // Resim
             Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(AppConstants.defaultBorderRadius),
-                  topRight: Radius.circular(AppConstants.defaultBorderRadius),
-                ),
-                child: product.images.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: product.images.first,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey.shade200,
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey.shade200,
-                          child: const Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      )
-                    : Container(
-                        color: Colors.grey.shade200,
-                        child: const Icon(
-                          Icons.image_not_supported,
+              flex: 5,
+              child: Hero(
+                tag: 'product_image_${product.id}',
+                child: Image.network(
+                  product.images.isNotEmpty
+                      ? product.images.first
+                      : '', // Boş string vererek errorBuilder'ı tetikle
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  // Yüklenirken gösterilecek iskelet
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(color: Colors.white),
+                    );
+                  },
+                  // Hata durumunda gösterilecek widget
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade200,
+                      child: Center(
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.grey.shade400,
                           size: 40,
-                          color: Colors.grey,
                         ),
                       ),
+                    );
+                  },
+                ),
               ),
             ),
-            
-            // Product Info
+            // Bilgiler
             Expanded(
-              flex: 2,
+              flex: 4,
               child: Padding(
-                padding: const EdgeInsets.all(AppConstants.smallPadding),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Product Title
+                    // Kategori
                     Text(
-                      product.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      product.category.name.toUpperCase(),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppTheme.accent,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
                     const SizedBox(height: 4),
-                    
-                    // Product Description
+                    // Başlık
                     Text(
-                      product.description,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
+                      product.title,
+                      style: textTheme.titleMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
-                    const Spacer(),
-                    
-                    // Product Location and Owner
+                    const SizedBox(height: 8),
+                    // Konum veya Sahip
                     Row(
                       children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 2),
+                        const Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textSecondary),
+                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            product.location?.city ?? 'Konum belirtilmemiş',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade600,
-                            ),
+                            product.owner.location?.city ?? 'Türkiye', // Varsayılan konum
+                            style: textTheme.bodySmall,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            product.condition,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade700,
-                            ),
                           ),
                         ),
                       ],
@@ -137,6 +115,102 @@ class ProductCard extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductImage(BuildContext context) {
+    return Expanded(
+      flex: 5,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            child: CachedNetworkImage(
+              imageUrl: product.images.isNotEmpty
+                  ? product.images.first
+                  : 'https://via.placeholder.com/300', // Placeholder
+              width: double.infinity,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: AppTheme.background,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: AppTheme.background,
+                child: const Icon(Icons.image_not_supported_outlined, color: AppTheme.textSecondary),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.favorite_border, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductInfo(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Expanded(
+      flex: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Kategori
+            Text(
+              product.category.name.toUpperCase(),
+              style: textTheme.bodySmall?.copyWith(
+                color: AppTheme.accent,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            // Başlık
+            Text(
+              product.title,
+              style: textTheme.titleMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            // Konum veya Sahip
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textSecondary),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    product.owner.location?.city ?? 'Türkiye', // Varsayılan konum
+                    style: textTheme.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

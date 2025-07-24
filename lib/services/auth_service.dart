@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/user.dart';
+import '../services/user_service.dart';
 
 class AuthService {
   final HttpClient _httpClient = HttpClient();
@@ -28,17 +29,26 @@ class AuthService {
             print('✅ Login - 410 response format detected');
             final userData = json['data'];
             
-            // Dummy user objesi oluştur
+            // API'den gelen verilerle user objesi oluştur
             final user = User(
               id: userData['userID'].toString(),
-              name: 'User', // Dummy name
-              email: email,
-              rating: 0.0,
-              totalTrades: 0,
-              isVerified: false,
+              name: userData['userFirstname'] != null && userData['userLastname'] != null 
+                  ? '${userData['userFirstname']} ${userData['userLastname']}'
+                  : userData['userName'] ?? 'Kullanıcı',
+              firstName: userData['userFirstname'],
+              lastName: userData['userLastname'],
+              email: userData['userEmail'] ?? email,
+              phone: userData['userPhone'],
+              rating: (userData['userRating'] ?? 0.0).toDouble(),
+              totalTrades: userData['userTotalTrades'] ?? 0,
+              isVerified: userData['userVerified'] ?? false,
               isOnline: true,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
+              createdAt: userData['userCreatedAt'] != null 
+                  ? DateTime.tryParse(userData['userCreatedAt']) ?? DateTime.now()
+                  : DateTime.now(),
+              updatedAt: userData['userUpdatedAt'] != null 
+                  ? DateTime.tryParse(userData['userUpdatedAt']) ?? DateTime.now()
+                  : DateTime.now(),
             );
             
             return {
@@ -69,6 +79,24 @@ class AuthService {
         
         // Token ve kullanıcı bilgilerini kaydet
         await _saveUserData(user, token);
+        
+        // Login sonrasında tam kullanıcı bilgilerini çek
+        try {
+          print('🔄 Fetching complete user profile after login...');
+          final userService = UserService();
+          final profileResponse = await userService.getUserProfile(userToken: token);
+          
+          if (profileResponse.isSuccess && profileResponse.data != null) {
+            print('✅ Complete user profile fetched successfully');
+            final completeUser = profileResponse.data!;
+            await _saveUserDataOnly(completeUser);
+            return ApiResponse.success(completeUser);
+          } else {
+            print('⚠️ Failed to fetch complete profile, using login data');
+          }
+        } catch (e) {
+          print('⚠️ Error fetching complete profile: $e, using login data');
+        }
         
         return ApiResponse.success(user);
       }
@@ -131,18 +159,26 @@ class AuthService {
             print('✅ Register - 410 response format detected');
             final userData = json['data'];
             
-            // Dummy user objesi oluştur (register için token olmayabilir)
+            // API'den gelen verilerle user objesi oluştur
             final user = User(
               id: userData['userID'].toString(),
-              name: '$firstName $lastName',
-              email: email,
-              phone: phone,
-              rating: 0.0,
-              totalTrades: 0,
-              isVerified: false, // Email verification gerekli
+              name: userData['userFirstname'] != null && userData['userLastname'] != null 
+                  ? '${userData['userFirstname']} ${userData['userLastname']}'
+                  : '$firstName $lastName',
+              firstName: userData['userFirstname'] ?? firstName,
+              lastName: userData['userLastname'] ?? lastName,
+              email: userData['userEmail'] ?? email,
+              phone: userData['userPhone'] ?? phone,
+              rating: (userData['userRating'] ?? 0.0).toDouble(),
+              totalTrades: userData['userTotalTrades'] ?? 0,
+              isVerified: userData['userVerified'] ?? false, // Email verification gerekli
               isOnline: true,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
+              createdAt: userData['userCreatedAt'] != null 
+                  ? DateTime.tryParse(userData['userCreatedAt']) ?? DateTime.now()
+                  : DateTime.now(),
+              updatedAt: userData['userUpdatedAt'] != null 
+                  ? DateTime.tryParse(userData['userUpdatedAt']) ?? DateTime.now()
+                  : DateTime.now(),
             );
             
             return {
@@ -173,6 +209,26 @@ class AuthService {
         
         // Token ve kullanıcı bilgilerini kaydet
         await _saveUserData(user, token);
+        
+        // Register sonrasında tam kullanıcı bilgilerini çek (token varsa)
+        if (token.isNotEmpty) {
+          try {
+            print('🔄 Fetching complete user profile after register...');
+            final userService = UserService();
+            final profileResponse = await userService.getUserProfile(userToken: token);
+            
+            if (profileResponse.isSuccess && profileResponse.data != null) {
+              print('✅ Complete user profile fetched successfully');
+              final completeUser = profileResponse.data!;
+              await _saveUserDataOnly(completeUser);
+              return ApiResponse.success(completeUser);
+            } else {
+              print('⚠️ Failed to fetch complete profile, using register data');
+            }
+          } catch (e) {
+            print('⚠️ Error fetching complete profile: $e, using register data');
+          }
+        }
         
         return ApiResponse.success(user);
       }
