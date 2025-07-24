@@ -11,6 +11,77 @@ class ProductService {
   final HttpClient _httpClient = HttpClient();
   static const String _tag = 'ProductService';
 
+  Future<ApiResponse<List<Product>>> getAllProducts({
+    int page = 1,
+    int limit = AppConstants.defaultPageSize,
+  }) async {
+    try {
+      print(
+        '🌐 ProductService: Getting all products from ${ApiConstants.allProducts}',
+      );
+      final fullUrl = '${ApiConstants.fullUrl}${ApiConstants.allProducts}';
+      print('🌐 Full URL: $fullUrl');
+
+      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+
+      final response = await _httpClient.getWithBasicAuth(
+        ApiConstants.allProducts,
+        queryParams: queryParams,
+        fromJson: (json) {
+          print('🔍 Raw All Products API Response: $json');
+
+          // JSON yapısını kontrol et
+          if (json == null) {
+            print('❌ All Products API response is null');
+            return <Product>[];
+          }
+
+          if (json['data'] == null) {
+            print('❌ All Products API response has no data field');
+            print('🔍 Available fields: ${json.keys}');
+            return <Product>[];
+          }
+
+          if (json['data']['products'] == null) {
+            print('❌ All Products API response has no products field in data');
+            print('🔍 Available data fields: ${json['data'].keys}');
+            return <Product>[];
+          }
+
+          final productsList = json['data']['products'] as List;
+          print('📦 All Products API returned ${productsList.length} products');
+
+          // İlk birkaç ürünü logla
+          if (productsList.isNotEmpty) {
+            print('📦 First 3 products in API response:');
+            for (
+              int i = 0;
+              i < (productsList.length > 3 ? 3 : productsList.length);
+              i++
+            ) {
+              final product = productsList[i];
+              print(
+                '  ${i + 1}. ${product['productTitle']} (ID: ${product['productID']})',
+              );
+            }
+          }
+
+          final products = productsList
+              .map((item) => _transformApiProductToModel(item))
+              .toList();
+
+          print('📦 Parsed ${products.length} products successfully');
+          return products;
+        },
+      );
+
+      return response;
+    } catch (e) {
+      print('❌ ProductService: Error getting all products: $e');
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
   Future<ApiResponse<List<Product>>> getProducts({
     int page = 1,
     int limit = AppConstants.defaultPageSize,
@@ -23,10 +94,7 @@ class ProductService {
     double? userLongitude,
   }) async {
     try {
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'limit': limit,
-      };
+      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
 
       if (categoryId != null) queryParams['categoryId'] = categoryId;
       if (searchQuery != null) queryParams['search'] = searchQuery;
@@ -69,10 +137,12 @@ class ProductService {
       print('🌐 ProductService - Calling endpoint: $endpoint');
       print('🌐 ProductService - Full URL: ${ApiConstants.fullUrl}$endpoint');
       print('🌐 ProductService - Base URL: ${ApiConstants.baseUrl}');
-      
+
       // Çalışan categories endpoint ile karşılaştırma için
-      print('🔍 Categories endpoint for comparison: ${ApiConstants.categoriesList}');
-      
+      print(
+        '🔍 Categories endpoint for comparison: ${ApiConstants.categoriesList}',
+      );
+
       // Basic auth ile dene (endpoint basic auth gerektiriyor)
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
@@ -80,22 +150,40 @@ class ProductService {
           print('🔍 ProductService - Raw response: $json');
           // API'den dönen response formatına göre parsing
           if (json case {'data': {'products': final List<dynamic> list}}) {
-            print('🔍 ProductService - Found ${list.length} products in response');
-            final products = list.map((item) => _transformApiProductToModel(item)).toList();
-            print('🔍 ProductService - Successfully parsed ${products.length} products');
+            print(
+              '🔍 ProductService - Found ${list.length} products in response',
+            );
+            final products = list
+                .map((item) => _transformApiProductToModel(item))
+                .toList();
+            print(
+              '🔍 ProductService - Successfully parsed ${products.length} products',
+            );
             return products;
           }
           // Fallback: Diğer olası formatlar
-          if (json case {'data': {'userProductList': final List<dynamic> list}}) {
-            print('🔍 ProductService - Found ${list.length} products in userProductList');
-            final products = list.map((item) => _transformApiProductToModel(item)).toList();
-            print('🔍 ProductService - Successfully parsed ${products.length} products');
+          if (json case {
+            'data': {'userProductList': final List<dynamic> list},
+          }) {
+            print(
+              '🔍 ProductService - Found ${list.length} products in userProductList',
+            );
+            final products = list
+                .map((item) => _transformApiProductToModel(item))
+                .toList();
+            print(
+              '🔍 ProductService - Successfully parsed ${products.length} products',
+            );
             return products;
           }
           if (json case {'products': final List<dynamic> list}) {
             print('🔍 ProductService - Found ${list.length} products in root');
-            final products = list.map((item) => _transformApiProductToModel(item)).toList();
-            print('🔍 ProductService - Successfully parsed ${products.length} products');
+            final products = list
+                .map((item) => _transformApiProductToModel(item))
+                .toList();
+            print(
+              '🔍 ProductService - Successfully parsed ${products.length} products',
+            );
             return products;
           }
           print('❌ ProductService - No products found in response');
@@ -114,15 +202,19 @@ class ProductService {
   Product _transformApiProductToModel(Map<String, dynamic> apiProduct) {
     final categoryId = apiProduct['productCatID']?.toString() ?? '';
     final categoryName = apiProduct['productCatname'] ?? '';
-    
-    print('🏷️ Transforming product with category ID: $categoryId, name: $categoryName');
-    
+
+    print(
+      '🏷️ Transforming product with category ID: $categoryId, name: $categoryName',
+    );
+
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle'] ?? '',
       description: apiProduct['productDesc'] ?? '',
-      images: apiProduct['productImage'] != null && apiProduct['productImage'].isNotEmpty 
-          ? [apiProduct['productImage']] 
+      images:
+          apiProduct['productImage'] != null &&
+              apiProduct['productImage'].isNotEmpty
+          ? [apiProduct['productImage']]
           : [],
       categoryId: categoryId,
       category: Category(
@@ -145,8 +237,8 @@ class ProductService {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       ),
-      tradePreferences: apiProduct['productTradeFor'] != null 
-          ? [apiProduct['productTradeFor']] 
+      tradePreferences: apiProduct['productTradeFor'] != null
+          ? [apiProduct['productTradeFor']]
           : [],
       status: ProductStatus.active,
       viewCount: 0,
@@ -263,18 +355,22 @@ class ProductService {
   }
 
   Future<ApiResponse<List<Category>>> getCategories() async {
-    print('🏷️ ProductService: Getting categories from ${ApiConstants.categoriesList}');
+    print(
+      '🏷️ ProductService: Getting categories from ${ApiConstants.categoriesList}',
+    );
     try {
       final response = await _httpClient.getWithBasicAuth(
         ApiConstants.categoriesList,
         fromJson: (json) => (json['data']['categories'] as List)
-            .map((item) => Category(
-              id: item['catID'].toString(),
-              name: item['catName'],
-              icon: item['catImage'] ?? '',
-              isActive: true,
-              order: 0,
-            ))
+            .map(
+              (item) => Category(
+                id: item['catID'].toString(),
+                name: item['catName'],
+                icon: item['catImage'] ?? '',
+                isActive: true,
+                order: 0,
+              ),
+            )
             .toList(),
       );
 
@@ -285,48 +381,56 @@ class ProductService {
   }
 
   Future<ApiResponse<List<City>>> getCities() async {
-    print('🏙️ ProductService: Getting cities from service/general/general/cities/all');
+    print(
+      '🏙️ ProductService: Getting cities from service/general/general/cities/all',
+    );
     final fullUrl = '${ApiConstants.fullUrl}service/general/general/cities/all';
     print('🌐 Full URL: $fullUrl');
-    
+
     try {
       final response = await _httpClient.getWithBasicAuth(
         'service/general/general/cities/all',
         fromJson: (json) {
           print('🔍 Raw Cities API Response: $json');
-          
+
           // JSON yapısını kontrol et
           if (json == null) {
             print('❌ Cities API response is null');
             return <City>[];
           }
-          
+
           if (json['data'] == null) {
             print('❌ Cities API response has no data field');
             print('🔍 Available fields: ${json.keys}');
             return <City>[];
           }
-          
+
           if (json['data']['cities'] == null) {
             print('❌ Cities API response has no cities field in data');
             print('🔍 Available data fields: ${json['data'].keys}');
             return <City>[];
           }
-          
+
           final citiesList = json['data']['cities'] as List;
           print('🏙️ Cities API returned ${citiesList.length} cities');
-          
+
           // İlk birkaç şehri logla
           if (citiesList.isNotEmpty) {
             print('🏙️ First 5 cities in API response:');
-            for (int i = 0; i < (citiesList.length > 5 ? 5 : citiesList.length); i++) {
+            for (
+              int i = 0;
+              i < (citiesList.length > 5 ? 5 : citiesList.length);
+              i++
+            ) {
               final city = citiesList[i];
-              print('  ${i + 1}. ${city['cityName']} (ID: ${city['cityID']}, Plate: ${city['plateCode']})');
+              print(
+                '  ${i + 1}. ${city['cityName']} (ID: ${city['cityID']}, Plate: ${city['plateCode']})',
+              );
             }
           }
-          
-                     final cities = citiesList.map((item) => City.fromJson(item)).toList();
-          
+
+          final cities = citiesList.map((item) => City.fromJson(item)).toList();
+
           print('🏙️ Parsed ${cities.length} cities successfully');
           return cities;
         },
@@ -340,27 +444,37 @@ class ProductService {
   }
 
   Future<ApiResponse<List<District>>> getDistricts(String cityId) async {
-    print('🏘️ ProductService: Getting districts for city $cityId from service/general/general/districts/$cityId');
+    print(
+      '🏘️ ProductService: Getting districts for city $cityId from service/general/general/districts/$cityId',
+    );
     try {
       final response = await _httpClient.getWithBasicAuth(
         'service/general/general/districts/$cityId',
         fromJson: (json) {
           print('🏘️ Raw districts response: $json');
-          
+
           // Farklı yanıt formatlarını kontrol et
           if (json['data'] != null && json['data']['districts'] != null) {
             final districtsList = json['data']['districts'] as List;
-            print('🏘️ Districts API returned ${districtsList.length} districts');
-            
+            print(
+              '🏘️ Districts API returned ${districtsList.length} districts',
+            );
+
             // İlk birkaç ilçeyi logla
             if (districtsList.isNotEmpty) {
               print('🏘️ First 5 districts in API response:');
-              for (int i = 0; i < (districtsList.length > 5 ? 5 : districtsList.length); i++) {
+              for (
+                int i = 0;
+                i < (districtsList.length > 5 ? 5 : districtsList.length);
+                i++
+              ) {
                 final district = districtsList[i];
-                print('  ${i + 1}. ${district['districtName']} (No: ${district['districtNo']})');
+                print(
+                  '  ${i + 1}. ${district['districtName']} (No: ${district['districtNo']})',
+                );
               }
             }
-            
+
             return districtsList
                 .map((item) => District.fromJson(item, cityId: cityId))
                 .toList();
@@ -384,48 +498,57 @@ class ProductService {
   }
 
   Future<ApiResponse<List<Condition>>> getConditions() async {
-    print('🏷️ ProductService: Getting conditions from service/general/general/productConditions');
-    final fullUrl = '${ApiConstants.fullUrl}service/general/general/productConditions';
+    print(
+      '🏷️ ProductService: Getting conditions from service/general/general/productConditions',
+    );
+    final fullUrl =
+        '${ApiConstants.fullUrl}service/general/general/productConditions';
     print('🌐 Full URL: $fullUrl');
-    
+
     try {
       final response = await _httpClient.getWithBasicAuth(
         'service/general/general/productConditions',
         fromJson: (json) {
           print('🔍 Raw Conditions API Response: $json');
-          
+
           // JSON yapısını kontrol et
           if (json == null) {
             print('❌ Conditions API response is null');
             return <Condition>[];
           }
-          
+
           if (json['data'] == null) {
             print('❌ Conditions API response has no data field');
             print('🔍 Available fields: ${json.keys}');
             return <Condition>[];
           }
-          
+
           if (json['data']['conditions'] == null) {
             print('❌ Conditions API response has no conditions field in data');
             print('🔍 Available data fields: ${json['data'].keys}');
             return <Condition>[];
           }
-          
+
           final conditionsList = json['data']['conditions'] as List;
-          print('🏷️ Conditions API returned ${conditionsList.length} conditions');
-          
+          print(
+            '🏷️ Conditions API returned ${conditionsList.length} conditions',
+          );
+
           // İlk birkaç durumu logla
           if (conditionsList.isNotEmpty) {
             print('🏷️ All conditions in API response:');
             for (int i = 0; i < conditionsList.length; i++) {
               final condition = conditionsList[i];
-              print('  ${i + 1}. ${condition['conditionName']} (ID: ${condition['conditionID']})');
+              print(
+                '  ${i + 1}. ${condition['conditionName']} (ID: ${condition['conditionID']})',
+              );
             }
           }
-          
-          final conditions = conditionsList.map((item) => Condition.fromJson(item)).toList();
-          
+
+          final conditions = conditionsList
+              .map((item) => Condition.fromJson(item))
+              .toList();
+
           print('🏷️ Parsed ${conditions.length} conditions successfully');
           return conditions;
         },
@@ -512,7 +635,7 @@ class ProductService {
     print('  - conditionId: $conditionId');
     print('  - tradeFor: $tradeFor');
     print('  - productImages count: ${productImages.length}');
-    
+
     try {
       // Form fields
       final fields = <String, String>{
@@ -545,7 +668,9 @@ class ProductService {
         print('📸 No images to upload');
       }
 
-      print('📸 Uploading ${productImages.length} images with key "productImages"');
+      print(
+        '📸 Uploading ${productImages.length} images with key "productImages"',
+      );
 
       final endpoint = '${ApiConstants.addProduct}/$userId/addProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
@@ -557,7 +682,7 @@ class ProductService {
         multipleFiles: multipleFiles,
         fromJson: (json) {
           print('📥 ProductService.addProduct - Raw response: $json');
-          
+
           // API response'unda data field'ı varsa onu döndür, yoksa tüm json'u döndür
           if (json.containsKey('data') && json['data'] != null) {
             print('📥 ProductService.addProduct - Using data field');
@@ -587,45 +712,50 @@ class ProductService {
       final endpoint = '${ApiConstants.userProducts}/$userId/productList';
       print('🔄 ProductService.getUserProducts called with userId: $userId');
       print('🔄 ProductService - calling endpoint: $endpoint');
-      
+
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
         fromJson: (json) {
           print('🔍 ProductService - Raw response: $json');
-          
+
           if (json == null) {
             print('❌ ProductService - Response is null');
             return <Product>[];
           }
-          
+
           // API response'u data field'ının içinde products array'i var
           if (json['data'] == null) {
             print('❌ ProductService - No data field in response');
             return <Product>[];
           }
-          
+
           final dataField = json['data'];
           if (dataField['products'] == null) {
             print('❌ ProductService - No products field in data');
             return <Product>[];
           }
-          
+
           final productsList = dataField['products'] as List;
-          print('🔍 ProductService - Found ${productsList.length} products in response');
-          
+          print(
+            '🔍 ProductService - Found ${productsList.length} products in response',
+          );
+
           // API response'unu Product model'ine uygun hale getir
           return productsList.map((apiProduct) {
             print('🔄 ProductService - Converting API product: $apiProduct');
-            
+
             // API field'larından Product model'i için gerekli field'ları oluştur
             final productData = {
               'id': apiProduct['productID']?.toString() ?? '',
               'title': apiProduct['productTitle'] ?? '',
               'description': apiProduct['productDesc'] ?? '',
               'images': [
-                if (apiProduct['productImage'] != null && apiProduct['productImage'].toString().isNotEmpty)
+                if (apiProduct['productImage'] != null &&
+                    apiProduct['productImage'].toString().isNotEmpty)
                   apiProduct['productImage'].toString(),
-                ...(apiProduct['extraImages'] as List? ?? []).map((img) => img.toString()),
+                ...(apiProduct['extraImages'] as List? ?? []).map(
+                  (img) => img.toString(),
+                ),
               ],
               'categoryId': apiProduct['productCatID']?.toString() ?? '',
               'category': {
@@ -658,7 +788,7 @@ class ProductService {
               'updatedAt': DateTime.now().toIso8601String(),
               'expiresAt': null,
             };
-            
+
             print('🔄 ProductService - Converted product data: $productData');
             return Product.fromJson(productData);
           }).toList();
@@ -667,12 +797,11 @@ class ProductService {
 
       print('🔍 ProductService - Response isSuccess: ${response.isSuccess}');
       print('🔍 ProductService - Response error: ${response.error}');
-      
+
       return response;
     } catch (e) {
       print('💥 ProductService - Exception in getUserProducts: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
-
-} 
+}

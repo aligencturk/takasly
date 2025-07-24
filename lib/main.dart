@@ -6,6 +6,7 @@ import 'viewmodels/product_viewmodel.dart';
 import 'viewmodels/trade_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/auth/login_view.dart';
+import 'views/auth/register_view.dart';
 import 'views/auth/email_verification_view.dart';
 import 'views/auth/reset_password_view.dart';
 import 'views/home/home_view.dart';
@@ -26,18 +27,10 @@ class TakaslyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (context) => AuthViewModel(),
-        ),
-        ChangeNotifierProvider(
-          create: (context) => UserViewModel(),
-        ),
-        ChangeNotifierProvider(
-          create: (context) => ProductViewModel(),
-        ),
-        ChangeNotifierProvider(
-          create: (context) => TradeViewModel(),
-        ),
+        ChangeNotifierProvider(create: (context) => AuthViewModel()),
+        ChangeNotifierProvider(create: (context) => UserViewModel()),
+        ChangeNotifierProvider(create: (context) => ProductViewModel()),
+        ChangeNotifierProvider(create: (context) => TradeViewModel()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,
@@ -47,6 +40,7 @@ class TakaslyApp extends StatelessWidget {
         routes: {
           '/': (context) => const SplashView(),
           '/login': (context) => const LoginView(),
+          '/register': (context) => const RegisterView(),
           '/home': (context) => const HomeView(),
           '/profile': (context) => const ProfileView(),
           '/trade': (context) => const TradeView(),
@@ -65,9 +59,7 @@ class TakaslyApp extends StatelessWidget {
                 builder: (context) => EmailVerificationView(email: email),
               );
             default:
-              return MaterialPageRoute(
-                builder: (context) => const HomeView(),
-              );
+              return MaterialPageRoute(builder: (context) => const HomeView());
           }
         },
       ),

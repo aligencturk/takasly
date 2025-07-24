@@ -5,7 +5,7 @@ import '../core/constants.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
-  
+
   User? _currentUser;
   bool _isLoading = false;
   bool _isLoggedIn = false;
@@ -47,17 +47,12 @@ class AuthViewModel extends ChangeNotifier {
       return false;
     }
 
-    if (password.length < AppConstants.minPasswordLength) {
-      _setError(ErrorMessages.weakPassword);
-      return false;
-    }
-
     _setLoading(true);
     _clearError();
 
     try {
       final response = await _authService.login(email, password);
-      
+
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data;
         _isLoggedIn = true;
@@ -84,8 +79,10 @@ class AuthViewModel extends ChangeNotifier {
     required bool policy,
     required bool kvkk,
   }) async {
-    if (firstName.trim().isEmpty || lastName.trim().isEmpty || 
-        email.trim().isEmpty || password.trim().isEmpty || 
+    if (firstName.trim().isEmpty ||
+        lastName.trim().isEmpty ||
+        email.trim().isEmpty ||
+        password.trim().isEmpty ||
         phone.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return false;
@@ -93,11 +90,6 @@ class AuthViewModel extends ChangeNotifier {
 
     if (!_isValidEmail(email)) {
       _setError(ErrorMessages.invalidEmail);
-      return false;
-    }
-
-    if (password.length < AppConstants.minPasswordLength) {
-      _setError(ErrorMessages.weakPassword);
       return false;
     }
 
@@ -134,7 +126,7 @@ class AuthViewModel extends ChangeNotifier {
         policy: policy,
         kvkk: kvkk,
       );
-      
+
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data;
         _isLoggedIn = true;
@@ -168,7 +160,7 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       final response = await _authService.forgotPassword(email);
-      
+
       if (response.isSuccess) {
         _setLoading(false);
         return true;
@@ -211,7 +203,7 @@ class AuthViewModel extends ChangeNotifier {
         email: email,
         code: code,
       );
-      
+
       if (response.isSuccess) {
         _setLoading(false);
         return true;
@@ -227,9 +219,7 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> resendEmailVerificationCode({
-    required String email,
-  }) async {
+  Future<bool> resendEmailVerificationCode({required String email}) async {
     if (email.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return false;
@@ -247,7 +237,7 @@ class AuthViewModel extends ChangeNotifier {
       final response = await _authService.resendEmailVerificationCode(
         email: email,
       );
-      
+
       if (response.isSuccess) {
         _setLoading(false);
         return true;
@@ -269,19 +259,16 @@ class AuthViewModel extends ChangeNotifier {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    if (email.trim().isEmpty || verificationCode.trim().isEmpty || 
-        newPassword.trim().isEmpty || confirmPassword.trim().isEmpty) {
+    if (email.trim().isEmpty ||
+        verificationCode.trim().isEmpty ||
+        newPassword.trim().isEmpty ||
+        confirmPassword.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return false;
     }
 
     if (!_isValidEmail(email)) {
       _setError(ErrorMessages.invalidEmail);
-      return false;
-    }
-
-    if (newPassword.length < AppConstants.minPasswordLength) {
-      _setError(ErrorMessages.weakPassword);
       return false;
     }
 
@@ -304,7 +291,7 @@ class AuthViewModel extends ChangeNotifier {
         verificationCode: verificationCode,
         newPassword: newPassword,
       );
-      
+
       if (response.isSuccess) {
         _setLoading(false);
         return true;
@@ -351,7 +338,7 @@ class AuthViewModel extends ChangeNotifier {
         bio: bio,
         avatar: avatar,
       );
-      
+
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data;
         _setLoading(false);
@@ -374,7 +361,7 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       final response = await _authService.logout();
-      
+
       if (response.isSuccess) {
         _currentUser = null;
         _isLoggedIn = false;
@@ -400,7 +387,7 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       final response = await _authService.getProfile();
-      
+
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data;
       } else {
@@ -440,4 +427,4 @@ class AuthViewModel extends ChangeNotifier {
   void dispose() {
     super.dispose();
   }
-} 
+}

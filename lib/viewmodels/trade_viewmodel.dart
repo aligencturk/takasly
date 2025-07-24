@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import '../models/trade.dart';
+import '../models/product.dart';
 import '../services/trade_service.dart';
+import '../services/product_service.dart';
+import '../services/auth_service.dart';
 import '../core/constants.dart';
 
 class TradeViewModel extends ChangeNotifier {

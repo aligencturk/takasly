@@ -36,7 +36,9 @@ class LoginView extends StatelessWidget {
                 Text(
                   'Takasly',
                   textAlign: TextAlign.center,
-                  style: textTheme.displaySmall?.copyWith(color: colorScheme.primary),
+                  style: textTheme.displaySmall?.copyWith(
+                    color: colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -109,7 +111,12 @@ class LoginView extends StatelessWidget {
   }
 
   // Sosyal medya butonları için yardımcı metod
-  Widget _buildSocialLoginButton(BuildContext context, {required IconData icon, required String label, required VoidCallback onPressed}) {
+  Widget _buildSocialLoginButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
     return OutlinedButton(
       onPressed: onPressed,
       child: Row(
@@ -141,11 +148,7 @@ class LoginView extends StatelessWidget {
 
   // Kayıt ekranını göster
   void _showRegisterScreen(BuildContext context) {
-    // TODO: Kayıt ekranına yönlendirme
-    // Navigator.of(context).pushNamed('/register');
-     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Kayıt ekranı yakında!')),
-    );
+    Navigator.of(context).pushNamed('/register');
   }
 }
 
@@ -186,7 +189,9 @@ class _LoginFormState extends State<_LoginForm> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authViewModel.errorMessage ?? 'Giriş başarısız oldu.'),
+            content: Text(
+              authViewModel.errorMessage ?? 'Giriş başarısız oldu.',
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -227,7 +232,9 @@ class _LoginFormState extends State<_LoginForm> {
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscureText
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                 ),
                 onPressed: () {
                   setState(() {
@@ -252,7 +259,9 @@ class _LoginFormState extends State<_LoginForm> {
               },
               child: Text(
                 'Şifremi Unuttum',
-                style: textTheme.bodyMedium?.copyWith(color: colorScheme.primary),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.primary,
+                ),
               ),
             ),
           ),
@@ -278,4 +287,4 @@ class _LoginFormState extends State<_LoginForm> {
       ),
     );
   }
-} 
+}

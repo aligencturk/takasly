@@ -12,7 +12,7 @@ import '../core/constants.dart';
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
   final AuthService _authService = AuthService();
-  
+
   List<product_model.Product> _products = [];
   List<product_model.Product> _favoriteProducts = [];
   List<product_model.Product> _myProducts = [];
@@ -21,12 +21,12 @@ class ProductViewModel extends ChangeNotifier {
   List<District> _districts = [];
   List<Condition> _conditions = [];
   product_model.Product? _selectedProduct;
-  
+
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
   String? _errorMessage;
-  
+
   int _currentPage = 1;
   String? _currentCategoryId;
   String? _currentSearchQuery;
@@ -42,13 +42,13 @@ class ProductViewModel extends ChangeNotifier {
   List<District> get districts => _districts;
   List<Condition> get conditions => _conditions;
   product_model.Product? get selectedProduct => _selectedProduct;
-  
+
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get hasMore => _hasMore;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
-  
+
   int get currentPage => _currentPage;
   String? get currentCategoryId => _currentCategoryId;
   String? get currentSearchQuery => _currentSearchQuery;
@@ -60,11 +60,56 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadInitialData() async {
-    await Future.wait([
-      loadProducts(),
-      loadCategories(),
-      loadConditions(),
-    ]);
+    await Future.wait([loadAllProducts(), loadCategories(), loadConditions()]);
+  }
+
+  Future<void> loadAllProducts({
+    int page = 1,
+    int limit = AppConstants.defaultPageSize,
+    bool refresh = false,
+  }) async {
+    if (refresh) {
+      _currentPage = 1;
+      _hasMore = true;
+      _products.clear();
+    }
+
+    if (_isLoading || _isLoadingMore) return;
+
+    if (_currentPage == 1) {
+      _setLoading(true);
+    } else {
+      _setLoadingMore(true);
+    }
+
+    _clearError();
+
+    try {
+      final response = await _productService.getAllProducts(
+        page: page,
+        limit: limit,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final newProducts = response.data!;
+
+        if (_currentPage == 1) {
+          _products = newProducts;
+        } else {
+          _products.addAll(newProducts);
+        }
+
+        _hasMore = newProducts.length == AppConstants.defaultPageSize;
+        _currentPage++;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoading(false);
+      _setLoadingMore(false);
+    }
   }
 
   Future<void> loadProducts({
@@ -107,7 +152,7 @@ class ProductViewModel extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
         final newProducts = response.data!;
-        
+
         if (_currentPage == 1) {
           _products = newProducts;
         } else {
@@ -160,7 +205,7 @@ class ProductViewModel extends ChangeNotifier {
   Future<void> searchProducts(String query) async {
     _currentSearchQuery = query;
     notifyListeners();
-    
+
     await loadProducts(
       categoryId: _currentCategoryId,
       searchQuery: query,
@@ -173,7 +218,7 @@ class ProductViewModel extends ChangeNotifier {
   Future<void> filterByCategory(String? categoryId) async {
     _currentCategoryId = categoryId;
     notifyListeners();
-    
+
     await loadProducts(
       categoryId: categoryId,
       searchQuery: _currentSearchQuery,
@@ -192,7 +237,7 @@ class ProductViewModel extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
         _selectedProduct = response.data;
-        
+
         // View count'u artır
         _productService.incrementViewCount(productId);
       } else {
@@ -237,11 +282,15 @@ class ProductViewModel extends ChangeNotifier {
 
       if (response.isSuccess) {
         _myProducts = response.data ?? [];
-        print('✅ ProductViewModel - Successfully loaded ${_myProducts.length} user products');
+        print(
+          '✅ ProductViewModel - Successfully loaded ${_myProducts.length} user products',
+        );
       } else {
         final errorMessage = response.error ?? ErrorMessages.unknownError;
         _setError(errorMessage);
-        print('❌ ProductViewModel - Failed to load user products: $errorMessage');
+        print(
+          '❌ ProductViewModel - Failed to load user products: $errorMessage',
+        );
       }
     } catch (e) {
       final errorMessage = ErrorMessages.unknownError;
@@ -276,7 +325,9 @@ class ProductViewModel extends ChangeNotifier {
     print('🏷️ Loading categories...');
     try {
       final response = await _productService.getCategories();
-      print('🏷️ Categories response: success=${response.isSuccess}, error=${response.error}');
+      print(
+        '🏷️ Categories response: success=${response.isSuccess}, error=${response.error}',
+      );
 
       if (response.isSuccess && response.data != null) {
         _categories = response.data ?? [];
@@ -298,26 +349,30 @@ class ProductViewModel extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-    
+
     try {
       final response = await _productService.getCities();
-      print('🏙️ Cities response: success=${response.isSuccess}, error=${response.error}');
+      print(
+        '🏙️ Cities response: success=${response.isSuccess}, error=${response.error}',
+      );
 
       if (response.isSuccess && response.data != null) {
         _cities = response.data ?? [];
         print('🏙️ Cities loaded: ${_cities.length} items');
-        
+
         // Tüm şehirleri logla
         if (_cities.isNotEmpty) {
           print('🏙️ All cities loaded:');
           for (int i = 0; i < _cities.length; i++) {
             final city = _cities[i];
-            print('  ${i + 1}. ${city.name} (ID: ${city.id}, Plate: ${city.plateCode})');
+            print(
+              '  ${i + 1}. ${city.name} (ID: ${city.id}, Plate: ${city.plateCode})',
+            );
           }
         } else {
           print('⚠️ No cities in the response data');
         }
-        
+
         _isLoading = false;
         notifyListeners();
       } else {
@@ -337,12 +392,16 @@ class ProductViewModel extends ChangeNotifier {
     print('🏘️ Loading districts for city $cityId...');
     try {
       final response = await _productService.getDistricts(cityId);
-      print('🏘️ Districts response: success=${response.isSuccess}, error=${response.error}');
+      print(
+        '🏘️ Districts response: success=${response.isSuccess}, error=${response.error}',
+      );
 
       if (response.isSuccess && response.data != null) {
         _districts = response.data ?? [];
-        print('🏘️ Districts loaded: ${_districts.length} items for city $cityId');
-        
+        print(
+          '🏘️ Districts loaded: ${_districts.length} items for city $cityId',
+        );
+
         // Tüm ilçeleri logla
         if (_districts.isNotEmpty) {
           print('🏘️ All districts loaded:');
@@ -353,7 +412,7 @@ class ProductViewModel extends ChangeNotifier {
         } else {
           print('⚠️ No districts in the response data');
         }
-        
+
         notifyListeners();
       } else {
         print('🏘️ Districts failed: ${response.error}');
@@ -377,12 +436,14 @@ class ProductViewModel extends ChangeNotifier {
     print('🏷️ Loading conditions...');
     try {
       final response = await _productService.getConditions();
-      print('🏷️ Conditions response: success=${response.isSuccess}, error=${response.error}');
+      print(
+        '🏷️ Conditions response: success=${response.isSuccess}, error=${response.error}',
+      );
 
       if (response.isSuccess && response.data != null) {
         _conditions = response.data ?? [];
         print('🏷️ Conditions loaded: ${_conditions.length} items');
-        
+
         // Tüm durumları logla
         if (_conditions.isNotEmpty) {
           print('🏷️ All conditions loaded:');
@@ -393,7 +454,7 @@ class ProductViewModel extends ChangeNotifier {
         } else {
           print('⚠️ No conditions in the response data');
         }
-        
+
         notifyListeners();
       } else {
         print('🏷️ Conditions failed: ${response.error}');
@@ -469,7 +530,7 @@ class ProductViewModel extends ChangeNotifier {
   Future<bool> toggleFavorite(String productId) async {
     try {
       final isFavorite = _favoriteProducts.any((p) => p.id == productId);
-      
+
       if (isFavorite) {
         final response = await _productService.removeFromFavorites(productId);
         if (response.isSuccess) {
@@ -570,11 +631,11 @@ class ProductViewModel extends ChangeNotifier {
         final responseData = response.data!;
         final productId = responseData['productID']?.toString() ?? 'unknown';
         final message = responseData['message']?.toString() ?? 'Ürün eklendi';
-        
+
         print('✅ Product added successfully!');
         print('🆔 Product ID: $productId');
         print('💬 Message: $message');
-        
+
         // Başarılı olduktan sonra ürün listesini yenile
         print('🔄 Refreshing products...');
         await refreshProducts();
@@ -608,7 +669,7 @@ class ProductViewModel extends ChangeNotifier {
     print('  - conditionId: $conditionId');
     print('  - tradeFor: $tradeFor');
     print('  - productImages count: ${productImages.length}');
-    
+
     // Validasyonlar
     if (productTitle.trim().isEmpty || productDescription.trim().isEmpty) {
       print('❌ Validation failed: Başlık ve açıklama zorunludur');
@@ -683,11 +744,11 @@ class ProductViewModel extends ChangeNotifier {
         final responseData = response.data!;
         final productId = responseData['productID']?.toString() ?? 'unknown';
         final message = responseData['message']?.toString() ?? 'Ürün eklendi';
-        
+
         print('✅ Product added successfully!');
         print('🆔 Product ID: $productId');
         print('💬 Message: $message');
-        
+
         // Başarılı olduktan sonra ürün listesini yenile
         print('🔄 Refreshing products...');
         await refreshProducts();
@@ -713,4 +774,4 @@ class ProductViewModel extends ChangeNotifier {
   void dispose() {
     super.dispose();
   }
-} 
+}
