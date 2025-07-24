@@ -116,12 +116,19 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildProductGrid() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        print('🎨 HomeView - Consumer builder called');
+        print('🎨 HomeView - vm.isLoading: ${vm.isLoading}');
+        print('🎨 HomeView - vm.products.length: ${vm.products.length}');
+        print('🎨 HomeView - vm.hasError: ${vm.hasError}');
+        print('🎨 HomeView - vm.errorMessage: ${vm.errorMessage}');
+
         if (vm.isLoading && vm.products.isEmpty) {
-          // Skeleton loader'ı burada kullan
+          print('🎨 HomeView - Showing skeleton loader');
           return const SliverToBoxAdapter(child: ProductGridSkeleton());
         }
 
         if (vm.hasError && vm.products.isEmpty) {
+          print('🎨 HomeView - Showing error widget');
           return SliverFillRemaining(
             child: custom_error.CustomErrorWidget(
               message: vm.errorMessage ?? 'Ürünler yüklenemedi.',
@@ -131,6 +138,7 @@ class _HomeViewState extends State<HomeView> {
         }
 
         if (vm.products.isEmpty) {
+          print('🎨 HomeView - Showing empty message');
           return const SliverFillRemaining(
             child: Center(child: Text('Gösterilecek ürün bulunamadı.')),
           );

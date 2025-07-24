@@ -184,6 +184,10 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshProducts() async {
+    print('🔄 ProductViewModel.refreshProducts started');
+    print(
+      '🔄 ProductViewModel - Current _products.length: ${_products.length}',
+    );
     try {
       await Future.wait([
         loadCategories(),
@@ -195,6 +199,8 @@ class ProductViewModel extends ChangeNotifier {
           refresh: true,
         ),
       ]);
+      print('✅ ProductViewModel.refreshProducts completed');
+      print('✅ ProductViewModel - Final _products.length: ${_products.length}');
     } catch (e) {
       print('❌ refreshProducts error: $e');
       _errorMessage = 'Veri yenilenirken hata oluştu: $e';

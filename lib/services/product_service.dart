@@ -104,12 +104,70 @@ class ProductService {
       if (userLatitude != null) queryParams['userLatitude'] = userLatitude;
       if (userLongitude != null) queryParams['userLongitude'] = userLongitude;
 
-      final response = await _httpClient.get(
-        ApiConstants.products,
+      print(
+        '🌐 ProductService - Getting all products from ${ApiConstants.allProducts}',
+      );
+      print(
+        '🌐 ProductService - Full URL: ${ApiConstants.fullUrl}${ApiConstants.allProducts}',
+      );
+      print('🌐 ProductService - Query params: $queryParams');
+      print('🧪 Testing without query parameters...');
+
+      final response = await _httpClient.getWithBasicAuth(
+        ApiConstants.allProducts,
         queryParams: queryParams,
-        fromJson: (json) => (json['products'] as List)
-            .map((item) => Product.fromJson(item))
-            .toList(),
+        fromJson: (json) {
+          print('🔍 ProductService - All products raw response: $json');
+
+          // Eğer sadece success mesajı geliyorsa (ürün yok)
+          if (json case {'error': false, '200': 'OK'}) {
+            print(
+              '🔍 ProductService - Empty success response, no products available',
+            );
+            return <Product>[];
+          }
+
+          // API'den dönen response formatına göre parsing
+          if (json case {'data': {'products': final List<dynamic> list}}) {
+            print(
+              '🔍 ProductService - Found ${list.length} products in data.products',
+            );
+            final products = list
+                .map((item) => _transformApiProductToModel(item))
+                .toList();
+            return products;
+          }
+          // Fallback: Diğer olası formatlar
+          if (json case {'products': final List<dynamic> list}) {
+            print('🔍 ProductService - Found ${list.length} products in root');
+            final products = list
+                .map((item) => _transformApiProductToModel(item))
+                .toList();
+            return products;
+          }
+          if (json case {'data': final List<dynamic> list}) {
+            print(
+              '🔍 ProductService - Found ${list.length} products in data array',
+            );
+            final products = list
+                .map((item) => _transformApiProductToModel(item))
+                .toList();
+            return products;
+          }
+          // Eğer success:true varsa ama ürün listesi yoksa
+          if (json case {'success': true}) {
+            print(
+              '🔍 ProductService - Success response but no product list found',
+            );
+            return <Product>[];
+          }
+
+          print(
+            '❌ ProductService - No products found in all products response',
+          );
+          print('❌ ProductService - Available keys: ${json.keys.toList()}');
+          return <Product>[];
+        },
       );
 
       return response;
