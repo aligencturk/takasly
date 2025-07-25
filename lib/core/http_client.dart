@@ -255,6 +255,46 @@ class HttpClient {
     }
   }
 
+  Future<ApiResponse<T>> putWithBasicAuth<T>(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    T Function(dynamic)? fromJson,
+  }) async {
+    try {
+      final fullUrl = '${ApiConstants.fullUrl}$endpoint';
+      final uri = Uri.parse(fullUrl);
+      final headers = _getBasicAuthHeaders();
+      final bodyString = body != null ? json.encode(body) : null;
+
+      print('🌐 PUT Full URL: $fullUrl');
+      print('🌐 PUT URI: $uri');
+      print('🔑 PUT Headers: $headers');
+      print('📤 PUT Body String: $bodyString');
+
+      final response = await http
+          .put(uri, headers: headers, body: bodyString)
+          .timeout(_timeout);
+
+      print('📥 PUT Response Status: ${response.statusCode}');
+      print('📥 PUT Response Headers: ${response.headers}');
+      print('📥 PUT Response Body: ${response.body}');
+
+      return await _handleResponse<T>(response, fromJson, isBasicAuth: true);
+    } on SocketException catch (e) {
+      print('🚫 PUT Socket Exception: $e');
+      return ApiResponse<T>.error(ErrorMessages.networkError);
+    } on HttpException catch (e) {
+      print('🚫 PUT HTTP Exception: $e');
+      return ApiResponse<T>.error(ErrorMessages.networkError);
+    } on FormatException catch (e) {
+      print('🚫 PUT Format Exception: $e');
+      return ApiResponse<T>.error(ErrorMessages.unknownError);
+    } catch (e) {
+      print('💥 PUT Exception: $e');
+      return ApiResponse<T>.error(ErrorMessages.unknownError);
+    }
+  }
+
   Future<ApiResponse<T>> deleteWithBasicAuth<T>(
     String endpoint, {
     Map<String, dynamic>? body,

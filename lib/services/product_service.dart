@@ -8,6 +8,7 @@ import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
+import '../models/location.dart';
 import '../services/location_service.dart';
 
 class ProductService {
@@ -724,6 +725,7 @@ class ProductService {
 
   Future<ApiResponse<Product>> updateProduct(
     String productId, {
+    required String userToken,
     String? title,
     String? description,
     List<String>? images,
@@ -735,29 +737,120 @@ class ProductService {
     List<String>? tradePreferences,
     Location? location,
   }) async {
-    try {
-      final body = <String, dynamic>{};
+    print('🔄 ProductService.updateProduct called');
+    print('📝 Parameters:');
+    print('  - productId: $productId');
+    print('  - userToken: ${userToken.substring(0, 20)}...');
+    print('  - title: $title');
+    print('  - description: $description');
+    print('  - images count: ${images?.length ?? 0}');
+    print('  - categoryId: $categoryId');
+    print('  - condition: $condition');
+    print('  - brand: $brand');
+    print('  - model: $model');
+    print('  - estimatedValue: $estimatedValue');
+    print('  - tradePreferences: $tradePreferences');
+    print('  - location: $location');
 
+    // Token geçerliliğini kontrol et
+    if (userToken.isEmpty) {
+      print('❌ User token is empty!');
+      return ApiResponse.error('Kullanıcı token\'ı bulunamadı');
+    }
+
+    try {
+      // SharedPreferences'dan userId'yi al
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = prefs.getString(AppConstants.userIdKey);
+      print('🔍 Current user ID: $currentUserId');
+
+      if (currentUserId == null || currentUserId.isEmpty) {
+        print('❌ User ID not found in SharedPreferences!');
+        return ApiResponse.error('Kullanıcı ID\'si bulunamadı');
+      }
+
+      // API body'sini hazırla
+      final body = <String, dynamic>{
+        'userToken': userToken,
+        'productID': int.tryParse(productId) ?? productId, // API integer bekleyebilir
+      };
+
+      // Sadece null olmayan değerleri ekle
       if (title != null) body['title'] = title;
       if (description != null) body['description'] = description;
-      if (images != null) body['images'] = images;
+      if (images != null && images.isNotEmpty) body['images'] = images;
       if (categoryId != null) body['categoryId'] = categoryId;
       if (condition != null) body['condition'] = condition;
       if (brand != null) body['brand'] = brand;
       if (model != null) body['model'] = model;
       if (estimatedValue != null) body['estimatedValue'] = estimatedValue;
-      if (tradePreferences != null) body['tradePreferences'] = tradePreferences;
+      if (tradePreferences != null && tradePreferences.isNotEmpty) {
+        body['tradePreferences'] = tradePreferences;
+      }
       if (location != null) body['location'] = location.toJson();
 
-      final response = await _httpClient.put(
-        '${ApiConstants.products}/$productId',
+      print('🌐 Update Body: $body');
+
+      // Yeni endpoint formatını kullan: service/user/product/userid/editProduct
+      final endpoint = 'service/user/product/$currentUserId/editProduct';
+      final fullUrl = '${ApiConstants.fullUrl}$endpoint';
+      print('🌐 Full URL: $fullUrl');
+
+      // PUT metodunu basic auth ile kullan
+      final response = await _httpClient.putWithBasicAuth<Product>(
+        endpoint,
         body: body,
-        fromJson: (json) => Product.fromJson(json),
+        fromJson: (json) {
+          print('📥 ProductService.updateProduct - Raw response: $json');
+          print('📥 ProductService.updateProduct - Response type: ${json.runtimeType}');
+
+          // API response'unu detaylı analiz et
+          if (json is Map<String, dynamic>) {
+            print('📥 ProductService.updateProduct - Response keys: ${json.keys.toList()}');
+
+            // success field'ını kontrol et
+            if (json.containsKey('success')) {
+              final successValue = json['success'];
+              print('📥 ProductService.updateProduct - Success field: $successValue');
+            }
+
+            // message field'ını kontrol et
+            if (json.containsKey('message')) {
+              final messageValue = json['message'];
+              print('📥 ProductService.updateProduct - Message field: $messageValue');
+            }
+
+            // data field'ını kontrol et
+            if (json.containsKey('data')) {
+              final dataValue = json['data'];
+              print('📥 ProductService.updateProduct - Data field: $dataValue');
+              if (dataValue is Map<String, dynamic>) {
+                return Product.fromJson(dataValue);
+              }
+            }
+
+            // Eğer data field'ı yoksa, tüm response'u Product olarak parse etmeye çalış
+            try {
+              return Product.fromJson(json);
+            } catch (e) {
+              print('❌ Failed to parse response as Product: $e');
+              throw Exception('Ürün güncellenirken yanıt formatı hatalı');
+            }
+          }
+
+          throw Exception('Geçersiz API yanıtı');
+        },
       );
+
+      print('📡 ProductService.updateProduct - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data}');
 
       return response;
     } catch (e) {
-      return ApiResponse.error(ErrorMessages.unknownError);
+      print('❌ ProductService.updateProduct - Exception: $e');
+      return ApiResponse.error('Ürün güncellenirken hata oluştu: $e');
     }
   }
 
