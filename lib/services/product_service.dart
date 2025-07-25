@@ -487,31 +487,35 @@ class ProductService {
 
     // Görsel URL'lerini tam URL'e dönüştür
     final images = <String>[];
+    print('🖼️ [NEW API] Processing images for product: ${apiProduct['productTitle']}');
+    print('🖼️ [NEW API] Raw productImage: ${apiProduct['productImage']}');
+    print('🖼️ [NEW API] Raw extraImages: ${apiProduct['extraImages']}');
+    
     if (apiProduct['productImage'] != null &&
         apiProduct['productImage'].toString().isNotEmpty) {
       final imageUrl = apiProduct['productImage'].toString();
       // Eğer URL zaten tam URL ise olduğu gibi kullan, değilse base URL ile birleştir
-      if (imageUrl.startsWith('http')) {
-        images.add(imageUrl);
-      } else {
-        images.add('${ApiConstants.baseUrl}$imageUrl');
-      }
+      final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+      images.add(fullImageUrl);
+      print('🖼️ [NEW API] Added productImage: $fullImageUrl');
     }
     
     // extraImages varsa onları da ekle
     if (apiProduct['extraImages'] != null) {
       final extraImages = apiProduct['extraImages'] as List;
+      print('🖼️ [NEW API] Processing ${extraImages.length} extra images');
       for (final extraImage in extraImages) {
         if (extraImage != null && extraImage.toString().isNotEmpty) {
           final imageUrl = extraImage.toString();
-          if (imageUrl.startsWith('http')) {
-            images.add(imageUrl);
-          } else {
-            images.add('${ApiConstants.baseUrl}$imageUrl');
-          }
+          final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+          images.add(fullImageUrl);
+          print('🖼️ [NEW API] Added extraImage: $fullImageUrl');
         }
       }
     }
+    
+    print('🖼️ [NEW API] Final images array for ${apiProduct['productTitle']}: $images');
+    print('🖼️ [NEW API] Total images count: ${images.length}');
 
     print('🖼️ Final images array: $images');
 
@@ -598,30 +602,34 @@ class ProductService {
 
     // Görsel URL'lerini tam URL'e dönüştür
     final images = <String>[];
+    print('🖼️ [OLD API] Processing images for product: ${apiProduct['productTitle'] ?? 'Unknown'}');
+    print('🖼️ [OLD API] Raw productImage: ${apiProduct['productImage']}');
+    print('🖼️ [OLD API] Raw extraImages: ${apiProduct['extraImages']}');
+    
     if (apiProduct['productImage'] != null &&
         apiProduct['productImage'].toString().isNotEmpty) {
       final imageUrl = apiProduct['productImage'].toString();
-      if (imageUrl.startsWith('http')) {
-        images.add(imageUrl);
-      } else {
-        images.add('${ApiConstants.baseUrl}$imageUrl');
-      }
+      final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+      images.add(fullImageUrl);
+      print('🖼️ [OLD API] Added productImage: $fullImageUrl');
     }
     
     // extraImages varsa onları da ekle
     if (apiProduct['extraImages'] != null) {
       final extraImages = apiProduct['extraImages'] as List;
+      print('🖼️ [OLD API] Processing ${extraImages.length} extra images');
       for (final extraImage in extraImages) {
         if (extraImage != null && extraImage.toString().isNotEmpty) {
           final imageUrl = extraImage.toString();
-          if (imageUrl.startsWith('http')) {
-            images.add(imageUrl);
-          } else {
-            images.add('${ApiConstants.baseUrl}$imageUrl');
-          }
+          final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+          images.add(fullImageUrl);
+          print('🖼️ [OLD API] Added extraImage: $fullImageUrl');
         }
       }
     }
+    
+    print('🖼️ [OLD API] Final images array: $images');
+    print('🖼️ [OLD API] Total images count: ${images.length}');
 
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
@@ -1395,30 +1403,34 @@ class ProductService {
 
             // Görsel URL'lerini tam URL'e dönüştür
             final images = <String>[];
+            print('🖼️ Processing images for product: ${apiProduct['productTitle']}');
+            print('🖼️ Raw productImage: ${apiProduct['productImage']}');
+            print('🖼️ Raw extraImages: ${apiProduct['extraImages']}');
+            
             if (apiProduct['productImage'] != null &&
                 apiProduct['productImage'].toString().isNotEmpty) {
               final imageUrl = apiProduct['productImage'].toString();
-              if (imageUrl.startsWith('http')) {
-                images.add(imageUrl);
-              } else {
-                images.add('${ApiConstants.baseUrl}$imageUrl');
-              }
+              final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+              images.add(fullImageUrl);
+              print('🖼️ Added productImage: $fullImageUrl');
             }
             
             // extraImages varsa onları da ekle
             if (apiProduct['extraImages'] != null) {
               final extraImages = apiProduct['extraImages'] as List;
+              print('🖼️ Processing ${extraImages.length} extra images');
               for (final extraImage in extraImages) {
                 if (extraImage != null && extraImage.toString().isNotEmpty) {
                   final imageUrl = extraImage.toString();
-                  if (imageUrl.startsWith('http')) {
-                    images.add(imageUrl);
-                  } else {
-                    images.add('${ApiConstants.baseUrl}$imageUrl');
-                  }
+                  final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+                  images.add(fullImageUrl);
+                  print('🖼️ Added extraImage: $fullImageUrl');
                 }
               }
             }
+            
+            print('🖼️ Final images array for ${apiProduct['productTitle']}: $images');
+            print('🖼️ Total images count: ${images.length}');
 
             // API field'larından Product model'i için gerekli field'ları oluştur
             final productData = {

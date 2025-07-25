@@ -476,26 +476,8 @@ class _AddProductViewState extends State<AddProductView> {
                   ),
                   child: Icon(Icons.photo_library, color: AppTheme.primary),
                 ),
-                title: const Text('Galeri (Tek)'),
-                subtitle: const Text('Tek fotoğraf seç'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-
-              ListTile(
-                leading: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.photo_library_outlined, color: AppTheme.primary),
-                ),
-                title: const Text('Galeri (Çoklu)'),
-                subtitle: const Text('Birden fazla fotoğraf seç'),
+                title: const Text('Galeri'),
+                subtitle: const Text('Tek veya birden fazla fotoğraf seç'),
                 onTap: () {
                   Navigator.pop(context);
                   _pickMultipleImages();
@@ -554,6 +536,7 @@ class _AddProductViewState extends State<AddProductView> {
         return;
       }
 
+      // pickMultipleMedia kullanarak hem tek hem çoklu seçimi destekle
       final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia(
         maxWidth: 1920,
         maxHeight: 1920,
