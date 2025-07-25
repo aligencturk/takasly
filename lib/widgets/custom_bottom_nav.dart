@@ -26,7 +26,7 @@ class CustomBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: Container(
-          height: 55,
+          height: 30,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
