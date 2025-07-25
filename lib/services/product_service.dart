@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/product.dart';
+import '../models/product_filter.dart';
 import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
@@ -135,6 +136,111 @@ class ProductService {
       return response;
     } catch (e) {
       print('❌ ProductService: Error getting all products: $e');
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<List<Product>>> getAllProductsWithFilter({
+    required ProductFilter filter,
+    int page = 1,
+    int limit = AppConstants.defaultPageSize,
+  }) async {
+    try {
+      print('🔍 ProductService: Getting filtered products');
+      print('🔍 Filter: $filter');
+      final fullUrl = '${ApiConstants.fullUrl}${ApiConstants.allProducts}';
+      print('🌐 Full URL: $fullUrl');
+
+      // User token'ı al
+      String userToken = '';
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
+        print(
+          '🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}',
+        );
+      } catch (e) {
+        print('⚠️ Error getting user token: $e');
+      }
+
+      // Filter'dan API body'sini oluştur
+      final body = filter.toApiBody(userToken: userToken, page: page);
+      print('🌐 POST Body with filter: $body');
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.allProducts,
+        body: body,
+        fromJson: (json) {
+          print('🔍 Raw Filtered Products API Response: $json');
+
+          // JSON yapısını kontrol et
+          if (json == null) {
+            print('❌ Filtered Products API response is null');
+            return <Product>[];
+          }
+
+          // Yeni API formatını kontrol et
+          if (json case {
+            'success': true,
+            'data': final Map<String, dynamic> data,
+          }) {
+            if (data['products'] case final List<dynamic> productsList) {
+              print(
+                '📦 Filtered Products API returned ${productsList.length} products (new format)',
+              );
+              print(
+                '📦 Page info: ${data['page']}/${data['totalPages']}, Total: ${data['totalItems']}',
+              );
+
+              final products = productsList
+                  .map((item) => _transformNewApiProductToModel(item))
+                  .toList();
+
+              print(
+                '📦 Parsed ${products.length} filtered products successfully',
+              );
+              return products;
+            }
+          }
+
+          // 410 status code için özel handling
+          if (json case {'error': false, '410': 'Gone'}) {
+            print(
+              '🔍 ProductService - 410 Gone response for filtered products',
+            );
+            if (json['data'] != null && json['data']['products'] != null) {
+              final productsList = json['data']['products'] as List;
+              print(
+                '📦 410 response returned ${productsList.length} filtered products',
+              );
+              final products = productsList
+                  .map((item) => _transformNewApiProductToModel(item))
+                  .toList();
+              print(
+                '📦 Parsed ${products.length} filtered products successfully from 410',
+              );
+              return products;
+            }
+            return <Product>[];
+          }
+
+          // Boş success response
+          if (json case {'error': false, '200': 'OK'}) {
+            print(
+              '🔍 ProductService - Empty success response for filtered products',
+            );
+            return <Product>[];
+          }
+
+          print('❌ Filtered Products API - No products found in response');
+          print('❌ Available keys: ${json.keys.toList()}');
+          return <Product>[];
+        },
+      );
+
+      return response;
+    } catch (e) {
+      print('❌ ProductService: Error getting filtered products: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

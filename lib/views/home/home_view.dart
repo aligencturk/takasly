@@ -5,6 +5,8 @@ import '../../core/app_theme.dart'; // Yeni temayı import et
 import '../../widgets/product_card.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
+import '../../widgets/filter_bottom_sheet.dart';
+import '../../models/product_filter.dart';
 import 'widgets/home_app_bar.dart'; // Yeni AppBar
 import 'widgets/category_list.dart'; // Yeni Kategori Listesi
 import '../profile/profile_view.dart';
@@ -47,7 +49,16 @@ class _HomeViewState extends State<HomeView> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.9) {
-      Provider.of<ProductViewModel>(context, listen: false).loadMoreProducts();
+      final productViewModel = Provider.of<ProductViewModel>(
+        context,
+        listen: false,
+      );
+      // Eğer filtre aktifse filtered products yükle, değilse normal products yükle
+      if (productViewModel.currentFilter.hasActiveFilters) {
+        productViewModel.loadMoreFilteredProducts();
+      } else {
+        productViewModel.loadMoreProducts();
+      }
     }
   }
 
@@ -103,6 +114,8 @@ class _HomeViewState extends State<HomeView> {
         controller: _scrollController,
         slivers: [
           const HomeAppBar(), // Yeni, modern AppBar
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          _buildFilterBar(), // Filtreleme çubuğu
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
           const CategoryList(), // Yeni, yatay kategori listesi
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -160,6 +173,85 @@ class _HomeViewState extends State<HomeView> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return SliverToBoxAdapter(
+      child: Consumer<ProductViewModel>(
+        builder: (context, vm, child) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                // Arama kutusu
+                Expanded(
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Ürün ara...',
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey.shade600,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      onSubmitted: (query) {
+                        if (query.trim().isNotEmpty) {
+                          final filter = vm.currentFilter.copyWith(
+                            searchQuery: query.trim(),
+                          );
+                          vm.applyFilter(filter);
+                        } else {
+                          vm.clearFilters();
+                        }
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Filtre butonu
+                Container(
+                  height: 48,
+                  width: 48,
+                  decoration: BoxDecoration(
+                    color: vm.currentFilter.hasActiveFilters
+                        ? AppTheme.primary
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: vm.currentFilter.hasActiveFilters
+                          ? AppTheme.primary
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: IconButton(
+                    onPressed: () => _showFilterBottomSheet(vm),
+                    icon: Icon(
+                      Icons.tune,
+                      color: vm.currentFilter.hasActiveFilters
+                          ? Colors.white
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -234,6 +326,26 @@ class _HomeViewState extends State<HomeView> {
         }
       },
       tooltip: label,
+    );
+  }
+
+  void _showFilterBottomSheet(ProductViewModel vm) {
+    // Önce şehirleri yükle
+    if (vm.cities.isEmpty) {
+      vm.loadCities();
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FilterBottomSheet(
+        currentFilter: vm.currentFilter,
+        onApplyFilter: (filter) {
+          print('🔍 HomeView - Applying filter: $filter');
+          vm.applyFilter(filter);
+        },
+      ),
     );
   }
 }

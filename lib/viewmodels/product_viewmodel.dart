@@ -5,6 +5,7 @@ import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
+import '../models/product_filter.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
 import '../core/constants.dart';
@@ -34,6 +35,12 @@ class ProductViewModel extends ChangeNotifier {
   String? _currentCity;
   String? _currentCondition;
   SortOption _currentSortOption = SortOption.defaultSort;
+
+  // Yeni filtreleme sistemi
+  ProductFilter _currentFilter = const ProductFilter();
+
+  // Filter getter
+  ProductFilter get currentFilter => _currentFilter;
 
   // Getters
   List<product_model.Product> get products => _products;
@@ -824,6 +831,98 @@ class ProductViewModel extends ChangeNotifier {
       print('🏁 Loading state false yapılıyor...');
       _setLoading(false);
       print('🏁 addProductWithEndpoint tamamlandı');
+    }
+  }
+
+  // Yeni filtreleme metodları
+  Future<void> applyFilter(ProductFilter filter) async {
+    print('🔍 ProductViewModel.applyFilter - New filter: $filter');
+    _currentFilter = filter;
+    _currentPage = 1;
+    _hasMore = true;
+    _products.clear();
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _productService.getAllProductsWithFilter(
+        filter: filter,
+        page: 1,
+        limit: AppConstants.defaultPageSize,
+      );
+
+      print('📡 ProductViewModel.applyFilter - response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response data length: ${response.data?.length ?? 0}');
+
+      if (response.isSuccess && response.data != null) {
+        final newProducts = response.data!;
+        print(
+          '✅ ProductViewModel.applyFilter - got ${newProducts.length} products',
+        );
+
+        _products = newProducts;
+        _hasMore = newProducts.length == AppConstants.defaultPageSize;
+        _currentPage = 2;
+
+        print('✅ ProductViewModel.applyFilter - hasMore: $_hasMore');
+      } else {
+        print('❌ ProductViewModel.applyFilter - API error: ${response.error}');
+        _setError(response.error ?? ErrorMessages.unknownError);
+      }
+    } catch (e) {
+      print('💥 ProductViewModel.applyFilter - Exception: $e');
+      _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoading(false);
+      print(
+        '🏁 ProductViewModel.applyFilter completed - final products count: ${_products.length}',
+      );
+    }
+  }
+
+  Future<void> clearFilters() async {
+    print('🔄 ProductViewModel.clearFilters - Clearing all filters');
+    _currentFilter = const ProductFilter();
+    await loadAllProducts(refresh: true);
+  }
+
+  Future<void> loadMoreFilteredProducts() async {
+    if (!_hasMore || _isLoadingMore) return;
+
+    print(
+      '🔄 ProductViewModel.loadMoreFilteredProducts - Loading page $_currentPage',
+    );
+    _setLoadingMore(true);
+
+    try {
+      final response = await _productService.getAllProductsWithFilter(
+        filter: _currentFilter,
+        page: _currentPage,
+        limit: AppConstants.defaultPageSize,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final newProducts = response.data!;
+        print(
+          '✅ ProductViewModel.loadMoreFilteredProducts - got ${newProducts.length} more products',
+        );
+
+        _products.addAll(newProducts);
+        _hasMore = newProducts.length == AppConstants.defaultPageSize;
+        _currentPage++;
+      } else {
+        print(
+          '❌ ProductViewModel.loadMoreFilteredProducts - API error: ${response.error}',
+        );
+        _setError(response.error ?? ErrorMessages.unknownError);
+      }
+    } catch (e) {
+      print('💥 ProductViewModel.loadMoreFilteredProducts - Exception: $e');
+      _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoadingMore(false);
     }
   }
 
