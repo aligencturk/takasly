@@ -485,11 +485,33 @@ class ProductService {
     print('🖼️ Image URL type: ${imageUrl.runtimeType}');
     print('🖼️ Image URL isEmpty: ${imageUrl?.toString().isEmpty ?? true}');
 
-    final images =
-        apiProduct['productImage'] != null &&
-            apiProduct['productImage'].toString().isNotEmpty
-        ? <String>[apiProduct['productImage'].toString()]
-        : <String>[];
+    // Görsel URL'lerini tam URL'e dönüştür
+    final images = <String>[];
+    if (apiProduct['productImage'] != null &&
+        apiProduct['productImage'].toString().isNotEmpty) {
+      final imageUrl = apiProduct['productImage'].toString();
+      // Eğer URL zaten tam URL ise olduğu gibi kullan, değilse base URL ile birleştir
+      if (imageUrl.startsWith('http')) {
+        images.add(imageUrl);
+      } else {
+        images.add('${ApiConstants.baseUrl}$imageUrl');
+      }
+    }
+    
+    // extraImages varsa onları da ekle
+    if (apiProduct['extraImages'] != null) {
+      final extraImages = apiProduct['extraImages'] as List;
+      for (final extraImage in extraImages) {
+        if (extraImage != null && extraImage.toString().isNotEmpty) {
+          final imageUrl = extraImage.toString();
+          if (imageUrl.startsWith('http')) {
+            images.add(imageUrl);
+          } else {
+            images.add('${ApiConstants.baseUrl}$imageUrl');
+          }
+        }
+      }
+    }
 
     print('🖼️ Final images array: $images');
 
@@ -574,15 +596,38 @@ class ProductService {
       '🏷️ Transforming product with category ID: $categoryId, name: $categoryName',
     );
 
+    // Görsel URL'lerini tam URL'e dönüştür
+    final images = <String>[];
+    if (apiProduct['productImage'] != null &&
+        apiProduct['productImage'].toString().isNotEmpty) {
+      final imageUrl = apiProduct['productImage'].toString();
+      if (imageUrl.startsWith('http')) {
+        images.add(imageUrl);
+      } else {
+        images.add('${ApiConstants.baseUrl}$imageUrl');
+      }
+    }
+    
+    // extraImages varsa onları da ekle
+    if (apiProduct['extraImages'] != null) {
+      final extraImages = apiProduct['extraImages'] as List;
+      for (final extraImage in extraImages) {
+        if (extraImage != null && extraImage.toString().isNotEmpty) {
+          final imageUrl = extraImage.toString();
+          if (imageUrl.startsWith('http')) {
+            images.add(imageUrl);
+          } else {
+            images.add('${ApiConstants.baseUrl}$imageUrl');
+          }
+        }
+      }
+    }
+
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle'] ?? '',
       description: apiProduct['productDesc'] ?? '',
-      images:
-          apiProduct['productImage'] != null &&
-              apiProduct['productImage'].isNotEmpty
-          ? [apiProduct['productImage']]
-          : [],
+      images: images,
       categoryId: categoryId,
       category: Category(
         id: categoryId,
@@ -1348,19 +1393,39 @@ class ProductService {
           return productsList.map((apiProduct) {
             print('🔄 ProductService - Converting API product: $apiProduct');
 
+            // Görsel URL'lerini tam URL'e dönüştür
+            final images = <String>[];
+            if (apiProduct['productImage'] != null &&
+                apiProduct['productImage'].toString().isNotEmpty) {
+              final imageUrl = apiProduct['productImage'].toString();
+              if (imageUrl.startsWith('http')) {
+                images.add(imageUrl);
+              } else {
+                images.add('${ApiConstants.baseUrl}$imageUrl');
+              }
+            }
+            
+            // extraImages varsa onları da ekle
+            if (apiProduct['extraImages'] != null) {
+              final extraImages = apiProduct['extraImages'] as List;
+              for (final extraImage in extraImages) {
+                if (extraImage != null && extraImage.toString().isNotEmpty) {
+                  final imageUrl = extraImage.toString();
+                  if (imageUrl.startsWith('http')) {
+                    images.add(imageUrl);
+                  } else {
+                    images.add('${ApiConstants.baseUrl}$imageUrl');
+                  }
+                }
+              }
+            }
+
             // API field'larından Product model'i için gerekli field'ları oluştur
             final productData = {
               'id': apiProduct['productID']?.toString() ?? '',
               'title': apiProduct['productTitle'] ?? '',
               'description': apiProduct['productDesc'] ?? '',
-              'images': [
-                if (apiProduct['productImage'] != null &&
-                    apiProduct['productImage'].toString().isNotEmpty)
-                  apiProduct['productImage'].toString(),
-                ...(apiProduct['extraImages'] as List? ?? []).map(
-                  (img) => img.toString(),
-                ),
-              ],
+              'images': images,
               'categoryId': apiProduct['productCatID']?.toString() ?? '',
               'category': {
                 'id': apiProduct['productCatID']?.toString() ?? '',
