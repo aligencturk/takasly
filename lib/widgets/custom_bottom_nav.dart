@@ -26,7 +26,7 @@ class CustomBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: Container(
-          height: 70,
+          height: 55,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -55,9 +55,9 @@ class CustomBottomNav extends StatelessWidget {
             Icon(
               isActive ? activeIcon : icon,
               color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
-              size: 24,
+              size: 22,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 1),
             Text(
               label,
               style: TextStyle(
@@ -83,8 +83,8 @@ class CustomBottomNav extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 50,
-              height: 50,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: isActive ? const Color(0xFF10B981) : const Color(0xFF10B981),
                 shape: BoxShape.circle,
@@ -100,7 +100,7 @@ class CustomBottomNav extends StatelessWidget {
               child: const Icon(
                 Icons.swap_horiz,
                 color: Colors.white,
-                size: 24,
+                size: 22,
               ),
             ),
             const SizedBox(height: 2),
@@ -117,4 +117,4 @@ class CustomBottomNav extends StatelessWidget {
       ),
     );
   }
-} 
+}
