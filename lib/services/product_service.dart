@@ -732,23 +732,38 @@ class ProductService {
     print('  - userToken isEmpty: ${userToken.isEmpty}');
     print('  - productId: $productId');
 
-    try {
-      // Farklı endpoint formatlarını dene
-      final List<String> possibleEndpoints = [
-        'service/user/product/$productId/deleteProduct',
-        'service/user/product/delete/$productId',
-        'service/user/product/$productId/delete',
-        'service/user/product/remove/$productId',
-      ];
+    // Token geçerliliğini kontrol et
+    if (userToken.isEmpty) {
+      print('❌ User token is empty!');
+      return ApiResponse.error('Kullanıcı token\'ı bulunamadı');
+    }
 
-      final endpoint = possibleEndpoints[0]; // Şimdilik ilkini kullan
-      print('🔍 Trying endpoint: $endpoint');
-      print('🔍 Other possible endpoints to try:');
-      for (int i = 1; i < possibleEndpoints.length; i++) {
-        print('  - ${possibleEndpoints[i]}');
-      }
+    try {
+      // Önce kullanıcının bu ürünün sahibi olup olmadığını kontrol et
+      print('🔍 Checking if user owns this product...');
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = prefs.getString(AppConstants.userIdKey);
+      print('🔍 Current user ID: $currentUserId');
+
+      // Token'ın geçerliliğini kontrol et
+      print('🔍 Token validation:');
+      print('  - Token starts with: ${userToken.substring(0, 10)}...');
+      print('  - Token length: ${userToken.length}');
+      print('  - Expected token length: ~100+ characters');
+
+      // API credentials'ları tekrar kontrol et
+      print('🔍 API Credentials check:');
+      print('  - Username length: ${ApiConstants.basicAuthUsername.length}');
+      print('  - Password length: ${ApiConstants.basicAuthPassword.length}');
+
+      // Sabit endpoint kullan
+      final endpoint = 'service/user/product/$productId/deleteProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       print('🌐 Full URL: $fullUrl');
+
+      // Basic auth credentials'ları kontrol et
+      print('🔐 Basic Auth Username: ${ApiConstants.basicAuthUsername}');
+      print('🔐 Basic Auth Password: ${ApiConstants.basicAuthPassword}');
 
       // API'nin beklediği format: {"userToken": "token", "productID": 1}
       final body = {
@@ -757,16 +772,30 @@ class ProductService {
       };
       print('🌐 DELETE Body: $body');
 
-      // DELETE method ile dene
-      print('🔄 Trying DELETE method...');
-      var response = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
+      // Önce POST method ile dene (bazı API'ler DELETE yerine POST kullanır)
+      print('🔄 Trying POST method first...');
+      var response = await _httpClient.postWithBasicAuth<Map<String, dynamic>>(
         endpoint,
         body: body,
+        useBasicAuth: true,
         fromJson: (json) {
           print('📥 ProductService.deleteUserProduct - Raw response: $json');
           print(
             '📥 ProductService.deleteUserProduct - Response type: ${json.runtimeType}',
           );
+
+          // Hata mesajlarını özel olarak kontrol et
+          if (json is Map<String, dynamic>) {
+            if (json.containsKey('message')) {
+              final message = json['message']?.toString() ?? '';
+              if (message.contains('Erişim reddedildi') ||
+                  message.contains('Access denied') ||
+                  message.contains('Unauthorized') ||
+                  message.contains('403')) {
+                print('❌ Access denied error detected: $message');
+              }
+            }
+          }
 
           // API response'unu detaylı analiz et
           if (json is Map<String, dynamic>) {
@@ -774,40 +803,52 @@ class ProductService {
               '📥 ProductService.deleteUserProduct - Response keys: ${json.keys.toList()}',
             );
 
-            // success field'ını kontrol et
+            // success field'ını kontrol et - type safety için
             if (json.containsKey('success')) {
+              final successValue = json['success'];
               print(
-                '📥 ProductService.deleteUserProduct - Success field: ${json['success']}',
+                '📥 ProductService.deleteUserProduct - Success field: $successValue (${successValue.runtimeType})',
               );
             }
 
-            // error field'ını kontrol et
+            // error field'ını kontrol et - type safety için
             if (json.containsKey('error')) {
+              final errorValue = json['error'];
               print(
-                '📥 ProductService.deleteUserProduct - Error field: ${json['error']}',
+                '📥 ProductService.deleteUserProduct - Error field: $errorValue (${errorValue.runtimeType})',
               );
             }
 
-            // message field'ını kontrol et
+            // message field'ını kontrol et - type safety için
             if (json.containsKey('message')) {
+              final messageValue = json['message'];
               print(
-                '📥 ProductService.deleteUserProduct - Message field: ${json['message']}',
+                '📥 ProductService.deleteUserProduct - Message field: $messageValue (${messageValue.runtimeType})',
               );
             }
 
             // data field'ını kontrol et
             if (json.containsKey('data')) {
+              final dataValue = json['data'];
               print(
-                '📥 ProductService.deleteUserProduct - Data field: ${json['data']}',
+                '📥 ProductService.deleteUserProduct - Data field: $dataValue (${dataValue.runtimeType})',
               );
-              return json['data'] as Map<String, dynamic>;
+              if (dataValue is Map<String, dynamic>) {
+                return dataValue;
+              }
             }
           }
 
           print(
             '📥 ProductService.deleteUserProduct - Using full json as response',
           );
-          return json as Map<String, dynamic>;
+
+          // Safe casting
+          if (json is Map<String, dynamic>) {
+            return json;
+          } else {
+            return <String, dynamic>{'rawResponse': json};
+          }
         },
       );
 
@@ -823,19 +864,21 @@ class ProductService {
           final data = response.data!;
           print('✅ Response data keys: ${data.keys.toList()}');
 
-          // Başarı mesajlarını kontrol et
+          // Başarı mesajlarını kontrol et - type safety ile
           if (data.containsKey('message')) {
-            print('✅ API Message: "${data['message']}"');
+            final message = data['message'];
+            print('✅ API Message: "$message"');
           }
           if (data.containsKey('success')) {
-            print('✅ API Success flag: ${data['success']}');
-          }
+            final success = data['success'];
+            print('✅ API Success flag: $success');
 
-          // Eğer API false success döndürüyorsa hata olarak işle
-          if (data['success'] == false) {
-            print('❌ API returned success=false, treating as error');
-            final errorMsg = data['message'] ?? 'Ürün silinemedi';
-            return ApiResponse.error(errorMsg.toString());
+            // Boolean veya string olabilir, her ikisini de kontrol et
+            if (success == false || success == 'false' || success == '0') {
+              print('❌ API returned success=false, treating as error');
+              final errorMsg = data['message']?.toString() ?? 'Ürün silinemedi';
+              return ApiResponse.error(errorMsg);
+            }
           }
         }
       } else {
