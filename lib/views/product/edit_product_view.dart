@@ -52,7 +52,6 @@ class _EditProductViewState extends State<EditProductView> {
     _tradePreferencesController.text = widget.product.tradePreferences?.join(', ') ?? '';
     
     _selectedCategoryId = widget.product.categoryId;
-    _selectedConditionId = widget.product.condition;
     _existingImages = List.from(widget.product.images);
     
     // Location bilgilerini yükle
@@ -60,6 +59,20 @@ class _EditProductViewState extends State<EditProductView> {
       _selectedCityId = widget.product.location!.cityId;
       _selectedDistrictId = widget.product.location!.districtId;
     }
+    
+    // Condition'ı name'den id'ye çevir
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final productViewModel = context.read<ProductViewModel>();
+      if (productViewModel.conditions.isNotEmpty) {
+        final condition = productViewModel.conditions.firstWhere(
+          (c) => c.name == widget.product.condition,
+          orElse: () => productViewModel.conditions.first,
+        );
+        setState(() {
+          _selectedConditionId = condition.id;
+        });
+      }
+    });
   }
 
   @override

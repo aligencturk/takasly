@@ -6,6 +6,7 @@ import '../../services/auth_service.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../../widgets/product_card.dart';
+import '../product/edit_product_view.dart';
 
 class TradeView extends StatefulWidget {
   const TradeView({super.key});
@@ -347,6 +348,15 @@ class _TradeViewState extends State<TradeView>
           ),
         ),
         actions: [
+          // Güncelle butonu
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _editProduct(product);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text('Güncelle'),
+          ),
           // Silme butonu
           TextButton(
             onPressed: () {
@@ -359,18 +369,6 @@ class _TradeViewState extends State<TradeView>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Kapat'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Takas teklifi gönderme işlemi
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Takas teklifi özelliği yakında aktif olacak'),
-                ),
-              );
-            },
-            child: const Text('Takas Teklifi Gönder'),
           ),
         ],
       ),
@@ -530,5 +528,19 @@ class _TradeViewState extends State<TradeView>
         ],
       ),
     );
+  }
+
+  Future<void> _editProduct(dynamic product) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProductView(product: product),
+      ),
+    );
+
+    // Eğer ürün güncellendiyse listeyi yenile
+    if (result == true) {
+      _loadData();
+    }
   }
 }
