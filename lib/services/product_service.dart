@@ -723,7 +723,7 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<Product>> updateProduct(
+  Future<ApiResponse<Product?>> updateProduct(
     String productId, {
     required String userToken,
     String? title,
@@ -797,7 +797,7 @@ class ProductService {
       print('🌐 Full URL: $fullUrl');
 
       // PUT metodunu basic auth ile kullan
-      final response = await _httpClient.putWithBasicAuth<Product>(
+      final response = await _httpClient.putWithBasicAuth<Product?>(
         endpoint,
         body: body,
         fromJson: (json) {
@@ -807,6 +807,20 @@ class ProductService {
           // API response'unu detaylı analiz et
           if (json is Map<String, dynamic>) {
             print('📥 ProductService.updateProduct - Response keys: ${json.keys.toList()}');
+
+            // Özel format: {"error": false, "200": "OK"} - Bu başarılı güncelleme anlamına gelir
+            if (json.containsKey('error') && json.containsKey('200')) {
+              final errorValue = json['error'];
+              final statusValue = json['200'];
+              print('📥 ProductService.updateProduct - Special format detected');
+              print('📥 ProductService.updateProduct - Error: $errorValue, Status: $statusValue');
+              
+              if (errorValue == false && statusValue == 'OK') {
+                print('✅ Success - Product updated successfully with special format');
+                // Bu durumda null döndürüyoruz çünkü API güncellenmiş ürün verisi döndürmüyor
+                return null;
+              }
+            }
 
             // success field'ını kontrol et
             if (json.containsKey('success')) {
@@ -834,6 +848,7 @@ class ProductService {
               return Product.fromJson(json);
             } catch (e) {
               print('❌ Failed to parse response as Product: $e');
+              print('! Success - Failed to parse JSON: Exception: Ürün güncellenirken yanıt formatı hatalı');
               throw Exception('Ürün güncellenirken yanıt formatı hatalı');
             }
           }

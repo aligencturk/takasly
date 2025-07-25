@@ -868,7 +868,8 @@ class ProductViewModel extends ChangeNotifier {
         return false;
       }
 
-      final userToken = currentUser.token;
+      // Token'ı AuthService'den al
+      final userToken = await _authService.getToken();
       if (userToken?.isEmpty ?? true) {
         print('❌ User token is empty!');
         _setError('Kullanıcı token\'ı bulunamadı');
@@ -908,18 +909,26 @@ class ProductViewModel extends ChangeNotifier {
       print('📊 Response error: ${response.error}');
       print('📊 Response data: ${response.data}');
 
-      if (response.isSuccess && response.data != null) {
-        final updatedProduct = response.data!;
-        print('✅ Product updated successfully!');
-        print('🆔 Updated Product ID: ${updatedProduct.id}');
-        print('📝 Updated Product Title: ${updatedProduct.title}');
+      if (response.isSuccess) {
+        // API'den {"error": false, "200": "OK"} formatında yanıt geldiğinde data null olabilir
+        if (response.data != null) {
+          final updatedProduct = response.data!;
+          print('✅ Product updated successfully with data!');
+          print('🆔 Updated Product ID: ${updatedProduct.id}');
+          print('📝 Updated Product Title: ${updatedProduct.title}');
 
-        // Güncellenmiş ürünü listelerde güncelle
-        _updateProductInLists(updatedProduct);
+          // Güncellenmiş ürünü listelerde güncelle
+          _updateProductInLists(updatedProduct);
 
-        // Seçili ürünü güncelle
-        if (_selectedProduct?.id == productId) {
-          _selectedProduct = updatedProduct;
+          // Seçili ürünü güncelle
+          if (_selectedProduct?.id == productId) {
+            _selectedProduct = updatedProduct;
+          }
+        } else {
+          print('✅ Product updated successfully (no data returned from API)');
+          // API'den ürün verisi dönmediğinde, mevcut ürün listesini yenile
+          print('🔄 Refreshing products to get updated data...');
+          await refreshProducts();
         }
 
         _setLoading(false);

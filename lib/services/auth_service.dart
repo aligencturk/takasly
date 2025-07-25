@@ -55,6 +55,7 @@ class AuthService {
                   ? DateTime.tryParse(userData['userUpdatedAt']) ??
                         DateTime.now()
                   : DateTime.now(),
+              token: userData['token'], // Token'ı User nesnesine dahil et
             );
 
             return {'user': user, 'token': userData['token'] ?? ''};
@@ -208,6 +209,7 @@ class AuthService {
                   ? DateTime.tryParse(userData['userUpdatedAt']) ??
                         DateTime.now()
                   : DateTime.now(),
+              token: userData['token'], // Token'ı User nesnesine dahil et
             );
 
             return {
@@ -627,6 +629,13 @@ class AuthService {
       } else {
         Logger.debug('Profil güncelleme sonrası userId boş, eski id korunuyor.');
       }
+      
+      // Mevcut token'ı koru
+      final currentToken = prefs.getString(AppConstants.userTokenKey);
+      if (currentToken != null && user.token == null) {
+        user = user.copyWith(token: currentToken);
+      }
+      
       await prefs.setString(
         AppConstants.userDataKey,
         json.encode(user.toJson()),

@@ -23,9 +23,7 @@ class _EditProductViewState extends State<EditProductView> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _brandController = TextEditingController();
-  final _modelController = TextEditingController();
-  final _estimatedValueController = TextEditingController();
+
   final _tradePreferencesController = TextEditingController();
 
   String? _selectedCategoryId;
@@ -40,15 +38,17 @@ class _EditProductViewState extends State<EditProductView> {
   void initState() {
     super.initState();
     _initializeFields();
+    // Şehirleri yükle
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductViewModel>().loadCities();
+    });
   }
 
   void _initializeFields() {
     // Mevcut ürün bilgilerini form alanlarına yükle
     _titleController.text = widget.product.title;
     _descriptionController.text = widget.product.description;
-    _brandController.text = widget.product.brand ?? '';
-    _modelController.text = widget.product.model ?? '';
-    _estimatedValueController.text = widget.product.estimatedValue?.toString() ?? '';
+
     _tradePreferencesController.text = widget.product.tradePreferences?.join(', ') ?? '';
     
     _selectedCategoryId = widget.product.categoryId;
@@ -58,6 +58,13 @@ class _EditProductViewState extends State<EditProductView> {
     if (widget.product.location != null) {
       _selectedCityId = widget.product.location!.cityId;
       _selectedDistrictId = widget.product.location!.districtId;
+      
+      // Eğer şehir seçili ise ilçeleri yükle
+      if (_selectedCityId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          context.read<ProductViewModel>().loadDistricts(_selectedCityId!);
+        });
+      }
     }
     
     // Condition'ı name'den id'ye çevir
@@ -79,9 +86,7 @@ class _EditProductViewState extends State<EditProductView> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _brandController.dispose();
-    _modelController.dispose();
-    _estimatedValueController.dispose();
+
     _tradePreferencesController.dispose();
     super.dispose();
   }
@@ -134,25 +139,6 @@ class _EditProductViewState extends State<EditProductView> {
                   const SizedBox(height: 24),
 
                   _buildSectionTitle(context, 'Ek Bilgiler'),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _brandController,
-                    decoration: const InputDecoration(labelText: 'Marka (Opsiyonel)'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _modelController,
-                    decoration: const InputDecoration(labelText: 'Model (Opsiyonel)'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _estimatedValueController,
-                    decoration: const InputDecoration(
-                      labelText: 'Tahmini Değer (TL)',
-                      prefixText: '₺ ',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _tradePreferencesController,
@@ -507,12 +493,6 @@ class _EditProductViewState extends State<EditProductView> {
         );
       }
       
-      // Estimated value'yu parse et
-      double? estimatedValue;
-      if (_estimatedValueController.text.trim().isNotEmpty) {
-        estimatedValue = double.tryParse(_estimatedValueController.text.trim());
-      }
-
       final success = await productViewModel.updateProduct(
         productId: widget.product.id,
         title: _titleController.text.trim(),
@@ -520,9 +500,9 @@ class _EditProductViewState extends State<EditProductView> {
         images: allImages.isNotEmpty ? allImages : null,
         categoryId: _selectedCategoryId,
         condition: _selectedConditionId,
-        brand: _brandController.text.trim().isNotEmpty ? _brandController.text.trim() : null,
-        model: _modelController.text.trim().isNotEmpty ? _modelController.text.trim() : null,
-        estimatedValue: estimatedValue,
+        brand: null,
+        model: null,
+        estimatedValue: null,
         tradePreferences: tradePreferences,
         location: location,
       );
