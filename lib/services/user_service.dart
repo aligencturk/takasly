@@ -38,6 +38,13 @@ class UserService {
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Update Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+
             // API formatından model formatına dönüştür
             Map<String, dynamic> userDataToTransform;
 
@@ -49,6 +56,13 @@ class UserService {
             else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
               userDataToTransform = json['data'];
+              
+              // Data içinde token kontrolü
+              if (userDataToTransform.containsKey('token') && userDataToTransform['token'] != null && userDataToTransform['token'].toString().isNotEmpty) {
+                final newToken = userDataToTransform['token'].toString();
+                print('🔄 Update Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
             }
             // Eğer user field'ı içinde user verisi varsa
             else if (json.containsKey('user') &&
@@ -188,6 +202,13 @@ class UserService {
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Update Account - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+
             // API formatından model formatına dönüştür
             Map<String, dynamic> userDataToTransform;
 
@@ -199,6 +220,13 @@ class UserService {
             else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
               userDataToTransform = json['data'];
+              
+              // Data içinde token kontrolü
+              if (userDataToTransform.containsKey('token') && userDataToTransform['token'] != null && userDataToTransform['token'].toString().isNotEmpty) {
+                final newToken = userDataToTransform['token'].toString();
+                print('🔄 Update Account - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
             }
             // Eğer user field'ı içinde user verisi varsa
             else if (json.containsKey('user') &&
@@ -372,6 +400,13 @@ class UserService {
           if (json is Map<String, dynamic>) {
             print('🔍 Get Profile - Response is Map<String, dynamic>');
 
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+
             // API formatından model formatına dönüştür
             Map<String, dynamic> userDataToTransform;
 
@@ -385,6 +420,13 @@ class UserService {
                 json['data'] is Map<String, dynamic>) {
               print('🔍 Get Profile - Data field format detected');
               userDataToTransform = json['data'];
+              
+              // Data içinde token kontrolü
+              if (userDataToTransform.containsKey('token') && userDataToTransform['token'] != null && userDataToTransform['token'].toString().isNotEmpty) {
+                final newToken = userDataToTransform['token'].toString();
+                print('🔄 Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
             }
             // Eğer user field'ı içinde user verisi varsa
             else if (json.containsKey('user') &&
@@ -621,6 +663,23 @@ class UserService {
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Update Password - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+            
+            // Data içinde token kontrolü
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('token') && data['token'] != null && data['token'].toString().isNotEmpty) {
+                final newToken = data['token'].toString();
+                print('🔄 Update Password - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
+            }
+            
             return json;
           }
 
@@ -662,6 +721,23 @@ class UserService {
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Delete User - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+            
+            // Data içinde token kontrolü
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('token') && data['token'] != null && data['token'].toString().isNotEmpty) {
+                final newToken = data['token'].toString();
+                print('🔄 Delete User - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
+            }
+            
             return json;
           }
 
@@ -697,6 +773,32 @@ class UserService {
       print('❌ Test User Service Error: $e');
       return false;
     }
+  }
+
+  /// Token'ı arka planda günceller (async olarak)
+  void _updateTokenInBackground(String newToken) {
+    // Arka planda token güncelleme işlemini başlat
+    Future.microtask(() async {
+      try {
+        if (newToken.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          final currentToken = prefs.getString(AppConstants.userTokenKey);
+          
+          // Token farklıysa veya yoksa güncelle
+          if (currentToken != newToken) {
+            print('🔄 UserService - Token güncelleniyor: ${newToken.substring(0, 20)}...');
+            await prefs.setString(AppConstants.userTokenKey, newToken);
+            print('✅ UserService - Token başarıyla güncellendi');
+          } else {
+            print('ℹ️ UserService - Token zaten güncel, güncelleme gerekmiyor');
+          }
+        } else {
+          print('⚠️ UserService - Boş token, güncelleme yapılmadı');
+        }
+      } catch (e) {
+        print('❌ UserService - Token güncelleme hatası: $e');
+      }
+    });
   }
 
   /// Kullanıcı adını oluşturur

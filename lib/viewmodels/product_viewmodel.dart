@@ -751,6 +751,7 @@ class ProductViewModel extends ChangeNotifier {
       // Token geçerliliğini kontrol et - zaten currentUser var, tekrar almaya gerek yok
       print('✅ Current user verified: ${currentUser.id} - ${currentUser.name}');
 
+      // API'de ownership kontrolü yapılacağı için client-side kontrol kaldırıldı
       print('🗑️ Deleting product: $productId');
       final response = await _productService.deleteUserProduct(
         userToken: userToken,
@@ -765,40 +766,34 @@ class ProductViewModel extends ChangeNotifier {
       if (response.isSuccess) {
         print('✅ Product delete API call successful');
 
-        // KRITIK: Silme işleminden sonra gerçek doğrulama yap
-        print('🔍 Verifying deletion by reloading user products...');
+        print('✅ Product delete API call successful');
 
-        // Kullanıcının ürünlerini API'den yeniden yükle
-        final currentUser = await _authService.getCurrentUser();
-        if (currentUser != null) {
-          print('🔍 Reloading products for user: ${currentUser.id}');
-          await loadUserProducts(currentUser.id);
-
-          // Ürünün gerçekten silinip silinmediğini kontrol et
-          final productStillExists = _myProducts.any(
-            (product) => product.id == productId,
-          );
-
-          if (productStillExists) {
-            print('❌ CRITICAL: Product still exists in API after deletion!');
-            print(
-              '❌ Product ID $productId was NOT actually deleted from server',
-            );
-            _setError('Ürün silinemedi - API\'den silinmedi');
-            _setLoading(false);
-            return false;
-          } else {
-            print('✅ VERIFIED: Product successfully deleted from API');
-            print(
-              '✅ Product ID $productId is no longer in user\'s product list',
-            );
-          }
+        // Optimistic UI update: remove the product from the local list immediately
+        final originalProductIndex = _myProducts.indexWhere((p) => p.id == productId);
+        product_model.Product? removedProduct;
+        if (originalProductIndex != -1) {
+          removedProduct = _myProducts.removeAt(originalProductIndex);
+          notifyListeners(); // UI'ı hemen güncelle
         }
 
-        // Loading'i false yap
-        _setLoading(false);
-        print('✅ Product deletion verified and completed successfully');
+        // Verification with retry logic
+        bool isVerified = await _verifyDeletion(productId);
 
+        if (isVerified) {
+          print('✅ VERIFIED: Product successfully deleted from API');
+        } else {
+          print('❌ CRITICAL: Product still exists in API after deletion!');
+          // Rollback: add the product back to the list if verification fails
+          if (removedProduct != null && originalProductIndex != -1) {
+            _myProducts.insert(originalProductIndex, removedProduct);
+            notifyListeners(); // UI'ı eski haline getir
+          }
+          _setError('Ürün silinemedi. Lütfen tekrar deneyin.');
+          _setLoading(false);
+          return false;
+        }
+
+        _setLoading(false);
         return true;
       } else {
         print('❌ Product delete failed: ${response.error}');
@@ -1023,6 +1018,25 @@ class ProductViewModel extends ChangeNotifier {
     } finally {
       _setLoadingMore(false);
     }
+  }
+
+  Future<bool> _verifyDeletion(String productId, {int retries = 3, Duration delay = const Duration(seconds: 1)}) async {
+    for (int i = 0; i < retries; i++) {
+      print('🔍 Verification attempt #${i + 1} for product $productId...');
+      final currentUser = await _authService.getCurrentUser();
+      if (currentUser == null) return false; // Should not happen
+
+      await loadUserProducts(currentUser.id);
+      final productStillExists = _myProducts.any((p) => p.id == productId);
+
+      if (!productStillExists) {
+        return true; // Verified!
+      }
+
+      print('⚠️ Product $productId still exists, waiting for ${delay * (i + 1)}...');
+      await Future.delayed(delay * (i + 1)); // Increasing delay
+    }
+    return false; // Failed after all retries
   }
 
   @override

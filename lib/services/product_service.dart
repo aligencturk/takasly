@@ -739,9 +739,9 @@ class ProductService {
     }
 
     try {
-      // Önce kullanıcının bu ürünün sahibi olup olmadığını kontrol et
-      print('🔍 Checking if user owns this product...');
+      // Token'ı request body'de göndereceğiz
       final prefs = await SharedPreferences.getInstance();
+      
       final currentUserId = prefs.getString(AppConstants.userIdKey);
       print('🔍 Current user ID: $currentUserId');
 
@@ -751,33 +751,42 @@ class ProductService {
       print('  - Token length: ${userToken.length}');
       print('  - Expected token length: ~100+ characters');
 
-      // API credentials'ları tekrar kontrol et
-      print('🔍 API Credentials check:');
-      print('  - Username length: ${ApiConstants.basicAuthUsername.length}');
-      print('  - Password length: ${ApiConstants.basicAuthPassword.length}');
-
-      // Sabit endpoint kullan
+      // Doğru endpoint formatını kullan
       final endpoint = 'service/user/product/$productId/deleteProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       print('🌐 Full URL: $fullUrl');
+      
 
-      // Basic auth credentials'ları kontrol et
-      print('🔐 Basic Auth Username: ${ApiConstants.basicAuthUsername}');
-      print('🔐 Basic Auth Password: ${ApiConstants.basicAuthPassword}');
 
-      // API'nin beklediği format: {"userToken": "token", "productID": 1}
+      // API'nin beklediği format: {"userToken": "...", "productID": 1}
       final body = {
         'userToken': userToken,
         'productID': int.parse(productId), // API integer bekliyor
       };
       print('🌐 DELETE Body: $body');
 
-      // Önce POST method ile dene (bazı API'ler DELETE yerine POST kullanır)
-      print('🔄 Trying POST method first...');
-      var response = await _httpClient.postWithBasicAuth<Map<String, dynamic>>(
+      // Alternatif format 1: productId string olarak
+      final bodyAlt1 = {
+        'userToken': userToken,
+        'productID': productId, // String olarak
+      };
+      print('🌐 DELETE Body Alt1 (string productID): $bodyAlt1');
+
+      // Alternatif format 2: productId yerine id
+      final bodyAlt2 = {
+        'userToken': userToken,
+        'id': int.parse(productId),
+      };
+      print('🌐 DELETE Body Alt2 (id field): $bodyAlt2');
+
+      // DELETE HTTP metodunu basic auth ile kullan
+      print('🔄 Using DELETE method with basic auth...');
+      print('📤 DELETE Body: {"userToken": "...", "productID": $productId}');
+      
+      // Önce orijinal formatı dene
+      var response = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
         endpoint,
         body: body,
-        useBasicAuth: true,
         fromJson: (json) {
           print('📥 ProductService.deleteUserProduct - Raw response: $json');
           print(
@@ -857,6 +866,60 @@ class ProductService {
       print('📊 Response error: ${response.error}');
       print('📊 Response data: ${response.data}');
 
+      // 403 hatası alındıysa alternatif formatları dene
+      if (!response.isSuccess && response.error != null && 
+          (response.error!.contains('403') || 
+           response.error!.contains('Forbidden') ||
+           response.error!.contains('Invalid user token') ||
+           response.error!.contains('Üye doğrulama bilgileri hatalı'))) {
+        
+        print('⚠️ 403 error detected, trying alternative formats...');
+        
+        // Format 1: productID as string
+        print('🔄 Trying format 1: productID as string');
+        var altResponse1 = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
+          endpoint,
+          body: bodyAlt1,
+          fromJson: (json) {
+            print('📥 Alt1 Response: $json');
+            if (json is Map<String, dynamic>) {
+              return json;
+            } else {
+              return <String, dynamic>{'rawResponse': json};
+            }
+          },
+        );
+        
+        if (altResponse1.isSuccess) {
+          print('✅ Alternative format 1 worked!');
+          return altResponse1;
+        }
+        
+        // Format 2: id instead of productID
+        print('🔄 Trying format 2: id field instead of productID');
+        var altResponse2 = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
+          endpoint,
+          body: bodyAlt2,
+          fromJson: (json) {
+            print('📥 Alt2 Response: $json');
+            if (json is Map<String, dynamic>) {
+              return json;
+            } else {
+              return <String, dynamic>{'rawResponse': json};
+            }
+          },
+        );
+        
+        if (altResponse2.isSuccess) {
+          print('✅ Alternative format 2 worked!');
+          return altResponse2;
+        }
+        
+        print('❌ All alternative formats failed, trying different endpoints...');
+         
+         print('❌ All alternative formats failed');
+       }
+
       // KRITIK: API response'unu detaylı analiz et
       if (response.isSuccess) {
         print('✅ API claims deletion was successful');
@@ -884,6 +947,8 @@ class ProductService {
       } else {
         print('❌ API reports deletion failed');
       }
+      
+
 
       return response;
     } catch (e, stackTrace) {
@@ -1306,9 +1371,9 @@ class ProductService {
               'brand': null,
               'model': null,
               'estimatedValue': null,
-              'ownerId': '2', // Kullanıcının kendi ürünü olduğu için
+              'ownerId': userId, // Gerçek kullanıcı ID'sini kullan
               'owner': {
-                'id': '2',
+                'id': userId,
                 'name': 'Kullanıcı',
                 'email': 'user@example.com',
                 'rating': 0.0,

@@ -97,6 +97,10 @@ class AuthService {
                 completeUser.email != 'user@example.com') {
               print('✅ Complete user profile fetched successfully');
               await _saveUserDataOnly(completeUser);
+              
+              // Token'ı her zaman güncelle (API'den yeni token gelebilir)
+              await _updateTokenIfNeeded(token);
+              
               return ApiResponse.success(completeUser);
             } else {
               print(
@@ -109,6 +113,9 @@ class AuthService {
         } catch (e) {
           print('⚠️ Error fetching complete profile: $e, using login data');
         }
+        
+        // Token'ı her zaman güncelle
+        await _updateTokenIfNeeded(token);
 
         return ApiResponse.success(user);
       }
@@ -244,6 +251,10 @@ class AuthService {
               print('✅ Complete user profile fetched successfully');
               final completeUser = profileResponse.data!;
               await _saveUserDataOnly(completeUser);
+              
+              // Token'ı her zaman güncelle (API'den yeni token gelebilir)
+              await _updateTokenIfNeeded(token);
+              
               return ApiResponse.success(completeUser);
             } else {
               print('⚠️ Failed to fetch complete profile, using register data');
@@ -253,6 +264,9 @@ class AuthService {
               '⚠️ Error fetching complete profile: $e, using register data',
             );
           }
+          
+          // Token'ı her zaman güncelle
+          await _updateTokenIfNeeded(token);
         }
 
         return ApiResponse.success(user);
@@ -415,7 +429,28 @@ class AuthService {
     try {
       final response = await _httpClient.get(
         ApiConstants.profile,
-        fromJson: (json) => User.fromJson(json),
+        fromJson: (json) {
+          // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+          if (json is Map<String, dynamic>) {
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Get Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenIfNeeded(newToken);
+            }
+            
+            // Data içinde token kontrolü
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('token') && data['token'] != null && data['token'].toString().isNotEmpty) {
+                final newToken = data['token'].toString();
+                print('🔄 Get Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenIfNeeded(newToken);
+              }
+            }
+          }
+          
+          return User.fromJson(json);
+        },
       );
 
       if (response.isSuccess && response.data != null) {
@@ -445,7 +480,28 @@ class AuthService {
       final response = await _httpClient.put(
         ApiConstants.profile,
         body: body,
-        fromJson: (json) => User.fromJson(json),
+        fromJson: (json) {
+          // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+          if (json is Map<String, dynamic>) {
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Update Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenIfNeeded(newToken);
+            }
+            
+            // Data içinde token kontrolü
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('token') && data['token'] != null && data['token'].toString().isNotEmpty) {
+                final newToken = data['token'].toString();
+                print('🔄 Update Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenIfNeeded(newToken);
+              }
+            }
+          }
+          
+          return User.fromJson(json);
+        },
       );
 
       if (response.isSuccess && response.data != null) {
@@ -576,6 +632,29 @@ class AuthService {
       );
     } catch (e) {
       // Hata durumunda sessizce geç
+    }
+  }
+
+  /// Token'ı SharedPreferences'a günceller
+  Future<void> _updateTokenIfNeeded(String newToken) async {
+    try {
+      if (newToken.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        final currentToken = prefs.getString(AppConstants.userTokenKey);
+        
+        // Token farklıysa veya yoksa güncelle
+        if (currentToken != newToken) {
+          print('🔄 Token güncelleniyor: ${newToken.substring(0, 20)}...');
+          await prefs.setString(AppConstants.userTokenKey, newToken);
+          print('✅ Token başarıyla güncellendi');
+        } else {
+          print('ℹ️ Token zaten güncel, güncelleme gerekmiyor');
+        }
+      } else {
+        print('⚠️ Boş token, güncelleme yapılmadı');
+      }
+    } catch (e) {
+      print('❌ Token güncelleme hatası: $e');
     }
   }
 
