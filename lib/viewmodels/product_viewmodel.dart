@@ -768,26 +768,42 @@ class ProductViewModel extends ChangeNotifier {
 
         print('✅ Product delete API call successful');
 
-        // Optimistic UI update: remove the product from the local list immediately
+        // Optimistic UI update: remove the product from both local lists immediately
         final originalProductIndex = _myProducts.indexWhere((p) => p.id == productId);
+        final originalAllProductsIndex = _products.indexWhere((p) => p.id == productId);
         product_model.Product? removedProduct;
+        product_model.Product? removedAllProduct;
+        
         if (originalProductIndex != -1) {
           removedProduct = _myProducts.removeAt(originalProductIndex);
-          notifyListeners(); // UI'ı hemen güncelle
         }
+        
+        if (originalAllProductsIndex != -1) {
+          removedAllProduct = _products.removeAt(originalAllProductsIndex);
+        }
+        
+        notifyListeners(); // UI'ı hemen güncelle
 
         // Verification with retry logic
         bool isVerified = await _verifyDeletion(productId);
 
         if (isVerified) {
           print('✅ VERIFIED: Product successfully deleted from API');
+          
+          // Ana sayfa ürün listesini de yenile
+          print('🔄 Refreshing all products after deletion...');
+          await refreshProducts();
+          
         } else {
           print('❌ CRITICAL: Product still exists in API after deletion!');
-          // Rollback: add the product back to the list if verification fails
+          // Rollback: add the product back to both lists if verification fails
           if (removedProduct != null && originalProductIndex != -1) {
             _myProducts.insert(originalProductIndex, removedProduct);
-            notifyListeners(); // UI'ı eski haline getir
           }
+          if (removedAllProduct != null && originalAllProductsIndex != -1) {
+            _products.insert(originalAllProductsIndex, removedAllProduct);
+          }
+          notifyListeners(); // UI'ı eski haline getir
           _setError('Ürün silinemedi. Lütfen tekrar deneyin.');
           _setLoading(false);
           return false;
