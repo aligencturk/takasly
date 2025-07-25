@@ -292,6 +292,7 @@ class _ProfileViewState extends State<ProfileView>
       itemCount: products.length,
       itemBuilder: (context, index) => ProductCard(
         product: products[index],
+        heroTag: 'profile_product_${products[index].id}_$index',
         onTap: () {
           // TODO: Ürün detay sayfasına yönlendir
           ScaffoldMessenger.of(context).showSnackBar(

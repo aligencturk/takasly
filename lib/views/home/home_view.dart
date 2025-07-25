@@ -167,7 +167,10 @@ class _HomeViewState extends State<HomeView> {
               childAspectRatio: 0.75, // Kart oranını ayarla
             ),
             delegate: SliverChildBuilderDelegate(
-              (context, index) => ProductCard(product: vm.products[index]),
+              (context, index) => ProductCard(
+                product: vm.products[index],
+                heroTag: 'home_product_${vm.products[index].id}_$index',
+              ),
               childCount: vm.products.length,
             ),
           ),

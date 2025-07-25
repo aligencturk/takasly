@@ -8,11 +8,13 @@ import 'package:takasly/views/product/product_detail_view.dart';
 class ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback? onTap;
+  final String? heroTag;
 
   const ProductCard({
     super.key,
     required this.product,
     this.onTap,
+    this.heroTag,
   });
 
   @override
@@ -36,7 +38,7 @@ class ProductCard extends StatelessWidget {
             Expanded(
               flex: 5,
               child: Hero(
-                tag: 'product_image_${product.id}',
+                tag: heroTag ?? 'product_image_${product.id}_${DateTime.now().millisecondsSinceEpoch}',
                 child: Image.network(
                   product.images.isNotEmpty
                       ? product.images.first
@@ -217,4 +219,4 @@ class ProductCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

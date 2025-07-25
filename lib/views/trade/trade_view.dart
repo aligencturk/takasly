@@ -232,6 +232,7 @@ class _TradeViewState extends State<TradeView>
             print('🎨 Building ProductCard for index $index: ${product.title}');
             return ProductCard(
               product: product,
+              heroTag: 'trade_product_${product.id}_$index',
               onTap: () {
                 print('🎨 ProductCard tapped: ${product.title}');
                 // Ürün detaylarını modal ile göster
