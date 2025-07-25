@@ -69,10 +69,10 @@ class ProductFilter {
 
 enum SortType {
   defaultSort('default', 'Varsayılan'),
-  newest('newest', 'En Yeni'),
-  oldest('oldest', 'En Eski'),
-  popular('popular', 'En Popüler'),
-  location('location', 'Konuma En Yakın');
+  newestToOldest('newest', 'Yeniden Eskiye'),
+  oldestToNewest('oldest', 'Eskiden Yeniye'),
+  mostViewed('popular', 'En Çok İncelenenler'),
+  nearestToMe('location', 'Bana En Yakın');
 
   const SortType(this.value, this.label);
   final String value;

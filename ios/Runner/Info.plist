@@ -28,6 +28,14 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Bu uygulama ürün fotoğrafları çekmek için kameraya erişim istiyor.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Bu uygulama ürün fotoğrafları seçmek için foto galerisine erişim istiyor.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

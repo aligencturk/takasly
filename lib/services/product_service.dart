@@ -8,6 +8,7 @@ import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
+import '../services/location_service.dart';
 
 class ProductService {
   final HttpClient _httpClient = HttpClient();
@@ -163,8 +164,34 @@ class ProductService {
         print('⚠️ Error getting user token: $e');
       }
 
+      // Konum bilgilerini al (eğer location sorting seçiliyse)
+      String? userLat;
+      String? userLong;
+
+      if (filter.sortType == 'location') {
+        print('📍 Location sorting requested, getting user location...');
+        final locationService = LocationService();
+        final locationData = await locationService
+            .getCurrentLocationAsStrings();
+
+        if (locationData != null) {
+          userLat = locationData['latitude'];
+          userLong = locationData['longitude'];
+          print('📍 Location obtained: $userLat, $userLong');
+        } else {
+          print('❌ Could not get user location, using default sorting');
+          // Konum alınamazsa varsayılan sıralamaya geç
+          filter = filter.copyWith(sortType: 'default');
+        }
+      }
+
       // Filter'dan API body'sini oluştur
-      final body = filter.toApiBody(userToken: userToken, page: page);
+      final body = filter.toApiBody(
+        userToken: userToken,
+        page: page,
+        userLat: userLat,
+        userLong: userLong,
+      );
       print('🌐 POST Body with filter: $body');
 
       final response = await _httpClient.postWithBasicAuth(

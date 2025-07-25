@@ -48,6 +48,10 @@ dependencies:
   # Local Storage
   shared_preferences: ^2.3.3
   
+  # Location Services
+  geolocator: ^13.0.1
+  permission_handler: ^11.3.1
+  
   # JSON Serialization
   json_annotation: ^4.9.0
   
@@ -56,12 +60,6 @@ dependencies:
   
   # Image Picker
   image_picker: ^1.1.2
-  
-  # Location
-  geolocator: ^13.0.1
-  
-  # Permissions
-  permission_handler: ^11.3.1
   
   # Logging
   logger: ^2.4.0

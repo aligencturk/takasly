@@ -6,6 +6,7 @@ import '../models/district.dart';
 import '../models/condition.dart';
 import '../models/product.dart' as product_model;
 import '../viewmodels/product_viewmodel.dart';
+import '../services/location_service.dart';
 import '../core/app_theme.dart';
 
 class FilterBottomSheet extends StatefulWidget {
@@ -384,17 +385,46 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 (sortType) => _buildFilterChip(
                   label: sortType.label,
                   isSelected: _tempFilter.sortType == sortType.value,
-                  onTap: () {
-                    setState(() {
-                      _tempFilter = _tempFilter.copyWith(
-                        sortType: sortType.value,
-                      );
-                    });
+                  onTap: () async {
+                    // Eğer "Bana En Yakın" seçiliyorsa konum izni iste
+                    if (sortType.value == 'location') {
+                      await _handleLocationSorting();
+                    } else {
+                      setState(() {
+                        _tempFilter = _tempFilter.copyWith(
+                          sortType: sortType.value,
+                        );
+                      });
+                    }
                   },
                 ),
               )
               .toList(),
         ),
+
+        // Konum sıralaması seçiliyse bilgi mesajı göster
+        if (_tempFilter.sortType == 'location')
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.location_on, color: Colors.blue.shade600, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Konumunuza en yakın ürünler gösterilecek',
+                    style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -422,6 +452,143 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _handleLocationSorting() async {
+    print('📍 FilterBottomSheet: Location sorting requested');
+
+    // Loading dialog göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Konum izni isteniyor...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final locationService = LocationService();
+
+      // Konum izni iste
+      final hasPermission = await locationService.requestLocationPermission();
+
+      // Loading dialog'u kapat
+      if (mounted) Navigator.pop(context);
+
+      if (hasPermission) {
+        // Konum servisi aktif mi kontrol et
+        final isServiceEnabled = await locationService
+            .isLocationServiceEnabled();
+
+        if (isServiceEnabled) {
+          print('✅ Location permission granted and service enabled');
+          setState(() {
+            _tempFilter = _tempFilter.copyWith(sortType: 'location');
+          });
+
+          // Başarı mesajı göster
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.location_on, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Konum izni verildi. En yakın ürünler gösterilecek.'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        } else {
+          print('❌ Location service is disabled');
+          _showLocationServiceDialog();
+        }
+      } else {
+        print('❌ Location permission denied');
+        _showLocationPermissionDialog();
+      }
+    } catch (e) {
+      print('❌ Error handling location sorting: $e');
+
+      // Loading dialog'u kapat (eğer hala açıksa)
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konum izni alınırken hata oluştu'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showLocationPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.location_off, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Konum İzni Gerekli'),
+          ],
+        ),
+        content: const Text(
+          'Size en yakın ürünleri gösterebilmek için konum izni gerekiyor. '
+          'Lütfen ayarlardan konum iznini açın.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final locationService = LocationService();
+              await locationService.requestLocationPermission();
+            },
+            child: const Text('Ayarlara Git'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.location_disabled, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Konum Servisi Kapalı'),
+          ],
+        ),
+        content: const Text(
+          'Size en yakın ürünleri gösterebilmek için konum servisini açmanız gerekiyor. '
+          'Lütfen cihazınızın konum ayarlarını kontrol edin.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam'),
+          ),
+        ],
       ),
     );
   }
