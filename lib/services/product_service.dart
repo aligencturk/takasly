@@ -751,8 +751,8 @@ class ProductService {
       print('  - Token length: ${userToken.length}');
       print('  - Expected token length: ~100+ characters');
 
-      // Doğru endpoint formatını kullan
-      final endpoint = 'service/user/product/$productId/deleteProduct';
+      // Doğru endpoint formatını kullan - userId kullanılmalı
+      final endpoint = 'service/user/product/$currentUserId/deleteProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       print('🌐 Full URL: $fullUrl');
       
