@@ -29,6 +29,10 @@ class ProductService {
         queryParams: queryParams,
         fromJson: (json) {
           print('🔍 Raw All Products API Response: $json');
+          print('🔍 Response type: ${json.runtimeType}');
+          print(
+            '🔍 Response keys: ${json is Map ? json.keys.toList() : 'Not a Map'}',
+          );
 
           // JSON yapısını kontrol et
           if (json == null) {
@@ -39,6 +43,31 @@ class ProductService {
           if (json['data'] == null) {
             print('❌ All Products API response has no data field');
             print('🔍 Available fields: ${json.keys}');
+
+            // Alternatif formatları kontrol et
+            if (json['products'] != null) {
+              print('🔍 Found products field directly in root');
+              final productsList = json['products'] as List;
+              print(
+                '📦 Direct products API returned ${productsList.length} products',
+              );
+              final products = productsList
+                  .map((item) => _transformApiProductToModel(item))
+                  .toList();
+              print('📦 Parsed ${products.length} products successfully');
+              return products;
+            }
+
+            // Eğer response direkt bir liste ise
+            if (json is List) {
+              print('🔍 Response is directly a list with ${json.length} items');
+              final products = json
+                  .map((item) => _transformApiProductToModel(item))
+                  .toList();
+              print('📦 Parsed ${products.length} products successfully');
+              return products;
+            }
+
             return <Product>[];
           }
 
@@ -67,7 +96,7 @@ class ProductService {
           }
 
           final products = productsList
-              .map((item) => _transformApiProductToModel(item))
+              .map((item) => _transformNewApiProductToModel(item))
               .toList();
 
           print('📦 Parsed ${products.length} products successfully');
@@ -89,6 +118,7 @@ class ProductService {
     String? searchQuery,
     String? city,
     String? condition,
+    String? sortBy, // Sıralama parametresi eklendi
     double? maxDistance,
     double? userLatitude,
     double? userLongitude,
@@ -100,6 +130,7 @@ class ProductService {
       if (searchQuery != null) queryParams['search'] = searchQuery;
       if (city != null) queryParams['city'] = city;
       if (condition != null) queryParams['condition'] = condition;
+      if (sortBy != null) queryParams['sortBy'] = sortBy;
       if (maxDistance != null) queryParams['maxDistance'] = maxDistance;
       if (userLatitude != null) queryParams['userLatitude'] = userLatitude;
       if (userLongitude != null) queryParams['userLongitude'] = userLongitude;
@@ -111,13 +142,46 @@ class ProductService {
         '🌐 ProductService - Full URL: ${ApiConstants.fullUrl}${ApiConstants.allProducts}',
       );
       print('🌐 ProductService - Query params: $queryParams');
-      print('🧪 Testing without query parameters...');
-
       final response = await _httpClient.getWithBasicAuth(
         ApiConstants.allProducts,
         queryParams: queryParams,
         fromJson: (json) {
           print('🔍 ProductService - All products raw response: $json');
+
+          // Yeni API formatını kontrol et
+          if (json case {
+            'success': true,
+            'data': final Map<String, dynamic> data,
+          }) {
+            if (data['products'] case final List<dynamic> productsList) {
+              print(
+                '🔍 ProductService - Found ${productsList.length} products in new format',
+              );
+              print(
+                '🔍 ProductService - Page info: ${data['page']}/${data['totalPages']}, Total: ${data['totalItems']}',
+              );
+
+              final products = productsList
+                  .map((item) => _transformNewApiProductToModel(item))
+                  .toList();
+
+              print(
+                '🔍 ProductService - Successfully parsed ${products.length} products',
+              );
+              return products;
+            }
+          }
+
+          // Eski format kontrolü (backward compatibility)
+          if (json case {'data': {'products': final List<dynamic> list}}) {
+            print(
+              '🔍 ProductService - Found ${list.length} products in old format',
+            );
+            final products = list
+                .map((item) => _transformApiProductToModel(item))
+                .toList();
+            return products;
+          }
 
           // Eğer sadece success mesajı geliyorsa (ürün yok)
           if (json case {'error': false, '200': 'OK'}) {
@@ -127,44 +191,7 @@ class ProductService {
             return <Product>[];
           }
 
-          // API'den dönen response formatına göre parsing
-          if (json case {'data': {'products': final List<dynamic> list}}) {
-            print(
-              '🔍 ProductService - Found ${list.length} products in data.products',
-            );
-            final products = list
-                .map((item) => _transformApiProductToModel(item))
-                .toList();
-            return products;
-          }
-          // Fallback: Diğer olası formatlar
-          if (json case {'products': final List<dynamic> list}) {
-            print('🔍 ProductService - Found ${list.length} products in root');
-            final products = list
-                .map((item) => _transformApiProductToModel(item))
-                .toList();
-            return products;
-          }
-          if (json case {'data': final List<dynamic> list}) {
-            print(
-              '🔍 ProductService - Found ${list.length} products in data array',
-            );
-            final products = list
-                .map((item) => _transformApiProductToModel(item))
-                .toList();
-            return products;
-          }
-          // Eğer success:true varsa ama ürün listesi yoksa
-          if (json case {'success': true}) {
-            print(
-              '🔍 ProductService - Success response but no product list found',
-            );
-            return <Product>[];
-          }
-
-          print(
-            '❌ ProductService - No products found in all products response',
-          );
+          print('❌ ProductService - No products found in response');
           print('❌ ProductService - Available keys: ${json.keys.toList()}');
           return <Product>[];
         },
@@ -263,7 +290,89 @@ class ProductService {
     }
   }
 
-  // API response'unu Product model formatına dönüştürür
+  // Yeni API formatını Product model formatına dönüştürür
+  Product _transformNewApiProductToModel(Map<String, dynamic> apiProduct) {
+    print(
+      '🔄 Transforming new API product: ${apiProduct['productTitle']} (ID: ${apiProduct['productID']})',
+    );
+
+    return Product(
+      id: apiProduct['productID']?.toString() ?? '',
+      title: apiProduct['productTitle'] ?? '',
+      description: apiProduct['productDesc'] ?? '',
+      images:
+          apiProduct['productImage'] != null &&
+              apiProduct['productImage'].toString().isNotEmpty
+          ? [apiProduct['productImage'].toString()]
+          : [],
+      categoryId: apiProduct['categoryID']?.toString() ?? '',
+      category: Category(
+        id: apiProduct['categoryID']?.toString() ?? '',
+        name: '', // Kategori adı ayrı endpoint'ten gelecek
+        icon: '',
+        isActive: true,
+        order: 0,
+      ),
+      condition: apiProduct['productCondition'] ?? '',
+      ownerId: apiProduct['userID']?.toString() ?? '',
+      owner: User(
+        id: apiProduct['userID']?.toString() ?? '',
+        name: apiProduct['userFullname'] ?? 'Kullanıcı',
+        firstName: apiProduct['userFirstname'],
+        lastName: apiProduct['userLastname'],
+        email: '', // API'de email yok
+        rating: 0.0,
+        totalTrades: 0,
+        isVerified: false,
+        isOnline: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      tradePreferences: [], // API'de trade preferences yok
+      status: ProductStatus.active,
+      location:
+          apiProduct['cityTitle'] != null || apiProduct['districtTitle'] != null
+          ? Location(
+              address:
+                  '${apiProduct['cityTitle'] ?? ''} ${apiProduct['districtTitle'] ?? ''}'
+                      .trim(),
+              city: apiProduct['cityTitle'] ?? '',
+              district: apiProduct['districtTitle'] ?? '',
+              country: 'Türkiye',
+              latitude: apiProduct['productLat']?.toDouble(),
+              longitude: apiProduct['productLong']?.toDouble(),
+            )
+          : null,
+      viewCount: 0,
+      favoriteCount: 0,
+      createdAt: _parseDate(apiProduct['createdAt']),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Tarih parsing metodu
+  DateTime _parseDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return DateTime.now();
+    }
+
+    try {
+      // API'den gelen format: "13.07.2025"
+      final parts = dateString.split('.');
+      if (parts.length == 3) {
+        final day = int.parse(parts[0]);
+        final month = int.parse(parts[1]);
+        final year = int.parse(parts[2]);
+        return DateTime(year, month, day);
+      }
+    } catch (e) {
+      print('⚠️ Error parsing date: $dateString, error: $e');
+    }
+
+    return DateTime.now();
+  }
+
+  // Eski API formatını Product model formatına dönüştürür (backward compatibility)
   Product _transformApiProductToModel(Map<String, dynamic> apiProduct) {
     final categoryId = apiProduct['productCatID']?.toString() ?? '';
     final categoryName = apiProduct['productCatname'] ?? '';

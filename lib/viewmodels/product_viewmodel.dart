@@ -8,6 +8,7 @@ import '../models/condition.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
 import '../core/constants.dart';
+import '../core/sort_options.dart';
 
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
@@ -32,6 +33,7 @@ class ProductViewModel extends ChangeNotifier {
   String? _currentSearchQuery;
   String? _currentCity;
   String? _currentCondition;
+  SortOption _currentSortOption = SortOption.defaultSort;
 
   // Getters
   List<product_model.Product> get products => _products;
@@ -54,6 +56,7 @@ class ProductViewModel extends ChangeNotifier {
   String? get currentSearchQuery => _currentSearchQuery;
   String? get currentCity => _currentCity;
   String? get currentCondition => _currentCondition;
+  SortOption get currentSortOption => _currentSortOption;
 
   ProductViewModel() {
     loadInitialData();
@@ -68,47 +71,90 @@ class ProductViewModel extends ChangeNotifier {
     int limit = AppConstants.defaultPageSize,
     bool refresh = false,
   }) async {
+    print(
+      '🔄 ProductViewModel.loadAllProducts started - page: $page, refresh: $refresh',
+    );
+
     if (refresh) {
       _currentPage = 1;
       _hasMore = true;
       _products.clear();
+      print(
+        '🔄 ProductViewModel.loadAllProducts - refresh mode, cleared products',
+      );
     }
 
-    if (_isLoading || _isLoadingMore) return;
+    if (_isLoading || _isLoadingMore) {
+      print('⚠️ ProductViewModel.loadAllProducts - already loading, returning');
+      return;
+    }
 
     if (_currentPage == 1) {
       _setLoading(true);
+      print(
+        '🔄 ProductViewModel.loadAllProducts - set loading true for first page',
+      );
     } else {
       _setLoadingMore(true);
+      print(
+        '🔄 ProductViewModel.loadAllProducts - set loading more true for page $_currentPage',
+      );
     }
 
     _clearError();
 
     try {
+      print(
+        '🌐 ProductViewModel.loadAllProducts - calling getAllProducts with page: $page, limit: $limit',
+      );
       final response = await _productService.getAllProducts(
         page: page,
         limit: limit,
       );
 
+      print('📡 ProductViewModel.loadAllProducts - response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data length: ${response.data?.length ?? 0}');
+
       if (response.isSuccess && response.data != null) {
         final newProducts = response.data!;
+        print(
+          '✅ ProductViewModel.loadAllProducts - got ${newProducts.length} products',
+        );
 
         if (_currentPage == 1) {
           _products = newProducts;
+          print(
+            '✅ ProductViewModel.loadAllProducts - set products for first page',
+          );
         } else {
           _products.addAll(newProducts);
+          print(
+            '✅ ProductViewModel.loadAllProducts - added products to existing list',
+          );
         }
 
         _hasMore = newProducts.length == AppConstants.defaultPageSize;
         _currentPage++;
+        print(
+          '✅ ProductViewModel.loadAllProducts - hasMore: $_hasMore, nextPage: $_currentPage',
+        );
       } else {
+        print(
+          '❌ ProductViewModel.loadAllProducts - API error: ${response.error}',
+        );
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
+      print('💥 ProductViewModel.loadAllProducts - Exception: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
       _setLoadingMore(false);
+      print(
+        '🏁 ProductViewModel.loadAllProducts completed - final products count: ${_products.length}',
+      );
     }
   }
 
@@ -148,6 +194,7 @@ class ProductViewModel extends ChangeNotifier {
         searchQuery: searchQuery,
         city: city,
         condition: condition,
+        sortBy: _currentSortOption.value,
       );
 
       if (response.isSuccess && response.data != null) {
@@ -227,6 +274,19 @@ class ProductViewModel extends ChangeNotifier {
 
     await loadProducts(
       categoryId: categoryId,
+      searchQuery: _currentSearchQuery,
+      city: _currentCity,
+      condition: _currentCondition,
+      refresh: true,
+    );
+  }
+
+  Future<void> sortProducts(SortOption sortOption) async {
+    _currentSortOption = sortOption;
+    notifyListeners();
+
+    await loadProducts(
+      categoryId: _currentCategoryId,
       searchQuery: _currentSearchQuery,
       city: _currentCity,
       condition: _currentCondition,

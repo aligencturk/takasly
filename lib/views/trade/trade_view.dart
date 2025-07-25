@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/trade_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../services/auth_service.dart';
-import '../../core/constants.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../../widgets/product_card.dart';
@@ -133,12 +132,11 @@ class _TradeViewState extends State<TradeView>
             return const LoadingWidget();
           }
 
-          // Sadece her iki ViewModel'de de hata varsa error göster
-          if (tradeViewModel.hasError && productViewModel.hasError) {
-            print('🎨 TradeView - Showing error widget (both have errors)');
+          // Sadece ProductViewModel'de hata varsa error göster (TradeViewModel geçici olarak devre dışı)
+          if (productViewModel.hasError) {
+            print('🎨 TradeView - Showing error widget (product error)');
             return CustomErrorWidget(
-              message:
-                  tradeViewModel.errorMessage ?? productViewModel.errorMessage!,
+              message: productViewModel.errorMessage!,
               onRetry: _loadData,
             );
           }
@@ -155,21 +153,11 @@ class _TradeViewState extends State<TradeView>
                     )
                   : _buildUserProductsList(productViewModel.myProducts),
 
-              // Tamamlanan tab - TradeViewModel kullan
-              tradeViewModel.hasError
-                  ? CustomErrorWidget(
-                      message: tradeViewModel.errorMessage!,
-                      onRetry: _loadData,
-                    )
-                  : _buildTradeList(tradeViewModel.completedTrades),
+              // Tamamlanan tab - Geçici olarak boş göster
+              _buildComingSoonMessage('Tamamlanan Takaslar'),
 
-              // İptal edilen tab - TradeViewModel kullan
-              tradeViewModel.hasError
-                  ? CustomErrorWidget(
-                      message: tradeViewModel.errorMessage!,
-                      onRetry: _loadData,
-                    )
-                  : _buildTradeList(tradeViewModel.cancelledTrades),
+              // İptal edilen tab - Geçici olarak boş göster
+              _buildComingSoonMessage('İptal Edilen Takaslar'),
             ],
           );
         },
@@ -253,81 +241,6 @@ class _TradeViewState extends State<TradeView>
             );
           },
         ),
-      ),
-    );
-  }
-
-  Widget _buildTradeList(List<dynamic> trades) {
-    if (trades.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.swap_horiz, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Henüz takas yok',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        final tradeViewModel = Provider.of<TradeViewModel>(
-          context,
-          listen: false,
-        );
-        await tradeViewModel.fetchMyTrades();
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: trades.length,
-        itemBuilder: (context, index) {
-          final trade = trades[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16.0),
-            child: ListTile(
-              title: Text(trade.toString()),
-              subtitle: Text('Takas #${index + 1}'),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                // Takas detayına git
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showTradeDetails(dynamic trade) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Takas Detayları'),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('ID: ${trade['id'] ?? 'N/A'}'),
-            Text('Durum: ${trade['status'] ?? 'Bilinmiyor'}'),
-            Text('Tarih: ${trade['createdAt'] ?? 'Bilinmiyor'}'),
-            Text('Açıklama: ${trade['description'] ?? 'Açıklama yok'}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Kapat'),
-          ),
-        ],
       ),
     );
   }
@@ -440,6 +353,31 @@ class _TradeViewState extends State<TradeView>
               );
             },
             child: const Text('Takas Teklifi Gönder'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComingSoonMessage(String title) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.construction, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Bu özellik yakında aktif olacak',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),

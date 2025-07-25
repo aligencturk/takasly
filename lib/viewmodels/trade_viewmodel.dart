@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/trade.dart';
-import '../models/product.dart';
 import '../services/trade_service.dart';
-import '../services/product_service.dart';
-import '../services/auth_service.dart';
 import '../core/constants.dart';
 
 class TradeViewModel extends ChangeNotifier {
@@ -50,18 +47,22 @@ class TradeViewModel extends ChangeNotifier {
   }
 
   Future<void> loadInitialData() async {
-    await Future.wait([
-      loadTrades(),
-      loadPendingTrades(),
-      loadCompletedTrades(),
-      loadCancelledTrades(),
-      loadStatistics(),
-    ]);
+    // Temporarily disable trade loading since endpoints don't exist
+    // TODO: Implement when trade endpoints are available
+    print(
+      '🔄 TradeViewModel.loadInitialData - Trade endpoints not implemented yet',
+    );
+    _setLoading(false);
+    _clearError();
   }
 
   // Alias for loadInitialData for backward compatibility
   Future<void> fetchMyTrades() async {
-    await loadInitialData();
+    print(
+      '🔄 TradeViewModel.fetchMyTrades - Trade endpoints not implemented yet',
+    );
+    _setLoading(false);
+    _clearError();
   }
 
   Future<void> loadTrades({
