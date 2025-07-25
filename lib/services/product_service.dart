@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/product.dart';
@@ -22,11 +23,38 @@ class ProductService {
       final fullUrl = '${ApiConstants.fullUrl}${ApiConstants.allProducts}';
       print('🌐 Full URL: $fullUrl');
 
-      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+      // POST request ile dene (API POST method kullanıyor)
+      print('🌐 Using POST method with Basic Auth');
 
-      final response = await _httpClient.getWithBasicAuth(
+      // User token'ı al
+      String userToken = '';
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
+        print(
+          '🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}',
+        );
+      } catch (e) {
+        print('⚠️ Error getting user token: $e');
+      }
+
+      // POST body hazırla
+      final body = {
+        'userToken': userToken,
+        'categoryID': 0,
+        'conditionIDs': [],
+        'cityID': 0,
+        'districtID': 0,
+        'userLat': '',
+        'userLong': '',
+        'sortType': 'default',
+        'page': page,
+      };
+      print('🌐 POST Body: $body');
+
+      final response = await _httpClient.postWithBasicAuth(
         ApiConstants.allProducts,
-        queryParams: queryParams,
+        body: body,
         fromJson: (json) {
           print('🔍 Raw All Products API Response: $json');
           print('🔍 Response type: ${json.runtimeType}');
@@ -188,6 +216,26 @@ class ProductService {
             print(
               '🔍 ProductService - Empty success response, no products available',
             );
+            return <Product>[];
+          }
+
+          // 410 status code için özel handling
+          if (json case {'error': false, '410': 'Gone'}) {
+            print(
+              '🔍 ProductService - 410 Gone response, checking for products',
+            );
+            // 410 response'unda da ürünler olabilir, kontrol et
+            if (json['data'] != null && json['data']['products'] != null) {
+              final productsList = json['data']['products'] as List;
+              print('📦 410 response returned ${productsList.length} products');
+              final products = productsList
+                  .map((item) => _transformNewApiProductToModel(item))
+                  .toList();
+              print(
+                '📦 Parsed ${products.length} products successfully from 410',
+              );
+              return products;
+            }
             return <Product>[];
           }
 

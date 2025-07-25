@@ -236,16 +236,7 @@ class ProductViewModel extends ChangeNotifier {
       '🔄 ProductViewModel - Current _products.length: ${_products.length}',
     );
     try {
-      await Future.wait([
-        loadCategories(),
-        loadProducts(
-          categoryId: _currentCategoryId,
-          searchQuery: _currentSearchQuery,
-          city: _currentCity,
-          condition: _currentCondition,
-          refresh: true,
-        ),
-      ]);
+      await Future.wait([loadCategories(), loadAllProducts(refresh: true)]);
       print('✅ ProductViewModel.refreshProducts completed');
       print('✅ ProductViewModel - Final _products.length: ${_products.length}');
     } catch (e) {

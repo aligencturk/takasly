@@ -33,7 +33,7 @@ class ApiConstants {
       '/service/user/product'; // {userId}/addProduct eklenecek
   static const String userProducts =
       '/service/user/product'; // {userId}/productList eklenecek
-  static const String allProducts = '/service/user/product/allProductList';
+  static const String allProducts = 'service/user/product/allProductList';
   static const String categoriesList = '/service/general/general/categories/0';
 
   // Headers
