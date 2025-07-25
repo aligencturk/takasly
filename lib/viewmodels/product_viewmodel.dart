@@ -716,6 +716,105 @@ class ProductViewModel extends ChangeNotifier {
     }
   }
 
+  // Ürün silme metodu
+  Future<bool> deleteUserProduct(String productId) async {
+    print(
+      '🗑️ ProductViewModel.deleteUserProduct called with productId: $productId',
+    );
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      // Current user'ı al
+      final currentUser = await _authService.getCurrentUser();
+      if (currentUser == null) {
+        print('❌ Current user bulunamadı');
+        _setError('Kullanıcı oturumu bulunamadı');
+        _setLoading(false);
+        return false;
+      }
+      print('✅ Current user: ${currentUser.id} - ${currentUser.name}');
+
+      // User token'ı al ve detaylı kontrol et
+      final userToken = await _authService.getToken();
+      if (userToken == null || userToken.isEmpty) {
+        print('❌ User token bulunamadı veya boş');
+        _setError('Kullanıcı token\'ı bulunamadı');
+        _setLoading(false);
+        return false;
+      }
+
+      print('✅ User token alındı: ${userToken.substring(0, 20)}...');
+      print('✅ User token length: ${userToken.length}');
+
+      // Token geçerliliğini kontrol et - zaten currentUser var, tekrar almaya gerek yok
+      print('✅ Current user verified: ${currentUser.id} - ${currentUser.name}');
+
+      print('🗑️ Deleting product: $productId');
+      final response = await _productService.deleteUserProduct(
+        userToken: userToken,
+        productId: productId,
+      );
+
+      print('📡 Delete response alındı');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data}');
+
+      if (response.isSuccess) {
+        print('✅ Product delete API call successful');
+
+        // KRITIK: Silme işleminden sonra gerçek doğrulama yap
+        print('🔍 Verifying deletion by reloading user products...');
+
+        // Kullanıcının ürünlerini API'den yeniden yükle
+        final currentUser = await _authService.getCurrentUser();
+        if (currentUser != null) {
+          print('🔍 Reloading products for user: ${currentUser.id}');
+          await loadUserProducts(currentUser.id);
+
+          // Ürünün gerçekten silinip silinmediğini kontrol et
+          final productStillExists = _myProducts.any(
+            (product) => product.id == productId,
+          );
+
+          if (productStillExists) {
+            print('❌ CRITICAL: Product still exists in API after deletion!');
+            print(
+              '❌ Product ID $productId was NOT actually deleted from server',
+            );
+            _setError('Ürün silinemedi - API\'den silinmedi');
+            _setLoading(false);
+            return false;
+          } else {
+            print('✅ VERIFIED: Product successfully deleted from API');
+            print(
+              '✅ Product ID $productId is no longer in user\'s product list',
+            );
+          }
+        }
+
+        // Loading'i false yap
+        _setLoading(false);
+        print('✅ Product deletion verified and completed successfully');
+
+        return true;
+      } else {
+        print('❌ Product delete failed: ${response.error}');
+        _setError(response.error ?? 'Ürün silinemedi');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e, stackTrace) {
+      print('❌ Product delete exception: $e');
+      print('❌ Stack trace: $stackTrace');
+      _setError('Ürün silinirken hata oluştu: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
   // Yeni addProductWithEndpoint method'u kullanıcının verdiği endpoint için
   Future<bool> addProductWithEndpoint({
     required String productTitle,

@@ -108,17 +108,11 @@ class _TradeViewState extends State<TradeView>
           ],
         ),
       ),
-      body: Consumer2<TradeViewModel, ProductViewModel>(
-        builder: (context, tradeViewModel, productViewModel, child) {
-          print('🎨 TradeView Consumer2 builder called');
-          print(
-            '🎨 TradeView - tradeViewModel.isLoading: ${tradeViewModel.isLoading}',
-          );
+      body: Consumer<ProductViewModel>(
+        builder: (context, productViewModel, child) {
+          print('🎨 TradeView Consumer builder called - ${DateTime.now()}');
           print(
             '🎨 TradeView - productViewModel.isLoading: ${productViewModel.isLoading}',
-          );
-          print(
-            '🎨 TradeView - tradeViewModel.hasError: ${tradeViewModel.hasError}',
           );
           print(
             '🎨 TradeView - productViewModel.hasError: ${productViewModel.hasError}',
@@ -127,12 +121,22 @@ class _TradeViewState extends State<TradeView>
             '🎨 TradeView - productViewModel.myProducts.length: ${productViewModel.myProducts.length}',
           );
 
-          if (tradeViewModel.isLoading || productViewModel.isLoading) {
+          // Ürün listesini detaylı logla
+          if (productViewModel.myProducts.isNotEmpty) {
+            print('🎨 TradeView - Current products:');
+            for (int i = 0; i < productViewModel.myProducts.length; i++) {
+              final product = productViewModel.myProducts[i];
+              print('  ${i + 1}. ${product.title} (ID: ${product.id})');
+            }
+          } else {
+            print('🎨 TradeView - No products in myProducts list');
+          }
+
+          if (productViewModel.isLoading) {
             print('🎨 TradeView - Showing loading widget');
             return const LoadingWidget();
           }
 
-          // Sadece ProductViewModel'de hata varsa error göster (TradeViewModel geçici olarak devre dışı)
           if (productViewModel.hasError) {
             print('🎨 TradeView - Showing error widget (product error)');
             return CustomErrorWidget(
@@ -146,12 +150,7 @@ class _TradeViewState extends State<TradeView>
             controller: _tabController,
             children: [
               // Aktif tab - ProductViewModel kullan
-              productViewModel.hasError
-                  ? CustomErrorWidget(
-                      message: productViewModel.errorMessage!,
-                      onRetry: _loadData,
-                    )
-                  : _buildUserProductsList(productViewModel.myProducts),
+              _buildUserProductsList(productViewModel.myProducts),
 
               // Tamamlanan tab - Geçici olarak boş göster
               _buildComingSoonMessage('Tamamlanan Takaslar'),
@@ -267,10 +266,19 @@ class _TradeViewState extends State<TradeView>
                     borderRadius: BorderRadius.circular(8),
                     color: Colors.grey.shade200,
                   ),
-                  child: const Icon(
-                    Icons.image_not_supported,
-                    size: 50,
-                    color: Colors.grey,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      product.images.first,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.image_not_supported,
+                          size: 50,
+                          color: Colors.grey,
+                        );
+                      },
+                    ),
                   ),
                 ),
 
@@ -338,6 +346,15 @@ class _TradeViewState extends State<TradeView>
           ),
         ),
         actions: [
+          // Silme butonu
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showDeleteConfirmDialog(product);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Sil'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Kapat'),
@@ -357,6 +374,120 @@ class _TradeViewState extends State<TradeView>
         ],
       ),
     );
+  }
+
+  void _showDeleteConfirmDialog(dynamic product) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Ürünü Sil'),
+          ],
+        ),
+        content: Text(
+          '"${product.title}" adlı ürünü silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteProduct(product.id, product.title);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Sil'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteProduct(String productId, String productTitle) async {
+    print('🗑️ TradeView - Deleting product: $productId ($productTitle)');
+
+    // Loading dialog göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Ürün siliniyor...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final productViewModel = Provider.of<ProductViewModel>(
+        context,
+        listen: false,
+      );
+      final success = await productViewModel.deleteUserProduct(productId);
+
+      // Loading dialog'u kapat
+      if (mounted) Navigator.pop(context);
+
+      if (success) {
+        print('✅ TradeView - Product deleted successfully');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('"$productTitle" başarıyla silindi'),
+              backgroundColor: Colors.green,
+              action: SnackBarAction(
+                label: 'Tamam',
+                textColor: Colors.white,
+                onPressed: () {},
+              ),
+            ),
+          );
+        }
+        // ProductViewModel zaten UI'ı güncelledi, tekrar yüklemeye gerek yok
+      } else {
+        print('❌ TradeView - Product delete failed');
+        if (mounted) {
+          final errorMessage =
+              productViewModel.errorMessage ?? 'Ürün silinemedi';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Hata: $errorMessage'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Tamam',
+                textColor: Colors.white,
+                onPressed: () {},
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('💥 TradeView - Delete exception: $e');
+
+      // Loading dialog'u kapat (eğer hala açıksa)
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ürün silinirken hata oluştu'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildComingSoonMessage(String title) {

@@ -165,6 +165,7 @@ class HttpClient {
     String endpoint, {
     Map<String, dynamic>? body,
     T Function(dynamic)? fromJson,
+    required bool useBasicAuth,
   }) async {
     try {
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
@@ -250,6 +251,46 @@ class HttpClient {
     } on FormatException {
       return ApiResponse<T>.error(ErrorMessages.unknownError);
     } catch (e) {
+      return ApiResponse<T>.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<T>> deleteWithBasicAuth<T>(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    T Function(dynamic)? fromJson,
+  }) async {
+    try {
+      final fullUrl = '${ApiConstants.fullUrl}$endpoint';
+      final uri = Uri.parse(fullUrl);
+      final headers = _getBasicAuthHeaders();
+      final bodyString = body != null ? json.encode(body) : null;
+
+      print('🌐 DELETE Full URL: $fullUrl');
+      print('🌐 DELETE URI: $uri');
+      print('🔑 DELETE Headers: $headers');
+      print('📤 DELETE Body String: $bodyString');
+
+      final response = await http
+          .delete(uri, headers: headers, body: bodyString)
+          .timeout(_timeout);
+
+      print('📥 DELETE Response Status: ${response.statusCode}');
+      print('📥 DELETE Response Headers: ${response.headers}');
+      print('📥 DELETE Response Body: ${response.body}');
+
+      return await _handleResponse<T>(response, fromJson, isBasicAuth: true);
+    } on SocketException catch (e) {
+      print('🚫 DELETE Socket Exception: $e');
+      return ApiResponse<T>.error(ErrorMessages.networkError);
+    } on HttpException catch (e) {
+      print('🚫 DELETE HTTP Exception: $e');
+      return ApiResponse<T>.error(ErrorMessages.networkError);
+    } on FormatException catch (e) {
+      print('🚫 DELETE Format Exception: $e');
+      return ApiResponse<T>.error(ErrorMessages.unknownError);
+    } catch (e) {
+      print('💥 DELETE Exception: $e');
       return ApiResponse<T>.error(ErrorMessages.unknownError);
     }
   }

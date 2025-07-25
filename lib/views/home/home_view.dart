@@ -76,8 +76,8 @@ class _HomeViewState extends State<HomeView> {
           );
         },
         backgroundColor: AppTheme.accent,
-        child: const Icon(Icons.add, color: Colors.white),
         shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _buildBottomNavBar(),

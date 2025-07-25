@@ -57,6 +57,7 @@ class ProductService {
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.allProducts,
         body: body,
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 Raw All Products API Response: $json');
           print('🔍 Response type: ${json.runtimeType}');
@@ -197,6 +198,7 @@ class ProductService {
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.allProducts,
         body: body,
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 Raw Filtered Products API Response: $json');
 
@@ -477,15 +479,25 @@ class ProductService {
       '🔄 Transforming new API product: ${apiProduct['productTitle']} (ID: ${apiProduct['productID']})',
     );
 
+    // Resim URL'ini debug et
+    final imageUrl = apiProduct['productImage'];
+    print('🖼️ Product image URL: $imageUrl');
+    print('🖼️ Image URL type: ${imageUrl.runtimeType}');
+    print('🖼️ Image URL isEmpty: ${imageUrl?.toString().isEmpty ?? true}');
+
+    final images =
+        apiProduct['productImage'] != null &&
+            apiProduct['productImage'].toString().isNotEmpty
+        ? <String>[apiProduct['productImage'].toString()]
+        : <String>[];
+
+    print('🖼️ Final images array: $images');
+
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle'] ?? '',
       description: apiProduct['productDesc'] ?? '',
-      images:
-          apiProduct['productImage'] != null &&
-              apiProduct['productImage'].toString().isNotEmpty
-          ? [apiProduct['productImage'].toString()]
-          : [],
+      images: images,
       categoryId: apiProduct['categoryID']?.toString() ?? '',
       category: Category(
         id: apiProduct['categoryID']?.toString() ?? '',
@@ -705,6 +717,135 @@ class ProductService {
 
       return response;
     } catch (e) {
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> deleteUserProduct({
+    required String userToken,
+    required String productId,
+  }) async {
+    print('🗑️ ProductService.deleteUserProduct called');
+    print('📝 Parameters:');
+    print('  - userToken: ${userToken.substring(0, 20)}...');
+    print('  - userToken length: ${userToken.length}');
+    print('  - userToken isEmpty: ${userToken.isEmpty}');
+    print('  - productId: $productId');
+
+    try {
+      // Farklı endpoint formatlarını dene
+      final List<String> possibleEndpoints = [
+        'service/user/product/$productId/deleteProduct',
+        'service/user/product/delete/$productId',
+        'service/user/product/$productId/delete',
+        'service/user/product/remove/$productId',
+      ];
+
+      final endpoint = possibleEndpoints[0]; // Şimdilik ilkini kullan
+      print('🔍 Trying endpoint: $endpoint');
+      print('🔍 Other possible endpoints to try:');
+      for (int i = 1; i < possibleEndpoints.length; i++) {
+        print('  - ${possibleEndpoints[i]}');
+      }
+      final fullUrl = '${ApiConstants.fullUrl}$endpoint';
+      print('🌐 Full URL: $fullUrl');
+
+      // API'nin beklediği format: {"userToken": "token", "productID": 1}
+      final body = {
+        'userToken': userToken,
+        'productID': int.parse(productId), // API integer bekliyor
+      };
+      print('🌐 DELETE Body: $body');
+
+      // DELETE method ile dene
+      print('🔄 Trying DELETE method...');
+      var response = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
+        endpoint,
+        body: body,
+        fromJson: (json) {
+          print('📥 ProductService.deleteUserProduct - Raw response: $json');
+          print(
+            '📥 ProductService.deleteUserProduct - Response type: ${json.runtimeType}',
+          );
+
+          // API response'unu detaylı analiz et
+          if (json is Map<String, dynamic>) {
+            print(
+              '📥 ProductService.deleteUserProduct - Response keys: ${json.keys.toList()}',
+            );
+
+            // success field'ını kontrol et
+            if (json.containsKey('success')) {
+              print(
+                '📥 ProductService.deleteUserProduct - Success field: ${json['success']}',
+              );
+            }
+
+            // error field'ını kontrol et
+            if (json.containsKey('error')) {
+              print(
+                '📥 ProductService.deleteUserProduct - Error field: ${json['error']}',
+              );
+            }
+
+            // message field'ını kontrol et
+            if (json.containsKey('message')) {
+              print(
+                '📥 ProductService.deleteUserProduct - Message field: ${json['message']}',
+              );
+            }
+
+            // data field'ını kontrol et
+            if (json.containsKey('data')) {
+              print(
+                '📥 ProductService.deleteUserProduct - Data field: ${json['data']}',
+              );
+              return json['data'] as Map<String, dynamic>;
+            }
+          }
+
+          print(
+            '📥 ProductService.deleteUserProduct - Using full json as response',
+          );
+          return json as Map<String, dynamic>;
+        },
+      );
+
+      print('📡 ProductService.deleteUserProduct - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data}');
+
+      // KRITIK: API response'unu detaylı analiz et
+      if (response.isSuccess) {
+        print('✅ API claims deletion was successful');
+        if (response.data != null) {
+          final data = response.data!;
+          print('✅ Response data keys: ${data.keys.toList()}');
+
+          // Başarı mesajlarını kontrol et
+          if (data.containsKey('message')) {
+            print('✅ API Message: "${data['message']}"');
+          }
+          if (data.containsKey('success')) {
+            print('✅ API Success flag: ${data['success']}');
+          }
+
+          // Eğer API false success döndürüyorsa hata olarak işle
+          if (data['success'] == false) {
+            print('❌ API returned success=false, treating as error');
+            final errorMsg = data['message'] ?? 'Ürün silinemedi';
+            return ApiResponse.error(errorMsg.toString());
+          }
+        }
+      } else {
+        print('❌ API reports deletion failed');
+      }
+
+      return response;
+    } catch (e, stackTrace) {
+      print('❌ ProductService.deleteUserProduct - Exception: $e');
+      print('❌ Stack trace: $stackTrace');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

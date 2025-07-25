@@ -8,7 +8,6 @@ import '../services/user_service.dart';
 
 class AuthService {
   final HttpClient _httpClient = HttpClient();
-  static const String _tag = 'AuthService';
 
   Future<ApiResponse<User>> login(String email, String password) async {
     try {
@@ -20,6 +19,7 @@ class AuthService {
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.login,
         body: {'userEmail': email, 'userPassword': password},
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 Login fromJson - Raw data: $json');
 
@@ -165,6 +165,7 @@ class AuthService {
           'policy': policy,
           'kvkk': kvkk,
         },
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 Register fromJson - Raw data: $json');
 
@@ -273,6 +274,7 @@ class AuthService {
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.forgotPassword,
         body: {'userEmail': email},
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 ForgotPassword fromJson - Raw data: $json');
           return null; // Forgot password genelde sadece success/error döner
@@ -309,6 +311,7 @@ class AuthService {
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.checkCode,
         body: {'userEmail': email, 'code': code},
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 CheckCode fromJson - Raw data: $json');
           return null; // Email verification genelde sadece success/error döner
@@ -342,6 +345,7 @@ class AuthService {
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.againSendCode,
         body: {'userEmail': email},
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 ResendCode fromJson - Raw data: $json');
           return null; // Resend code genelde sadece success/error döner
@@ -383,6 +387,7 @@ class AuthService {
           'code': verificationCode,
           'newPassword': newPassword,
         },
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 UpdatePassword fromJson - Raw data: $json');
           return null; // Update password genelde sadece success/error döner

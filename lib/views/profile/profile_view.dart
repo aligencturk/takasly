@@ -16,7 +16,8 @@ class ProfileView extends StatefulWidget {
   State<ProfileView> createState() => _ProfileViewState();
 }
 
-class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStateMixin {
+class _ProfileViewState extends State<ProfileView>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -26,11 +27,14 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     // Sayfa ilk açıldığında verileri yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-      final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
-      
+      final productViewModel = Provider.of<ProductViewModel>(
+        context,
+        listen: false,
+      );
+
       // Kullanıcı verilerini yükle
       userViewModel.forceRefreshUser();
-      
+
       // Kullanıcının ürünlerini yükle
       final userId = userViewModel.currentUser?.id;
       if (userId != null) {
@@ -58,14 +62,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
             icon: const Icon(Icons.settings_outlined),
           ),
           IconButton(
-            onPressed: () async {
-              await Provider.of<AuthViewModel>(context, listen: false).logout();
-              if (mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-              }
-            },
+            onPressed: () => _showLogoutConfirmDialog(),
             icon: const Icon(Icons.logout),
-          )
+          ),
         ],
       ),
       body: Consumer<UserViewModel>(
@@ -101,45 +100,69 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
           CircleAvatar(
             radius: 50,
             backgroundColor: AppTheme.background,
-            backgroundImage: user.avatar != null ? NetworkImage(user.avatar!) : null,
+            backgroundImage: user.avatar != null
+                ? NetworkImage(user.avatar!)
+                : null,
             child: user.avatar == null
-                ? const Icon(Icons.person, size: 50, color: AppTheme.textSecondary)
+                ? const Icon(
+                    Icons.person,
+                    size: 50,
+                    color: AppTheme.textSecondary,
+                  )
                 : null,
           ),
           const SizedBox(height: 16),
           Text(user.name, style: textTheme.headlineSmall),
           const SizedBox(height: 4),
-          Text(user.email, style: textTheme.bodyLarge?.copyWith(color: AppTheme.textSecondary)),
-          
+          Text(
+            user.email,
+            style: textTheme.bodyLarge?.copyWith(color: AppTheme.textSecondary),
+          ),
+
           // Telefon numarası (varsa)
           if (user.phone != null && user.phone!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.phone, size: 16, color: AppTheme.textSecondary),
+                const Icon(
+                  Icons.phone,
+                  size: 16,
+                  color: AppTheme.textSecondary,
+                ),
                 const SizedBox(width: 4),
-                Text(user.phone!, style: textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary)),
+                Text(
+                  user.phone!,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
               ],
             ),
           ],
-          
+
           // Konum (varsa)
           if (user.location != null) ...[
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.location_on, size: 16, color: AppTheme.textSecondary),
+                const Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: AppTheme.textSecondary,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${user.location!.city}, ${user.location!.country}',
-                  style: textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
               ],
             ),
           ],
-          
+
           // Bio (varsa)
           if (user.bio != null && user.bio!.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -148,7 +171,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
               decoration: BoxDecoration(
                 color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.primary.withOpacity(0.1)),
+                border: Border.all(
+                  color: AppTheme.primary.withValues(alpha: 0.1),
+                ),
               ),
               child: Text(
                 user.bio!,
@@ -157,7 +182,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
               ),
             ),
           ],
-          
+
           const SizedBox(height: 24),
           _buildStatsRow(context, user),
           const SizedBox(height: 24),
@@ -176,20 +201,42 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildStatItem(context, count: user.totalTrades.toString(), label: 'Takas'),
-        _buildStatItem(context, count: user.rating.toStringAsFixed(1), label: 'Puan'),
-        _buildStatItem(context, count: user.isVerified ? '✓' : '✗', label: 'Doğrulanmış'),
+        _buildStatItem(
+          context,
+          count: user.totalTrades.toString(),
+          label: 'Takas',
+        ),
+        _buildStatItem(
+          context,
+          count: user.rating.toStringAsFixed(1),
+          label: 'Puan',
+        ),
+        _buildStatItem(
+          context,
+          count: user.isVerified ? '✓' : '✗',
+          label: 'Doğrulanmış',
+        ),
       ],
     );
   }
 
-  Widget _buildStatItem(BuildContext context, {required String count, required String label}) {
+  Widget _buildStatItem(
+    BuildContext context, {
+    required String count,
+    required String label,
+  }) {
     final textTheme = Theme.of(context).textTheme;
     return Column(
       children: [
-        Text(count, style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          count,
+          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 4),
-        Text(label, style: textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary)),
+        Text(
+          label,
+          style: textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+        ),
       ],
     );
   }
@@ -248,9 +295,101 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         onTap: () {
           // TODO: Ürün detay sayfasına yönlendir
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${products[index].title} ürününe tıklandı')),
+            SnackBar(
+              content: Text('${products[index].title} ürününe tıklandı'),
+            ),
           );
         },
+      ),
+    );
+  }
+
+  void _showLogoutConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Çıkış Yap'),
+          ],
+        ),
+        content: const Text(
+          'Hesabınızdan çıkış yapmak istediğinizden emin misiniz?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final authViewModel = Provider.of<AuthViewModel>(
+                context,
+                listen: false,
+              );
+
+              Navigator.pop(dialogContext); // Dialog'u kapat
+
+              // Loading göster
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (loadingContext) => const AlertDialog(
+                  content: Row(
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(width: 16),
+                      Text('Çıkış yapılıyor...'),
+                    ],
+                  ),
+                ),
+              );
+
+              try {
+                // Çıkış yap
+                await authViewModel.logout();
+
+                if (mounted) {
+                  // Loading dialog'u kapat
+                  navigator.pop();
+
+                  // Login sayfasına yönlendir
+                  navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+
+                  // Başarı mesajı göster
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Başarıyla çıkış yapıldı'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  // Loading dialog'u kapat
+                  navigator.pop();
+
+                  // Hata mesajı göster
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Çıkış yapılırken hata oluştu: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Çıkış Yap'),
+          ),
+        ],
       ),
     );
   }
@@ -267,15 +406,16 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppTheme.background,
-      child: _tabBar,
-    );
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: AppTheme.background, child: _tabBar);
   }
 
   @override
   bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
     return false;
   }
-} 
+}
