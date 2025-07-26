@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
 import '../../views/product/product_detail_view.dart';
 
@@ -19,8 +18,7 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return GestureDetector(
       onTap: onTap ?? () {
@@ -31,13 +29,12 @@ class ProductCard extends StatelessWidget {
           ),
         );
       },
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppTheme.borderRadius,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[200]!),
         ),
-        elevation: 2,
-        color: AppTheme.surface,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -49,35 +46,37 @@ class ProductCard extends StatelessWidget {
                 child: Builder(
                   builder: (context) {
                     final imageUrl = product.images.isNotEmpty ? product.images.first : '';
-                    print('🖼️ [CARD] Displaying image for ${product.title}: $imageUrl');
-                    print('🖼️ [CARD] Total images: ${product.images.length}');
-                    print('🖼️ [CARD] All images: ${product.images}');
                     
                     // Resim URL'si boş veya geçersizse placeholder göster
                     final uri = Uri.tryParse(imageUrl);
                     if (imageUrl.isEmpty || 
                         imageUrl == 'null' || 
                         imageUrl == 'undefined' ||
-                        imageUrl.contains('product_68852b20b6cac.png') || // Bu spesifik hatalı URL'yi filtrele
-                        uri == null || // URL parse edilemiyorsa
-                        !uri.hasAbsolutePath) { // URL formatını kontrol et
-                      print('⚠️ [CARD] Empty or invalid image URL for ${product.title}: $imageUrl');
+                        imageUrl.contains('product_68852b20b6cac.png') ||
+                        uri == null ||
+                        !uri.hasAbsolutePath) {
                       return Container(
-                        color: Colors.grey.shade200,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            topRight: Radius.circular(8),
+                          ),
+                        ),
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.image_not_supported_outlined,
-                                color: Colors.grey.shade400,
-                                size: 40,
+                                color: Colors.grey[400],
+                                size: 32,
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Resim yok',
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: Colors.grey[500],
                                   fontSize: 10,
                                 ),
                               ),
@@ -87,42 +86,52 @@ class ProductCard extends StatelessWidget {
                       );
                     }
                     
-                    return CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(color: Colors.white),
+                    return ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        topRight: Radius.circular(8),
                       ),
-                      errorWidget: (context, url, error) {
-                        print('❌ [CARD] Image load error for ${product.title}: $error');
-                        print('❌ [CARD] Failed URL: $url');
-                        return Container(
-                          color: Colors.grey.shade200,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.image_not_supported_outlined,
-                                  color: Colors.grey.shade400,
-                                  size: 40,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Resim yüklenemedi',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (context, url) => Shimmer.fromColors(
+                          baseColor: Colors.grey[200]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Container(color: Colors.white),
+                        ),
+                        errorWidget: (context, url, error) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(8),
+                                topRight: Radius.circular(8),
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: Colors.grey[400],
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Resim yüklenemedi',
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
@@ -141,31 +150,41 @@ class ProductCard extends StatelessWidget {
                     Text(
                       product.category.name.toUpperCase(),
                       style: textTheme.bodySmall?.copyWith(
-                        color: AppTheme.accent,
-                        fontWeight: FontWeight.bold,
+                        color: const Color.fromARGB(255, 0, 0, 0),
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0.5,
+                        fontSize: 10,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
                     // Başlık
                     Text(
                       product.title,
-                      style: textTheme.titleMedium,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    // Konum veya Sahip
+                    // Konum
                     Row(
                       children: [
-                        const Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textSecondary),
+                        Icon(
+                          Icons.location_on_outlined, 
+                          size: 12, 
+                          color: Colors.grey[500],
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            product.owner.location?.city ?? 'Türkiye', // Varsayılan konum
-                            style: textTheme.bodySmall,
+                            product.owner.location?.city ?? 'Türkiye',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[500],
+                              fontSize: 11,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
