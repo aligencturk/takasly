@@ -26,8 +26,6 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   location: json['location'] == null
       ? null
       : Location.fromJson(json['location'] as Map<String, dynamic>),
-  viewCount: (json['viewCount'] as num).toInt(),
-  favoriteCount: (json['favoriteCount'] as num).toInt(),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
   expiresAt: json['expiresAt'] == null
@@ -51,8 +49,6 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'tradePreferences': instance.tradePreferences,
   'status': _$ProductStatusEnumMap[instance.status]!,
   'location': instance.location,
-  'viewCount': instance.viewCount,
-  'favoriteCount': instance.favoriteCount,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
   'expiresAt': instance.expiresAt?.toIso8601String(),

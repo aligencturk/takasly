@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
+import '../../views/product/product_detail_view.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -22,7 +23,14 @@ class ProductCard extends StatelessWidget {
     final textTheme = theme.textTheme;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap ?? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailView(productId: product.id),
+          ),
+        );
+      },
       child: Card(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(

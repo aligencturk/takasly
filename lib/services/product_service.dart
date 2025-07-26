@@ -400,6 +400,90 @@ class ProductService {
     }
   }
 
+  /// Ürün detayını getirir (410: başarı, 417: hata)
+  Future<ApiResponse<Product>> getProductDetail({
+    required String userToken,
+    required String productId,
+  }) async {
+    try {
+      final endpoint = 'service/user/product/$productId/productDetail';
+      final queryParams = {'userToken': userToken};
+      final response = await _httpClient.getWithBasicAuth(
+        endpoint,
+        queryParams: queryParams,
+        fromJson: (json) {
+          // 410: Gone -> başarı
+          if (json is Map<String, dynamic> &&
+              (json['410'] == 'Gone' || json['success'] == true)) {
+            final productJson = json['data']?['product'];
+            if (productJson != null) {
+              // Görsel alanlarını birleştir
+              final List<String> images = [];
+              if (productJson['productImage'] != null &&
+                  productJson['productImage'].toString().isNotEmpty &&
+                  productJson['productImage'] != 'null' &&
+                  productJson['productImage'] != 'undefined') {
+                images.add(productJson['productImage']);
+              }
+              if (productJson['productGallery'] != null &&
+                  productJson['productGallery'] is List) {
+                images.addAll(List<String>.from(productJson['productGallery']));
+              }
+              return Product(
+                id: productJson['productID'].toString(),
+                title: productJson['productTitle'] ?? '',
+                description: productJson['productDesc'] ?? '',
+                images: images,
+                categoryId: productJson['categoryID']?.toString() ?? '',
+                category: Category(
+                  id: productJson['categoryID']?.toString() ?? '',
+                  name: productJson['categoryTitle'] ?? '',
+                  icon: '',
+                  isActive: true,
+                  order: 0,
+                ),
+                condition: productJson['productCondition'] ?? '',
+                brand: null,
+                model: null,
+                estimatedValue: null,
+                ownerId: productJson['userID']?.toString() ?? '',
+                owner: User(
+                  id: productJson['userID']?.toString() ?? '',
+                  name: productJson['userFullname'] ?? '',
+                  firstName: productJson['userFirstname'],
+                  lastName: productJson['userLastname'],
+                  email: '',
+                  rating: 0.0,
+                  totalTrades: 0,
+                  isVerified: false,
+                  isOnline: true,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                ),
+                tradePreferences: [],
+                status: ProductStatus.active,
+                location: null,
+                createdAt: _parseDate(productJson['createdAt']),
+                updatedAt: DateTime.now(),
+                expiresAt: null,
+              );
+            }
+            throw Exception('Ürün detayı bulunamadı');
+          }
+          // 417: Hata
+          if (json is Map<String, dynamic> && json['417'] != null) {
+            throw Exception(json['error_message'] ?? json['message'] ?? 'Beklenmeyen hata');
+          }
+          // Diğer durumlar
+          throw Exception('Ürün detayı alınamadı');
+        },
+      );
+      return response;
+    } catch (e) {
+      return ApiResponse.error(e.toString());
+    }
+  }
+
   Future<ApiResponse<List<Product>>> getProductsByUserId(String userId) async {
     try {
       final endpoint = '${ApiConstants.userProducts}/$userId/productList';
@@ -576,9 +660,7 @@ class ProductService {
               latitude: apiProduct['productLat']?.toDouble(),
               longitude: apiProduct['productLong']?.toDouble(),
             )
-          : null,
-      viewCount: 0,
-      favoriteCount: 0,
+          : null, 
       createdAt: _parseDate(apiProduct['createdAt']),
       updatedAt: DateTime.now(),
     );
@@ -690,8 +772,6 @@ class ProductService {
           ? [apiProduct['productTradeFor']]
           : [],
       status: ProductStatus.active,
-      viewCount: 0,
-      favoriteCount: 0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

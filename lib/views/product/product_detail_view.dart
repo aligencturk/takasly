@@ -2,457 +2,516 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/product_viewmodel.dart';
-import '../../core/constants.dart';
+import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
-import '../../models/product.dart';
-import 'edit_product_view.dart';
 
-class ProductDetailView extends StatefulWidget {
+class ProductDetailView extends StatelessWidget {
   final String productId;
-  
-  const ProductDetailView({
-    super.key,
-    required this.productId,
-  });
+  const ProductDetailView({super.key, required this.productId});
 
   @override
-  State<ProductDetailView> createState() => _ProductDetailViewState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider.value(
+      value: Provider.of<ProductViewModel>(context, listen: false),
+      child: _ProductDetailBody(productId: productId),
+    );
+  }
 }
 
-class _ProductDetailViewState extends State<ProductDetailView> {
+class _ProductDetailBody extends StatefulWidget {
+  final String productId;
+  const _ProductDetailBody({required this.productId});
+
+  @override
+  State<_ProductDetailBody> createState() => _ProductDetailBodyState();
+}
+
+class _ProductDetailBodyState extends State<_ProductDetailBody> {
+  PageController _pageController = PageController();
+  int _currentImageIndex = 0;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadProduct();
+      Provider.of<ProductViewModel>(context, listen: false)
+          .getProductDetail(widget.productId);
     });
   }
 
-  void _loadProduct() {
-    final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
-    productViewModel.loadProductById(widget.productId);
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ürün Detayı'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_border),
-            onPressed: () => _toggleFavorite(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () => _shareProduct(),
-          ),
-        ],
-      ),
-      body: Consumer<ProductViewModel>(
-        builder: (context, productViewModel, child) {
-          if (productViewModel.isLoading) {
-            return const LoadingWidget();
-          }
-
-          if (productViewModel.hasError) {
-            return CustomErrorWidget(
-              message: productViewModel.errorMessage!,
-              onRetry: _loadProduct,
-            );
-          }
-
-          final product = productViewModel.selectedProduct;
-          if (product == null) {
-            return const Center(
-              child: Text('Ürün bulunamadı'),
-            );
-          }
-
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildProductImages(product),
-                _buildProductInfo(product),
-                _buildProductDescription(product),
-                _buildOwnerInfo(product),
-                _buildActionButtons(product),
-              ],
+    return Consumer<ProductViewModel>(
+      builder: (context, vm, child) {
+        if (vm.isLoading) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: LoadingWidget(),
+          );
+        }
+        
+        if (vm.hasError) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: CustomErrorWidget(
+              message: vm.errorMessage ?? 'Ürün detayı yüklenemedi.',
+              onRetry: () => vm.getProductDetail(widget.productId),
             ),
           );
-        },
-      ),
+        }
+
+        final product = vm.selectedProduct;
+        if (product == null) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+              child: Text(
+                'Ürün bulunamadı.',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 1,
+            shadowColor: Colors.grey.withOpacity(0.3),
+            iconTheme: const IconThemeData(color: Colors.black),
+            title: const Text(
+              'İlan Detayı',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  vm.isFavorite(product.id) ? Icons.favorite : Icons.favorite_border,
+                  color: vm.isFavorite(product.id) ? Colors.red : Colors.grey[600],
+                ),
+                onPressed: () => vm.toggleFavorite(product.id),
+              ),
+              IconButton(
+                icon: Icon(Icons.share, color: Colors.grey[600]),
+                onPressed: () {},
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  children: [
+                    _ImageCarousel(
+                      images: product.images,
+                      pageController: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentImageIndex = index;
+                        });
+                      },
+                      currentIndex: _currentImageIndex,
+                    ),
+                    _ProductInfo(product: product),
+                  ],
+                ),
+              ),
+              _ActionBar(product: product),
+            ],
+          ),
+        );
+      },
     );
   }
+}
 
-  Widget _buildProductImages(Product product) {
-    return Container(
-      height: 300,
-      width: double.infinity,
-      decoration: BoxDecoration(
+class _ImageCarousel extends StatelessWidget {
+  final List<String> images;
+  final PageController pageController;
+  final Function(int) onPageChanged;
+  final int currentIndex;
+
+  const _ImageCarousel({
+    required this.images,
+    required this.pageController,
+    required this.onPageChanged,
+    required this.currentIndex,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (images.isEmpty) {
+      return Container(
+        height: 250,
         color: Colors.grey[100],
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(AppConstants.defaultBorderRadius),
-          bottomRight: Radius.circular(AppConstants.defaultBorderRadius),
-        ),
-      ),
-      child: product.images.isNotEmpty
-          ? PageView.builder(
-              itemCount: product.images.length,
-              itemBuilder: (context, index) {
-                final imageUrl = product.images[index];
-                
-                // Resim URL'si geçersizse placeholder göster
-                if (imageUrl.isEmpty || imageUrl == 'null' || imageUrl == 'undefined') {
-                  return const Center(
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                  );
-                }
-                
-                return ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(AppConstants.defaultBorderRadius),
-                    bottomRight: Radius.circular(AppConstants.defaultBorderRadius),
-                  ),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    errorWidget: (context, url, error) {
-                      print('❌ [DETAIL] Image load error: $error');
-                      print('❌ [DETAIL] Failed URL: $url');
-                      return const Center(
-                        child: Icon(
-                          Icons.image_not_supported,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            )
-          : const Center(
-              child: Icon(
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
                 Icons.image_not_supported,
-                size: 64,
+                size: 60,
                 color: Colors.grey,
               ),
-            ),
-    );
-  }
-
-  Widget _buildProductInfo(Product product) {
-    return Padding(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            product.title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (product.category != null)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
+              SizedBox(height: 8),
+              Text(
+                'Fotoğraf Yok',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
               ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 250,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: pageController,
+            onPageChanged: onPageChanged,
+            itemCount: images.length,
+            itemBuilder: (context, index) {
+              return CachedNetworkImage(
+                imageUrl: images[index],
+                fit: BoxFit.cover,
+                width: double.infinity,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[100],
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[100],
+                  child: const Center(
+                    child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                  ),
+                ),
+              );
+            },
+          ),
+          if (images.length > 1)
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: images.asMap().entries.map((entry) {
+                  return Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: currentIndex == entry.key ? Colors.white : Colors.white54,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF2196F3).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                product.category.name,
+                '${currentIndex + 1}/${images.length}',
                 style: const TextStyle(
-                  color: Color(0xFF2196F3),
+                  color: Colors.white,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.location_on, size: 16, color: Colors.grey),
-              const SizedBox(width: 4),
-                             Text(
-                 product.location?.city ?? 'Konum belirtilmemiş',
-                 style: const TextStyle(
-                   color: Colors.grey,
-                   fontSize: 14,
-                 ),
-               ),
-            ],
           ),
-          const SizedBox(height: 8),
-          Row(
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductInfo extends StatelessWidget {
+  final dynamic product;
+
+  const _ProductInfo({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Başlık ve Fiyat
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.schedule, size: 16, color: Colors.grey),
-              const SizedBox(width: 4),
               Text(
-                _formatDate(product.createdAt),
+                product.title,
                 style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: const Text(
+                  'Takas Edilebilir',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    product.location?.city ?? 'Konum belirtilmemiş',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        ),
+        
+        const Divider(height: 1),
+        
+        // Ürün Bilgileri
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'İlan Bilgileri',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _InfoRow('Kategori', product.category?.name ?? 'Belirtilmemiş'),
+              _InfoRow('Durum', product.condition ?? 'Belirtilmemiş'),
+              _InfoRow('İlan Tarihi', 
+                "${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}"),
+              _InfoRow('İlan No', product.id),
+              _InfoRow('Satıcı', product.owner?.name ?? 'Belirtilmemiş'),
+
+            ],
+          ),
+        ),
+        
+        const Divider(height: 1),
+        
+        // Açıklama
+        if (product.description != null && product.description.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Açıklama',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  product.description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
+        const Divider(height: 1),
+        
+        // Konum
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Konum',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.location_city, size: 18, color: Colors.grey[600]),
+                  const SizedBox(width: 8),
+                  Text(
+                    product.location?.city ?? 'Şehir belirtilmemiş',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              if (product.location?.district != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 18, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Text(
+                      product.location!.district!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 80), // Bottom padding for action bar
+      ],
     );
   }
 
-  Widget _buildProductDescription(Product product) {
+  Widget _InfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Açıklama',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            product.description.isNotEmpty
-                ? product.description
-                : 'Açıklama eklenmemiş',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildOwnerInfo(Product product) {
+class _ActionBar extends StatelessWidget {
+  final dynamic product;
+
+  const _ActionBar({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(AppConstants.defaultPadding),
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: const Color(0xFF2196F3),
-            child: Text(
-              product.ownerId.substring(0, 1).toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.phone, size: 18),
+              label: const Text('Ara'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.blue,
+                side: const BorderSide(color: Colors.blue),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ürün Sahibi',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+            child: ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.message, size: 18),
+              label: const Text('Mesaj'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                                 Text(
-                   product.owner.name, // Normalde user name olacak
-                   style: const TextStyle(
-                     fontSize: 16,
-                     fontWeight: FontWeight.w500,
-                   ),
-                 ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.message),
-            onPressed: () => _contactOwner(product),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(Product product) {
-    return Padding(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        children: [
-          // Kullanıcının kendi ürünüyse düzenleme butonu göster
-          if (_isOwnerProduct(product))
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _editProduct(product),
-                icon: const Icon(Icons.edit),
-                label: const Text('Ürünü Düzenle'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                ),
+                elevation: 0,
               ),
             ),
-          // Başkasının ürünüyse takas teklifi butonu göster
-          if (!_isOwnerProduct(product))
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _startTrade(product),
-                icon: const Icon(Icons.swap_horiz),
-                label: const Text('Takas Teklifi Ver'),
-              ),
-            ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _addToWishlist(product),
-                  icon: const Icon(Icons.bookmark_border),
-                  label: const Text('İstek Listesi'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _reportProduct(product),
-                  icon: const Icon(Icons.flag_outlined),
-                  label: const Text('Şikayet'),
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays} gün önce';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} saat önce';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} dakika önce';
-    } else {
-      return 'Az önce';
-    }
-  }
-
-  void _toggleFavorite() {
-    // Favori ekleme/çıkarma işlemi
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Favori özelliği yakında aktif olacak'),
-      ),
-    );
-  }
-
-  void _shareProduct() {
-    // Ürün paylaşma işlemi
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Paylaş özelliği yakında aktif olacak'),
-      ),
-    );
-  }
-
-  void _contactOwner(Product product) {
-    // Ürün sahibiyle iletişim
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Mesajlaşma özelliği yakında aktif olacak'),
-      ),
-    );
-  }
-
-  void _startTrade(Product product) {
-    // Takas teklifi verme
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Takas Teklifi'),
-        content: const Text('Takas teklifi özelliği yakında aktif olacak.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _addToWishlist(Product product) {
-    // İstek listesine ekleme
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('İstek listesi özelliği yakında aktif olacak'),
-      ),
-    );
-  }
-
-  void _reportProduct(Product product) {
-    // Ürün şikayeti
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ürün Şikayet'),
-        content: const Text('Şikayet özelliği yakında aktif olacak.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool _isOwnerProduct(Product product) {
-    // Şimdilik basit bir kontrol, gerçek uygulamada kullanıcı ID'si kontrol edilmeli
-    final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
-    // Bu kontrol gerçek kullanıcı ID'si ile yapılmalı
-    // Şimdilik tüm ürünlerin düzenlenebilir olduğunu varsayalım
-    return true; // Geçici olarak true döndürüyoruz
-  }
-
-  Future<void> _editProduct(Product product) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditProductView(product: product),
-      ),
-    );
-    
-    // Eğer ürün güncellendiyse, detay sayfasını yenile
-    if (result == true) {
-      _loadProduct();
-    }
-  }
-}
+} 

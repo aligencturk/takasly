@@ -10,7 +10,6 @@ import 'views/auth/register_view.dart';
 import 'views/auth/email_verification_view.dart';
 import 'views/auth/reset_password_view.dart';
 import 'views/home/home_view.dart';
-import 'views/product/product_detail_view.dart';
 import 'views/trade/trade_view.dart';
 import 'views/profile/profile_view.dart';
 import 'core/constants.dart';
@@ -55,11 +54,6 @@ class TakaslyApp extends StatelessWidget {
         },
         onGenerateRoute: (settings) {
           switch (settings.name) {
-            case '/product-detail':
-              final productId = settings.arguments as String;
-              return MaterialPageRoute(
-                builder: (context) => ProductDetailView(productId: productId),
-              );
             case '/email-verification':
               final email = settings.arguments as String;
               return MaterialPageRoute(

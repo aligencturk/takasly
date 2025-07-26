@@ -1224,6 +1224,37 @@ class ProductViewModel extends ChangeNotifier {
     return false; // Failed after all retries
   }
 
+  /// Ürün detayını getirir (detay sayfası için)
+  Future<product_model.Product?> getProductDetail(String productId) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final userToken = await _authService.getToken();
+      if (userToken == null || userToken.isEmpty) {
+        _setError('Kullanıcı oturumu bulunamadı');
+        _setLoading(false);
+        return null;
+      }
+      final response = await _productService.getProductDetail(
+        userToken: userToken,
+        productId: productId,
+      );
+      if (response.isSuccess && response.data != null) {
+        _selectedProduct = response.data;
+        _setLoading(false);
+        return response.data;
+      } else {
+        _setError(response.error ?? 'Ürün detayı alınamadı');
+        _setLoading(false);
+        return null;
+      }
+    } catch (e) {
+      _setError('Ürün detayı alınamadı: $e');
+      _setLoading(false);
+      return null;
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();

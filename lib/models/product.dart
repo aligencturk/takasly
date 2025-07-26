@@ -21,8 +21,6 @@ class Product {
   final List<String> tradePreferences;
   final ProductStatus status;
   final Location? location;
-  final int viewCount;
-  final int favoriteCount;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? expiresAt;
@@ -43,8 +41,6 @@ class Product {
     required this.tradePreferences,
     required this.status,
     this.location,
-    required this.viewCount,
-    required this.favoriteCount,
     required this.createdAt,
     required this.updatedAt,
     this.expiresAt,
@@ -69,8 +65,6 @@ class Product {
     List<String>? tradePreferences,
     ProductStatus? status,
     Location? location,
-    int? viewCount,
-    int? favoriteCount,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? expiresAt,
@@ -91,8 +85,6 @@ class Product {
       tradePreferences: tradePreferences ?? this.tradePreferences,
       status: status ?? this.status,
       location: location ?? this.location,
-      viewCount: viewCount ?? this.viewCount,
-      favoriteCount: favoriteCount ?? this.favoriteCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       expiresAt: expiresAt ?? this.expiresAt,
