@@ -147,16 +147,21 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Kategori
-                    Text(
-                      product.category.name.toUpperCase(),
-                      style: textTheme.bodySmall?.copyWith(
-                        color: const Color.fromARGB(255, 0, 0, 0),
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.5,
-                        fontSize: 10,
+                    Container(
+                      constraints: const BoxConstraints(
+                        minHeight: 16, // iOS için minimum yükseklik
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      child: Text(
+                        product.category.name.toUpperCase(),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.red, // Debug için kırmızı renk
+                          fontWeight: FontWeight.w600, // Daha kalın font
+                          letterSpacing: 0.5,
+                          fontSize: 12, // Daha büyük font boyutu
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     // Başlık
                     Text(
