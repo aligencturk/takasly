@@ -91,7 +91,9 @@ class UserService {
                   userDataToTransform['userID']?.toString() ??
                   userDataToTransform['id']?.toString() ??
                   '0',
-              'name': _buildUserName(userDataToTransform),
+              'name': userDataToTransform['userFullname'] ?? 
+                      userDataToTransform['username'] ?? 
+                      _buildUserName(userDataToTransform),
               'firstName':
                   userDataToTransform['userFirstname'] ??
                   userDataToTransform['firstName'],
@@ -106,11 +108,14 @@ class UserService {
                   userDataToTransform['userPhone'] ??
                   userDataToTransform['phone'],
               'avatar':
+                  userDataToTransform['profilePhoto'] ??
                   userDataToTransform['userAvatar'] ??
                   userDataToTransform['avatar'],
               'bio':
                   userDataToTransform['userBio'] ?? userDataToTransform['bio'],
               'rating':
+                  (userDataToTransform['userRank'] != null ? 
+                    double.tryParse(userDataToTransform['userRank'].toString()) : null) ??
                   (userDataToTransform['userRating'] ??
                           userDataToTransform['rating'] ??
                           0.0)
@@ -120,10 +125,12 @@ class UserService {
                   userDataToTransform['totalTrades'] ??
                   0,
               'isVerified':
+                  userDataToTransform['isApproved'] ??
                   userDataToTransform['userVerified'] ??
                   userDataToTransform['isVerified'] ??
                   false,
               'isOnline':
+                  (userDataToTransform['userStatus'] == 'active') ??
                   userDataToTransform['userOnline'] ??
                   userDataToTransform['isOnline'] ??
                   true,
@@ -289,13 +296,19 @@ class UserService {
               );
             }
 
+            print(
+              '🔍 Update Account - Transforming user data: $userDataToTransform',
+            );
+
             // API formatından model formatına dönüştür
             final transformedData = <String, dynamic>{
               'id':
                   userDataToTransform['userID']?.toString() ??
                   userDataToTransform['id']?.toString() ??
                   '0',
-              'name': _buildUserName(userDataToTransform),
+              'name': userDataToTransform['userFullname'] ?? 
+                      userDataToTransform['username'] ?? 
+                      _buildUserName(userDataToTransform),
               'firstName':
                   userDataToTransform['userFirstname'] ??
                   userDataToTransform['firstName'],
@@ -310,6 +323,7 @@ class UserService {
                   userDataToTransform['userPhone'] ??
                   userDataToTransform['phone'],
               'avatar':
+                  userDataToTransform['profilePhoto'] ??
                   userDataToTransform['userAvatar'] ??
                   userDataToTransform['avatar'],
               'bio':
@@ -351,6 +365,13 @@ class UserService {
                   userDataToTransform['gender'],
             };
 
+            print('🔍 Update Account - Transformed data: $transformedData');
+
+            final user = User.fromJson(transformedData);
+            print(
+              '🔍 Update Account - Created user: name=${user.name}, firstName=${user.firstName}, lastName=${user.lastName}',
+            );
+
             return User.fromJson(transformedData);
           }
 
@@ -369,8 +390,8 @@ class UserService {
     }
   }
 
-  /// Kullanıcı profilini alır (GET version)
-  /// GET /service/user/id
+  /// Kullanıcı profilini alır (PUT version)
+  /// PUT /service/user/id
   Future<ApiResponse<User>> getUserProfile({
     required String userToken,
     String? platform,
@@ -381,14 +402,14 @@ class UserService {
       final detectedPlatform = platform ?? getPlatform();
       final appVersion = version ?? AppConstants.appVersion;
 
-      print('🔍 GET USER PROFILE');
+      print('🔍 GET USER PROFILE (PUT)');
       print(
-        '📤 Query Params: {"userToken": "$userToken", "platform": "$detectedPlatform", "version": "$appVersion"}',
+        '📤 Request Body: {"userToken": "$userToken", "platform": "$detectedPlatform", "version": "$appVersion"}',
       );
 
-      final response = await _httpClient.getWithBasicAuth(
+      final response = await _httpClient.putWithBasicAuth(
         ApiConstants.userProfile,
-        queryParams: {
+        body: {
           'userToken': userToken,
           'platform': detectedPlatform,
           'version': appVersion,
@@ -419,11 +440,20 @@ class UserService {
             else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
               print('🔍 Get Profile - Data field format detected');
-              userDataToTransform = json['data'];
+              final dataField = json['data'] as Map<String, dynamic>;
+              
+              // Data içinde user field'ı var mı kontrol et
+              if (dataField.containsKey('user') && dataField['user'] is Map<String, dynamic>) {
+                print('🔍 Get Profile - User field inside data detected');
+                userDataToTransform = dataField['user'] as Map<String, dynamic>;
+              } else {
+                // Data field'ı direkt user verisi içeriyor
+                userDataToTransform = dataField;
+              }
               
               // Data içinde token kontrolü
-              if (userDataToTransform.containsKey('token') && userDataToTransform['token'] != null && userDataToTransform['token'].toString().isNotEmpty) {
-                final newToken = userDataToTransform['token'].toString();
+              if (userDataToTransform.containsKey('userToken') && userDataToTransform['userToken'] != null && userDataToTransform['userToken'].toString().isNotEmpty) {
+                final newToken = userDataToTransform['userToken'].toString();
                 print('🔄 Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
                 _updateTokenInBackground(newToken);
               }
@@ -433,6 +463,16 @@ class UserService {
                 json['user'] is Map<String, dynamic>) {
               print('🔍 Get Profile - User field format detected');
               userDataToTransform = json['user'];
+            }
+            // Eğer sadece başarı mesajı gelirse (error: false, 200: OK formatı)
+            else if (json.containsKey('error') && json['error'] == false) {
+              print(
+                '⚠️ Get Profile - Success response without user data, API might need user data in response',
+              );
+              print('⚠️ Get Profile - Available keys: ${json.keys.toList()}');
+              // Bu durumda API'den gerçek kullanıcı verisi gelmesi gerekiyor
+              // Şimdilik mevcut token ile kullanıcı bilgilerini almaya çalışalım
+              throw Exception('API returned success but no user data. Response: $json');
             } else {
               print(
                 '⚠️ Get Profile - Unexpected response format, creating default user',
@@ -755,6 +795,141 @@ class UserService {
       return ApiResponse<Map<String, dynamic>>.error(
         ErrorMessages.unknownError,
       );
+    }
+  }
+
+  /// Kullanıcı bilgilerini ID ile alır
+  /// GET /service/user/id
+  Future<ApiResponse<User>> getUserById(String userId) async {
+    try {
+      print('🔍 GET USER BY ID');
+      print('📤 User ID: $userId');
+
+      final response = await _httpClient.getWithBasicAuth(
+        '${ApiConstants.userProfile}/$userId',
+        fromJson: (json) {
+          print('🔍 Get User By ID fromJson - Raw data: $json');
+
+          // Response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            // API formatından model formatına dönüştür
+            Map<String, dynamic> userDataToTransform;
+
+            // Eğer direkt user verisi gelirse
+            if (json.containsKey('id') || json.containsKey('userID')) {
+              print('🔍 Get User By ID - Direct user data format detected');
+              userDataToTransform = json;
+            }
+            // Eğer data field'ı içinde user verisi varsa
+            else if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
+              print('🔍 Get User By ID - Data field format detected');
+              userDataToTransform = json['data'];
+            }
+            // Eğer user field'ı içinde user verisi varsa
+            else if (json.containsKey('user') &&
+                json['user'] is Map<String, dynamic>) {
+              print('🔍 Get User By ID - User field format detected');
+              userDataToTransform = json['user'];
+            } else {
+              print(
+                '⚠️ Get User By ID - Unexpected response format, creating default user',
+              );
+              print('⚠️ Get User By ID - Available keys: ${json.keys.toList()}');
+              return User(
+                id: userId,
+                name: 'Kullanıcı',
+                email: 'user@example.com',
+                rating: 0.0,
+                totalTrades: 0,
+                isVerified: false,
+                isOnline: true,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
+            }
+
+            // API formatından model formatına dönüştür
+            final transformedData = <String, dynamic>{
+              'id':
+                  userDataToTransform['userID']?.toString() ??
+                  userDataToTransform['id']?.toString() ??
+                  userId,
+              'name': _buildUserName(userDataToTransform),
+              'firstName':
+                  userDataToTransform['userFirstname'] ??
+                  userDataToTransform['firstName'],
+              'lastName':
+                  userDataToTransform['userLastname'] ??
+                  userDataToTransform['lastName'],
+              'email':
+                  userDataToTransform['userEmail'] ??
+                  userDataToTransform['email'] ??
+                  'user@example.com',
+              'phone':
+                  userDataToTransform['userPhone'] ??
+                  userDataToTransform['phone'],
+              'avatar':
+                  userDataToTransform['userAvatar'] ??
+                  userDataToTransform['avatar'],
+              'bio':
+                  userDataToTransform['userBio'] ?? userDataToTransform['bio'],
+              'rating':
+                  (userDataToTransform['userRating'] ??
+                          userDataToTransform['rating'] ??
+                          0.0)
+                      .toDouble(),
+              'totalTrades':
+                  userDataToTransform['userTotalTrades'] ??
+                  userDataToTransform['totalTrades'] ??
+                  0,
+              'isVerified':
+                  userDataToTransform['userVerified'] ??
+                  userDataToTransform['isVerified'] ??
+                  false,
+              'isOnline':
+                  userDataToTransform['userOnline'] ??
+                  userDataToTransform['isOnline'] ??
+                  true,
+              'createdAt': _parseDateTime(
+                userDataToTransform['userCreatedAt'] ??
+                    userDataToTransform['createdAt'],
+              ),
+              'updatedAt': _parseDateTime(
+                userDataToTransform['userUpdatedAt'] ??
+                    userDataToTransform['updatedAt'],
+              ),
+              'lastSeenAt': _parseDateTime(
+                userDataToTransform['userLastSeenAt'] ??
+                    userDataToTransform['lastSeenAt'],
+              ),
+              'birthday':
+                  userDataToTransform['userBirthday'] ??
+                  userDataToTransform['birthday'],
+              'gender':
+                  userDataToTransform['userGender'] ??
+                  userDataToTransform['gender'],
+            };
+
+            print('🔍 Get User By ID - Transformed data: $transformedData');
+
+            final user = User.fromJson(transformedData);
+            print('✅ Get User By ID - User created: ${user.id} - ${user.name}');
+            return user;
+          }
+
+          throw Exception('Invalid response format');
+        },
+      );
+
+      print('✅ Get User By ID Response: ${response.isSuccess}');
+      print('🔍 Response Data: ${response.data}');
+      print('🔍 Response Error: ${response.error}');
+
+      return response;
+    } catch (e) {
+      print('❌ Get User By ID Error: $e');
+      return ApiResponse<User>.error(ErrorMessages.userNotFound);
     }
   }
 

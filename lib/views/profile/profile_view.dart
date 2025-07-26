@@ -8,6 +8,7 @@ import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:takasly/widgets/product_card.dart';
+import 'edit_profile_view.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -187,8 +188,19 @@ class _ProfileViewState extends State<ProfileView>
           _buildStatsRow(context, user),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Profili düzenle sayfasına yönlendir
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileView(),
+                ),
+              );
+              
+              // EditProfileView'dan başarılı güncelleme sinyali gelirse profili yenile
+              if (result == true && mounted) {
+                final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                userViewModel.forceRefreshUser();
+              }
             },
             child: const Text('Profili Düzenle'),
           ),

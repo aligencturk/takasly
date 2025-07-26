@@ -12,6 +12,9 @@ class AuthService {
 
   Future<ApiResponse<User>> login(String email, String password) async {
     try {
+      // Önce eski kullanıcı verilerini temizle
+      await _clearUserData();
+      
       Logger.info('🔐 LOGIN ATTEMPT: $email');
       Logger.debug(
         '📤 Login Request Body: {"userEmail": "$email", "userPassword": "$password"}',
