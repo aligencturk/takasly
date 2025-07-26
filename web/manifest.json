@@ -3,7 +3,7 @@
     "short_name": "takasly",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#ffffff",
+    "background_color": "transparent",
     "theme_color": "#000000",
     "description": "A new Flutter project.",
     "orientation": "portrait-primary",

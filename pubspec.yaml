@@ -85,7 +85,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
-    - assets/icons/
+    - assets/logo/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -119,10 +119,11 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/logo/logo.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
+  remove_alpha_ios: false
   web:
     generate: true
     image_path: "assets/logo/logo.png"
-    background_color: "#ffffff"
+    background_color: "transparent"
     theme_color: "#000000"
   windows:
     generate: true
