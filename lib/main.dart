@@ -27,9 +27,16 @@ class TakaslyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => AuthViewModel()),
-        ChangeNotifierProvider(create: (context) => UserViewModel()),
         ChangeNotifierProvider(create: (context) => ProductViewModel()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final authViewModel = AuthViewModel();
+            final productViewModel = context.read<ProductViewModel>();
+            authViewModel.setProductViewModel(productViewModel);
+            return authViewModel;
+          },
+        ),
+        ChangeNotifierProvider(create: (context) => UserViewModel()),
         ChangeNotifierProvider(create: (context) => TradeViewModel()),
       ],
       child: MaterialApp(

@@ -104,6 +104,11 @@ class _EditProfileViewState extends State<EditProfileView> {
     try {
       final userViewModel = Provider.of<UserViewModel>(context, listen: false);
       
+      print('🔄 EditProfile - Updating account with:');
+      print('🔄 firstName: ${_firstNameController.text}');
+      print('🔄 lastName: ${_lastNameController.text}');
+      print('🔄 email: ${_emailController.text}');
+      
       await userViewModel.updateAccount(
         userFirstname: _firstNameController.text,
         userLastname: _lastNameController.text,

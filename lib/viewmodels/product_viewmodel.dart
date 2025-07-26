@@ -628,6 +628,25 @@ class ProductViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Kullanıcı değişikliği durumunda tüm ürün listelerini temizler
+  void clearAllProductData() {
+    print('🧹 ProductViewModel.clearAllProductData - Clearing all product data');
+    _products.clear();
+    _myProducts.clear();
+    _favoriteProducts.clear();
+    _selectedProduct = null;
+    _currentPage = 1;
+    _hasMore = true;
+    _currentFilter = const ProductFilter();
+    _currentCategoryId = null;
+    _currentSearchQuery = null;
+    _currentCity = null;
+    _currentCondition = null;
+    _clearError();
+    notifyListeners();
+    print('✅ ProductViewModel.clearAllProductData - All product data cleared');
+  }
+
   void clearError() {
     _clearError();
   }

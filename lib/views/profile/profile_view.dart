@@ -113,7 +113,20 @@ class _ProfileViewState extends State<ProfileView>
                 : null,
           ),
           const SizedBox(height: 16),
-          Text(user.name, style: textTheme.headlineSmall),
+          Text(
+            user.firstName != null && user.lastName != null
+                ? '${user.firstName} ${user.lastName}'
+                : user.name,
+            style: textTheme.headlineSmall,
+          ),
+          // Debug bilgisi
+          if (user.firstName == null || user.lastName == null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Debug: firstName=${user.firstName}, lastName=${user.lastName}',
+              style: textTheme.bodySmall?.copyWith(color: Colors.red),
+            ),
+          ],
           const SizedBox(height: 4),
           Text(
             user.email,
@@ -344,6 +357,10 @@ class _ProfileViewState extends State<ProfileView>
                 context,
                 listen: false,
               );
+              final userViewModel = Provider.of<UserViewModel>(
+                context,
+                listen: false,
+              );
 
               Navigator.pop(dialogContext); // Dialog'u kapat
 
@@ -363,8 +380,9 @@ class _ProfileViewState extends State<ProfileView>
               );
 
               try {
-                // Çıkış yap
+                // Çıkış yap - her iki ViewModel'i de temizle
                 await authViewModel.logout();
+                await userViewModel.logout();
 
                 if (mounted) {
                   // Loading dialog'u kapat

@@ -193,6 +193,7 @@ class LoginView extends StatelessWidget {
   // Test login
   Future<void> _handleTestLogin(BuildContext context, String testUser) async {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
 
     String email, password;
     if (testUser == 'ali') {
@@ -209,6 +210,11 @@ class LoginView extends StatelessWidget {
 
     if (context.mounted) {
       if (success) {
+        // Login başarılı olduktan sonra UserViewModel'i de güncelle
+        if (authViewModel.currentUser != null) {
+          userViewModel.setCurrentUser(authViewModel.currentUser!);
+        }
+        
         print('🧪 Test login başarılı: $testUser');
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
@@ -258,6 +264,8 @@ class _LoginFormState extends State<_LoginForm> {
     if (!_formKey.currentState!.validate()) return;
 
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+    
     final success = await authViewModel.login(
       _emailController.text.trim(),
       _passwordController.text.trim(),
@@ -265,6 +273,11 @@ class _LoginFormState extends State<_LoginForm> {
 
     if (mounted) {
       if (success) {
+        // Login başarılı olduktan sonra UserViewModel'i de güncelle
+        if (authViewModel.currentUser != null) {
+          userViewModel.setCurrentUser(authViewModel.currentUser!);
+        }
+        
         // Giriş başarılıysa ana ekrana yönlendir
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
