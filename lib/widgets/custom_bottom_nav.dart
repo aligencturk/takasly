@@ -49,24 +49,12 @@ class CustomBottomNav extends StatelessWidget {
       onTap: () => onTap(index),
       child: Container(
         width: 60,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
+        child: Center(
+          child: Icon(
+            isActive ? activeIcon : icon,
+            color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
+            size: 28,
+          ),
         ),
       ),
     );
@@ -78,43 +66,31 @@ class CustomBottomNav extends StatelessWidget {
     return GestureDetector(
       onTap: () => onTap(2),
       child: Container(
-        width: 60,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: isActive ? const Color(0xFF10B981) : const Color(0xFF10B981),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF10B981).withOpacity(0.3),
-                    spreadRadius: 0,
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.swap_horiz,
-                color: Colors.white,
-                size: 24,
-              ),
+        width: 50,
+        child: Center(
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF10B981).withOpacity(0.3),
+                  spreadRadius: 0,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              'Takasla',
-              style: TextStyle(
-                color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
+            child: const Icon(
+              Icons.swap_horiz,
+              color: Colors.white,
+              size: 24,
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-} 
+}

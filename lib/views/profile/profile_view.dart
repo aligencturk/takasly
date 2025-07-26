@@ -8,6 +8,7 @@ import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:takasly/widgets/product_card.dart';
+import 'edit_profile_view.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -112,7 +113,10 @@ class _ProfileViewState extends State<ProfileView>
                 : null,
           ),
           const SizedBox(height: 16),
-          Text(user.name, style: textTheme.headlineSmall),
+          Text(
+            user.name,
+            style: textTheme.headlineSmall,
+          ),
           const SizedBox(height: 4),
           Text(
             user.email,
@@ -187,8 +191,21 @@ class _ProfileViewState extends State<ProfileView>
           _buildStatsRow(context, user),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Profili düzenle sayfasına yönlendir
+            onPressed: () async {
+              // Provider referansını önceden al
+              final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+              
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileView(),
+                ),
+              );
+              
+              // EditProfileView'dan başarılı güncelleme sinyali gelirse profili yenile
+              if (result == true && mounted) {
+                userViewModel.forceRefreshUser();
+              }
             },
             child: const Text('Profili Düzenle'),
           ),
@@ -292,6 +309,7 @@ class _ProfileViewState extends State<ProfileView>
       itemCount: products.length,
       itemBuilder: (context, index) => ProductCard(
         product: products[index],
+        heroTag: 'profile_product_${products[index].id}_$index',
         onTap: () {
           // TODO: Ürün detay sayfasına yönlendir
           ScaffoldMessenger.of(context).showSnackBar(
@@ -331,6 +349,10 @@ class _ProfileViewState extends State<ProfileView>
                 context,
                 listen: false,
               );
+              final userViewModel = Provider.of<UserViewModel>(
+                context,
+                listen: false,
+              );
 
               Navigator.pop(dialogContext); // Dialog'u kapat
 
@@ -350,8 +372,9 @@ class _ProfileViewState extends State<ProfileView>
               );
 
               try {
-                // Çıkış yap
+                // Çıkış yap - her iki ViewModel'i de temizle
                 await authViewModel.logout();
+                await userViewModel.logout();
 
                 if (mounted) {
                   // Loading dialog'u kapat

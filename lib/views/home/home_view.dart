@@ -13,6 +13,7 @@ import '../profile/profile_view.dart';
 import '../product/add_product_view.dart';
 import '../trade/trade_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart'; // Skeleton'u import et
+import '../../widgets/custom_bottom_nav.dart'; // CustomBottomNav'ı import et
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -67,20 +68,22 @@ class _HomeViewState extends State<HomeView> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: _buildPage(_currentIndex),
-      floatingActionButton: FloatingActionButton(
-        heroTag: "home_fab",
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddProductView()),
-          );
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          if (index == 2) {
+            // Takasla butonu - AddProductView'e git
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddProductView()),
+            );
+          } else {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
         },
-        backgroundColor: AppTheme.accent,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
@@ -167,7 +170,10 @@ class _HomeViewState extends State<HomeView> {
               childAspectRatio: 0.75, // Kart oranını ayarla
             ),
             delegate: SliverChildBuilderDelegate(
-              (context, index) => ProductCard(product: vm.products[index]),
+              (context, index) => ProductCard(
+                product: vm.products[index],
+                heroTag: 'home_product_${vm.products[index].id}_$index',
+              ),
               childCount: vm.products.length,
             ),
           ),
@@ -270,64 +276,7 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildBottomNavBar() {
-    return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8.0,
-      color: AppTheme.surface,
-      elevation: 8,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavBarItem(
-            icon: Icons.home_filled,
-            index: 0,
-            label: 'Ana Sayfa',
-          ),
-          _buildNavBarItem(
-            icon: Icons.explore_outlined,
-            index: 1,
-            label: 'Keşfet',
-          ),
-          const SizedBox(width: 48), // FAB için boşluk
-          _buildNavBarItem(
-            icon: Icons.swap_horiz,
-            index: 3,
-            label: 'Takaslarım',
-          ),
-          _buildNavBarItem(
-            icon: Icons.person_outline,
-            index: 4,
-            label: 'Profil',
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildNavBarItem({
-    required IconData icon,
-    required int index,
-    required String label,
-  }) {
-    final bool isSelected = _currentIndex == index;
-    return IconButton(
-      icon: Icon(
-        icon,
-        color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
-        size: 28,
-      ),
-      onPressed: () {
-        if (index != 2) {
-          // Ortadaki boşluk tıklanabilir değil
-          setState(() {
-            _currentIndex = index;
-          });
-        }
-      },
-      tooltip: label,
-    );
-  }
 
   void _showFilterBottomSheet(ProductViewModel vm) {
     // Önce şehirleri yükle

@@ -2,14 +2,21 @@ import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../core/constants.dart';
+import 'product_viewmodel.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  ProductViewModel? _productViewModel;
 
   User? _currentUser;
   bool _isLoading = false;
   bool _isLoggedIn = false;
   String? _errorMessage;
+
+  // ProductViewModel referansını ayarla
+  void setProductViewModel(ProductViewModel productViewModel) {
+    _productViewModel = productViewModel;
+  }
 
   // Getters
   User? get currentUser => _currentUser;
@@ -50,6 +57,13 @@ class AuthViewModel extends ChangeNotifier {
     _setLoading(true);
     _clearError();
 
+    // Önce eski kullanıcı verilerini temizle
+    _currentUser = null;
+    _isLoggedIn = false;
+    
+    // Ürün verilerini de temizle (kullanıcı değişikliği)
+    _productViewModel?.clearAllProductData();
+
     try {
       final response = await _authService.login(email, password);
 
@@ -57,6 +71,7 @@ class AuthViewModel extends ChangeNotifier {
         _currentUser = response.data;
         _isLoggedIn = true;
         _setLoading(false);
+        notifyListeners(); // UI'ı güncelle
         return true;
       } else {
         _setError(response.error ?? ErrorMessages.unknownError);
@@ -365,6 +380,10 @@ class AuthViewModel extends ChangeNotifier {
       if (response.isSuccess) {
         _currentUser = null;
         _isLoggedIn = false;
+        
+        // Çıkış yapılırken ürün verilerini de temizle
+        _productViewModel?.clearAllProductData();
+        
         _setLoading(false);
         return true;
       } else {

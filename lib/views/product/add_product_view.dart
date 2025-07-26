@@ -477,10 +477,10 @@ class _AddProductViewState extends State<AddProductView> {
                   child: Icon(Icons.photo_library, color: AppTheme.primary),
                 ),
                 title: const Text('Galeri'),
-                subtitle: const Text('Galeriden seç'),
+                subtitle: const Text('Tek veya birden fazla fotoğraf seç'),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
+                  _pickMultipleImages();
                 },
               ),
 
@@ -515,6 +515,63 @@ class _AddProductViewState extends State<AddProductView> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Fotoğraf seçilirken hata oluştu'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickMultipleImages() async {
+    try {
+      // Maksimum seçilebilecek resim sayısını hesapla
+      final int remainingSlots = 5 - _selectedImages.length;
+      if (remainingSlots <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maksimum 5 fotoğraf seçebilirsiniz'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // pickMultipleMedia kullanarak hem tek hem çoklu seçimi destekle
+      final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia(
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (pickedFiles.isNotEmpty) {
+        // Sadece kalan slot kadar resim al
+        final List<XFile> filesToAdd = pickedFiles.take(remainingSlots).toList();
+        
+        setState(() {
+          for (final file in filesToAdd) {
+            _selectedImages.add(File(file.path));
+          }
+        });
+
+        print('📸 ${filesToAdd.length} images added');
+        print('📸 Total images: ${_selectedImages.length}');
+
+        // Eğer seçilen resim sayısı kalan slottan fazlaysa uyarı ver
+        if (pickedFiles.length > remainingSlots) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${pickedFiles.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 5 resim)'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Error picking multiple images: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fotoğraflar seçilirken hata oluştu'),
             backgroundColor: Colors.red,
           ),
         );

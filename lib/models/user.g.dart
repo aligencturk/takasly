@@ -28,7 +28,8 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       ? null
       : DateTime.parse(json['lastSeenAt'] as String),
   birthday: json['birthday'] as String?,
-  gender: (json['gender'] as num?)?.toInt(),
+  gender: json['gender'] as String?,
+  token: json['token'] as String?,
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -50,22 +51,5 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'lastSeenAt': instance.lastSeenAt?.toIso8601String(),
   'birthday': instance.birthday,
   'gender': instance.gender,
-};
-
-Location _$LocationFromJson(Map<String, dynamic> json) => Location(
-  latitude: (json['latitude'] as num).toDouble(),
-  longitude: (json['longitude'] as num).toDouble(),
-  address: json['address'] as String,
-  city: json['city'] as String,
-  district: json['district'] as String,
-  country: json['country'] as String,
-);
-
-Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
-  'latitude': instance.latitude,
-  'longitude': instance.longitude,
-  'address': instance.address,
-  'city': instance.city,
-  'district': instance.district,
-  'country': instance.country,
+  'token': instance.token,
 };

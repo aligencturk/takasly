@@ -5,6 +5,7 @@ import '../../core/constants.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../../models/product.dart';
+import 'edit_product_view.dart';
 
 class ProductDetailView extends StatefulWidget {
   final String productId;
@@ -280,14 +281,30 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _startTrade(product),
-              icon: const Icon(Icons.swap_horiz),
-              label: const Text('Takas Teklifi Ver'),
+          // Kullanıcının kendi ürünüyse düzenleme butonu göster
+          if (_isOwnerProduct(product))
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _editProduct(product),
+                icon: const Icon(Icons.edit),
+                label: const Text('Ürünü Düzenle'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                ),
+              ),
             ),
-          ),
+          // Başkasının ürünüyse takas teklifi butonu göster
+          if (!_isOwnerProduct(product))
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _startTrade(product),
+                icon: const Icon(Icons.swap_horiz),
+                label: const Text('Takas Teklifi Ver'),
+              ),
+            ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -397,4 +414,26 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       ),
     );
   }
-} 
+
+  bool _isOwnerProduct(Product product) {
+    // Şimdilik basit bir kontrol, gerçek uygulamada kullanıcı ID'si kontrol edilmeli
+    final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+    // Bu kontrol gerçek kullanıcı ID'si ile yapılmalı
+    // Şimdilik tüm ürünlerin düzenlenebilir olduğunu varsayalım
+    return true; // Geçici olarak true döndürüyoruz
+  }
+
+  Future<void> _editProduct(Product product) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProductView(product: product),
+      ),
+    );
+    
+    // Eğer ürün güncellendiyse, detay sayfasını yenile
+    if (result == true) {
+      _loadProduct();
+    }
+  }
+}

@@ -8,6 +8,7 @@ import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
+import '../models/location.dart';
 import '../services/location_service.dart';
 
 class ProductService {
@@ -485,11 +486,37 @@ class ProductService {
     print('🖼️ Image URL type: ${imageUrl.runtimeType}');
     print('🖼️ Image URL isEmpty: ${imageUrl?.toString().isEmpty ?? true}');
 
-    final images =
-        apiProduct['productImage'] != null &&
-            apiProduct['productImage'].toString().isNotEmpty
-        ? <String>[apiProduct['productImage'].toString()]
-        : <String>[];
+    // Görsel URL'lerini tam URL'e dönüştür
+    final images = <String>[];
+    print('🖼️ [NEW API] Processing images for product: ${apiProduct['productTitle']}');
+    print('🖼️ [NEW API] Raw productImage: ${apiProduct['productImage']}');
+    print('🖼️ [NEW API] Raw extraImages: ${apiProduct['extraImages']}');
+    
+    if (apiProduct['productImage'] != null &&
+        apiProduct['productImage'].toString().isNotEmpty) {
+      final imageUrl = apiProduct['productImage'].toString();
+      // Eğer URL zaten tam URL ise olduğu gibi kullan, değilse base URL ile birleştir
+      final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+      images.add(fullImageUrl);
+      print('🖼️ [NEW API] Added productImage: $fullImageUrl');
+    }
+    
+    // extraImages varsa onları da ekle
+    if (apiProduct['extraImages'] != null) {
+      final extraImages = apiProduct['extraImages'] as List;
+      print('🖼️ [NEW API] Processing ${extraImages.length} extra images');
+      for (final extraImage in extraImages) {
+        if (extraImage != null && extraImage.toString().isNotEmpty) {
+          final imageUrl = extraImage.toString();
+          final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+          images.add(fullImageUrl);
+          print('🖼️ [NEW API] Added extraImage: $fullImageUrl');
+        }
+      }
+    }
+    
+    print('🖼️ [NEW API] Final images array for ${apiProduct['productTitle']}: $images');
+    print('🖼️ [NEW API] Total images count: ${images.length}');
 
     print('🖼️ Final images array: $images');
 
@@ -574,15 +601,42 @@ class ProductService {
       '🏷️ Transforming product with category ID: $categoryId, name: $categoryName',
     );
 
+    // Görsel URL'lerini tam URL'e dönüştür
+    final images = <String>[];
+    print('🖼️ [OLD API] Processing images for product: ${apiProduct['productTitle'] ?? 'Unknown'}');
+    print('🖼️ [OLD API] Raw productImage: ${apiProduct['productImage']}');
+    print('🖼️ [OLD API] Raw extraImages: ${apiProduct['extraImages']}');
+    
+    if (apiProduct['productImage'] != null &&
+        apiProduct['productImage'].toString().isNotEmpty) {
+      final imageUrl = apiProduct['productImage'].toString();
+      final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+      images.add(fullImageUrl);
+      print('🖼️ [OLD API] Added productImage: $fullImageUrl');
+    }
+    
+    // extraImages varsa onları da ekle
+    if (apiProduct['extraImages'] != null) {
+      final extraImages = apiProduct['extraImages'] as List;
+      print('🖼️ [OLD API] Processing ${extraImages.length} extra images');
+      for (final extraImage in extraImages) {
+        if (extraImage != null && extraImage.toString().isNotEmpty) {
+          final imageUrl = extraImage.toString();
+          final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+          images.add(fullImageUrl);
+          print('🖼️ [OLD API] Added extraImage: $fullImageUrl');
+        }
+      }
+    }
+    
+    print('🖼️ [OLD API] Final images array: $images');
+    print('🖼️ [OLD API] Total images count: ${images.length}');
+
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle'] ?? '',
       description: apiProduct['productDesc'] ?? '',
-      images:
-          apiProduct['productImage'] != null &&
-              apiProduct['productImage'].isNotEmpty
-          ? [apiProduct['productImage']]
-          : [],
+      images: images,
       categoryId: categoryId,
       category: Category(
         id: categoryId,
@@ -669,8 +723,9 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<Product>> updateProduct(
+  Future<ApiResponse<Product?>> updateProduct(
     String productId, {
+    required String userToken,
     String? title,
     String? description,
     List<String>? images,
@@ -682,29 +737,135 @@ class ProductService {
     List<String>? tradePreferences,
     Location? location,
   }) async {
-    try {
-      final body = <String, dynamic>{};
+    print('🔄 ProductService.updateProduct called');
+    print('📝 Parameters:');
+    print('  - productId: $productId');
+    print('  - userToken: ${userToken.substring(0, 20)}...');
+    print('  - title: $title');
+    print('  - description: $description');
+    print('  - images count: ${images?.length ?? 0}');
+    print('  - categoryId: $categoryId');
+    print('  - condition: $condition');
+    print('  - brand: $brand');
+    print('  - model: $model');
+    print('  - estimatedValue: $estimatedValue');
+    print('  - tradePreferences: $tradePreferences');
+    print('  - location: $location');
 
+    // Token geçerliliğini kontrol et
+    if (userToken.isEmpty) {
+      print('❌ User token is empty!');
+      return ApiResponse.error('Kullanıcı token\'ı bulunamadı');
+    }
+
+    try {
+      // SharedPreferences'dan userId'yi al
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = prefs.getString(AppConstants.userIdKey);
+      print('🔍 Current user ID: $currentUserId');
+
+      if (currentUserId == null || currentUserId.isEmpty) {
+        print('❌ User ID not found in SharedPreferences!');
+        return ApiResponse.error('Kullanıcı ID\'si bulunamadı');
+      }
+
+      // API body'sini hazırla
+      final body = <String, dynamic>{
+        'userToken': userToken,
+        'productID': int.tryParse(productId) ?? productId, // API integer bekleyebilir
+      };
+
+      // Sadece null olmayan değerleri ekle
       if (title != null) body['title'] = title;
       if (description != null) body['description'] = description;
-      if (images != null) body['images'] = images;
+      if (images != null && images.isNotEmpty) body['images'] = images;
       if (categoryId != null) body['categoryId'] = categoryId;
       if (condition != null) body['condition'] = condition;
       if (brand != null) body['brand'] = brand;
       if (model != null) body['model'] = model;
       if (estimatedValue != null) body['estimatedValue'] = estimatedValue;
-      if (tradePreferences != null) body['tradePreferences'] = tradePreferences;
+      if (tradePreferences != null && tradePreferences.isNotEmpty) {
+        body['tradePreferences'] = tradePreferences;
+      }
       if (location != null) body['location'] = location.toJson();
 
-      final response = await _httpClient.put(
-        '${ApiConstants.products}/$productId',
+      print('🌐 Update Body: $body');
+
+      // Yeni endpoint formatını kullan: service/user/product/userid/editProduct
+      final endpoint = 'service/user/product/$currentUserId/editProduct';
+      final fullUrl = '${ApiConstants.fullUrl}$endpoint';
+      print('🌐 Full URL: $fullUrl');
+
+      // PUT metodunu basic auth ile kullan
+      final response = await _httpClient.putWithBasicAuth<Product?>(
+        endpoint,
         body: body,
-        fromJson: (json) => Product.fromJson(json),
+        fromJson: (json) {
+          print('📥 ProductService.updateProduct - Raw response: $json');
+          print('📥 ProductService.updateProduct - Response type: ${json.runtimeType}');
+
+          // API response'unu detaylı analiz et
+          if (json is Map<String, dynamic>) {
+            print('📥 ProductService.updateProduct - Response keys: ${json.keys.toList()}');
+
+            // Özel format: {"error": false, "200": "OK"} - Bu başarılı güncelleme anlamına gelir
+            if (json.containsKey('error') && json.containsKey('200')) {
+              final errorValue = json['error'];
+              final statusValue = json['200'];
+              print('📥 ProductService.updateProduct - Special format detected');
+              print('📥 ProductService.updateProduct - Error: $errorValue, Status: $statusValue');
+              
+              if (errorValue == false && statusValue == 'OK') {
+                print('✅ Success - Product updated successfully with special format');
+                // Bu durumda null döndürüyoruz çünkü API güncellenmiş ürün verisi döndürmüyor
+                return null;
+              }
+            }
+
+            // success field'ını kontrol et
+            if (json.containsKey('success')) {
+              final successValue = json['success'];
+              print('📥 ProductService.updateProduct - Success field: $successValue');
+            }
+
+            // message field'ını kontrol et
+            if (json.containsKey('message')) {
+              final messageValue = json['message'];
+              print('📥 ProductService.updateProduct - Message field: $messageValue');
+            }
+
+            // data field'ını kontrol et
+            if (json.containsKey('data')) {
+              final dataValue = json['data'];
+              print('📥 ProductService.updateProduct - Data field: $dataValue');
+              if (dataValue is Map<String, dynamic>) {
+                return Product.fromJson(dataValue);
+              }
+            }
+
+            // Eğer data field'ı yoksa, tüm response'u Product olarak parse etmeye çalış
+            try {
+              return Product.fromJson(json);
+            } catch (e) {
+              print('❌ Failed to parse response as Product: $e');
+              print('! Success - Failed to parse JSON: Exception: Ürün güncellenirken yanıt formatı hatalı');
+              throw Exception('Ürün güncellenirken yanıt formatı hatalı');
+            }
+          }
+
+          throw Exception('Geçersiz API yanıtı');
+        },
       );
+
+      print('📡 ProductService.updateProduct - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data}');
 
       return response;
     } catch (e) {
-      return ApiResponse.error(ErrorMessages.unknownError);
+      print('❌ ProductService.updateProduct - Exception: $e');
+      return ApiResponse.error('Ürün güncellenirken hata oluştu: $e');
     }
   }
 
@@ -739,9 +900,9 @@ class ProductService {
     }
 
     try {
-      // Önce kullanıcının bu ürünün sahibi olup olmadığını kontrol et
-      print('🔍 Checking if user owns this product...');
+      // Token'ı request body'de göndereceğiz
       final prefs = await SharedPreferences.getInstance();
+      
       final currentUserId = prefs.getString(AppConstants.userIdKey);
       print('🔍 Current user ID: $currentUserId');
 
@@ -751,33 +912,42 @@ class ProductService {
       print('  - Token length: ${userToken.length}');
       print('  - Expected token length: ~100+ characters');
 
-      // API credentials'ları tekrar kontrol et
-      print('🔍 API Credentials check:');
-      print('  - Username length: ${ApiConstants.basicAuthUsername.length}');
-      print('  - Password length: ${ApiConstants.basicAuthPassword.length}');
-
-      // Sabit endpoint kullan
-      final endpoint = 'service/user/product/$productId/deleteProduct';
+      // Doğru endpoint formatını kullan - userId kullanılmalı
+      final endpoint = 'service/user/product/$currentUserId/deleteProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       print('🌐 Full URL: $fullUrl');
+      
 
-      // Basic auth credentials'ları kontrol et
-      print('🔐 Basic Auth Username: ${ApiConstants.basicAuthUsername}');
-      print('🔐 Basic Auth Password: ${ApiConstants.basicAuthPassword}');
 
-      // API'nin beklediği format: {"userToken": "token", "productID": 1}
+      // API'nin beklediği format: {"userToken": "...", "productID": 1}
       final body = {
         'userToken': userToken,
         'productID': int.parse(productId), // API integer bekliyor
       };
       print('🌐 DELETE Body: $body');
 
-      // Önce POST method ile dene (bazı API'ler DELETE yerine POST kullanır)
-      print('🔄 Trying POST method first...');
-      var response = await _httpClient.postWithBasicAuth<Map<String, dynamic>>(
+      // Alternatif format 1: productId string olarak
+      final bodyAlt1 = {
+        'userToken': userToken,
+        'productID': productId, // String olarak
+      };
+      print('🌐 DELETE Body Alt1 (string productID): $bodyAlt1');
+
+      // Alternatif format 2: productId yerine id
+      final bodyAlt2 = {
+        'userToken': userToken,
+        'id': int.parse(productId),
+      };
+      print('🌐 DELETE Body Alt2 (id field): $bodyAlt2');
+
+      // DELETE HTTP metodunu basic auth ile kullan
+      print('🔄 Using DELETE method with basic auth...');
+      print('📤 DELETE Body: {"userToken": "...", "productID": $productId}');
+      
+      // Önce orijinal formatı dene
+      var response = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
         endpoint,
         body: body,
-        useBasicAuth: true,
         fromJson: (json) {
           print('📥 ProductService.deleteUserProduct - Raw response: $json');
           print(
@@ -857,6 +1027,60 @@ class ProductService {
       print('📊 Response error: ${response.error}');
       print('📊 Response data: ${response.data}');
 
+      // 403 hatası alındıysa alternatif formatları dene
+      if (!response.isSuccess && response.error != null && 
+          (response.error!.contains('403') || 
+           response.error!.contains('Forbidden') ||
+           response.error!.contains('Invalid user token') ||
+           response.error!.contains('Üye doğrulama bilgileri hatalı'))) {
+        
+        print('⚠️ 403 error detected, trying alternative formats...');
+        
+        // Format 1: productID as string
+        print('🔄 Trying format 1: productID as string');
+        var altResponse1 = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
+          endpoint,
+          body: bodyAlt1,
+          fromJson: (json) {
+            print('📥 Alt1 Response: $json');
+            if (json is Map<String, dynamic>) {
+              return json;
+            } else {
+              return <String, dynamic>{'rawResponse': json};
+            }
+          },
+        );
+        
+        if (altResponse1.isSuccess) {
+          print('✅ Alternative format 1 worked!');
+          return altResponse1;
+        }
+        
+        // Format 2: id instead of productID
+        print('🔄 Trying format 2: id field instead of productID');
+        var altResponse2 = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
+          endpoint,
+          body: bodyAlt2,
+          fromJson: (json) {
+            print('📥 Alt2 Response: $json');
+            if (json is Map<String, dynamic>) {
+              return json;
+            } else {
+              return <String, dynamic>{'rawResponse': json};
+            }
+          },
+        );
+        
+        if (altResponse2.isSuccess) {
+          print('✅ Alternative format 2 worked!');
+          return altResponse2;
+        }
+        
+        print('❌ All alternative formats failed, trying different endpoints...');
+         
+         print('❌ All alternative formats failed');
+       }
+
       // KRITIK: API response'unu detaylı analiz et
       if (response.isSuccess) {
         print('✅ API claims deletion was successful');
@@ -884,6 +1108,8 @@ class ProductService {
       } else {
         print('❌ API reports deletion failed');
       }
+      
+
 
       return response;
     } catch (e, stackTrace) {
@@ -1283,19 +1509,43 @@ class ProductService {
           return productsList.map((apiProduct) {
             print('🔄 ProductService - Converting API product: $apiProduct');
 
+            // Görsel URL'lerini tam URL'e dönüştür
+            final images = <String>[];
+            print('🖼️ Processing images for product: ${apiProduct['productTitle']}');
+            print('🖼️ Raw productImage: ${apiProduct['productImage']}');
+            print('🖼️ Raw extraImages: ${apiProduct['extraImages']}');
+            
+            if (apiProduct['productImage'] != null &&
+                apiProduct['productImage'].toString().isNotEmpty) {
+              final imageUrl = apiProduct['productImage'].toString();
+              final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+              images.add(fullImageUrl);
+              print('🖼️ Added productImage: $fullImageUrl');
+            }
+            
+            // extraImages varsa onları da ekle
+            if (apiProduct['extraImages'] != null) {
+              final extraImages = apiProduct['extraImages'] as List;
+              print('🖼️ Processing ${extraImages.length} extra images');
+              for (final extraImage in extraImages) {
+                if (extraImage != null && extraImage.toString().isNotEmpty) {
+                  final imageUrl = extraImage.toString();
+                  final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+                  images.add(fullImageUrl);
+                  print('🖼️ Added extraImage: $fullImageUrl');
+                }
+              }
+            }
+            
+            print('🖼️ Final images array for ${apiProduct['productTitle']}: $images');
+            print('🖼️ Total images count: ${images.length}');
+
             // API field'larından Product model'i için gerekli field'ları oluştur
             final productData = {
               'id': apiProduct['productID']?.toString() ?? '',
               'title': apiProduct['productTitle'] ?? '',
               'description': apiProduct['productDesc'] ?? '',
-              'images': [
-                if (apiProduct['productImage'] != null &&
-                    apiProduct['productImage'].toString().isNotEmpty)
-                  apiProduct['productImage'].toString(),
-                ...(apiProduct['extraImages'] as List? ?? []).map(
-                  (img) => img.toString(),
-                ),
-              ],
+              'images': images,
               'categoryId': apiProduct['productCatID']?.toString() ?? '',
               'category': {
                 'id': apiProduct['productCatID']?.toString() ?? '',
@@ -1306,9 +1556,9 @@ class ProductService {
               'brand': null,
               'model': null,
               'estimatedValue': null,
-              'ownerId': '2', // Kullanıcının kendi ürünü olduğu için
+              'ownerId': userId, // Gerçek kullanıcı ID'sini kullan
               'owner': {
-                'id': '2',
+                'id': userId,
                 'name': 'Kullanıcı',
                 'email': 'user@example.com',
                 'rating': 0.0,

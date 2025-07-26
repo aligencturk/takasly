@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'location.dart';
 
 part 'user.g.dart';
 
@@ -21,7 +22,8 @@ class User {
   final DateTime updatedAt;
   final DateTime? lastSeenAt;
   final String? birthday;
-  final int? gender; // 1-Erkek, 2-Kadın, 3-Belirtilmemiş
+  final String? gender; // Erkek, Kadın, Belirtilmemiş
+  final String? token; // Kullanıcı token'ı
 
   const User({
     required this.id,
@@ -42,6 +44,7 @@ class User {
     this.lastSeenAt,
     this.birthday,
     this.gender,
+    this.token,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
@@ -65,7 +68,8 @@ class User {
     DateTime? updatedAt,
     DateTime? lastSeenAt,
     String? birthday,
-    int? gender,
+    String? gender,
+    String? token,
   }) {
     return User(
       id: id ?? this.id,
@@ -86,6 +90,7 @@ class User {
       lastSeenAt: lastSeenAt ?? this.lastSeenAt,
       birthday: birthday ?? this.birthday,
       gender: gender ?? this.gender,
+      token: token ?? this.token,
     );
   }
 
@@ -103,59 +108,3 @@ class User {
     return 'User(id: $id, name: $name, firstName: $firstName, lastName: $lastName, email: $email, rating: $rating)';
   }
 }
-
-@JsonSerializable()
-class Location {
-  final double latitude;
-  final double longitude;
-  final String address;
-  final String city;
-  final String district;
-  final String country;
-
-  const Location({
-    required this.latitude,
-    required this.longitude,
-    required this.address,
-    required this.city,
-    required this.district,
-    required this.country,
-  });
-
-  factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
-  Map<String, dynamic> toJson() => _$LocationToJson(this);
-
-  Location copyWith({
-    double? latitude,
-    double? longitude,
-    String? address,
-    String? city,
-    String? district,
-    String? country,
-  }) {
-    return Location(
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-      address: address ?? this.address,
-      city: city ?? this.city,
-      district: district ?? this.district,
-      country: country ?? this.country,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Location &&
-        other.latitude == latitude &&
-        other.longitude == longitude;
-  }
-
-  @override
-  int get hashCode => latitude.hashCode ^ longitude.hashCode;
-
-  @override
-  String toString() {
-    return 'Location(city: $city, district: $district, address: $address)';
-  }
-} 

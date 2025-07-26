@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'user.dart';
+import 'location.dart';
 
 part 'product.g.dart';
 
@@ -185,4 +186,4 @@ enum ProductCondition {
   good,
   fair,
   poor,
-} 
+}

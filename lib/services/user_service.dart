@@ -38,6 +38,13 @@ class UserService {
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Update Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+
             // API formatından model formatına dönüştür
             Map<String, dynamic> userDataToTransform;
 
@@ -49,6 +56,13 @@ class UserService {
             else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
               userDataToTransform = json['data'];
+              
+              // Data içinde token kontrolü
+              if (userDataToTransform.containsKey('token') && userDataToTransform['token'] != null && userDataToTransform['token'].toString().isNotEmpty) {
+                final newToken = userDataToTransform['token'].toString();
+                print('🔄 Update Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
             }
             // Eğer user field'ı içinde user verisi varsa
             else if (json.containsKey('user') &&
@@ -77,7 +91,9 @@ class UserService {
                   userDataToTransform['userID']?.toString() ??
                   userDataToTransform['id']?.toString() ??
                   '0',
-              'name': _buildUserName(userDataToTransform),
+              'name': userDataToTransform['userFullname'] ?? 
+                      userDataToTransform['username'] ?? 
+                      _buildUserName(userDataToTransform),
               'firstName':
                   userDataToTransform['userFirstname'] ??
                   userDataToTransform['firstName'],
@@ -92,24 +108,28 @@ class UserService {
                   userDataToTransform['userPhone'] ??
                   userDataToTransform['phone'],
               'avatar':
+                  userDataToTransform['profilePhoto'] ??
                   userDataToTransform['userAvatar'] ??
                   userDataToTransform['avatar'],
               'bio':
                   userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating':
-                  (userDataToTransform['userRating'] ??
-                          userDataToTransform['rating'] ??
-                          0.0)
-                      .toDouble(),
+              'rating': _parseRating(
+                userDataToTransform['userRating'] ??
+                    userDataToTransform['userRank'] ??
+                    userDataToTransform['rating'] ??
+                    0.0,
+              ),
               'totalTrades':
                   userDataToTransform['userTotalTrades'] ??
                   userDataToTransform['totalTrades'] ??
                   0,
               'isVerified':
+                  userDataToTransform['isApproved'] ??
                   userDataToTransform['userVerified'] ??
                   userDataToTransform['isVerified'] ??
                   false,
               'isOnline':
+                  (userDataToTransform['userStatus'] == 'active') ??
                   userDataToTransform['userOnline'] ??
                   userDataToTransform['isOnline'] ??
                   true,
@@ -188,6 +208,13 @@ class UserService {
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Update Account - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+
             // API formatından model formatına dönüştür
             Map<String, dynamic> userDataToTransform;
 
@@ -199,6 +226,13 @@ class UserService {
             else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
               userDataToTransform = json['data'];
+              
+              // Data içinde token kontrolü
+              if (userDataToTransform.containsKey('token') && userDataToTransform['token'] != null && userDataToTransform['token'].toString().isNotEmpty) {
+                final newToken = userDataToTransform['token'].toString();
+                print('🔄 Update Account - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
             }
             // Eğer user field'ı içinde user verisi varsa
             else if (json.containsKey('user') &&
@@ -231,7 +265,7 @@ class UserService {
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
                 birthday: userBirthday,
-                gender: userGender,
+                gender: userGender?.toString(),
               );
             } else {
               print(
@@ -257,9 +291,13 @@ class UserService {
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
                 birthday: userBirthday,
-                gender: userGender,
+                gender: userGender?.toString(),
               );
             }
+
+            print(
+              '🔍 Update Account - Transforming user data: $userDataToTransform',
+            );
 
             // API formatından model formatına dönüştür
             final transformedData = <String, dynamic>{
@@ -267,7 +305,9 @@ class UserService {
                   userDataToTransform['userID']?.toString() ??
                   userDataToTransform['id']?.toString() ??
                   '0',
-              'name': _buildUserName(userDataToTransform),
+              'name': userDataToTransform['userFullname'] ?? 
+                      userDataToTransform['username'] ?? 
+                      _buildUserName(userDataToTransform),
               'firstName':
                   userDataToTransform['userFirstname'] ??
                   userDataToTransform['firstName'],
@@ -282,15 +322,17 @@ class UserService {
                   userDataToTransform['userPhone'] ??
                   userDataToTransform['phone'],
               'avatar':
+                  userDataToTransform['profilePhoto'] ??
                   userDataToTransform['userAvatar'] ??
                   userDataToTransform['avatar'],
               'bio':
                   userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating':
-                  (userDataToTransform['userRating'] ??
-                          userDataToTransform['rating'] ??
-                          0.0)
-                      .toDouble(),
+              'rating': _parseRating(
+                userDataToTransform['userRating'] ??
+                    userDataToTransform['userRank'] ??
+                    userDataToTransform['rating'] ??
+                    0.0,
+              ),
               'totalTrades':
                   userDataToTransform['userTotalTrades'] ??
                   userDataToTransform['totalTrades'] ??
@@ -323,6 +365,13 @@ class UserService {
                   userDataToTransform['gender'],
             };
 
+            print('🔍 Update Account - Transformed data: $transformedData');
+
+            final user = User.fromJson(transformedData);
+            print(
+              '🔍 Update Account - Created user: name=${user.name}, firstName=${user.firstName}, lastName=${user.lastName}',
+            );
+
             return User.fromJson(transformedData);
           }
 
@@ -341,8 +390,8 @@ class UserService {
     }
   }
 
-  /// Kullanıcı profilini alır (GET version)
-  /// GET /service/user/id
+  /// Kullanıcı profilini alır (PUT version)
+  /// PUT /service/user/id
   Future<ApiResponse<User>> getUserProfile({
     required String userToken,
     String? platform,
@@ -353,14 +402,14 @@ class UserService {
       final detectedPlatform = platform ?? getPlatform();
       final appVersion = version ?? AppConstants.appVersion;
 
-      print('🔍 GET USER PROFILE');
+      print('🔍 GET USER PROFILE (PUT)');
       print(
-        '📤 Query Params: {"userToken": "$userToken", "platform": "$detectedPlatform", "version": "$appVersion"}',
+        '📤 Request Body: {"userToken": "$userToken", "platform": "$detectedPlatform", "version": "$appVersion"}',
       );
 
-      final response = await _httpClient.getWithBasicAuth(
+      final response = await _httpClient.putWithBasicAuth(
         ApiConstants.userProfile,
-        queryParams: {
+        body: {
           'userToken': userToken,
           'platform': detectedPlatform,
           'version': appVersion,
@@ -371,6 +420,13 @@ class UserService {
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
             print('🔍 Get Profile - Response is Map<String, dynamic>');
+
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
 
             // API formatından model formatına dönüştür
             Map<String, dynamic> userDataToTransform;
@@ -384,13 +440,51 @@ class UserService {
             else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
               print('🔍 Get Profile - Data field format detected');
-              userDataToTransform = json['data'];
+              final dataField = json['data'] as Map<String, dynamic>;
+              
+              // Data içinde user field'ı var mı kontrol et
+              if (dataField.containsKey('user') && dataField['user'] is Map<String, dynamic>) {
+                print('🔍 Get Profile - User field inside data detected');
+                userDataToTransform = dataField['user'] as Map<String, dynamic>;
+              } else {
+                // Data field'ı direkt user verisi içeriyor
+                userDataToTransform = dataField;
+              }
+              
+              // Data içinde token kontrolü
+              if (userDataToTransform.containsKey('userToken') && userDataToTransform['userToken'] != null && userDataToTransform['userToken'].toString().isNotEmpty) {
+                final newToken = userDataToTransform['userToken'].toString();
+                print('🔄 Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
             }
             // Eğer user field'ı içinde user verisi varsa
             else if (json.containsKey('user') &&
                 json['user'] is Map<String, dynamic>) {
               print('🔍 Get Profile - User field format detected');
               userDataToTransform = json['user'];
+            }
+            // Eğer sadece başarı mesajı gelirse (error: false, 200: OK formatı)
+            else if (json.containsKey('error') && json['error'] == false) {
+              print(
+                '⚠️ Get Profile - Success response, checking for nested data structure',
+              );
+              print('⚠️ Get Profile - Available keys: ${json.keys.toList()}');
+              
+              // data.user yapısını kontrol et
+              if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+                final dataField = json['data'] as Map<String, dynamic>;
+                if (dataField.containsKey('user') && dataField['user'] is Map<String, dynamic>) {
+                  print('🔍 Get Profile - Found user data in data.user structure');
+                  userDataToTransform = dataField['user'] as Map<String, dynamic>;
+                } else {
+                  print('❌ Get Profile - No user data found in data field');
+                  throw Exception('API returned success but no user data in data field. Response: $json');
+                }
+              } else {
+                print('❌ Get Profile - No data field found in response');
+                throw Exception('API returned success but no data field. Response: $json');
+              }
             } else {
               print(
                 '⚠️ Get Profile - Unexpected response format, creating default user',
@@ -412,6 +506,12 @@ class UserService {
             print(
               '🔍 Get Profile - Transforming user data: $userDataToTransform',
             );
+            print('🔍 Get Profile - userFirstname: ${userDataToTransform['userFirstname']}');
+            print('🔍 Get Profile - userLastname: ${userDataToTransform['userLastname']}');
+            print('🔍 Get Profile - firstName: ${userDataToTransform['firstName']}');
+            print('🔍 Get Profile - lastName: ${userDataToTransform['lastName']}');
+            print('🔍 Get Profile - userEmail: ${userDataToTransform['userEmail']}');
+            print('🔍 Get Profile - Available keys: ${userDataToTransform.keys.toList()}');
 
             // API formatından model formatına dönüştür
             final transformedData = <String, dynamic>{
@@ -438,11 +538,12 @@ class UserService {
                   userDataToTransform['avatar'],
               'bio':
                   userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating':
-                  (userDataToTransform['userRating'] ??
-                          userDataToTransform['rating'] ??
-                          0.0)
-                      .toDouble(),
+              'rating': _parseRating(
+                userDataToTransform['userRating'] ??
+                    userDataToTransform['userRank'] ??
+                    userDataToTransform['rating'] ??
+                    0.0,
+              ),
               'totalTrades':
                   userDataToTransform['userTotalTrades'] ??
                   userDataToTransform['totalTrades'] ??
@@ -477,11 +578,19 @@ class UserService {
 
             print('🔍 Get Profile - Transformed data: $transformedData');
 
-            final user = User.fromJson(transformedData);
-            print(
-              '🔍 Get Profile - Created user: name=${user.name}, firstName=${user.firstName}, lastName=${user.lastName}',
-            );
-            return user;
+            try {
+              final user = User.fromJson(transformedData);
+              print(
+                '🔍 Get Profile - Created user: name=${user.name}, firstName=${user.firstName}, lastName=${user.lastName}',
+              );
+              print('✅ Get Profile - User object created successfully');
+              return user;
+            } catch (e, stackTrace) {
+              print('❌ Get Profile - Error creating User from JSON: $e');
+              print('❌ Get Profile - Stack trace: $stackTrace');
+              print('❌ Get Profile - Transformed data was: $transformedData');
+              rethrow;
+            }
           }
 
           throw Exception('Invalid response format');
@@ -621,6 +730,23 @@ class UserService {
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Update Password - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+            
+            // Data içinde token kontrolü
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('token') && data['token'] != null && data['token'].toString().isNotEmpty) {
+                final newToken = data['token'].toString();
+                print('🔄 Update Password - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
+            }
+            
             return json;
           }
 
@@ -662,6 +788,23 @@ class UserService {
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
+            // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
+            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+              final newToken = json['token'].toString();
+              print('🔄 Delete User - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              _updateTokenInBackground(newToken);
+            }
+            
+            // Data içinde token kontrolü
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('token') && data['token'] != null && data['token'].toString().isNotEmpty) {
+                final newToken = data['token'].toString();
+                print('🔄 Delete User - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
+            }
+            
             return json;
           }
 
@@ -682,6 +825,142 @@ class UserService {
     }
   }
 
+  /// Kullanıcı bilgilerini ID ile alır
+  /// GET /service/user/id
+  Future<ApiResponse<User>> getUserById(String userId) async {
+    try {
+      print('🔍 GET USER BY ID');
+      print('📤 User ID: $userId');
+
+      final response = await _httpClient.getWithBasicAuth(
+        '${ApiConstants.userProfile}/$userId',
+        fromJson: (json) {
+          print('🔍 Get User By ID fromJson - Raw data: $json');
+
+          // Response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            // API formatından model formatına dönüştür
+            Map<String, dynamic> userDataToTransform;
+
+            // Eğer direkt user verisi gelirse
+            if (json.containsKey('id') || json.containsKey('userID')) {
+              print('🔍 Get User By ID - Direct user data format detected');
+              userDataToTransform = json;
+            }
+            // Eğer data field'ı içinde user verisi varsa
+            else if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
+              print('🔍 Get User By ID - Data field format detected');
+              userDataToTransform = json['data'];
+            }
+            // Eğer user field'ı içinde user verisi varsa
+            else if (json.containsKey('user') &&
+                json['user'] is Map<String, dynamic>) {
+              print('🔍 Get User By ID - User field format detected');
+              userDataToTransform = json['user'];
+            } else {
+              print(
+                '⚠️ Get User By ID - Unexpected response format, creating default user',
+              );
+              print('⚠️ Get User By ID - Available keys: ${json.keys.toList()}');
+              return User(
+                id: userId,
+                name: 'Kullanıcı',
+                email: 'user@example.com',
+                rating: 0.0,
+                totalTrades: 0,
+                isVerified: false,
+                isOnline: true,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
+            }
+
+            // API formatından model formatına dönüştür
+            final transformedData = <String, dynamic>{
+              'id':
+                  userDataToTransform['userID']?.toString() ??
+                  userDataToTransform['id']?.toString() ??
+                  userId,
+              'name': _buildUserName(userDataToTransform),
+              'firstName':
+                  userDataToTransform['userFirstname'] ??
+                  userDataToTransform['firstName'],
+              'lastName':
+                  userDataToTransform['userLastname'] ??
+                  userDataToTransform['lastName'],
+              'email':
+                  userDataToTransform['userEmail'] ??
+                  userDataToTransform['email'] ??
+                  'user@example.com',
+              'phone':
+                  userDataToTransform['userPhone'] ??
+                  userDataToTransform['phone'],
+              'avatar':
+                  userDataToTransform['userAvatar'] ??
+                  userDataToTransform['avatar'],
+              'bio':
+                  userDataToTransform['userBio'] ?? userDataToTransform['bio'],
+              'rating': _parseRating(
+                userDataToTransform['userRating'] ??
+                    userDataToTransform['userRank'] ??
+                    userDataToTransform['rating'] ??
+                    0.0,
+              ),
+              'totalTrades':
+                  userDataToTransform['userTotalTrades'] ??
+                  userDataToTransform['totalTrades'] ??
+                  0,
+              'isVerified':
+                  userDataToTransform['userVerified'] ??
+                  userDataToTransform['isVerified'] ??
+                  false,
+              'isOnline':
+                  userDataToTransform['userOnline'] ??
+                  userDataToTransform['isOnline'] ??
+                  true,
+              'createdAt': _parseDateTime(
+                userDataToTransform['userCreatedAt'] ??
+                    userDataToTransform['createdAt'],
+              ),
+              'updatedAt': _parseDateTime(
+                userDataToTransform['userUpdatedAt'] ??
+                    userDataToTransform['updatedAt'],
+              ),
+              'lastSeenAt': _parseDateTime(
+                userDataToTransform['userLastSeenAt'] ??
+                    userDataToTransform['lastSeenAt'],
+              ),
+              'birthday':
+                  userDataToTransform['userBirthday'] ??
+                  userDataToTransform['birthday'],
+              'gender':
+                  userDataToTransform['userGender'] ??
+                  userDataToTransform['gender'],
+            };
+
+            print('🔍 Get User By ID - Transformed data: $transformedData');
+
+            final user = User.fromJson(transformedData);
+            print('✅ Get User By ID - User created: ${user.id} - ${user.name}');
+            return user;
+          }
+
+          throw Exception('Invalid response format');
+        },
+      );
+
+      print('✅ Get User By ID Response: ${response.isSuccess}');
+      print('🔍 Response Data: ${response.data}');
+      print('🔍 Response Error: ${response.error}');
+
+      return response;
+    } catch (e) {
+      print('❌ Get User By ID Error: $e');
+      return ApiResponse<User>.error(ErrorMessages.userNotFound);
+    }
+  }
+
   /// User service'ini test eder
   Future<bool> testUserService() async {
     try {
@@ -699,20 +978,72 @@ class UserService {
     }
   }
 
+  /// Token'ı arka planda günceller (async olarak)
+  void _updateTokenInBackground(String newToken) {
+    // Arka planda token güncelleme işlemini başlat
+    Future.microtask(() async {
+      try {
+        if (newToken.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          final currentToken = prefs.getString(AppConstants.userTokenKey);
+          
+          // Token farklıysa veya yoksa güncelle
+          if (currentToken != newToken) {
+            print('🔄 UserService - Token güncelleniyor: ${newToken.substring(0, 20)}...');
+            await prefs.setString(AppConstants.userTokenKey, newToken);
+            print('✅ UserService - Token başarıyla güncellendi');
+          } else {
+            print('ℹ️ UserService - Token zaten güncel, güncelleme gerekmiyor');
+          }
+        } else {
+          print('⚠️ UserService - Boş token, güncelleme yapılmadı');
+        }
+      } catch (e) {
+        print('❌ UserService - Token güncelleme hatası: $e');
+      }
+    });
+  }
+
   /// Kullanıcı adını oluşturur
   String _buildUserName(Map<String, dynamic> userData) {
+    // Önce userFullname'i kontrol et
+    final fullName = userData['userFullname'] ?? userData['fullName'];
+    if (fullName != null && fullName.toString().trim().isNotEmpty) {
+      return fullName.toString().trim();
+    }
+    
+    // Sonra firstName ve lastName'i kontrol et
     final firstName = userData['userFirstname'] ?? userData['firstName'];
     final lastName = userData['userLastname'] ?? userData['lastName'];
 
-    if (firstName != null && lastName != null) {
-      return '$firstName $lastName';
-    } else if (firstName != null) {
-      return firstName;
-    } else if (lastName != null) {
-      return lastName;
+    if (firstName != null && firstName.toString().trim().isNotEmpty && 
+        lastName != null && lastName.toString().trim().isNotEmpty) {
+      return '${firstName.toString().trim()} ${lastName.toString().trim()}';
+    } else if (firstName != null && firstName.toString().trim().isNotEmpty) {
+      return firstName.toString().trim();
+    } else if (lastName != null && lastName.toString().trim().isNotEmpty) {
+      return lastName.toString().trim();
     } else {
       return userData['userName'] ?? userData['name'] ?? 'Kullanıcı';
     }
+  }
+
+  /// Rating değerini güvenli bir şekilde double'a dönüştürür
+  double _parseRating(dynamic value) {
+    if (value == null) {
+      return 0.0;
+    } else if (value is num) {
+      return value.toDouble();
+    } else if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        print('⚠️ _parseRating - Failed to parse rating: $value, using 0.0');
+        return 0.0;
+      }
+    }
+    print('⚠️ _parseRating - Unknown type for rating: ${value.runtimeType}, using 0.0');
+    return 0.0;
   }
 
   /// DateTime parse eder

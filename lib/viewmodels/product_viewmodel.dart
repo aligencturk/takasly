@@ -6,6 +6,7 @@ import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
 import '../models/product_filter.dart';
+import '../models/location.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
 import '../core/constants.dart';
@@ -627,6 +628,25 @@ class ProductViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Kullanıcı değişikliği durumunda tüm ürün listelerini temizler
+  void clearAllProductData() {
+    print('🧹 ProductViewModel.clearAllProductData - Clearing all product data');
+    _products.clear();
+    _myProducts.clear();
+    _favoriteProducts.clear();
+    _selectedProduct = null;
+    _currentPage = 1;
+    _hasMore = true;
+    _currentFilter = const ProductFilter();
+    _currentCategoryId = null;
+    _currentSearchQuery = null;
+    _currentCity = null;
+    _currentCondition = null;
+    _clearError();
+    notifyListeners();
+    print('✅ ProductViewModel.clearAllProductData - All product data cleared');
+  }
+
   void clearError() {
     _clearError();
   }
@@ -751,6 +771,7 @@ class ProductViewModel extends ChangeNotifier {
       // Token geçerliliğini kontrol et - zaten currentUser var, tekrar almaya gerek yok
       print('✅ Current user verified: ${currentUser.id} - ${currentUser.name}');
 
+      // API'de ownership kontrolü yapılacağı için client-side kontrol kaldırıldı
       print('🗑️ Deleting product: $productId');
       final response = await _productService.deleteUserProduct(
         userToken: userToken,
@@ -765,40 +786,50 @@ class ProductViewModel extends ChangeNotifier {
       if (response.isSuccess) {
         print('✅ Product delete API call successful');
 
-        // KRITIK: Silme işleminden sonra gerçek doğrulama yap
-        print('🔍 Verifying deletion by reloading user products...');
+        print('✅ Product delete API call successful');
 
-        // Kullanıcının ürünlerini API'den yeniden yükle
-        final currentUser = await _authService.getCurrentUser();
-        if (currentUser != null) {
-          print('🔍 Reloading products for user: ${currentUser.id}');
-          await loadUserProducts(currentUser.id);
+        // Optimistic UI update: remove the product from both local lists immediately
+        final originalProductIndex = _myProducts.indexWhere((p) => p.id == productId);
+        final originalAllProductsIndex = _products.indexWhere((p) => p.id == productId);
+        product_model.Product? removedProduct;
+        product_model.Product? removedAllProduct;
+        
+        if (originalProductIndex != -1) {
+          removedProduct = _myProducts.removeAt(originalProductIndex);
+        }
+        
+        if (originalAllProductsIndex != -1) {
+          removedAllProduct = _products.removeAt(originalAllProductsIndex);
+        }
+        
+        notifyListeners(); // UI'ı hemen güncelle
 
-          // Ürünün gerçekten silinip silinmediğini kontrol et
-          final productStillExists = _myProducts.any(
-            (product) => product.id == productId,
-          );
+        // Verification with retry logic
+        bool isVerified = await _verifyDeletion(productId);
 
-          if (productStillExists) {
-            print('❌ CRITICAL: Product still exists in API after deletion!');
-            print(
-              '❌ Product ID $productId was NOT actually deleted from server',
-            );
-            _setError('Ürün silinemedi - API\'den silinmedi');
-            _setLoading(false);
-            return false;
-          } else {
-            print('✅ VERIFIED: Product successfully deleted from API');
-            print(
-              '✅ Product ID $productId is no longer in user\'s product list',
-            );
+        if (isVerified) {
+          print('✅ VERIFIED: Product successfully deleted from API');
+          
+          // Ana sayfa ürün listesini de yenile
+          print('🔄 Refreshing all products after deletion...');
+          await refreshProducts();
+          
+        } else {
+          print('❌ CRITICAL: Product still exists in API after deletion!');
+          // Rollback: add the product back to both lists if verification fails
+          if (removedProduct != null && originalProductIndex != -1) {
+            _myProducts.insert(originalProductIndex, removedProduct);
           }
+          if (removedAllProduct != null && originalAllProductsIndex != -1) {
+            _products.insert(originalAllProductsIndex, removedAllProduct);
+          }
+          notifyListeners(); // UI'ı eski haline getir
+          _setError('Ürün silinemedi. Lütfen tekrar deneyin.');
+          _setLoading(false);
+          return false;
         }
 
-        // Loading'i false yap
         _setLoading(false);
-        print('✅ Product deletion verified and completed successfully');
-
         return true;
       } else {
         print('❌ Product delete failed: ${response.error}');
@@ -813,6 +844,152 @@ class ProductViewModel extends ChangeNotifier {
       _setLoading(false);
       return false;
     }
+  }
+
+  // Ürün güncelleme metodu
+  Future<bool> updateProduct({
+    required String productId,
+    String? title,
+    String? description,
+    List<String>? images,
+    String? categoryId,
+    String? condition,
+    String? brand,
+    String? model,
+    double? estimatedValue,
+    List<String>? tradePreferences,
+    Location? location,
+  }) async {
+    print('🔄 ProductViewModel.updateProduct called');
+    print('📝 Parameters:');
+    print('  - productId: $productId');
+    print('  - title: $title');
+    print('  - description: $description');
+    print('  - images count: ${images?.length ?? 0}');
+    print('  - categoryId: $categoryId');
+    print('  - condition: $condition');
+    print('  - brand: $brand');
+    print('  - model: $model');
+    print('  - estimatedValue: $estimatedValue');
+    print('  - tradePreferences: $tradePreferences');
+    print('  - location: $location');
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      // Current user'ı al
+      final currentUser = await _authService.getCurrentUser();
+      if (currentUser == null) {
+        print('❌ Current user not found!');
+        _setError('Kullanıcı bilgileri bulunamadı');
+        _setLoading(false);
+        return false;
+      }
+
+      // Token'ı AuthService'den al
+      final userToken = await _authService.getToken();
+      if (userToken?.isEmpty ?? true) {
+        print('❌ User token is empty!');
+        _setError('Kullanıcı token\'ı bulunamadı');
+        _setLoading(false);
+        return false;
+      }
+
+      print('👤 Current user: ${currentUser.email}');
+      print('🔑 User token: ${userToken?.substring(0, 20)}...');
+
+      // Null check for userToken
+      if (userToken == null) {
+        print('❌ User token is null');
+        _setError('Kullanıcı token\'ı bulunamadı');
+        _setLoading(false);
+        return false;
+      }
+
+      // ProductService.updateProduct metodunu çağır
+      final response = await _productService.updateProduct(
+        productId,
+        userToken: userToken,
+        title: title,
+        description: description,
+        images: images,
+        categoryId: categoryId,
+        condition: condition,
+        brand: brand,
+        model: model,
+        estimatedValue: estimatedValue,
+        tradePreferences: tradePreferences,
+        location: location,
+      );
+
+      print('📡 Update response alındı');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data}');
+
+      if (response.isSuccess) {
+        // API'den {"error": false, "200": "OK"} formatında yanıt geldiğinde data null olabilir
+        if (response.data != null) {
+          final updatedProduct = response.data!;
+          print('✅ Product updated successfully with data!');
+          print('🆔 Updated Product ID: ${updatedProduct.id}');
+          print('📝 Updated Product Title: ${updatedProduct.title}');
+
+          // Güncellenmiş ürünü listelerde güncelle
+          _updateProductInLists(updatedProduct);
+
+          // Seçili ürünü güncelle
+          if (_selectedProduct?.id == productId) {
+            _selectedProduct = updatedProduct;
+          }
+        } else {
+          print('✅ Product updated successfully (no data returned from API)');
+          // API'den ürün verisi dönmediğinde, mevcut ürün listesini yenile
+          print('🔄 Refreshing products to get updated data...');
+          await refreshProducts();
+        }
+
+        _setLoading(false);
+        return true;
+      } else {
+        print('❌ Product update failed: ${response.error}');
+        _setError(response.error ?? 'Ürün güncellenemedi');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      print('❌ ProductViewModel.updateProduct - Exception: $e');
+      _setError('Ürün güncellenirken hata oluştu: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Güncellenmiş ürünü listelerde güncelle
+  void _updateProductInLists(product_model.Product updatedProduct) {
+    // Ana ürün listesinde güncelle
+    final productIndex = _products.indexWhere((p) => p.id == updatedProduct.id);
+    if (productIndex != -1) {
+      _products[productIndex] = updatedProduct;
+      print('✅ Updated product in main products list at index $productIndex');
+    }
+
+    // Kullanıcının ürünleri listesinde güncelle
+    final myProductIndex = _myProducts.indexWhere((p) => p.id == updatedProduct.id);
+    if (myProductIndex != -1) {
+      _myProducts[myProductIndex] = updatedProduct;
+      print('✅ Updated product in my products list at index $myProductIndex');
+    }
+
+    // Favori ürünler listesinde güncelle
+    final favoriteIndex = _favoriteProducts.indexWhere((p) => p.id == updatedProduct.id);
+    if (favoriteIndex != -1) {
+      _favoriteProducts[favoriteIndex] = updatedProduct;
+      print('✅ Updated product in favorite products list at index $favoriteIndex');
+    }
+
+    notifyListeners();
   }
 
   // Yeni addProductWithEndpoint method'u kullanıcının verdiği endpoint için
@@ -1023,6 +1200,25 @@ class ProductViewModel extends ChangeNotifier {
     } finally {
       _setLoadingMore(false);
     }
+  }
+
+  Future<bool> _verifyDeletion(String productId, {int retries = 3, Duration delay = const Duration(seconds: 1)}) async {
+    for (int i = 0; i < retries; i++) {
+      print('🔍 Verification attempt #${i + 1} for product $productId...');
+      final currentUser = await _authService.getCurrentUser();
+      if (currentUser == null) return false; // Should not happen
+
+      await loadUserProducts(currentUser.id);
+      final productStillExists = _myProducts.any((p) => p.id == productId);
+
+      if (!productStillExists) {
+        return true; // Verified!
+      }
+
+      print('⚠️ Product $productId still exists, waiting for ${delay * (i + 1)}...');
+      await Future.delayed(delay * (i + 1)); // Increasing delay
+    }
+    return false; // Failed after all retries
   }
 
   @override

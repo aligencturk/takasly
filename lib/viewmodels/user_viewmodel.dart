@@ -367,6 +367,41 @@ class UserViewModel extends ChangeNotifier {
     return _userService.getPlatform();
   }
 
+  /// Kullanıcı bilgilerini ID ile alır
+  /// GET /service/user/id
+  Future<User?> getUserById(String userId) async {
+    print('🔍 UserViewModel.getUserById called with userId: $userId');
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _userService.getUserById(userId);
+      
+      print('📡 UserViewModel.getUserById - API response received');
+      print('📡 Response isSuccess: ${response.isSuccess}');
+      print('📡 Response error: ${response.error}');
+      
+      if (response.isSuccess && response.data != null) {
+        print('✅ UserViewModel.getUserById - API returned user data');
+        print('✅ User data: name=${response.data!.name}, id=${response.data!.id}');
+        print('✅ User data: email=${response.data!.email}, rating=${response.data!.rating}');
+        
+        _setLoading(false);
+        return response.data;
+      } else {
+        print('❌ UserViewModel.getUserById - API failed or returned null');
+        _setError(response.error ?? ErrorMessages.userNotFound);
+        _setLoading(false);
+        return null;
+      }
+    } catch (e) {
+      print('❌ UserViewModel.getUserById - Exception: $e');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return null;
+    }
+  }
+
   // Private helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -382,4 +417,4 @@ class UserViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
-} 
+}
