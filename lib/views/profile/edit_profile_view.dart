@@ -42,13 +42,26 @@ class _EditProfileViewState extends State<EditProfileView> {
     final user = userViewModel.currentUser;
     
     if (user != null) {
+      print('🔄 EditProfile - Loading user data: ${user.name}');
+      print('🔄 EditProfile - firstName: ${user.firstName}');
+      print('🔄 EditProfile - lastName: ${user.lastName}');
+      print('🔄 EditProfile - email: ${user.email}');
+      
       setState(() {
         _firstNameController.text = user.firstName ?? '';
         _lastNameController.text = user.lastName ?? '';
-        _emailController.text = user.email ?? '';
+        _emailController.text = user.email;
         _phoneController.text = user.phone ?? '';
         _birthdayController.text = user.birthday ?? '';
         _selectedGender = user.gender?.toString();
+      });
+    } else {
+      print('⚠️ EditProfile - No user data available, refreshing...');
+      // Kullanıcı verisi yoksa yenile
+      userViewModel.forceRefreshUser().then((_) {
+        if (mounted) {
+          _loadUserData();
+        }
       });
     }
   }
@@ -109,7 +122,7 @@ class _EditProfileViewState extends State<EditProfileView> {
       print('🔄 lastName: ${_lastNameController.text}');
       print('🔄 email: ${_emailController.text}');
       
-      await userViewModel.updateAccount(
+      final result = await userViewModel.updateAccount(
         userFirstname: _firstNameController.text,
         userLastname: _lastNameController.text,
         userEmail: _emailController.text,
@@ -120,16 +133,44 @@ class _EditProfileViewState extends State<EditProfileView> {
       );
 
       if (mounted) {
-        // Profil güncellemesi başarılı olduğunda kullanıcı verilerini yenile
-        await userViewModel.forceRefreshUser();
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profil başarıyla güncellendi'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context, true); // Başarılı güncelleme sinyali gönder
+        if (result) {
+          // Profil güncellemesi başarılı olduğunda kullanıcı verilerini yenile
+          await userViewModel.forceRefreshUser();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil başarıyla güncellendi'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true); // Başarılı güncelleme sinyali gönder
+        } else {
+           // Güncelleme başarısız - hata mesajını kontrol et
+           final errorMessage = userViewModel.errorMessage;
+           
+           // 401 hatası veya oturum süresi dolmuş hatası kontrolü
+           if (errorMessage != null && 
+               (errorMessage.contains('Kimlik doğrulama hatası') ||
+                errorMessage.contains('Oturum süresi doldu') ||
+                errorMessage.contains('Yetkisiz giriş'))) {
+             // Login sayfasına yönlendir
+             Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+             
+             ScaffoldMessenger.of(context).showSnackBar(
+               const SnackBar(
+                 content: Text('Oturum süresi doldu. Lütfen tekrar giriş yapın.'),
+                 backgroundColor: Colors.orange,
+               ),
+             );
+           } else {
+             ScaffoldMessenger.of(context).showSnackBar(
+               SnackBar(
+                 content: Text(errorMessage ?? 'Profil güncellenirken hata oluştu'),
+                 backgroundColor: Colors.red,
+               ),
+             );
+           }
+         }
       }
     } catch (e) {
       if (mounted) {
@@ -170,33 +211,6 @@ class _EditProfileViewState extends State<EditProfileView> {
       ),
       body: Consumer<UserViewModel>(
         builder: (context, userViewModel, child) {
-          // Kullanıcı verisi değiştiğinde form alanlarını güncelle
-          if (userViewModel.currentUser != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final user = userViewModel.currentUser!;
-              if (_firstNameController.text.isEmpty && user.firstName != null) {
-                _firstNameController.text = user.firstName!;
-              }
-              if (_lastNameController.text.isEmpty && user.lastName != null) {
-                _lastNameController.text = user.lastName!;
-              }
-              if (_emailController.text.isEmpty && user.email.isNotEmpty) {
-                _emailController.text = user.email;
-              }
-              if (_phoneController.text.isEmpty && user.phone != null) {
-                _phoneController.text = user.phone!;
-              }
-              if (_birthdayController.text.isEmpty && user.birthday != null) {
-                _birthdayController.text = user.birthday!;
-              }
-              if (_selectedGender == null && user.gender != null) {
-                setState(() {
-                  _selectedGender = user.gender.toString();
-                });
-              }
-            });
-          }
-          
           return _isLoading || userViewModel.isLoading
               ? const LoadingWidget()
               : SingleChildScrollView(
@@ -381,16 +395,16 @@ class _EditProfileViewState extends State<EditProfileView> {
       ),
       items: const [
         DropdownMenuItem(
-          value: '1',
+          value: 'Erkek',
           child: Text('Erkek'),
         ),
         DropdownMenuItem(
-          value: '2',
+          value: 'Kadın',
           child: Text('Kadın'),
         ),
         DropdownMenuItem(
-          value: '3',
-          child: Text('Diğer'),
+          value: 'Belirtilmemiş',
+          child: Text('Belirtilmemiş'),
         ),
       ],
     );

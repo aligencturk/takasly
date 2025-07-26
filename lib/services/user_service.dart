@@ -113,13 +113,12 @@ class UserService {
                   userDataToTransform['avatar'],
               'bio':
                   userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating':
-                  (userDataToTransform['userRank'] != null ? 
-                    double.tryParse(userDataToTransform['userRank'].toString()) : null) ??
-                  (userDataToTransform['userRating'] ??
-                          userDataToTransform['rating'] ??
-                          0.0)
-                      .toDouble(),
+              'rating': _parseRating(
+                userDataToTransform['userRating'] ??
+                    userDataToTransform['userRank'] ??
+                    userDataToTransform['rating'] ??
+                    0.0,
+              ),
               'totalTrades':
                   userDataToTransform['userTotalTrades'] ??
                   userDataToTransform['totalTrades'] ??
@@ -266,7 +265,7 @@ class UserService {
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
                 birthday: userBirthday,
-                gender: userGender,
+                gender: userGender?.toString(),
               );
             } else {
               print(
@@ -292,7 +291,7 @@ class UserService {
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
                 birthday: userBirthday,
-                gender: userGender,
+                gender: userGender?.toString(),
               );
             }
 
@@ -328,11 +327,12 @@ class UserService {
                   userDataToTransform['avatar'],
               'bio':
                   userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating':
-                  (userDataToTransform['userRating'] ??
-                          userDataToTransform['rating'] ??
-                          0.0)
-                      .toDouble(),
+              'rating': _parseRating(
+                userDataToTransform['userRating'] ??
+                    userDataToTransform['userRank'] ??
+                    userDataToTransform['rating'] ??
+                    0.0,
+              ),
               'totalTrades':
                   userDataToTransform['userTotalTrades'] ??
                   userDataToTransform['totalTrades'] ??
@@ -467,12 +467,24 @@ class UserService {
             // Eğer sadece başarı mesajı gelirse (error: false, 200: OK formatı)
             else if (json.containsKey('error') && json['error'] == false) {
               print(
-                '⚠️ Get Profile - Success response without user data, API might need user data in response',
+                '⚠️ Get Profile - Success response, checking for nested data structure',
               );
               print('⚠️ Get Profile - Available keys: ${json.keys.toList()}');
-              // Bu durumda API'den gerçek kullanıcı verisi gelmesi gerekiyor
-              // Şimdilik mevcut token ile kullanıcı bilgilerini almaya çalışalım
-              throw Exception('API returned success but no user data. Response: $json');
+              
+              // data.user yapısını kontrol et
+              if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+                final dataField = json['data'] as Map<String, dynamic>;
+                if (dataField.containsKey('user') && dataField['user'] is Map<String, dynamic>) {
+                  print('🔍 Get Profile - Found user data in data.user structure');
+                  userDataToTransform = dataField['user'] as Map<String, dynamic>;
+                } else {
+                  print('❌ Get Profile - No user data found in data field');
+                  throw Exception('API returned success but no user data in data field. Response: $json');
+                }
+              } else {
+                print('❌ Get Profile - No data field found in response');
+                throw Exception('API returned success but no data field. Response: $json');
+              }
             } else {
               print(
                 '⚠️ Get Profile - Unexpected response format, creating default user',
@@ -494,6 +506,12 @@ class UserService {
             print(
               '🔍 Get Profile - Transforming user data: $userDataToTransform',
             );
+            print('🔍 Get Profile - userFirstname: ${userDataToTransform['userFirstname']}');
+            print('🔍 Get Profile - userLastname: ${userDataToTransform['userLastname']}');
+            print('🔍 Get Profile - firstName: ${userDataToTransform['firstName']}');
+            print('🔍 Get Profile - lastName: ${userDataToTransform['lastName']}');
+            print('🔍 Get Profile - userEmail: ${userDataToTransform['userEmail']}');
+            print('🔍 Get Profile - Available keys: ${userDataToTransform.keys.toList()}');
 
             // API formatından model formatına dönüştür
             final transformedData = <String, dynamic>{
@@ -520,11 +538,12 @@ class UserService {
                   userDataToTransform['avatar'],
               'bio':
                   userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating':
-                  (userDataToTransform['userRating'] ??
-                          userDataToTransform['rating'] ??
-                          0.0)
-                      .toDouble(),
+              'rating': _parseRating(
+                userDataToTransform['userRating'] ??
+                    userDataToTransform['userRank'] ??
+                    userDataToTransform['rating'] ??
+                    0.0,
+              ),
               'totalTrades':
                   userDataToTransform['userTotalTrades'] ??
                   userDataToTransform['totalTrades'] ??
@@ -559,11 +578,19 @@ class UserService {
 
             print('🔍 Get Profile - Transformed data: $transformedData');
 
-            final user = User.fromJson(transformedData);
-            print(
-              '🔍 Get Profile - Created user: name=${user.name}, firstName=${user.firstName}, lastName=${user.lastName}',
-            );
-            return user;
+            try {
+              final user = User.fromJson(transformedData);
+              print(
+                '🔍 Get Profile - Created user: name=${user.name}, firstName=${user.firstName}, lastName=${user.lastName}',
+              );
+              print('✅ Get Profile - User object created successfully');
+              return user;
+            } catch (e, stackTrace) {
+              print('❌ Get Profile - Error creating User from JSON: $e');
+              print('❌ Get Profile - Stack trace: $stackTrace');
+              print('❌ Get Profile - Transformed data was: $transformedData');
+              rethrow;
+            }
           }
 
           throw Exception('Invalid response format');
@@ -874,11 +901,12 @@ class UserService {
                   userDataToTransform['avatar'],
               'bio':
                   userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating':
-                  (userDataToTransform['userRating'] ??
-                          userDataToTransform['rating'] ??
-                          0.0)
-                      .toDouble(),
+              'rating': _parseRating(
+                userDataToTransform['userRating'] ??
+                    userDataToTransform['userRank'] ??
+                    userDataToTransform['rating'] ??
+                    0.0,
+              ),
               'totalTrades':
                   userDataToTransform['userTotalTrades'] ??
                   userDataToTransform['totalTrades'] ??
@@ -978,18 +1006,44 @@ class UserService {
 
   /// Kullanıcı adını oluşturur
   String _buildUserName(Map<String, dynamic> userData) {
+    // Önce userFullname'i kontrol et
+    final fullName = userData['userFullname'] ?? userData['fullName'];
+    if (fullName != null && fullName.toString().trim().isNotEmpty) {
+      return fullName.toString().trim();
+    }
+    
+    // Sonra firstName ve lastName'i kontrol et
     final firstName = userData['userFirstname'] ?? userData['firstName'];
     final lastName = userData['userLastname'] ?? userData['lastName'];
 
-    if (firstName != null && lastName != null) {
-      return '$firstName $lastName';
-    } else if (firstName != null) {
-      return firstName;
-    } else if (lastName != null) {
-      return lastName;
+    if (firstName != null && firstName.toString().trim().isNotEmpty && 
+        lastName != null && lastName.toString().trim().isNotEmpty) {
+      return '${firstName.toString().trim()} ${lastName.toString().trim()}';
+    } else if (firstName != null && firstName.toString().trim().isNotEmpty) {
+      return firstName.toString().trim();
+    } else if (lastName != null && lastName.toString().trim().isNotEmpty) {
+      return lastName.toString().trim();
     } else {
       return userData['userName'] ?? userData['name'] ?? 'Kullanıcı';
     }
+  }
+
+  /// Rating değerini güvenli bir şekilde double'a dönüştürür
+  double _parseRating(dynamic value) {
+    if (value == null) {
+      return 0.0;
+    } else if (value is num) {
+      return value.toDouble();
+    } else if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        print('⚠️ _parseRating - Failed to parse rating: $value, using 0.0');
+        return 0.0;
+      }
+    }
+    print('⚠️ _parseRating - Unknown type for rating: ${value.runtimeType}, using 0.0');
+    return 0.0;
   }
 
   /// DateTime parse eder

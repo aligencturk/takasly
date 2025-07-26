@@ -325,12 +325,12 @@ class AuthService {
     try {
       Logger.info('✅ CHECK EMAIL CODE ATTEMPT: $email');
       Logger.debug(
-        '📤 Check Code Request Body: {"userEmail": "$email", "code": "$code"}',
+        '📤 Check Code Request Body: {"code": "$code", "codeToken": "$email"}',
       );
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.checkCode,
-        body: {'userEmail': email, 'code': code},
+        body: {'code': code, 'codeToken': email},
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 CheckCode fromJson - Raw data: $json');

@@ -114,19 +114,9 @@ class _ProfileViewState extends State<ProfileView>
           ),
           const SizedBox(height: 16),
           Text(
-            user.firstName != null && user.lastName != null
-                ? '${user.firstName} ${user.lastName}'
-                : user.name,
+            user.name,
             style: textTheme.headlineSmall,
           ),
-          // Debug bilgisi
-          if (user.firstName == null || user.lastName == null) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Debug: firstName=${user.firstName}, lastName=${user.lastName}',
-              style: textTheme.bodySmall?.copyWith(color: Colors.red),
-            ),
-          ],
           const SizedBox(height: 4),
           Text(
             user.email,
@@ -202,6 +192,9 @@ class _ProfileViewState extends State<ProfileView>
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () async {
+              // Provider referansını önceden al
+              final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+              
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -211,7 +204,6 @@ class _ProfileViewState extends State<ProfileView>
               
               // EditProfileView'dan başarılı güncelleme sinyali gelirse profili yenile
               if (result == true && mounted) {
-                final userViewModel = Provider.of<UserViewModel>(context, listen: false);
                 userViewModel.forceRefreshUser();
               }
             },

@@ -22,7 +22,7 @@ class User {
   final DateTime updatedAt;
   final DateTime? lastSeenAt;
   final String? birthday;
-  final int? gender; // 1-Erkek, 2-Kadın, 3-Belirtilmemiş
+  final String? gender; // Erkek, Kadın, Belirtilmemiş
   final String? token; // Kullanıcı token'ı
 
   const User({
@@ -68,7 +68,7 @@ class User {
     DateTime? updatedAt,
     DateTime? lastSeenAt,
     String? birthday,
-    int? gender,
+    String? gender,
     String? token,
   }) {
     return User(
