@@ -492,13 +492,20 @@ class ProductService {
     print('🖼️ [NEW API] Raw productImage: ${apiProduct['productImage']}');
     print('🖼️ [NEW API] Raw extraImages: ${apiProduct['extraImages']}');
     
-    if (apiProduct['productImage'] != null &&
-        apiProduct['productImage'].toString().isNotEmpty) {
-      final imageUrl = apiProduct['productImage'].toString();
+    // Ana resim işleme
+    final productImage = apiProduct['productImage']?.toString();
+    if (productImage != null &&
+        productImage.isNotEmpty &&
+        productImage != 'null' &&
+        productImage != 'undefined' &&
+        !productImage.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
+        Uri.tryParse(productImage) != null) { // URL formatını kontrol et
       // Eğer URL zaten tam URL ise olduğu gibi kullan, değilse base URL ile birleştir
-      final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+      final fullImageUrl = productImage.startsWith('http') ? productImage : '${ApiConstants.baseUrl}$productImage';
       images.add(fullImageUrl);
       print('🖼️ [NEW API] Added productImage: $fullImageUrl');
+    } else {
+      print('⚠️ [NEW API] Skipping invalid productImage: $productImage');
     }
     
     // extraImages varsa onları da ekle
@@ -506,11 +513,18 @@ class ProductService {
       final extraImages = apiProduct['extraImages'] as List;
       print('🖼️ [NEW API] Processing ${extraImages.length} extra images');
       for (final extraImage in extraImages) {
-        if (extraImage != null && extraImage.toString().isNotEmpty) {
-          final imageUrl = extraImage.toString();
-          final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+        final extraImageStr = extraImage?.toString();
+        if (extraImageStr != null && 
+            extraImageStr.isNotEmpty &&
+            extraImageStr != 'null' &&
+            extraImageStr != 'undefined' &&
+            !extraImageStr.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
+            Uri.tryParse(extraImageStr) != null) { // URL formatını kontrol et
+          final fullImageUrl = extraImageStr.startsWith('http') ? extraImageStr : '${ApiConstants.baseUrl}$extraImageStr';
           images.add(fullImageUrl);
           print('🖼️ [NEW API] Added extraImage: $fullImageUrl');
+        } else {
+          print('⚠️ [NEW API] Skipping invalid extraImage: $extraImageStr');
         }
       }
     }
@@ -607,12 +621,19 @@ class ProductService {
     print('🖼️ [OLD API] Raw productImage: ${apiProduct['productImage']}');
     print('🖼️ [OLD API] Raw extraImages: ${apiProduct['extraImages']}');
     
-    if (apiProduct['productImage'] != null &&
-        apiProduct['productImage'].toString().isNotEmpty) {
-      final imageUrl = apiProduct['productImage'].toString();
-      final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+    // Ana resim işleme
+    final productImage = apiProduct['productImage']?.toString();
+    if (productImage != null &&
+        productImage.isNotEmpty &&
+        productImage != 'null' &&
+        productImage != 'undefined' &&
+        !productImage.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
+        Uri.tryParse(productImage) != null) { // URL formatını kontrol et
+      final fullImageUrl = productImage.startsWith('http') ? productImage : '${ApiConstants.baseUrl}$productImage';
       images.add(fullImageUrl);
       print('🖼️ [OLD API] Added productImage: $fullImageUrl');
+    } else {
+      print('⚠️ [OLD API] Skipping invalid productImage: $productImage');
     }
     
     // extraImages varsa onları da ekle
@@ -620,11 +641,18 @@ class ProductService {
       final extraImages = apiProduct['extraImages'] as List;
       print('🖼️ [OLD API] Processing ${extraImages.length} extra images');
       for (final extraImage in extraImages) {
-        if (extraImage != null && extraImage.toString().isNotEmpty) {
-          final imageUrl = extraImage.toString();
-          final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+        final extraImageStr = extraImage?.toString();
+        if (extraImageStr != null && 
+            extraImageStr.isNotEmpty &&
+            extraImageStr != 'null' &&
+            extraImageStr != 'undefined' &&
+            !extraImageStr.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
+            Uri.tryParse(extraImageStr) != null) { // URL formatını kontrol et
+          final fullImageUrl = extraImageStr.startsWith('http') ? extraImageStr : '${ApiConstants.baseUrl}$extraImageStr';
           images.add(fullImageUrl);
           print('🖼️ [OLD API] Added extraImage: $fullImageUrl');
+        } else {
+          print('⚠️ [OLD API] Skipping invalid extraImage: $extraImageStr');
         }
       }
     }
@@ -1402,7 +1430,31 @@ class ProductService {
     print('  - productImages count: ${productImages.length}');
 
     try {
-      // Form fields
+      // Kategori bilgilerini al
+      String catImage = '';
+      try {
+        final categoriesResponse = await getCategories();
+        if (categoriesResponse.isSuccess && categoriesResponse.data != null) {
+          final selectedCategory = categoriesResponse.data!.firstWhere(
+            (cat) => cat.id == categoryId,
+            orElse: () => Category(
+              id: categoryId,
+              name: 'Bilinmeyen Kategori',
+              icon: '',
+              isActive: true,
+              order: 0,
+            ),
+          );
+          catImage = selectedCategory.icon;
+          print('🏷️ Selected category: ${selectedCategory.name}');
+          print('🏷️ Category icon: $catImage');
+        }
+      } catch (e) {
+        print('⚠️ Error getting category info: $e');
+        catImage = '';
+      }
+
+      // Form fields - Postman form/data formatına uygun
       final fields = <String, String>{
         'userToken': userToken,
         'productTitle': productTitle,
@@ -1410,6 +1462,7 @@ class ProductService {
         'categoryID': categoryId,
         'conditionID': conditionId,
         'tradeFor': tradeFor,
+        'catImage': catImage, // Kategori icon'u eklendi
       };
 
       print('📋 Form fields prepared:');
@@ -1421,21 +1474,18 @@ class ProductService {
         }
       });
 
-      // Multiple files için Map oluştur
-      final multipleFiles = <String, List<File>>{};
+      // Görselleri dizi olarak hazırla - Postman form/data formatı
+      final files = <String, File>{};
       if (productImages.isNotEmpty) {
-        multipleFiles['productImages'] = productImages;
-        print('📸 Multiple files prepared:');
+        // Her görsel için ayrı key kullan (productImages[0], productImages[1], ...)
         for (int i = 0; i < productImages.length; i++) {
-          print('  - Image ${i + 1}: ${productImages[i].path.split('/').last}');
+          files['productImages[$i]'] = productImages[i];
+          print('📸 Image ${i + 1}: ${productImages[i].path.split('/').last}');
         }
+        print('📸 Total images prepared: ${productImages.length}');
       } else {
         print('📸 No images to upload');
       }
-
-      print(
-        '📸 Uploading ${productImages.length} images with key "productImages"',
-      );
 
       final endpoint = '${ApiConstants.addProduct}/$userId/addProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
@@ -1444,7 +1494,7 @@ class ProductService {
       final response = await _httpClient.postMultipart<Map<String, dynamic>>(
         endpoint,
         fields: fields,
-        multipleFiles: multipleFiles,
+        files: files, // Dizi formatında görseller
         fromJson: (json) {
           print('📥 ProductService.addProduct - Raw response: $json');
 
@@ -1515,12 +1565,19 @@ class ProductService {
             print('🖼️ Raw productImage: ${apiProduct['productImage']}');
             print('🖼️ Raw extraImages: ${apiProduct['extraImages']}');
             
-            if (apiProduct['productImage'] != null &&
-                apiProduct['productImage'].toString().isNotEmpty) {
-              final imageUrl = apiProduct['productImage'].toString();
-              final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+            // Ana resim işleme
+            final productImage = apiProduct['productImage']?.toString();
+            if (productImage != null &&
+                productImage.isNotEmpty &&
+                productImage != 'null' &&
+                productImage != 'undefined' &&
+                !productImage.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
+                Uri.tryParse(productImage) != null) { // URL formatını kontrol et
+              final fullImageUrl = productImage.startsWith('http') ? productImage : '${ApiConstants.baseUrl}$productImage';
               images.add(fullImageUrl);
               print('🖼️ Added productImage: $fullImageUrl');
+            } else {
+              print('⚠️ Skipping invalid productImage: $productImage');
             }
             
             // extraImages varsa onları da ekle
@@ -1528,11 +1585,18 @@ class ProductService {
               final extraImages = apiProduct['extraImages'] as List;
               print('🖼️ Processing ${extraImages.length} extra images');
               for (final extraImage in extraImages) {
-                if (extraImage != null && extraImage.toString().isNotEmpty) {
-                  final imageUrl = extraImage.toString();
-                  final fullImageUrl = imageUrl.startsWith('http') ? imageUrl : '${ApiConstants.baseUrl}$imageUrl';
+                final extraImageStr = extraImage?.toString();
+                if (extraImageStr != null && 
+                    extraImageStr.isNotEmpty &&
+                    extraImageStr != 'null' &&
+                    extraImageStr != 'undefined' &&
+                    !extraImageStr.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
+                    Uri.tryParse(extraImageStr) != null) { // URL formatını kontrol et
+                  final fullImageUrl = extraImageStr.startsWith('http') ? extraImageStr : '${ApiConstants.baseUrl}$extraImageStr';
                   images.add(fullImageUrl);
                   print('🖼️ Added extraImage: $fullImageUrl');
+                } else {
+                  print('⚠️ Skipping invalid extraImage: $extraImageStr');
                 }
               }
             }

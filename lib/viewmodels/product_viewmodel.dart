@@ -1023,14 +1023,17 @@ class ProductViewModel extends ChangeNotifier {
       return false;
     }
 
+    // Resim validasyonu - en az bir resim gerekli
+    if (productImages.isEmpty) {
+      print('❌ Validation failed: En az bir resim gerekli');
+      _setError('En az bir fotoğraf eklemelisiniz');
+      return false;
+    }
+
     // Resim durumu kontrolü
-    if (productImages.isNotEmpty) {
-      print('📸 ${productImages.length} resim yüklenecek:');
-      for (int i = 0; i < productImages.length; i++) {
-        print('  ${i + 1}. ${productImages[i].path.split('/').last}');
-      }
-    } else {
-      print('⚠️ Warning: Resim yok, devam ediliyor...');
+    print('📸 ${productImages.length} resim yüklenecek:');
+    for (int i = 0; i < productImages.length; i++) {
+      print('  ${i + 1}. ${productImages[i].path.split('/').last}');
     }
 
     print('🔄 Loading state ayarlanıyor...');

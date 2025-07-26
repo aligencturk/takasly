@@ -6,6 +6,7 @@ import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/city.dart';
 import 'package:takasly/models/condition.dart';
 import 'package:takasly/models/district.dart';
+import 'package:takasly/models/product.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 
 class AddProductView extends StatefulWidget {
@@ -52,7 +53,22 @@ class _AddProductViewState extends State<AddProductView> {
 
   Future<void> _submitProduct() async {
     if (!_formKey.currentState!.validate()) return;
-    // Diğer validasyonlar...
+    
+    // Resim validasyonu
+    if (_selectedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('En az bir fotoğraf eklemelisiniz'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    print('📸 Submitting product with ${_selectedImages.length} images');
+    for (int i = 0; i < _selectedImages.length; i++) {
+      print('  ${i + 1}. ${_selectedImages[i].path.split('/').last}');
+    }
 
     final success = await Provider.of<ProductViewModel>(context, listen: false)
         .addProductWithEndpoint(
@@ -273,6 +289,12 @@ class _AddProductViewState extends State<AddProductView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // İlk resim ekleme butonu (eğer hiç resim yoksa)
+        if (_selectedImages.isEmpty) ...[
+          _buildAddImageButton(),
+          const SizedBox(height: 16),
+        ],
+
         // Seçilen resimler grid'i
         if (_selectedImages.isNotEmpty) ...[
           SizedBox(
@@ -292,12 +314,9 @@ class _AddProductViewState extends State<AddProductView> {
           const SizedBox(height: 16),
         ],
 
-        // İlk resim ekleme butonu (eğer hiç resim yoksa)
-        if (_selectedImages.isEmpty) _buildAddImageButton(),
-
         // Bilgi metni
         Text(
-          'En fazla 5 fotoğraf ekleyebilirsiniz. İlk fotoğraf kapak resmi olacaktır.',
+          'En az 1, en fazla 5 fotoğraf ekleyebilirsiniz. İlk fotoğraf kapak resmi olacaktır.',
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),

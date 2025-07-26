@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/city.dart';
 import 'package:takasly/models/condition.dart';
@@ -346,17 +347,39 @@ class _EditProductViewState extends State<EditProductView> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              imageUrl,
-              width: 120,
-              height: 120,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
+            child: Builder(
+              builder: (context) {
+                // Resim URL'si geçersizse placeholder göster
+                if (imageUrl.isEmpty || imageUrl == 'null' || imageUrl == 'undefined') {
+                  return Container(
+                    width: 120,
+                    height: 120,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image_not_supported),
+                  );
+                }
+                
+                return CachedNetworkImage(
+                  imageUrl: imageUrl,
                   width: 120,
                   height: 120,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.error),
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    width: 120,
+                    height: 120,
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) {
+                    return Container(
+                      width: 120,
+                      height: 120,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.error),
+                    );
+                  },
                 );
               },
             ),

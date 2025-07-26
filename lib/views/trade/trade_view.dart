@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/trade_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../services/auth_service.dart';
@@ -270,14 +271,32 @@ class _TradeViewState extends State<TradeView>
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      product.images.first,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.image_not_supported,
-                          size: 50,
-                          color: Colors.grey,
+                    child: Builder(
+                      builder: (context) {
+                        final imageUrl = product.images.first;
+                        
+                        // Resim URL'si geçersizse placeholder göster
+                        if (imageUrl.isEmpty || imageUrl == 'null' || imageUrl == 'undefined') {
+                          return const Icon(
+                            Icons.image_not_supported,
+                            size: 50,
+                            color: Colors.grey,
+                          );
+                        }
+                        
+                        return CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          errorWidget: (context, url, error) {
+                            return const Icon(
+                              Icons.image_not_supported,
+                              size: 50,
+                              color: Colors.grey,
+                            );
+                          },
                         );
                       },
                     ),

@@ -45,24 +45,52 @@ class ProductCard extends StatelessWidget {
                     print('🖼️ [CARD] Total images: ${product.images.length}');
                     print('🖼️ [CARD] All images: ${product.images}');
                     
-                    return Image.network(
-                      imageUrl,
+                    // Resim URL'si boş veya geçersizse placeholder göster
+                    final uri = Uri.tryParse(imageUrl);
+                    if (imageUrl.isEmpty || 
+                        imageUrl == 'null' || 
+                        imageUrl == 'undefined' ||
+                        imageUrl.contains('product_68852b20b6cac.png') || // Bu spesifik hatalı URL'yi filtrele
+                        uri == null || // URL parse edilemiyorsa
+                        !uri.hasAbsolutePath) { // URL formatını kontrol et
+                      print('⚠️ [CARD] Empty or invalid image URL for ${product.title}: $imageUrl');
+                      return Container(
+                        color: Colors.grey.shade200,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported_outlined,
+                                color: Colors.grey.shade400,
+                                size: 40,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Resim yok',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    return CachedNetworkImage(
+                      imageUrl: imageUrl,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      // Yüklenirken gösterilecek iskelet
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: Container(color: Colors.white),
-                        );
-                      },
-                      // Hata durumunda gösterilecek widget
-                      errorBuilder: (context, error, stackTrace) {
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(color: Colors.white),
+                      ),
+                      errorWidget: (context, url, error) {
                         print('❌ [CARD] Image load error for ${product.title}: $error');
-                        print('❌ [CARD] Failed URL: $imageUrl');
-                        print('❌ [CARD] Stack trace: $stackTrace');
+                        print('❌ [CARD] Failed URL: $url');
                         return Container(
                           color: Colors.grey.shade200,
                           child: Center(

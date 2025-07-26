@@ -87,12 +87,13 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+
+ //düzeltilecek - 1 chat konacak
   Widget _buildPage(int index) {
     switch (index) {
       case 0:
         return _buildHomeTab();
       case 1:
-        // TODO: Keşfet Sayfası
         return const Center(child: Text('Keşfet'));
       case 2:
         // AddProductView butonu FAB ile handle ediliyor.
@@ -117,9 +118,9 @@ class _HomeViewState extends State<HomeView> {
         controller: _scrollController,
         slivers: [
           const HomeAppBar(), // Yeni, modern AppBar
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          const SliverToBoxAdapter(),
           _buildFilterBar(), // Filtreleme çubuğu
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          const SliverToBoxAdapter(child: SizedBox(height: 10)),
           const CategoryList(), // Yeni, yatay kategori listesi
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
           _buildProductGrid(), // Yeni, GridView ürün listesi
@@ -165,8 +166,8 @@ class _HomeViewState extends State<HomeView> {
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+              crossAxisSpacing: 15,
+              mainAxisSpacing: 10,
               childAspectRatio: 0.75, // Kart oranını ayarla
             ),
             delegate: SliverChildBuilderDelegate(

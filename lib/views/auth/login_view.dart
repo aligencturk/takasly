@@ -252,6 +252,13 @@ class _LoginFormState extends State<_LoginForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscureText = true;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
 
   @override
   void dispose() {
@@ -260,11 +267,24 @@ class _LoginFormState extends State<_LoginForm> {
     super.dispose();
   }
 
+  // Kaydedilmiş giriş bilgilerini yükle
+  void _loadSavedCredentials() {
+    // TODO: SharedPreferences ile kaydedilmiş bilgileri yükle
+    // Bu kısım AuthViewModel'de implement edilebilir
+  }
+
   Future<void> _submitLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+    
+    // Beni hatırla seçeneği işaretliyse bilgileri kaydet
+    if (_rememberMe) {
+      _saveCredentials();
+    } else {
+      _clearSavedCredentials();
+    }
     
     final success = await authViewModel.login(
       _emailController.text.trim(),
@@ -291,6 +311,18 @@ class _LoginFormState extends State<_LoginForm> {
         );
       }
     }
+  }
+
+  // Giriş bilgilerini kaydet
+  void _saveCredentials() {
+    // TODO: SharedPreferences ile e-posta ve şifreyi kaydet
+    print('💾 Giriş bilgileri kaydediliyor...');
+  }
+
+  // Kaydedilmiş giriş bilgilerini temizle
+  void _clearSavedCredentials() {
+    // TODO: SharedPreferences'dan kaydedilmiş bilgileri temizle
+    print('🗑️ Kaydedilmiş giriş bilgileri temizleniyor...');
   }
 
   @override
@@ -345,20 +377,44 @@ class _LoginFormState extends State<_LoginForm> {
             },
           ),
           const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed('/reset-password');
-              },
-              child: Text(
-                'Şifremi Unuttum',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.primary,
+          
+          // Beni Hatırla ve Şifremi Unuttum satırı
+          Row(
+            children: [
+              // Beni Hatırla checkbox'ı
+              Row(
+                children: [
+                  Checkbox(
+                    value: _rememberMe,
+                    onChanged: (value) {
+                      setState(() {
+                        _rememberMe = value ?? false;
+                      });
+                    },
+                    activeColor: colorScheme.primary,
+                  ),
+                  Text(
+                    'Beni Hatırla',
+                    style: textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // Şifremi Unuttum butonu
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/reset-password');
+                },
+                child: Text(
+                  'Şifremi Unuttum',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.primary,
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
+          
           const SizedBox(height: 24),
           Consumer<AuthViewModel>(
             builder: (context, authViewModel, child) {

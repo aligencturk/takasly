@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../core/constants.dart';
 import '../../widgets/loading_widget.dart';
@@ -101,15 +102,33 @@ class _ProductDetailViewState extends State<ProductDetailView> {
           ? PageView.builder(
               itemCount: product.images.length,
               itemBuilder: (context, index) {
+                final imageUrl = product.images[index];
+                
+                // Resim URL'si geçersizse placeholder göster
+                if (imageUrl.isEmpty || imageUrl == 'null' || imageUrl == 'undefined') {
+                  return const Center(
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                  );
+                }
+                
                 return ClipRRect(
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(AppConstants.defaultBorderRadius),
                     bottomRight: Radius.circular(AppConstants.defaultBorderRadius),
                   ),
-                  child: Image.network(
-                    product.images[index],
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    errorWidget: (context, url, error) {
+                      print('❌ [DETAIL] Image load error: $error');
+                      print('❌ [DETAIL] Failed URL: $url');
                       return const Center(
                         child: Icon(
                           Icons.image_not_supported,
