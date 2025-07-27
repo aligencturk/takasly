@@ -194,7 +194,7 @@ class _ImageCarousel extends StatelessWidget {
             itemBuilder: (context, index) {
               return CachedNetworkImage(
                 imageUrl: images[index],
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 width: double.infinity,
                 placeholder: (context, url) => Container(
                   color: Colors.grey[100],

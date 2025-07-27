@@ -105,7 +105,7 @@ class ProductCard extends StatelessWidget {
                       ),
                       child: CachedNetworkImage(
                         imageUrl: imageUrl,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                         width: double.infinity,
                         placeholder: (context, url) => Shimmer.fromColors(
                           baseColor: Colors.grey[200]!,
