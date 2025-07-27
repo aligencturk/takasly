@@ -47,6 +47,7 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Product> get products => _products;
   List<product_model.Product> get favoriteProducts => _favoriteProducts;
   List<product_model.Product> get myProducts => _myProducts;
+  List<product_model.Product> get userProducts => _myProducts;
   List<product_model.Category> get categories => _categories;
   List<City> get cities => _cities;
   List<District> get districts => _districts;
@@ -60,7 +61,7 @@ class ProductViewModel extends ChangeNotifier {
   bool get hasError => _errorMessage != null;
 
   int get currentPage => _currentPage;
-  String? get currentCategoryId => _currentCategoryId;
+  String? get currentCategoryId => _currentFilter.categoryId;
   String? get currentSearchQuery => _currentSearchQuery;
   String? get currentCity => _currentCity;
   String? get currentCondition => _currentCondition;
@@ -268,16 +269,9 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> filterByCategory(String? categoryId) async {
-    _currentCategoryId = categoryId;
-    notifyListeners();
-
-    await loadProducts(
-      categoryId: categoryId,
-      searchQuery: _currentSearchQuery,
-      city: _currentCity,
-      condition: _currentCondition,
-      refresh: true,
-    );
+    // Yeni filtreleme sistemi kullan
+    final newFilter = _currentFilter.copyWith(categoryId: categoryId);
+    await applyFilter(newFilter);
   }
 
   Future<void> sortProducts(SortOption sortOption) async {
@@ -542,7 +536,10 @@ class ProductViewModel extends ChangeNotifier {
     String? model,
     double? estimatedValue,
     required List<String> tradePreferences,
-    Location? location,
+    String? cityId,
+    String? cityTitle,
+    String? districtId,
+    String? districtTitle,
   }) async {
     if (title.trim().isEmpty || description.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
@@ -573,7 +570,10 @@ class ProductViewModel extends ChangeNotifier {
         model: model,
         estimatedValue: estimatedValue,
         tradePreferences: tradePreferences,
-        location: location,
+        cityId: cityId,
+        cityTitle: cityTitle,
+        districtId: districtId,
+        districtTitle: districtTitle,
       );
 
       if (response.isSuccess && response.data != null) {
@@ -858,7 +858,10 @@ class ProductViewModel extends ChangeNotifier {
     String? model,
     double? estimatedValue,
     List<String>? tradePreferences,
-    Location? location,
+    String? cityId,
+    String? cityTitle,
+    String? districtId,
+    String? districtTitle,
   }) async {
     print('🔄 ProductViewModel.updateProduct called');
     print('📝 Parameters:');
@@ -872,7 +875,10 @@ class ProductViewModel extends ChangeNotifier {
     print('  - model: $model');
     print('  - estimatedValue: $estimatedValue');
     print('  - tradePreferences: $tradePreferences');
-    print('  - location: $location');
+    print('  - cityId: $cityId');
+    print('  - cityTitle: $cityTitle');
+    print('  - districtId: $districtId');
+    print('  - districtTitle: $districtTitle');
 
     _setLoading(true);
     _clearError();
@@ -920,7 +926,10 @@ class ProductViewModel extends ChangeNotifier {
         model: model,
         estimatedValue: estimatedValue,
         tradePreferences: tradePreferences,
-        location: location,
+        cityId: cityId,
+        cityTitle: cityTitle,
+        districtId: districtId,
+        districtTitle: districtTitle,
       );
 
       print('📡 Update response alındı');

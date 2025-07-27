@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/product_viewmodel.dart';
+import '../../viewmodels/chat_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
+import '../../models/chat.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
+import '../chat/chat_detail_view.dart';
 
 class ProductDetailView extends StatelessWidget {
   final String productId;
@@ -299,7 +303,7 @@ class _ProductInfo extends StatelessWidget {
                   Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
-                    product.location?.city ?? 'Konum belirtilmemiş',
+                    product.cityTitle + "/" + product.districtTitle,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[600],
@@ -392,7 +396,7 @@ class _ProductInfo extends StatelessWidget {
                   Icon(Icons.location_city, size: 18, color: Colors.grey[600]),
                   const SizedBox(width: 8),
                   Text(
-                    product.location?.city ?? 'Şehir belirtilmemiş',
+                    product.cityTitle + "/" + product.districtTitle,
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.black87,
@@ -400,14 +404,14 @@ class _ProductInfo extends StatelessWidget {
                   ),
                 ],
               ),
-              if (product.location?.district != null) ...[
+              if (product.districtTitle != null) ...[
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Icon(Icons.location_on, size: 18, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
-                      product.location!.district!,
+                      product.districtTitle,
                       style: const TextStyle(
                         fontSize: 14,
                         color: Colors.black87,
@@ -462,6 +466,88 @@ class _ActionBar extends StatelessWidget {
 
   const _ActionBar({required this.product});
 
+  Future<void> _startChat(BuildContext context) async {
+    final authViewModel = context.read<AuthViewModel>();
+    final chatViewModel = context.read<ChatViewModel>();
+    
+    if (authViewModel.currentUser == null) {
+      // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
+      Navigator.pushNamed(context, '/login');
+      return;
+    }
+
+    // Kendi ürününe mesaj göndermeye çalışıyorsa uyarı ver
+    if (authViewModel.currentUser!.id == product.ownerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kendi ürününüze mesaj gönderemezsiniz.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Önce mevcut chat'i kontrol et
+      Chat? existingChat;
+      try {
+        existingChat = chatViewModel.chats.firstWhere(
+          (chat) => chat.tradeId == product.id,
+        );
+      } catch (e) {
+        // Chat bulunamadı, null kalacak
+      }
+
+              if (existingChat != null) {
+          // Mevcut chat varsa aç
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatDetailView(chat: existingChat!),
+            ),
+          );
+      } else {
+        // Yeni chat oluştur
+        final chatId = await chatViewModel.createChat(
+          tradeId: product.id,
+          participantIds: [authViewModel.currentUser!.id, product.ownerId],
+        );
+
+        if (chatId != null) {
+          // Chat oluşturuldu, chat listesini yenile
+          chatViewModel.loadChats(authViewModel.currentUser!.id);
+          
+          // Yeni oluşturulan chat'i bul ve aç
+          await Future.delayed(const Duration(milliseconds: 500));
+          final newChat = chatViewModel.chats.firstWhere(
+            (chat) => chat.id == chatId,
+          );
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatDetailView(chat: newChat),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Chat oluşturulamadı. Lütfen tekrar deneyin.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hata: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -496,7 +582,7 @@ class _ActionBar extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => _startChat(context),
               icon: const Icon(Icons.message, size: 18),
               label: const Text('Mesaj'),
               style: ElevatedButton.styleFrom(

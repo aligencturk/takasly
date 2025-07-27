@@ -1,0 +1,32 @@
+{
+  "rules": {
+    "chats": {
+      "$chatId": {
+        ".read": "auth != null && (data.child('participantIds').child(auth.uid).exists())",
+        ".write": "auth != null && (data.child('participantIds').child(auth.uid).exists() || !data.exists())",
+        ".validate": "newData.hasChildren(['id', 'tradeId', 'participantIds', 'createdAt', 'updatedAt', 'isActive'])"
+      }
+    },
+    "messages": {
+      "$chatId": {
+        "$messageId": {
+          ".read": "auth != null && root.child('chats').child($chatId).child('participantIds').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('chats').child($chatId).child('participantIds').child(auth.uid).exists()",
+          ".validate": "newData.hasChildren(['id', 'chatId', 'senderId', 'content', 'type', 'timestamp', 'isRead', 'isDeleted']) && newData.child('senderId').val() == auth.uid"
+        }
+      }
+    },
+    "users": {
+      "$userId": {
+        ".read": "auth != null && (auth.uid == $userId || root.child('chats').orderByChild('participantIds').child(auth.uid).exists())",
+        ".write": "auth != null && auth.uid == $userId"
+      }
+    },
+    "trades": {
+      "$tradeId": {
+        ".read": "auth != null && (data.child('offererUserId').val() == auth.uid || data.child('receiverUserId').val() == auth.uid)",
+        ".write": "auth != null && (data.child('offererUserId').val() == auth.uid || data.child('receiverUserId').val() == auth.uid || !data.exists())"
+      }
+    }
+  }
+} 

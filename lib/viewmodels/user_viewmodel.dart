@@ -384,7 +384,7 @@ class UserViewModel extends ChangeNotifier {
       if (response.isSuccess && response.data != null) {
         print('✅ UserViewModel.getUserById - API returned user data');
         print('✅ User data: name=${response.data!.name}, id=${response.data!.id}');
-        print('✅ User data: email=${response.data!.email}, rating=${response.data!.rating}');
+        print('✅ User data: email=${response.data!.email}');
         
         _setLoading(false);
         return response.data;

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
 import '../../views/product/product_detail_view.dart';
 
@@ -147,14 +148,25 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Kategori
-                    Container(
+                  
+                    // Başlık
+                    Text(
+                      product.title,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                      Container(
                       constraints: const BoxConstraints(
                         minHeight: 16, // iOS için minimum yükseklik
                       ),
                       child: Text(
-                        product.category.name.toUpperCase(),
+                        product.category.name,
                         style: textTheme.bodySmall?.copyWith(
-                          color: Colors.red, // Debug için kırmızı renk
+                          color: AppTheme.primary, // Debug için kırmızı renk
                           fontWeight: FontWeight.w600, // Daha kalın font
                           letterSpacing: 0.5,
                           fontSize: 12, // Daha büyük font boyutu
@@ -163,17 +175,6 @@ class ProductCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // Başlık
-                    Text(
-                      product.title,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
                     // Konum
                     Row(
                       children: [
@@ -182,16 +183,11 @@ class ProductCard extends StatelessWidget {
                           size: 12, 
                           color: Colors.grey[500],
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            product.owner.location?.city ?? 'Türkiye',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[500],
-                              fontSize: 11,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          product.cityTitle + "/" + product.districtTitle,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[500],
+                            fontSize: 11,
                           ),
                         ),
                       ],

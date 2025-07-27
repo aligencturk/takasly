@@ -12,10 +12,6 @@ class User {
   final String email;
   final String? phone;
   final String? avatar;
-  final String? bio;
-  final Location? location;
-  final double rating;
-  final int totalTrades;
   final bool isVerified;
   final bool isOnline;
   final DateTime createdAt;
@@ -33,10 +29,6 @@ class User {
     required this.email,
     this.phone,
     this.avatar,
-    this.bio,
-    this.location,
-    required this.rating,
-    required this.totalTrades,
     required this.isVerified,
     required this.isOnline,
     required this.createdAt,
@@ -47,7 +39,33 @@ class User {
     this.token,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  factory User.fromJson(Map<String, dynamic> json) {
+    // DateTime'ları güvenli şekilde parse et
+    DateTime parseDateTime(dynamic value) {
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      return DateTime.now();
+    }
+
+    return User(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      firstName: json['firstName'] as String?,
+      lastName: json['lastName'] as String?,
+      email: json['email'] as String,
+      phone: json['phone'] as String?,
+      avatar: json['avatar'] as String?,
+      isVerified: json['isVerified'] as bool? ?? false,
+      isOnline: json['isOnline'] as bool? ?? false,
+      createdAt: parseDateTime(json['createdAt']),
+      updatedAt: parseDateTime(json['updatedAt']),
+      lastSeenAt: json['lastSeenAt'] != null ? parseDateTime(json['lastSeenAt']) : null,
+      birthday: json['birthday'] as String?,
+      gender: json['gender'] as String?,
+      token: json['token'] as String?,
+    );
+  }
   Map<String, dynamic> toJson() => _$UserToJson(this);
 
   User copyWith({
@@ -58,10 +76,6 @@ class User {
     String? email,
     String? phone,
     String? avatar,
-    String? bio,
-    Location? location,
-    double? rating,
-    int? totalTrades,
     bool? isVerified,
     bool? isOnline,
     DateTime? createdAt,
@@ -79,10 +93,6 @@ class User {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       avatar: avatar ?? this.avatar,
-      bio: bio ?? this.bio,
-      location: location ?? this.location,
-      rating: rating ?? this.rating,
-      totalTrades: totalTrades ?? this.totalTrades,
       isVerified: isVerified ?? this.isVerified,
       isOnline: isOnline ?? this.isOnline,
       createdAt: createdAt ?? this.createdAt,
@@ -105,6 +115,6 @@ class User {
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, firstName: $firstName, lastName: $lastName, email: $email, rating: $rating)';
+    return 'User(id: $id, name: $name, firstName: $firstName, lastName: $lastName, email: $email)';
   }
 }

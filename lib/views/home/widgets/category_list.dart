@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
+import 'package:takasly/models/product_filter.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 
 class CategoryList extends StatelessWidget {
@@ -9,19 +10,27 @@ class CategoryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 600;
+    
     return SliverToBoxAdapter(
       child: Consumer<ProductViewModel>(
         builder: (context, vm, child) {
           if (vm.isLoading && vm.categories.isEmpty) {
             // TODO: Skeleton loader (Shimmer) eklenecek
-            return const SizedBox(height: 90, child: Center(child: CircularProgressIndicator()));
+            return SizedBox(
+              height: isSmallScreen ? 70 : 80,
+              child: const Center(child: CircularProgressIndicator()),
+            );
           }
           
           return SizedBox(
-            height: 90,
+            height: isSmallScreen ? 70 : 80,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 12 : 16,
+              ),
               itemCount: vm.categories.length + 1, // "Tümü" için +1
               itemBuilder: (context, index) {
                 if (index == 0) {
@@ -29,8 +38,9 @@ class CategoryList extends StatelessWidget {
                     context: context,
                     label: 'Tümü',
                     icon: Icons.apps_rounded,
-                    isSelected: vm.currentCategoryId == null,
-                    onTap: () => vm.filterByCategory(null),
+                    isSelected: vm.currentFilter.categoryId == null,
+                    onTap: () => _applyCategoryFilter(vm, null),
+                    isSmallScreen: isSmallScreen,
                   );
                 }
                 final category = vm.categories[index - 1];
@@ -38,8 +48,9 @@ class CategoryList extends StatelessWidget {
                   context: context,
                   label: category.name,
                   icon: _getCategoryIcon(category.icon), // API'den gelen ikona göre
-                  isSelected: vm.currentCategoryId == category.id,
-                  onTap: () => vm.filterByCategory(category.id),
+                  isSelected: vm.currentFilter.categoryId == category.id,
+                  onTap: () => _applyCategoryFilter(vm, category.id),
+                  isSmallScreen: isSmallScreen,
                 );
               },
             ),
@@ -49,18 +60,31 @@ class CategoryList extends StatelessWidget {
     );
   }
 
+  void _applyCategoryFilter(ProductViewModel vm, String? categoryId) {
+    // Mevcut filtreyi koruyarak sadece kategoriyi değiştir
+    final newFilter = vm.currentFilter.copyWith(categoryId: categoryId);
+    vm.applyFilter(newFilter);
+  }
+
   Widget _buildCategoryItem({
     required BuildContext context,
     required String label,
     required IconData icon,
     required bool isSelected,
     required VoidCallback onTap,
+    required bool isSmallScreen,
   }) {
     final color = isSelected ? AppTheme.surface : AppTheme.primary;
     final bgColor = isSelected ? AppTheme.primary : AppTheme.surface;
     
+    // Responsive boyutlar
+    final iconSize = isSmallScreen ? 20.0 : 24.0;
+    final containerSize = isSmallScreen ? 45.0 : 50.0;
+    final spacing = isSmallScreen ? 6.0 : 8.0;
+    final rightPadding = isSmallScreen ? 8.0 : 10.0;
+    
     return Padding(
-      padding: const EdgeInsets.only(right: 12),
+      padding: EdgeInsets.only(right: rightPadding),
       child: GestureDetector(
         onTap: onTap,
         child: Column(
@@ -68,21 +92,22 @@ class CategoryList extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 60,
-              height: 60,
+              width: containerSize,
+              height: containerSize,
               decoration: BoxDecoration(
                 color: bgColor,
-                borderRadius: AppTheme.borderRadius,
+                borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
                 boxShadow: isSelected ? AppTheme.cardShadow : null,
               ),
-              child: Icon(icon, color: color, size: 28),
+              child: Icon(icon, color: color, size: iconSize),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: spacing),
             Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     color: AppTheme.textPrimary,
+                    fontSize: isSmallScreen ? 11 : 12,
                   ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -101,7 +126,7 @@ class CategoryList extends StatelessWidget {
       case 'kitap': return Icons.menu_book_rounded;
       case 'ev & yaşam': return Icons.chair_rounded;
       case 'spor': return Icons.sports_soccer_rounded;
-      default: return Icons.category_rounded;
+      default: return Icons.category_sharp;
     }
   }
 } 

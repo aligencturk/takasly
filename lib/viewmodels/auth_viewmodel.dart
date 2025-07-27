@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../services/firebase_chat_service.dart';
 import '../core/constants.dart';
 import 'product_viewmodel.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  final FirebaseChatService _firebaseChatService = FirebaseChatService();
   ProductViewModel? _productViewModel;
 
   User? _currentUser;
@@ -70,6 +72,15 @@ class AuthViewModel extends ChangeNotifier {
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data;
         _isLoggedIn = true;
+        
+        // Firebase'e kullanıcıyı kaydet
+        try {
+          await _firebaseChatService.saveUser(_currentUser!);
+        } catch (e) {
+          // Firebase kaydetme hatası kritik değil, devam et
+          print('Firebase kullanıcı kaydetme hatası: $e');
+        }
+        
         _setLoading(false);
         notifyListeners(); // UI'ı güncelle
         return true;

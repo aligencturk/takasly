@@ -144,51 +144,6 @@ class _ProfileViewState extends State<ProfileView>
               ],
             ),
           ],
-
-          // Konum (varsa)
-          if (user.location != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.location_on,
-                  size: 16,
-                  color: AppTheme.textSecondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${user.location!.city}, ${user.location!.country}',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          // Bio (varsa)
-          if (user.bio != null && user.bio!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppTheme.primary.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Text(
-                user.bio!,
-                style: textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 24),
-          _buildStatsRow(context, user),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () async {
@@ -218,16 +173,6 @@ class _ProfileViewState extends State<ProfileView>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildStatItem(
-          context,
-          count: user.totalTrades.toString(),
-          label: 'Takas',
-        ),
-        _buildStatItem(
-          context,
-          count: user.rating.toStringAsFixed(1),
-          label: 'Puan',
-        ),
         _buildStatItem(
           context,
           count: user.isVerified ? '✓' : '✗',

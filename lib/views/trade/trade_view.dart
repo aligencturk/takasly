@@ -163,11 +163,6 @@ class _TradeViewState extends State<TradeView>
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: "trade_fab",
-        onPressed: () => _showNewTradeDialog(),
-        child: const Icon(Icons.add),
-      ),
     );
   }
 

@@ -14,12 +14,6 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
   email: json['email'] as String,
   phone: json['phone'] as String?,
   avatar: json['avatar'] as String?,
-  bio: json['bio'] as String?,
-  location: json['location'] == null
-      ? null
-      : Location.fromJson(json['location'] as Map<String, dynamic>),
-  rating: (json['rating'] as num).toDouble(),
-  totalTrades: (json['totalTrades'] as num).toInt(),
   isVerified: json['isVerified'] as bool,
   isOnline: json['isOnline'] as bool,
   createdAt: DateTime.parse(json['createdAt'] as String),
@@ -40,10 +34,6 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'email': instance.email,
   'phone': instance.phone,
   'avatar': instance.avatar,
-  'bio': instance.bio,
-  'location': instance.location,
-  'rating': instance.rating,
-  'totalTrades': instance.totalTrades,
   'isVerified': instance.isVerified,
   'isOnline': instance.isOnline,
   'createdAt': instance.createdAt.toIso8601String(),

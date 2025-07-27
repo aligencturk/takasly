@@ -56,9 +56,9 @@ class _EditProductViewState extends State<EditProductView> {
     _existingImages = List.from(widget.product.images);
     
     // Location bilgilerini yükle
-    if (widget.product.location != null) {
-      _selectedCityId = widget.product.location!.cityId;
-      _selectedDistrictId = widget.product.location!.districtId;
+    if (widget.product.cityId != null) {
+      _selectedCityId = widget.product.cityId;
+      _selectedDistrictId = widget.product.districtId;
       
       // Eğer şehir seçili ise ilçeleri yükle
       if (_selectedCityId != null) {
@@ -508,12 +508,15 @@ class _EditProductViewState extends State<EditProductView> {
       }
       
       // Location oluştur
-      Location? location;
+      String? cityId;
+      String? cityTitle;
+      String? districtId;
+      String? districtTitle;
       if (_selectedCityId != null && _selectedDistrictId != null) {
-        location = Location(
-          cityId: _selectedCityId!,
-          districtId: _selectedDistrictId!,
-        );
+        cityId = _selectedCityId;
+        cityTitle = _selectedCityId;
+        districtId = _selectedDistrictId;
+        districtTitle = _selectedDistrictId;
       }
       
       final success = await productViewModel.updateProduct(
@@ -527,7 +530,10 @@ class _EditProductViewState extends State<EditProductView> {
         model: null,
         estimatedValue: null,
         tradePreferences: tradePreferences,
-        location: location,
+        cityId: cityId,
+        cityTitle: cityTitle,
+        districtId: districtId,
+        districtTitle: districtTitle,
       );
 
       if (success) {

@@ -26,11 +26,13 @@ class CustomBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: Container(
-          height: 70,
+          height: 64,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Ana Sayfa'),
+              // İkon boyutunu küçültmek için _buildNavItem fonksiyonunu değiştiremiyorsak, fonksiyonun içinde icon boyutunu parametreyle değiştiremeyiz.
+              // Bu yüzden sadece Sohbet ikonunun boyutunu küçültmek için _buildNavItem fonksiyonunu kopyalayıp burada inline olarak kullanabiliriz.
               _buildNavItem(1, Icons.chat_bubble_outline, Icons.chat_bubble, 'Sohbet'),
               _buildCenterTradeButton(),
               _buildNavItem(3, Icons.swap_horiz_outlined, Icons.swap_horiz, 'Takaslarım'),
@@ -49,48 +51,80 @@ class CustomBottomNav extends StatelessWidget {
       onTap: () => onTap(index),
       child: Container(
         width: 60,
-        child: Center(
-          child: Icon(
-            isActive ? activeIcon : icon,
-            color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
-            size: 28,
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
+              size: 24,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  /// Ortadaki butonun yarısı dışarıda (üstte) olacak şekilde, nav bar'ın üst sınırından taşacak şekilde konumlandırılmış hali
   Widget _buildCenterTradeButton() {
     final isActive = currentIndex == 2;
-    
-    return GestureDetector(
-      onTap: () => onTap(2),
-      child: Container(
-        width: 50,
-        child: Center(
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withOpacity(0.3),
-                  spreadRadius: 0,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+
+    return Column(
+      children: [
+        // Butonun yarısı nav bar'ın dışında (üstte) olacak şekilde negatif margin ile yukarı taşıyoruz
+        Transform.translate(
+          offset: const Offset(0, -14), // Yarıdan fazlası dışarıda
+          child: GestureDetector(
+            onTap: () => onTap(2),
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    spreadRadius: 0,
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: Colors.white,
+                  width: 3,
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.swap_horiz,
-              color: Colors.white,
-              size: 24,
+              ),
+              child: const Icon(
+                Icons.swap_horiz,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
           ),
         ),
-      ),
+        // Metin dairenin altında, diğer butonlarla aynı hizada
+        Transform.translate(
+          offset: const Offset(0, -8), // Metni biraz yukarı çek
+          child: Text(
+            'İlan Ekle',
+            style: TextStyle(
+              color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

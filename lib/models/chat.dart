@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'user.dart';
 import 'trade.dart';
+import 'product.dart';
 
 part 'chat.g.dart';
 
@@ -32,7 +33,68 @@ class Chat {
     required this.isActive,
   });
 
-  factory Chat.fromJson(Map<String, dynamic> json) => _$ChatFromJson(json);
+  factory Chat.fromJson(Map<String, dynamic> json) {
+    // DateTime'ları güvenli şekilde parse et
+    DateTime parseDateTime(dynamic value) {
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      return DateTime.now();
+    }
+
+    return Chat(
+      id: json['id'] as String,
+      tradeId: json['tradeId'] as String,
+      trade: json['trade'] != null 
+          ? Trade.fromJson(json['trade'] as Map<String, dynamic>)
+          : Trade(
+              id: json['tradeId'] as String,
+              offererUserId: '',
+              offererUser: User(
+                id: '',
+                name: '',
+                email: '',
+                isVerified: false,
+                isOnline: false,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+              receiverUserId: '',
+              receiverUser: User(
+                id: '',
+                name: '',
+                email: '',
+                isVerified: false,
+                isOnline: false,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+              offeredProductIds: [],
+              offeredProducts: [],
+              requestedProductIds: [],
+              requestedProducts: [],
+              status: TradeStatus.pending,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+      participantIds: (json['participantIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ?? [],
+      participants: (json['participants'] as List<dynamic>?)
+          ?.map((e) => User.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
+      lastMessageId: json['lastMessageId'] as String?,
+      lastMessage: json['lastMessage'] != null 
+          ? Message.fromJson(json['lastMessage'] as Map<String, dynamic>)
+          : null,
+      createdAt: parseDateTime(json['createdAt']),
+      updatedAt: parseDateTime(json['updatedAt']),
+      lastReadTimes: (json['lastReadTimes'] as Map<String, dynamic>?)
+          ?.map((k, e) => MapEntry(k, parseDateTime(e)))
+          ?? {},
+      isActive: json['isActive'] as bool? ?? true,
+    );
+  }
   Map<String, dynamic> toJson() => _$ChatToJson(this);
 
   Chat copyWith({
@@ -93,6 +155,7 @@ class Message {
   final bool isDeleted;
   final String? replyToId;
   final Message? replyTo;
+  final Product? product;
 
   const Message({
     required this.id,
@@ -108,9 +171,57 @@ class Message {
     required this.isDeleted,
     this.replyToId,
     this.replyTo,
+    this.product,
   });
 
-  factory Message.fromJson(Map<String, dynamic> json) => _$MessageFromJson(json);
+  factory Message.fromJson(Map<String, dynamic> json) {
+    // DateTime'ları güvenli şekilde parse et
+    DateTime parseDateTime(dynamic value) {
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      return DateTime.now();
+    }
+
+    // Geçici kullanıcı oluştur (sender null ise)
+    User createTempUser(String userId) {
+      return User(
+        id: userId,
+        name: 'Kullanıcı',
+        email: '',
+        isVerified: false,
+        isOnline: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
+
+    return Message(
+      id: json['id'] as String,
+      chatId: json['chatId'] as String,
+      senderId: json['senderId'] as String,
+      sender: json['sender'] != null 
+          ? User.fromJson(json['sender'] as Map<String, dynamic>)
+          : createTempUser(json['senderId'] as String),
+      content: json['content'] as String,
+      type: MessageType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => MessageType.text,
+      ),
+      imageUrl: json['imageUrl'] as String?,
+      createdAt: parseDateTime(json['createdAt']),
+      updatedAt: parseDateTime(json['updatedAt']),
+      isRead: json['isRead'] as bool? ?? false,
+      isDeleted: json['isDeleted'] as bool? ?? false,
+      replyToId: json['replyToId'] as String?,
+      replyTo: json['replyTo'] != null 
+          ? Message.fromJson(json['replyTo'] as Map<String, dynamic>)
+          : null,
+      product: json['product'] != null 
+          ? Product.fromJson(json['product'] as Map<String, dynamic>)
+          : null,
+    );
+  }
   Map<String, dynamic> toJson() => _$MessageToJson(this);
 
   Message copyWith({
@@ -127,6 +238,7 @@ class Message {
     bool? isDeleted,
     String? replyToId,
     Message? replyTo,
+    Product? product,
   }) {
     return Message(
       id: id ?? this.id,
@@ -142,6 +254,7 @@ class Message {
       isDeleted: isDeleted ?? this.isDeleted,
       replyToId: replyToId ?? this.replyToId,
       replyTo: replyTo ?? this.replyTo,
+      product: product ?? this.product,
     );
   }
 
@@ -169,4 +282,5 @@ enum MessageType {
   tradeRejected,
   tradeCompleted,
   tradeCancelled,
+  product,
 } 

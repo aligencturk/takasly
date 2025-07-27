@@ -432,6 +432,11 @@ class ProductService {
               return Product(
                 id: productJson['productID'].toString(),
                 title: productJson['productTitle'] ?? '',
+                cityId: productJson['cityID']?.toString() ?? '',
+                cityTitle: productJson['cityTitle'] ?? '',
+                districtId: productJson['districtID']?.toString() ?? '',
+                districtTitle: productJson['districtTitle'] ?? '',
+                categoryName: productJson['categoryTitle'] ?? '',
                 description: productJson['productDesc'] ?? '',
                 images: images,
                 categoryId: productJson['categoryID']?.toString() ?? '',
@@ -453,8 +458,6 @@ class ProductService {
                   firstName: productJson['userFirstname'],
                   lastName: productJson['userLastname'],
                   email: '',
-                  rating: 0.0,
-                  totalTrades: 0,
                   isVerified: false,
                   isOnline: true,
                   createdAt: DateTime.now(),
@@ -462,7 +465,6 @@ class ProductService {
                 ),
                 tradePreferences: [],
                 status: ProductStatus.active,
-                location: null,
                 createdAt: _parseDate(productJson['createdAt']),
                 updatedAt: DateTime.now(),
                 expiresAt: null,
@@ -624,9 +626,10 @@ class ProductService {
       description: apiProduct['productDesc'] ?? '',
       images: images,
       categoryId: apiProduct['categoryID']?.toString() ?? '',
+      categoryName: apiProduct['categoryTitle'],
       category: Category(
         id: apiProduct['categoryID']?.toString() ?? '',
-        name: '', // Kategori adı ayrı endpoint'ten gelecek
+        name: apiProduct['categoryTitle'], // Kategori adı ayrı endpoint'ten gelecek
         icon: '',
         isActive: true,
         order: 0,
@@ -639,8 +642,6 @@ class ProductService {
         firstName: apiProduct['userFirstname'],
         lastName: apiProduct['userLastname'],
         email: '', // API'de email yok
-        rating: 0.0,
-        totalTrades: 0,
         isVerified: false,
         isOnline: true,
         createdAt: DateTime.now(),
@@ -648,19 +649,10 @@ class ProductService {
       ),
       tradePreferences: [], // API'de trade preferences yok
       status: ProductStatus.active,
-      location:
-          apiProduct['cityTitle'] != null || apiProduct['districtTitle'] != null
-          ? Location(
-              address:
-                  '${apiProduct['cityTitle'] ?? ''} ${apiProduct['districtTitle'] ?? ''}'
-                      .trim(),
-              city: apiProduct['cityTitle'] ?? '',
-              district: apiProduct['districtTitle'] ?? '',
-              country: 'Türkiye',
-              latitude: apiProduct['productLat']?.toDouble(),
-              longitude: apiProduct['productLong']?.toDouble(),
-            )
-          : null, 
+      cityId: apiProduct['cityID']?.toString() ?? '',
+      cityTitle: apiProduct['cityTitle'] ?? '',
+      districtId: apiProduct['districtID']?.toString() ?? '',
+      districtTitle: apiProduct['districtTitle'] ?? '',
       createdAt: _parseDate(apiProduct['createdAt']),
       updatedAt: DateTime.now(),
     );
@@ -748,7 +740,8 @@ class ProductService {
       description: apiProduct['productDesc'] ?? '',
       images: images,
       categoryId: categoryId,
-      category: Category(
+      categoryName: categoryName,
+        category: Category(
         id: categoryId,
         name: categoryName,
         icon: '',
@@ -761,8 +754,6 @@ class ProductService {
         id: '',
         name: 'Kullanıcı',
         email: '',
-        rating: 0.0,
-        totalTrades: 0,
         isVerified: false,
         isOnline: false,
         createdAt: DateTime.now(),
@@ -772,6 +763,10 @@ class ProductService {
           ? [apiProduct['productTradeFor']]
           : [],
       status: ProductStatus.active,
+      cityId: apiProduct['cityID']?.toString() ?? '',
+      cityTitle: apiProduct['cityTitle'] ?? '',
+      districtId: apiProduct['districtID']?.toString() ?? '',
+      districtTitle: apiProduct['districtTitle'] ?? '',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -802,7 +797,10 @@ class ProductService {
     String? model,
     double? estimatedValue,
     required List<String> tradePreferences,
-    Location? location,
+    String? cityId,
+    String? cityTitle,
+    String? districtId,
+    String? districtTitle,
   }) async {
     try {
       final body = {
@@ -817,7 +815,10 @@ class ProductService {
       if (brand != null) body['brand'] = brand;
       if (model != null) body['model'] = model;
       if (estimatedValue != null) body['estimatedValue'] = estimatedValue;
-      if (location != null) body['location'] = location.toJson();
+      if (cityId != null) body['cityId'] = cityId;
+      if (cityTitle != null) body['cityTitle'] = cityTitle;
+      if (districtId != null) body['districtId'] = districtId;
+      if (districtTitle != null) body['districtTitle'] = districtTitle;
 
       final response = await _httpClient.post(
         ApiConstants.products,
@@ -843,7 +844,10 @@ class ProductService {
     String? model,
     double? estimatedValue,
     List<String>? tradePreferences,
-    Location? location,
+    String? cityId,
+    String? cityTitle,
+    String? districtId,
+    String? districtTitle,
   }) async {
     print('🔄 ProductService.updateProduct called');
     print('📝 Parameters:');
@@ -858,7 +862,10 @@ class ProductService {
     print('  - model: $model');
     print('  - estimatedValue: $estimatedValue');
     print('  - tradePreferences: $tradePreferences');
-    print('  - location: $location');
+    print('  - cityId: $cityId');
+    print('  - cityTitle: $cityTitle');
+    print('  - districtId: $districtId');
+    print('  - districtTitle: $districtTitle');
 
     // Token geçerliliğini kontrol et
     if (userToken.isEmpty) {
@@ -895,7 +902,10 @@ class ProductService {
       if (tradePreferences != null && tradePreferences.isNotEmpty) {
         body['tradePreferences'] = tradePreferences;
       }
-      if (location != null) body['location'] = location.toJson();
+      if (cityId != null) body['cityId'] = cityId;
+      if (cityTitle != null) body['cityTitle'] = cityTitle;
+      if (districtId != null) body['districtId'] = districtId;
+      if (districtTitle != null) body['districtTitle'] = districtTitle;
 
       print('🌐 Update Body: $body');
 
@@ -1705,8 +1715,6 @@ class ProductService {
                 'id': userId,
                 'name': 'Kullanıcı',
                 'email': 'user@example.com',
-                'rating': 0.0,
-                'totalTrades': 0,
                 'isVerified': false,
                 'isOnline': true,
                 'createdAt': DateTime.now().toIso8601String(),

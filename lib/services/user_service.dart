@@ -25,8 +25,7 @@ class UserService {
       print(
         '📤 Request Body: {"userToken": "$userToken", "platform": "$detectedPlatform", "version": "$appVersion"}',
       );
-
-      final response = await _httpClient.put(
+      final response = await _httpClient.putWithBasicAuth(
         ApiConstants.userProfile,
         body: {
           'userToken': userToken,
@@ -76,8 +75,6 @@ class UserService {
                 id: '0',
                 name: 'User',
                 email: 'user@example.com',
-                rating: 0.0,
-                totalTrades: 0,
                 isVerified: false,
                 isOnline: true,
                 createdAt: DateTime.now(),
@@ -111,14 +108,7 @@ class UserService {
                   userDataToTransform['profilePhoto'] ??
                   userDataToTransform['userAvatar'] ??
                   userDataToTransform['avatar'],
-              'bio':
-                  userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating': _parseRating(
-                userDataToTransform['userRating'] ??
-                    userDataToTransform['userRank'] ??
-                    userDataToTransform['rating'] ??
-                    0.0,
-              ),
+              
               'totalTrades':
                   userDataToTransform['userTotalTrades'] ??
                   userDataToTransform['totalTrades'] ??
@@ -196,11 +186,15 @@ class UserService {
       if (userPhone != null) body['userPhone'] = userPhone;
       if (userBirthday != null) body['userBirthday'] = userBirthday;
       if (userGender != null) body['userGender'] = userGender;
-      if (profilePhoto != null) body['profilePhoto'] = profilePhoto;
+      if (profilePhoto != null) {
+        // Profil fotoğrafını base64 formatında gönder
+        body['profilePhoto'] = profilePhoto;
+        print('🔄 Update Account - Profile photo will be sent as base64');
+      }
 
       print('📤 Request Body: $body');
 
-      final response = await _httpClient.put(
+      final response = await _httpClient.putWithBasicAuth(
         ApiConstants.updateAccount,
         body: body,
         fromJson: (json) {
@@ -256,10 +250,6 @@ class UserService {
                 email: userEmail ?? 'user@example.com',
                 phone: userPhone,
                 avatar: null,
-                bio: null,
-                location: null,
-                rating: 0.0,
-                totalTrades: 0,
                 isVerified: false,
                 isOnline: true,
                 createdAt: DateTime.now(),
@@ -282,10 +272,6 @@ class UserService {
                 email: userEmail ?? 'user@example.com',
                 phone: userPhone,
                 avatar: null,
-                bio: null,
-                location: null,
-                rating: 0.0,
-                totalTrades: 0,
                 isVerified: false,
                 isOnline: true,
                 createdAt: DateTime.now(),
@@ -325,18 +311,7 @@ class UserService {
                   userDataToTransform['profilePhoto'] ??
                   userDataToTransform['userAvatar'] ??
                   userDataToTransform['avatar'],
-              'bio':
-                  userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating': _parseRating(
-                userDataToTransform['userRating'] ??
-                    userDataToTransform['userRank'] ??
-                    userDataToTransform['rating'] ??
-                    0.0,
-              ),
-              'totalTrades':
-                  userDataToTransform['userTotalTrades'] ??
-                  userDataToTransform['totalTrades'] ??
-                  0,
+              
               'isVerified':
                   userDataToTransform['userVerified'] ??
                   userDataToTransform['isVerified'] ??
@@ -494,8 +469,6 @@ class UserService {
                 id: '0',
                 name: 'Default User',
                 email: 'user@example.com',
-                rating: 0.0,
-                totalTrades: 0,
                 isVerified: false,
                 isOnline: true,
                 createdAt: DateTime.now(),
@@ -536,18 +509,7 @@ class UserService {
               'avatar':
                   userDataToTransform['userAvatar'] ??
                   userDataToTransform['avatar'],
-              'bio':
-                  userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating': _parseRating(
-                userDataToTransform['userRating'] ??
-                    userDataToTransform['userRank'] ??
-                    userDataToTransform['rating'] ??
-                    0.0,
-              ),
-              'totalTrades':
-                  userDataToTransform['userTotalTrades'] ??
-                  userDataToTransform['totalTrades'] ??
-                  0,
+              
               'isVerified':
                   userDataToTransform['userVerified'] ??
                   userDataToTransform['isVerified'] ??
@@ -722,7 +684,7 @@ class UserService {
 
       print('📤 Request Body: $body');
 
-      final response = await _httpClient.put(
+      final response = await _httpClient.putWithBasicAuth(
         ApiConstants.updateUserPassword,
         body: body,
         fromJson: (json) {
@@ -780,7 +742,7 @@ class UserService {
 
       print('📤 Request Body: $body');
 
-      final response = await _httpClient.put(
+      final response = await _httpClient.putWithBasicAuth(
         ApiConstants.deleteUser,
         body: body,
         fromJson: (json) {
@@ -867,8 +829,6 @@ class UserService {
                 id: userId,
                 name: 'Kullanıcı',
                 email: 'user@example.com',
-                rating: 0.0,
-                totalTrades: 0,
                 isVerified: false,
                 isOnline: true,
                 createdAt: DateTime.now(),
@@ -899,18 +859,7 @@ class UserService {
               'avatar':
                   userDataToTransform['userAvatar'] ??
                   userDataToTransform['avatar'],
-              'bio':
-                  userDataToTransform['userBio'] ?? userDataToTransform['bio'],
-              'rating': _parseRating(
-                userDataToTransform['userRating'] ??
-                    userDataToTransform['userRank'] ??
-                    userDataToTransform['rating'] ??
-                    0.0,
-              ),
-              'totalTrades':
-                  userDataToTransform['userTotalTrades'] ??
-                  userDataToTransform['totalTrades'] ??
-                  0,
+              
               'isVerified':
                   userDataToTransform['userVerified'] ??
                   userDataToTransform['isVerified'] ??
@@ -1026,24 +975,6 @@ class UserService {
     } else {
       return userData['userName'] ?? userData['name'] ?? 'Kullanıcı';
     }
-  }
-
-  /// Rating değerini güvenli bir şekilde double'a dönüştürür
-  double _parseRating(dynamic value) {
-    if (value == null) {
-      return 0.0;
-    } else if (value is num) {
-      return value.toDouble();
-    } else if (value is String) {
-      try {
-        return double.parse(value);
-      } catch (e) {
-        print('⚠️ _parseRating - Failed to parse rating: $value, using 0.0');
-        return 0.0;
-      }
-    }
-    print('⚠️ _parseRating - Unknown type for rating: ${value.runtimeType}, using 0.0');
-    return 0.0;
   }
 
   /// DateTime parse eder

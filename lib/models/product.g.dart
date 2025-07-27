@@ -12,6 +12,7 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   description: json['description'] as String,
   images: (json['images'] as List<dynamic>).map((e) => e as String).toList(),
   categoryId: json['categoryId'] as String,
+  categoryName: json['categoryName'] as String,
   category: Category.fromJson(json['category'] as Map<String, dynamic>),
   condition: json['condition'] as String,
   brand: json['brand'] as String?,
@@ -23,9 +24,10 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
       .map((e) => e as String)
       .toList(),
   status: $enumDecode(_$ProductStatusEnumMap, json['status']),
-  location: json['location'] == null
-      ? null
-      : Location.fromJson(json['location'] as Map<String, dynamic>),
+  cityId: json['cityId'] as String,
+  cityTitle: json['cityTitle'] as String,
+  districtId: json['districtId'] as String,
+  districtTitle: json['districtTitle'] as String,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
   expiresAt: json['expiresAt'] == null
@@ -48,7 +50,10 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'owner': instance.owner,
   'tradePreferences': instance.tradePreferences,
   'status': _$ProductStatusEnumMap[instance.status]!,
-  'location': instance.location,
+  'cityId': instance.cityId,
+  'cityTitle': instance.cityTitle,
+  'districtId': instance.districtId,
+  'districtTitle': instance.districtTitle,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
   'expiresAt': instance.expiresAt?.toIso8601String(),

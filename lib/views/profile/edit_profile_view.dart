@@ -6,6 +6,7 @@ import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:convert';
 
 class EditProfileView extends StatefulWidget {
   const EditProfileView({Key? key}) : super(key: key);
@@ -27,6 +28,34 @@ class _EditProfileViewState extends State<EditProfileView> {
   bool _isLoading = false;
   
   final ImagePicker _picker = ImagePicker();
+
+  /// Profil fotoğrafını base64 formatına dönüştürür
+  String? _convertImageToBase64(File imageFile) {
+    try {
+      final bytes = imageFile.readAsBytesSync();
+      final base64String = base64Encode(bytes);
+      
+      // Dosya uzantısını belirle
+      String mimeType = 'image/jpeg'; // Varsayılan
+      final fileName = imageFile.path.toLowerCase();
+      if (fileName.endsWith('.png')) {
+        mimeType = 'image/png';
+      } else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
+        mimeType = 'image/jpeg';
+      } else if (fileName.endsWith('.gif')) {
+        mimeType = 'image/gif';
+      } else if (fileName.endsWith('.webp')) {
+        mimeType = 'image/webp';
+      }
+      
+      final dataUrl = 'data:$mimeType;base64,$base64String';
+      print('🔄 EditProfile - Image converted to base64, size: ${bytes.length} bytes');
+      return dataUrl;
+    } catch (e) {
+      print('❌ EditProfile - Error converting image to base64: $e');
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -79,6 +108,17 @@ class _EditProfileViewState extends State<EditProfileView> {
         setState(() {
           _selectedImage = File(image.path);
         });
+        
+        // Kullanıcıya bilgi ver
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profil fotoğrafı seçildi: ${image.path.split('/').last}'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        
+        print('🔄 EditProfile - Image selected: ${image.path}');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -122,6 +162,26 @@ class _EditProfileViewState extends State<EditProfileView> {
       print('🔄 lastName: ${_lastNameController.text}');
       print('🔄 email: ${_emailController.text}');
       
+      // Profil fotoğrafını base64 formatına dönüştür
+      String? profilePhotoBase64;
+      if (_selectedImage != null) {
+        print('🔄 EditProfile - Converting selected image to base64...');
+        profilePhotoBase64 = _convertImageToBase64(_selectedImage!);
+        if (profilePhotoBase64 == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil fotoğrafı işlenirken hata oluştu'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        print('✅ EditProfile - Image successfully converted to base64');
+        print('📏 EditProfile - Base64 string length: ${profilePhotoBase64.length}');
+      } else {
+        print('ℹ️ EditProfile - No new image selected, keeping existing photo');
+      }
+      
       final result = await userViewModel.updateAccount(
         userFirstname: _firstNameController.text,
         userLastname: _lastNameController.text,
@@ -129,7 +189,7 @@ class _EditProfileViewState extends State<EditProfileView> {
         userPhone: _phoneController.text,
         userBirthday: _birthdayController.text,
         userGender: _selectedGender != null ? int.tryParse(_selectedGender!) : null,
-        profilePhoto: _selectedImage?.path,
+        profilePhoto: profilePhotoBase64,
       );
 
       if (mounted) {

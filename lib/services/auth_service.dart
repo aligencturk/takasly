@@ -46,8 +46,6 @@ class AuthService {
               lastName: userData['userLastname'],
               email: userData['userEmail'] ?? email,
               phone: userData['userPhone'],
-              rating: (userData['userRating'] ?? 0.0).toDouble(),
-              totalTrades: userData['userTotalTrades'] ?? 0,
               isVerified: userData['userVerified'] ?? false,
               isOnline: true,
               createdAt: userData['userCreatedAt'] != null
@@ -198,8 +196,6 @@ class AuthService {
               lastName: userData['userLastname'] ?? lastName,
               email: userData['userEmail'] ?? email,
               phone: userData['userPhone'] ?? phone,
-              rating: (userData['userRating'] ?? 0.0).toDouble(),
-              totalTrades: userData['userTotalTrades'] ?? 0,
               isVerified:
                   userData['userVerified'] ??
                   false, // Email verification gerekli

@@ -26,6 +26,7 @@ class HomeAppBar extends StatelessWidget {
           icon: const Icon(Icons.search_rounded, color: AppTheme.textPrimary, size: 28),
           tooltip: 'Ara',
         ),
+
         IconButton(
           onPressed: () {
             // TODO: Bildirimler sayfası implementasyonu

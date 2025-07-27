@@ -24,12 +24,12 @@ class ProductFilter {
     String? searchQuery,
   }) {
     return ProductFilter(
-      categoryId: categoryId ?? this.categoryId,
+      categoryId: categoryId,
       conditionIds: conditionIds ?? this.conditionIds,
-      cityId: cityId ?? this.cityId,
-      districtId: districtId ?? this.districtId,
+      cityId: cityId,
+      districtId: districtId,
       sortType: sortType ?? this.sortType,
-      searchQuery: searchQuery ?? this.searchQuery,
+      searchQuery: searchQuery,
     );
   }
 

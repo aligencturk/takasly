@@ -12,6 +12,7 @@ import 'widgets/category_list.dart';
 import '../profile/profile_view.dart';
 import '../product/add_product_view.dart';
 import '../trade/trade_view.dart';
+import '../chat/chat_list_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
 
@@ -90,7 +91,7 @@ class _HomeViewState extends State<HomeView> {
       case 0:
         return _buildHomeTab();
       case 1:
-        return const Center(child: Text('Keşfet'));
+        return const ChatListView();
       case 2:
         return const Center(child: Text('Boş Sayfa'));
       case 3:

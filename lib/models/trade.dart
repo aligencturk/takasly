@@ -42,7 +42,65 @@ class Trade {
     this.cancellationReason,
   });
 
-  factory Trade.fromJson(Map<String, dynamic> json) => _$TradeFromJson(json);
+  factory Trade.fromJson(Map<String, dynamic> json) {
+    // DateTime'ları güvenli şekilde parse et
+    DateTime parseDateTime(dynamic value) {
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      return DateTime.now();
+    }
+
+    return Trade(
+      id: json['id'] as String,
+      offererUserId: json['offererUserId'] as String? ?? '',
+      offererUser: json['offererUser'] != null 
+          ? User.fromJson(json['offererUser'] as Map<String, dynamic>)
+          : User(
+              id: '',
+              name: '',
+              email: '',
+              isVerified: false,
+              isOnline: false,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+      receiverUserId: json['receiverUserId'] as String? ?? '',
+      receiverUser: json['receiverUser'] != null 
+          ? User.fromJson(json['receiverUser'] as Map<String, dynamic>)
+          : User(
+              id: '',
+              name: '',
+              email: '',
+              isVerified: false,
+              isOnline: false,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+      offeredProductIds: (json['offeredProductIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ?? [],
+      offeredProducts: (json['offeredProducts'] as List<dynamic>?)
+          ?.map((e) => Product.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
+      requestedProductIds: (json['requestedProductIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ?? [],
+      requestedProducts: (json['requestedProducts'] as List<dynamic>?)
+          ?.map((e) => Product.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
+      status: TradeStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => TradeStatus.pending,
+      ),
+      message: json['message'] as String?,
+      createdAt: parseDateTime(json['createdAt']),
+      updatedAt: parseDateTime(json['updatedAt']),
+      expiresAt: json['expiresAt'] != null ? parseDateTime(json['expiresAt']) : null,
+      completedAt: json['completedAt'] != null ? parseDateTime(json['completedAt']) : null,
+      cancellationReason: json['cancellationReason'] as String?,
+    );
+  }
   Map<String, dynamic> toJson() => _$TradeToJson(this);
 
   Trade copyWith({
