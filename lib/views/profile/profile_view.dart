@@ -24,7 +24,7 @@ class _ProfileViewState extends State<ProfileView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
     // Sayfa ilk açıldığında verileri yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userViewModel = Provider.of<UserViewModel>(context, listen: false);
@@ -53,21 +53,8 @@ class _ProfileViewState extends State<ProfileView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profilim'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              // TODO: Ayarlar sayfasına yönlendir
-            },
-            icon: const Icon(Icons.settings_outlined),
-          ),
-          IconButton(
-            onPressed: () => _showLogoutConfirmDialog(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
+      backgroundColor: Colors.white,
+      appBar: _buildAppBar(),
       body: Consumer<UserViewModel>(
         builder: (context, vm, child) {
           if (vm.isLoading || vm.currentUser == null) {
@@ -75,32 +62,60 @@ class _ProfileViewState extends State<ProfileView>
           }
 
           final user = vm.currentUser!;
-          return NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverToBoxAdapter(child: _buildProfileHeader(context, user)),
-                SliverPersistentHeader(
-                  delegate: _SliverTabBarDelegate(_buildTabBar()),
-                  pinned: true,
-                ),
-              ];
-            },
-            body: _buildTabBarView(user),
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildProfileHeader(context, user),
+                _buildSectionHeader(),
+                _buildProductsSection(user),
+                const SizedBox(height: 20),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      elevation: 1,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black87,
+      title: const Text(
+        'Profilim',
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 18,
+          color: Colors.black87,
+        ),
+      ),
+      actions: [
+        IconButton(
+          onPressed: () {
+            // TODO: Ayarlar sayfasına yönlendir
+          },
+          icon: const Icon(Icons.settings_outlined, size: 24),
+          tooltip: 'Ayarlar',
+        ),
+        IconButton(
+          onPressed: () => _showLogoutConfirmDialog(),
+          icon: const Icon(Icons.logout, size: 24, color: Colors.red),
+          tooltip: 'Çıkış Yap',
+        ),
+      ],
+    );
+  }
+
   Widget _buildProfileHeader(BuildContext context, User user) {
-    final textTheme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
+    return Container(
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
+          // Avatar
           CircleAvatar(
             radius: 50,
-            backgroundColor: AppTheme.background,
+            backgroundColor: Colors.grey[200],
             backgroundImage: user.avatar != null
                 ? NetworkImage(user.avatar!)
                 : null,
@@ -108,22 +123,33 @@ class _ProfileViewState extends State<ProfileView>
                 ? const Icon(
                     Icons.person,
                     size: 50,
-                    color: AppTheme.textSecondary,
+                    color: Colors.grey,
                   )
                 : null,
           ),
           const SizedBox(height: 16),
+          
+          // Kullanıcı Adı
           Text(
             user.name,
-            style: textTheme.headlineSmall,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
           ),
           const SizedBox(height: 4),
+          
+          // Email
           Text(
             user.email,
-            style: textTheme.bodyLarge?.copyWith(color: AppTheme.textSecondary),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
           ),
-
-          // Telefon numarası (varsa)
+          
+          // Telefon (varsa)
           if (user.phone != null && user.phone!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Row(
@@ -131,138 +157,292 @@ class _ProfileViewState extends State<ProfileView>
               children: [
                 const Icon(
                   Icons.phone,
-                  size: 16,
-                  color: AppTheme.textSecondary,
+                  size: 14,
+                  color: Colors.grey,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   user.phone!,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textSecondary,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
                   ),
                 ),
               ],
             ),
           ],
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () async {
-              // Provider referansını önceden al
-              final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-              
-              final result = await Navigator.push(
+          
+          // Doğrulanmış rozeti
+          if (user.isVerified) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.verified,
+                    size: 14,
+                    color: Colors.green,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'Doğrulanmış',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 20),
+          
+          // İstatistikler
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatItem(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileView(),
+                icon: Icons.inventory_2_outlined,
+                count: '0',
+                label: 'Aktif İlan',
+              ),
+              _buildStatItem(
+                context,
+                icon: Icons.favorite_border,
+                count: '0',
+                label: 'Favori',
+              ),
+              _buildStatItem(
+                context,
+                icon: Icons.star_outline,
+                count: '0',
+                label: 'Puan',
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Profil Düzenle Butonu
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EditProfileView(),
+                  ),
+                );
+                
+                if (result == true && mounted) {
+                  userViewModel.forceRefreshUser();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              );
-              
-              // EditProfileView'dan başarılı güncelleme sinyali gelirse profili yenile
-              if (result == true && mounted) {
-                userViewModel.forceRefreshUser();
-              }
-            },
-            child: const Text('Profili Düzenle'),
+              ),
+              child: const Text(
+                'Profili Düzenle',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsRow(BuildContext context, User user) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildStatItem(
-          context,
-          count: user.isVerified ? '✓' : '✗',
-          label: 'Doğrulanmış',
-        ),
-      ],
-    );
-  }
-
   Widget _buildStatItem(
     BuildContext context, {
+    required IconData icon,
     required String count,
     required String label,
   }) {
-    final textTheme = Theme.of(context).textTheme;
     return Column(
       children: [
+        Icon(icon, size: 24, color: Colors.grey[600]),
+        const SizedBox(height: 8),
         Text(
           count,
-          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
         ),
       ],
     );
   }
 
-  TabBar _buildTabBar() {
-    return TabBar(
-      controller: _tabController,
-      labelColor: AppTheme.primary,
-      unselectedLabelColor: AppTheme.textSecondary,
-      indicatorSize: TabBarIndicatorSize.tab,
-      indicatorWeight: 3.0,
-      indicatorColor: AppTheme.primary,
-      tabs: const [
-        Tab(text: 'İlanlarım'),
-        Tab(text: 'Favoriler'),
-        Tab(text: 'Değerlendirmeler'),
-      ],
+  Widget _buildSectionHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: const Border(
+          top: BorderSide(color: Colors.grey, width: 0.5),
+          bottom: BorderSide(color: Colors.grey, width: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.inventory_2_outlined,
+            color: Colors.black87,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'İlanlarım',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            '0 ürün',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildTabBarView(User user) {
+  Widget _buildProductsSection(User user) {
     return Consumer<ProductViewModel>(
       builder: (context, productViewModel, child) {
-        return TabBarView(
-          controller: _tabController,
-          children: [
-            // İlanlarım
-            productViewModel.isLoading
-                ? const LoadingWidget()
-                : _buildProductGrid(productViewModel.myProducts),
-            // Favoriler
-            const Center(child: Text('Favori ürünler yakında!')),
-            // Değerlendirmeler
-            const Center(child: Text('Değerlendirmeler yakında!')),
-          ],
+        if (productViewModel.isLoading) {
+          return const Padding(
+            padding: EdgeInsets.all(40.0),
+            child: Center(child: LoadingWidget()),
+          );
+        }
+
+        if (productViewModel.myProducts.isEmpty) {
+          return _buildEmptyTab(
+            icon: Icons.inventory_2_outlined,
+            title: 'Henüz Ürün Eklenmemiş',
+            subtitle: 'İlk ürününüzü ekleyerek satışa başlayabilirsiniz.',
+            actionButton: ElevatedButton(
+              onPressed: () {
+                // TODO: Ürün ekleme sayfasına yönlendir
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Ürün Ekle'),
+            ),
+          );
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: productViewModel.myProducts.length,
+            itemBuilder: (context, index) => ProductCard(
+              product: productViewModel.myProducts[index],
+              heroTag: 'profile_product_${productViewModel.myProducts[index].id}_$index',
+              onTap: () {
+                // TODO: Ürün detay sayfasına yönlendir
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${productViewModel.myProducts[index].title} ürününe tıklandı'),
+                  ),
+                );
+              },
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildProductGrid(List<Product> products) {
-    if (products.isEmpty) {
-      return const Center(child: Text('Henüz ürün eklenmemiş.'));
-    }
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: products.length,
-      itemBuilder: (context, index) => ProductCard(
-        product: products[index],
-        heroTag: 'profile_product_${products[index].id}_$index',
-        onTap: () {
-          // TODO: Ürün detay sayfasına yönlendir
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${products[index].title} ürününe tıklandı'),
+  Widget _buildEmptyTab({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Widget? actionButton,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(40.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
-          );
-        },
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (actionButton != null) ...[
+            const SizedBox(height: 20),
+            actionButton,
+          ],
+        ],
       ),
     );
   }
@@ -273,7 +453,7 @@ class _ProfileViewState extends State<ProfileView>
       builder: (dialogContext) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.logout, color: Colors.orange),
+            Icon(Icons.logout, color: Colors.red),
             SizedBox(width: 8),
             Text('Çıkış Yap'),
           ],
@@ -299,9 +479,8 @@ class _ProfileViewState extends State<ProfileView>
                 listen: false,
               );
 
-              Navigator.pop(dialogContext); // Dialog'u kapat
+              Navigator.pop(dialogContext);
 
-              // Loading göster
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -317,18 +496,13 @@ class _ProfileViewState extends State<ProfileView>
               );
 
               try {
-                // Çıkış yap - her iki ViewModel'i de temizle
                 await authViewModel.logout();
                 await userViewModel.logout();
 
                 if (mounted) {
-                  // Loading dialog'u kapat
                   navigator.pop();
-
-                  // Login sayfasına yönlendir
                   navigator.pushNamedAndRemoveUntil('/login', (route) => false);
 
-                  // Başarı mesajı göster
                   scaffoldMessenger.showSnackBar(
                     const SnackBar(
                       content: Text('Başarıyla çıkış yapıldı'),
@@ -338,10 +512,7 @@ class _ProfileViewState extends State<ProfileView>
                 }
               } catch (e) {
                 if (mounted) {
-                  // Loading dialog'u kapat
                   navigator.pop();
-
-                  // Hata mesajı göster
                   scaffoldMessenger.showSnackBar(
                     SnackBar(
                       content: Text('Çıkış yapılırken hata oluştu: $e'),
@@ -363,27 +534,4 @@ class _ProfileViewState extends State<ProfileView>
   }
 }
 
-class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverTabBarDelegate(this._tabBar);
 
-  final TabBar _tabBar;
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(color: AppTheme.background, child: _tabBar);
-  }
-
-  @override
-  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
-    return false;
-  }
-}

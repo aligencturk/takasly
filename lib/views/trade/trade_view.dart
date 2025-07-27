@@ -8,6 +8,7 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../../widgets/product_card.dart';
 import '../product/edit_product_view.dart';
+import '../../core/app_theme.dart';
 
 class TradeView extends StatefulWidget {
   const TradeView({super.key});
@@ -43,9 +44,17 @@ class _TradeViewState extends State<TradeView>
       print('❌ TradeView - User not logged in, showing error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Oturum süresi doldu. Lütfen tekrar giriş yapın.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Oturum süresi doldu. Lütfen tekrar giriş yapın.'),
+              ],
+            ),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -80,9 +89,17 @@ class _TradeViewState extends State<TradeView>
       // Kullanıcı login olmamışsa hata göster
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lütfen giriş yapın'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.login, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Lütfen giriş yapın'),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -96,17 +113,66 @@ class _TradeViewState extends State<TradeView>
     super.dispose();
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Takaslarım'),
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        title: Text(
+          'Hesabım',
+          style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Aktif'),
-            Tab(text: 'Tamamlanan'),
-            Tab(text: 'İptal Edilen'),
+          indicatorColor: AppTheme.primary,
+          indicatorWeight: 3,
+          labelColor: AppTheme.primary,
+          unselectedLabelColor: AppTheme.textSecondary,
+          labelStyle: AppTheme.lightTheme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: AppTheme.lightTheme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+          tabs: [
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.inventory_2_outlined, size: 16),
+                  SizedBox(width: 4),
+                  Text('İlanlarım'),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.swap_horiz_outlined, size: 16),
+                  SizedBox(width: 4),
+                  Text('Takaslar'),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.favorite_outline, size: 16),
+                  SizedBox(width: 4),
+                  Text('Favoriler'),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -123,20 +189,44 @@ class _TradeViewState extends State<TradeView>
             '🎨 TradeView - productViewModel.myProducts.length: ${productViewModel.myProducts.length}',
           );
 
-          // Ürün listesini detaylı logla
-          if (productViewModel.myProducts.isNotEmpty) {
-            print('🎨 TradeView - Current products:');
-            for (int i = 0; i < productViewModel.myProducts.length; i++) {
-              final product = productViewModel.myProducts[i];
-              print('  ${i + 1}. ${product.title} (ID: ${product.id})');
-            }
-          } else {
-            print('🎨 TradeView - No products in myProducts list');
-          }
-
           if (productViewModel.isLoading) {
             print('🎨 TradeView - Showing loading widget');
-            return const LoadingWidget();
+            return Container(
+              color: AppTheme.background,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Yükleniyor...',
+                      style: TextStyle(
+                        color: AppTheme.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           if (productViewModel.hasError) {
@@ -151,14 +241,14 @@ class _TradeViewState extends State<TradeView>
           return TabBarView(
             controller: _tabController,
             children: [
-              // Aktif tab - ProductViewModel kullan
-              _buildUserProductsList(productViewModel.myProducts),
+              // İlanlarım tab
+              _buildMyListingsTab(productViewModel.myProducts),
 
-              // Tamamlanan tab - Geçici olarak boş göster
-              _buildComingSoonMessage('Tamamlanan Takaslar'),
+              // Takasladıklarım tab
+              _buildTradedItemsTab(),
 
-              // İptal edilen tab - Geçici olarak boş göster
-              _buildComingSoonMessage('İptal Edilen Takaslar'),
+              // Favoriler tab
+              _buildFavoritesTab(),
             ],
           );
         },
@@ -166,33 +256,119 @@ class _TradeViewState extends State<TradeView>
     );
   }
 
-  Widget _buildUserProductsList(List<dynamic> products) {
+  Widget _buildMyListingsTab(List<dynamic> products) {
     print(
-      '🎨 TradeView._buildUserProductsList called with ${products.length} products',
+      '🎨 TradeView._buildMyListingsTab called with ${products.length} products',
     );
 
     if (products.isEmpty) {
       print('🎨 TradeView - No products, showing empty state');
-      return const Center(
+      return Container(
+        color: Color(0xFFF8FAFF),
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Henüz ürün eklemediniz',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
+                // Animated Container
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF667EEA).withOpacity(0.1),
+                        Color(0xFF764BA2).withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(60),
+                  ),
+                  child: Icon(
+                    Icons.inventory_2_outlined,
+                    size: 50,
+                    color: Color(0xFF667EEA),
+                  ),
+                ),
+                SizedBox(height: 24),
+                             Text(
+                   'Henüz ilan eklemedin!',
+                   style: TextStyle(
+                     fontSize: 18,
+                     fontWeight: FontWeight.w600,
+                     color: Color(0xFF2D3748),
+                   ),
+                 ),
             SizedBox(height: 8),
-            Text(
-              'Takas yapmak için ürün ekleyin',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+                             Text(
+                   'İlk ilanını ekleyerek takas yolculuğuna başla',
+                   style: TextStyle(
+                     fontSize: 14,
+                     color: Color(0xFF718096),
+                   ),
+                   textAlign: TextAlign.center,
+                 ),
+                SizedBox(height: 32),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                    ),
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF667EEA).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.add_circle, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text('İlan ekleme özelliği yakında!'),
+                              ],
+                            ),
+                            backgroundColor: Color(0xFF667EEA),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(25),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                                                         Text(
+                               'İlk İlanını Ekle',
+                               style: TextStyle(
+                                 color: Colors.white,
+                                 fontSize: 14,
+                                 fontWeight: FontWeight.w600,
+                               ),
+                             ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
     }
@@ -203,7 +379,9 @@ class _TradeViewState extends State<TradeView>
       print('🎨 Product $i: ${product.toString()}');
     }
 
-    return RefreshIndicator(
+    return Container(
+      color: Color(0xFFF8FAFF),
+      child: RefreshIndicator(
       onRefresh: () async {
         final productViewModel = Provider.of<ProductViewModel>(
           context,
@@ -215,9 +393,9 @@ class _TradeViewState extends State<TradeView>
         }
       },
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(16),
         child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
@@ -227,16 +405,205 @@ class _TradeViewState extends State<TradeView>
           itemBuilder: (context, index) {
             final product = products[index];
             print('🎨 Building ProductCard for index $index: ${product.title}');
-            return ProductCard(
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      print('🎨 ProductCard tapped: ${product.title}');
+                      _showProductDetails(product);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: ProductCard(
               product: product,
-              heroTag: 'trade_product_${product.id}_$index',
+                      heroTag: 'my_listing_${product.id}_$index',
               onTap: () {
                 print('🎨 ProductCard tapped: ${product.title}');
-                // Ürün detaylarını modal ile göster
                 _showProductDetails(product);
               },
-            );
-          },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTradedItemsTab() {
+    return Container(
+      color: Color(0xFFF8FAFF),
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Animated Container
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF10B981).withOpacity(0.1),
+                      Color(0xFF059669).withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(60),
+                ),
+                child: Icon(
+                  Icons.swap_horiz_outlined,
+                  size: 50,
+                  color: Color(0xFF10B981),
+                ),
+              ),
+              SizedBox(height: 24),
+                             Text(
+                 'Takas Geçmişin',
+                 style: TextStyle(
+                   fontSize: 18,
+                   fontWeight: FontWeight.w600,
+                   color: Color(0xFF2D3748),
+                 ),
+               ),
+              SizedBox(height: 8),
+                             Text(
+                 'Tamamlanan takaslarını burada görebileceksin',
+                 style: TextStyle(
+                   fontSize: 14,
+                   color: Color(0xFF718096),
+                 ),
+                 textAlign: TextAlign.center,
+               ),
+              SizedBox(height: 32),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Color(0xFF10B981).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: Color(0xFF10B981).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.construction_outlined,
+                      size: 18,
+                      color: Color(0xFF10B981),
+                    ),
+                    SizedBox(width: 8),
+                                         Text(
+                       'Yakında Aktif',
+                       style: TextStyle(
+                         color: Color(0xFF10B981),
+                         fontSize: 12,
+                         fontWeight: FontWeight.w600,
+                       ),
+                     ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFavoritesTab() {
+    return Container(
+      color: Color(0xFFF8FAFF),
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Animated Container
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFFF56565).withOpacity(0.1),
+                      Color(0xFFE53E3E).withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(60),
+                ),
+                child: Icon(
+                  Icons.favorite_outline,
+                  size: 50,
+                  color: Color(0xFFF56565),
+                ),
+              ),
+              SizedBox(height: 24),
+                             Text(
+                 'Favori İlanların',
+                 style: TextStyle(
+                   fontSize: 18,
+                   fontWeight: FontWeight.w600,
+                   color: Color(0xFF2D3748),
+                 ),
+               ),
+              SizedBox(height: 8),
+                             Text(
+                 'Beğendiğin ilanları burada saklayabileceksin',
+                 style: TextStyle(
+                   fontSize: 14,
+                   color: Color(0xFF718096),
+                 ),
+                 textAlign: TextAlign.center,
+               ),
+              SizedBox(height: 32),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Color(0xFFF56565).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: Color(0xFFF56565).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.construction_outlined,
+                      size: 18,
+                      color: Color(0xFFF56565),
+                    ),
+                    SizedBox(width: 8),
+                                         Text(
+                       'Yakında Aktif',
+                       style: TextStyle(
+                         color: Color(0xFFF56565),
+                         fontSize: 12,
+                         fontWeight: FontWeight.w600,
+                       ),
+                     ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -245,51 +612,143 @@ class _TradeViewState extends State<TradeView>
   void _showProductDetails(dynamic product) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          product.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
         ),
-        content: SingleChildScrollView(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Color(0xFFF8FAFF),
+              ],
+            ),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Ürün resmi (eğer varsa)
+              // Header
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.inventory_2_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+          product.title,
+                                                 style: TextStyle(
+                           color: Colors.white,
+                           fontSize: 16,
+                           fontWeight: FontWeight.w600,
+                         ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                      // Ürün resmi
               if (product.images.isNotEmpty)
                 Container(
                   height: 200,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
                     color: Colors.grey.shade200,
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
                     child: Builder(
                       builder: (context) {
                         final imageUrl = product.images.first;
                         
-                        // Resim URL'si geçersizse placeholder göster
                         if (imageUrl.isEmpty || imageUrl == 'null' || imageUrl == 'undefined') {
-                          return const Icon(
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Color(0xFF667EEA).withOpacity(0.1),
+                                          Color(0xFF764BA2).withOpacity(0.1),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Icon(
                             Icons.image_not_supported,
                             size: 50,
-                            color: Colors.grey,
+                                      color: Color(0xFF667EEA),
+                                    ),
                           );
                         }
                         
                         return CachedNetworkImage(
                           imageUrl: imageUrl,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(),
+                                  placeholder: (context, url) => Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Color(0xFF667EEA).withOpacity(0.1),
+                                          Color(0xFF764BA2).withOpacity(0.1),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: Color(0xFF667EEA),
+                                      ),
+                                    ),
                           ),
                           errorWidget: (context, url, error) {
-                            return const Icon(
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xFF667EEA).withOpacity(0.1),
+                                            Color(0xFF764BA2).withOpacity(0.1),
+                                          ],
+                                        ),
+                                      ),
+                                      child: Icon(
                               Icons.image_not_supported,
                               size: 50,
-                              color: Colors.grey,
+                                        color: Color(0xFF667EEA),
+                                      ),
                             );
                           },
                         );
@@ -298,91 +757,225 @@ class _TradeViewState extends State<TradeView>
                   ),
                 ),
 
-              if (product.images.isNotEmpty) const SizedBox(height: 16),
+                      if (product.images.isNotEmpty) SizedBox(height: 20),
 
               // Açıklama
-              const Text(
-                'Açıklama:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(
+                      _buildDetailCard(
+                        'Açıklama',
                 product.description.isNotEmpty
                     ? product.description
                     : 'Açıklama belirtilmemiş',
-                style: const TextStyle(fontSize: 14),
+                        icon: Icons.description_outlined,
               ),
 
-              const SizedBox(height: 12),
+                      SizedBox(height: 16),
 
               // Durum
-              const Text(
-                'Durum:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Text(
+                      _buildDetailCard(
+                        'Durum',
                   product.condition,
-                  style: TextStyle(fontSize: 14, color: Colors.blue.shade700),
-                ),
+                        icon: Icons.info_outline,
+                        isChip: true,
+                        chipColor: Color(0xFF10B981),
               ),
 
-              const SizedBox(height: 12),
+                      SizedBox(height: 16),
 
               // Kategori
-              const Text(
-                'Kategori:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(product.category.name, style: const TextStyle(fontSize: 14)),
+                      _buildDetailCard(
+                        'Kategori',
+                        product.category.name,
+                        icon: Icons.category_outlined,
+                      ),
 
-              const SizedBox(height: 12),
+                      SizedBox(height: 16),
 
               // Takas tercihleri
-              if (product.tradePreferences.isNotEmpty) ...[
-                const Text(
-                  'Takas Tercihi:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 4),
-                Text(
+                      if (product.tradePreferences.isNotEmpty)
+                        _buildDetailCard(
+                          'Takas Tercihi',
                   product.tradePreferences.join(', '),
-                  style: const TextStyle(fontSize: 14),
+                          icon: Icons.swap_horiz_outlined,
                 ),
-              ],
             ],
           ),
         ),
-        actions: [
-          // Güncelle butonu
-          TextButton(
-            onPressed: () {
+              ),
+              
+              // Actions
+              Container(
+                padding: EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFF667EEA).withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
               Navigator.pop(context);
               _editProduct(product);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            child: const Text('Güncelle'),
-          ),
-          // Silme butonu
-          TextButton(
-            onPressed: () {
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.edit_outlined, color: Colors.white, size: 18),
+                                  SizedBox(width: 8),
+                                                                     Text(
+                                     'Düzenle',
+                                     style: TextStyle(
+                                       color: Colors.white,
+                                       fontSize: 14,
+                                       fontWeight: FontWeight.w600,
+                                     ),
+                                   ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Color(0xFFF56565).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Color(0xFFF56565).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
               Navigator.pop(context);
               _showDeleteConfirmDialog(product);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Sil'),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.delete_outline, color: Color(0xFFF56565), size: 18),
+                                SizedBox(width: 8),
+                                                                   Text(
+                                     'Sil',
+                                     style: TextStyle(
+                                       color: Color(0xFFF56565),
+                                       fontSize: 14,
+                                       fontWeight: FontWeight.w600,
+                                     ),
+                                   ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Kapat'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailCard(String label, String value, {
+    required IconData icon,
+    bool isChip = false,
+    Color? chipColor,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Color(0xFF667EEA).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: Color(0xFF667EEA),
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF718096),
+                  ),
+                ),
+                SizedBox(height: 4),
+                if (isChip)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: (chipColor ?? Color(0xFF10B981)).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: (chipColor ?? Color(0xFF10B981)).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: chipColor ?? Color(0xFF10B981),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                else
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF2D3748),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -392,34 +985,139 @@ class _TradeViewState extends State<TradeView>
   void _showDeleteConfirmDialog(dynamic product) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Ürünü Sil'),
-          ],
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
         ),
-        content: Text(
-          '"${product.title}" adlı ürünü silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Color(0xFFF8FAFF),
+              ],
+            ),
           ),
-          ElevatedButton(
-            onPressed: () async {
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Warning Icon
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xFFF56565).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  size: 32,
+                  color: Color(0xFFF56565),
+                ),
+              ),
+              SizedBox(height: 16),
+                               Text(
+                   'İlanı Sil',
+                   style: TextStyle(
+                     fontSize: 18,
+                     fontWeight: FontWeight.w600,
+                     color: Color(0xFF2D3748),
+                   ),
+                 ),
+              SizedBox(height: 8),
+                               Text(
+                   '"${product.title}" adlı ilanı silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.',
+                   style: TextStyle(
+                     fontSize: 13,
+                     color: Color(0xFF718096),
+                   ),
+                   textAlign: TextAlign.center,
+                 ),
+              SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.pop(context),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: Text(
+                                'İptal',
+                                                                 style: TextStyle(
+                                   color: Color(0xFF4A5568),
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                 ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFFF56565).withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () async {
               Navigator.pop(context);
               await _deleteProduct(product.id, product.title);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Sil'),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.delete_outline, color: Colors.white, size: 18),
+                                SizedBox(width: 8),
+                                                                 Text(
+                                   'Sil',
+                                   style: TextStyle(
+                                     color: Colors.white,
+                                     fontSize: 14,
+                                     fontWeight: FontWeight.w600,
+                                   ),
+                                 ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -431,13 +1129,46 @@ class _TradeViewState extends State<TradeView>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Row(
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Color(0xFFF8FAFF),
+              ],
+            ),
+          ),
+          child: Row(
           children: [
-            CircularProgressIndicator(),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color(0xFF667EEA).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: CircularProgressIndicator(
+                  color: Color(0xFF667EEA),
+                ),
+              ),
             SizedBox(width: 16),
-            Text('Ürün siliniyor...'),
-          ],
+              Text(
+                'İlan siliniyor...',
+                                 style: TextStyle(
+                   fontSize: 14,
+                   fontWeight: FontWeight.w600,
+                   color: Color(0xFF2D3748),
+                 ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -457,8 +1188,18 @@ class _TradeViewState extends State<TradeView>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('"$productTitle" başarıyla silindi'),
-              backgroundColor: Colors.green,
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('"$productTitle" başarıyla silindi'),
+                ],
+              ),
+              backgroundColor: Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               action: SnackBarAction(
                 label: 'Tamam',
                 textColor: Colors.white,
@@ -467,16 +1208,25 @@ class _TradeViewState extends State<TradeView>
             ),
           );
         }
-        // ProductViewModel zaten UI'ı güncelledi, tekrar yüklemeye gerek yok
       } else {
         print('❌ TradeView - Product delete failed');
         if (mounted) {
           final errorMessage =
-              productViewModel.errorMessage ?? 'Ürün silinemedi';
+              productViewModel.errorMessage ?? 'İlan silinemedi';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Hata: $errorMessage'),
-              backgroundColor: Colors.red,
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Hata: $errorMessage'),
+                ],
+              ),
+              backgroundColor: Color(0xFFF56565),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               action: SnackBarAction(
                 label: 'Tamam',
                 textColor: Colors.white,
@@ -494,54 +1244,23 @@ class _TradeViewState extends State<TradeView>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ürün silinirken hata oluştu'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Row(
+        children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 8),
+                Text('İlan silinirken hata oluştu'),
+              ],
+            ),
+            backgroundColor: Color(0xFFF56565),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
     }
-  }
-
-  Widget _buildComingSoonMessage(String title) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.construction, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Bu özellik yakında aktif olacak',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showNewTradeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Yeni Takas'),
-        content: const Text('Yeni takas özelliği yakında aktif olacak.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _editProduct(dynamic product) async {
@@ -558,3 +1277,5 @@ class _TradeViewState extends State<TradeView>
     }
   }
 }
+
+

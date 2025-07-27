@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_theme.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -14,7 +15,7 @@ class CustomBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.3),
@@ -26,7 +27,7 @@ class CustomBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: Container(
-          height: 64,
+          height: 70,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -56,14 +57,14 @@ class CustomBottomNav extends StatelessWidget {
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
+              color: isActive ? AppTheme.primary : AppTheme.textSecondary,
               size: 24,
             ),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
-                color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
+                color: isActive ? AppTheme.primary : AppTheme.textSecondary,
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),
@@ -82,31 +83,31 @@ class CustomBottomNav extends StatelessWidget {
       children: [
         // Butonun yarısı nav bar'ın dışında (üstte) olacak şekilde negatif margin ile yukarı taşıyoruz
         Transform.translate(
-          offset: const Offset(0, -14), // Yarıdan fazlası dışarıda
+          offset: const Offset(0, -12), // Biraz daha az taşma
           child: GestureDetector(
             onTap: () => onTap(2),
             child: Container(
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981),
+                color: AppTheme.primary,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    color: AppTheme.primary.withOpacity(0.3),
                     spreadRadius: 0,
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ],
                 border: Border.all(
-                  color: Colors.white,
+                  color: AppTheme.surface,
                   width: 3,
                 ),
               ),
               child: const Icon(
                 Icons.swap_horiz,
-                color: Colors.white,
+                color: AppTheme.surface,
                 size: 28,
               ),
             ),
@@ -114,11 +115,11 @@ class CustomBottomNav extends StatelessWidget {
         ),
         // Metin dairenin altında, diğer butonlarla aynı hizada
         Transform.translate(
-          offset: const Offset(0, -8), // Metni biraz yukarı çek
+          offset: const Offset(0, -6), // Metni daha az yukarı çek
           child: Text(
             'İlan Ekle',
             style: TextStyle(
-              color: isActive ? const Color(0xFF10B981) : Colors.grey.shade600,
+              color: isActive ? AppTheme.primary : AppTheme.textSecondary,
               fontSize: 11,
               fontWeight: FontWeight.bold,
             ),

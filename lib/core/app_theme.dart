@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // --- Renkler ---
-  static const Color primary = Color(0xFF0D47A1); // Kurumsal Koyu Mavi
+  static const Color primary = Color(0xFF10B981); // Kurumsal Koyu Mavi
   static const Color accent = Color(0xFF10B981); // Vurgu Rengi (Mevcut Yeşil)
   static const Color background = Color(0xFFF7F8FA); // Çok Açık Gri Arka Plan
   static const Color surface = Colors.white; // Kart ve Yüzey Rengi

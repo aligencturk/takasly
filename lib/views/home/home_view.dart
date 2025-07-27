@@ -7,7 +7,6 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/filter_bottom_sheet.dart';
 import '../../models/product_filter.dart';
-import 'widgets/home_app_bar.dart';
 import 'widgets/category_list.dart';
 import '../profile/profile_view.dart';
 import '../product/add_product_view.dart';
@@ -66,8 +65,22 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: _buildPage(_currentIndex),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.fromRGBO(203, 222, 255, 1),
+              Color.fromRGBO(245, 248, 255, 1),
+              Color.fromRGBO(255, 255, 255, 1),
+            ],
+            stops: [0.0, 0.6, 1.0],
+          ),
+        ),
+        child: _buildPage(_currentIndex),
+      ),
+      
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -293,6 +306,35 @@ class _HomeViewState extends State<HomeView> {
         onApplyFilter: (filter) {
           vm.applyFilter(filter);
         },
+      ),
+    );
+  }
+}
+
+class HomeAppBar extends StatelessWidget {
+  const HomeAppBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverAppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      pinned: false,
+      floating: false,
+      expandedHeight: 60,
+      centerTitle: true,
+      title: Row(
+        children: [
+         
+          const SizedBox(width: 8),
+          Text(
+            'Takasly',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
       ),
     );
   }
