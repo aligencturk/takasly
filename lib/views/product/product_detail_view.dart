@@ -416,13 +416,12 @@ class _ProductInfo extends StatelessWidget {
     if (product.category == null) return 'Belirtilmemiş';
     
     // Eğer alt kategori varsa "Ana Kategori > Alt Kategori" formatında göster
-    if (product.parentCategoryName != null && product.parentCategoryName!.isNotEmpty) {
-      return '${product.parentCategoryName} > ${product.category.name}';
-    }
-    
-    // Eğer sadece parentId varsa ama parentCategoryName yoksa
     if (product.category.parentId != null) {
-      return product.category.name; // Sadece alt kategori adını göster
+      // Ana kategori adını bulmaya çalış
+      String parentName = 'Ana Kategori';
+      // Burada ana kategori adını bulmak için ProductViewModel'e erişim gerekebilir
+      // Şimdilik sadece alt kategori adını gösterelim
+      return product.category.name;
     }
     
     return product.category.name;

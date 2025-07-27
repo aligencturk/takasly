@@ -20,14 +20,9 @@ class ProductCard extends StatelessWidget {
   String _getCategoryDisplayName(Product product) {
     if (product.category == null) return 'Kategori Yok';
     
-    // Eğer ana kategori adı varsa "Ana Kategori > Alt Kategori" formatında göster
-    if (product.parentCategoryName != null && product.parentCategoryName!.isNotEmpty) {
-      return '${product.parentCategoryName} > ${product.category.name}';
-    }
-    
-    // Eğer sadece parentId varsa ama parentCategoryName yoksa
+    // Eğer alt kategori varsa sadece alt kategori adını göster
     if (product.category.parentId != null) {
-      return product.category.name; // Sadece alt kategori adını göster
+      return product.category.name;
     }
     
     return product.category.name;

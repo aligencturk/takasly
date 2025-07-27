@@ -636,8 +636,6 @@ class ProductService {
         isActive: true,
         order: 0,
       ),
-      parentCategoryId: apiProduct['parentCategoryID']?.toString(),
-      parentCategoryName: apiProduct['parentCategoryTitle'] ?? apiProduct['parentCategoryName'],
       condition: apiProduct['productCondition'] ?? '',
       ownerId: apiProduct['userID']?.toString() ?? '',
       owner: User(
