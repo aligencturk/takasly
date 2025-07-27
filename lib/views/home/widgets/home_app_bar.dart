@@ -9,8 +9,8 @@ class HomeAppBar extends StatelessWidget {
     return SliverAppBar(
       backgroundColor: AppTheme.background,
       elevation: 0,
-      pinned: true,
-      floating: true,
+      pinned: false,
+      floating: false,
       expandedHeight: 60,
       title: Row(
         children: [

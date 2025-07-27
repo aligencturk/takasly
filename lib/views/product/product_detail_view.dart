@@ -34,19 +34,29 @@ class _ProductDetailBody extends StatefulWidget {
 class _ProductDetailBodyState extends State<_ProductDetailBody> {
   PageController _pageController = PageController();
   int _currentImageIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ProductViewModel>(context, listen: false)
           .getProductDetail(widget.productId);
     });
   }
 
+  void _onScroll() {
+    setState(() {
+      _scrollOffset = _scrollController.offset;
+    });
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -87,27 +97,34 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         return Scaffold(
           backgroundColor: AppTheme.background,
           appBar: AppBar(
-            backgroundColor: AppTheme.surface,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: AppTheme.textPrimary),
-            title: const Text(
-              'İlan Detayı',
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            centerTitle: true,
+            backgroundColor: _scrollOffset > 50 
+                ? AppTheme.primary.withOpacity(0.95)
+                : AppTheme.primary,
+            elevation: _scrollOffset > 50 ? 2 : 0,
+            iconTheme: const IconThemeData(color: AppTheme.surface),
+            title: AnimatedOpacity(
+              opacity: _scrollOffset > 50 ? 1.0 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              child: const Text(
+                'İlan Detayı',
+                style: TextStyle(
+                  color: AppTheme.surface,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             actions: [
               IconButton(
                 icon: Icon(
                   vm.isFavorite(product.id) ? Icons.favorite : Icons.favorite_border,
-                  color: vm.isFavorite(product.id) ? AppTheme.error : AppTheme.textSecondary,
+                  color: vm.isFavorite(product.id) ? AppTheme.error : AppTheme.surface,
                 ),
                 onPressed: () => vm.toggleFavorite(product.id),
               ),
               IconButton(
-                icon: Icon(Icons.share, color: AppTheme.textSecondary),
+                icon: Icon(Icons.share, color: AppTheme.surface),
                 onPressed: () {},
               ),
             ],
@@ -116,6 +133,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
             children: [
               Expanded(
                 child: ListView(
+                  controller: _scrollController,
                   children: [
                     _ImageCarousel(
                       images: product.images,
@@ -329,12 +347,13 @@ class _ProductInfo extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              _InfoRow('Kategori', _getCategoryDisplayName(product)),
-              _InfoRow('Durum', product.condition ?? 'Belirtilmemiş'),
-              _InfoRow('İlan Tarihi', 
+              _InfoRow('Kategori :', _getCategoryDisplayName(product)),
+              _InfoRow('Durum :', product.condition ?? 'Belirtilmemiş'),
+              _InfoRow('İlan Tarihi :', 
                 "${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}"),
-              _InfoRow('İlan No', product.id),
-              _InfoRow('Satıcı', product.owner?.name ?? 'Belirtilmemiş'),
+              _InfoRow('İlan No :', product.id),
+              _InfoRow('Satıcı :', product.owner?.name ?? 'Belirtilmemiş'),
+              
             ],
           ),
         ),
@@ -628,19 +647,20 @@ class _ActionBar extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
-          height: 45,
+          height: 50,
           child: OutlinedButton.icon(
             onPressed: () {
               Navigator.pushNamed(context, '/profile');
             },
-            icon: const Icon(Icons.edit, size: 18),
+            icon: const Icon(Icons.edit, size: 14),
             label: const Text(
               'İlanımı Düzenle',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
