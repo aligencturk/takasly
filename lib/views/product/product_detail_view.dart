@@ -315,7 +315,7 @@ class _ProductInfo extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              _InfoRow('Kategori', product.category?.name ?? 'Belirtilmemiş'),
+              _InfoRow('Kategori', _getCategoryDisplayName(product)),
               _InfoRow('Durum', product.condition ?? 'Belirtilmemiş'),
               _InfoRow('İlan Tarihi', 
                 "${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}"),
@@ -410,6 +410,22 @@ class _ProductInfo extends StatelessWidget {
         const SizedBox(height: 80), // Bottom padding for action bar
       ],
     );
+  }
+
+  String _getCategoryDisplayName(dynamic product) {
+    if (product.category == null) return 'Belirtilmemiş';
+    
+    // Eğer alt kategori varsa "Ana Kategori > Alt Kategori" formatında göster
+    if (product.parentCategoryName != null && product.parentCategoryName!.isNotEmpty) {
+      return '${product.parentCategoryName} > ${product.category.name}';
+    }
+    
+    // Eğer sadece parentId varsa ama parentCategoryName yoksa
+    if (product.category.parentId != null) {
+      return product.category.name; // Sadece alt kategori adını göster
+    }
+    
+    return product.category.name;
   }
 
   Widget _InfoRow(String label, String value) {

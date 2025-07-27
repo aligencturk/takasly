@@ -19,6 +19,7 @@ class _AddProductViewState extends State<AddProductView> {
   final _tradeForController = TextEditingController();
 
   String? _selectedCategoryId;
+  String? _selectedSubCategoryId;
   String? _selectedConditionId;
   String? _selectedCityId;
   String? _selectedDistrictId;
@@ -77,11 +78,14 @@ class _AddProductViewState extends State<AddProductView> {
       print('  ${i + 1}. ${_selectedImages[i].path.split('/').last}');
     }
 
+    // Kategori ID'sini belirle (alt kategori varsa onu kullan, yoksa ana kategoriyi)
+    final categoryId = _selectedSubCategoryId ?? _selectedCategoryId;
+    
     final success = await Provider.of<ProductViewModel>(context, listen: false)
         .addProductWithEndpoint(
           productTitle: _titleController.text.trim(),
           productDescription: _descriptionController.text.trim(),
-          categoryId: _selectedCategoryId!,
+          categoryId: categoryId!,
           conditionId: _selectedConditionId!,
           tradeFor: _tradeForController.text.trim(),
           productImages: _selectedImages,
@@ -173,6 +177,8 @@ class _AddProductViewState extends State<AddProductView> {
             const SizedBox(height: 16),
             _buildCategoryDropdown(),
             const SizedBox(height: 16),
+            _buildSubCategoryDropdown(),
+            const SizedBox(height: 16),
             _buildConditionDropdown(),
             const SizedBox(height: 24),
 
@@ -218,14 +224,52 @@ class _AddProductViewState extends State<AddProductView> {
       builder: (context, vm, child) {
         return DropdownButtonFormField<String>(
           value: _selectedCategoryId,
-          decoration: const InputDecoration(labelText: 'Kategori'),
+          decoration: const InputDecoration(labelText: 'Ana Kategori'),
           items: vm.categories
               .map(
                 (cat) => DropdownMenuItem(value: cat.id, child: Text(cat.name)),
               )
               .toList(),
-          onChanged: (value) => setState(() => _selectedCategoryId = value),
-          validator: (v) => v == null ? 'Kategori seçimi zorunludur' : null,
+          onChanged: (value) {
+            setState(() {
+              _selectedCategoryId = value;
+              _selectedSubCategoryId = null; // Alt kategori seçimini sıfırla
+            });
+            if (value != null) {
+              vm.loadSubCategories(value);
+            } else {
+              vm.clearSubCategories();
+            }
+          },
+          validator: (v) => v == null ? 'Ana kategori seçimi zorunludur' : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildSubCategoryDropdown() {
+    return Consumer<ProductViewModel>(
+      builder: (context, vm, child) {
+        return DropdownButtonFormField<String>(
+          value: _selectedSubCategoryId,
+          decoration: InputDecoration(
+            labelText: 'Alt Kategori',
+            enabled: _selectedCategoryId != null && vm.subCategories.isNotEmpty,
+          ),
+          items: vm.subCategories
+              .map(
+                (cat) => DropdownMenuItem(value: cat.id, child: Text(cat.name)),
+              )
+              .toList(),
+          onChanged: _selectedCategoryId == null || vm.subCategories.isEmpty
+              ? null
+              : (value) => setState(() => _selectedSubCategoryId = value),
+          validator: (v) {
+            if (_selectedCategoryId != null && vm.subCategories.isNotEmpty && v == null) {
+              return 'Alt kategori seçimi zorunludur';
+            }
+            return null;
+          },
         );
       },
     );

@@ -12,6 +12,8 @@ class Product {
   final String categoryId;
   final String categoryName;
   final Category category;
+  final String? parentCategoryId;
+  final String? parentCategoryName;
   final String condition;
   final String? brand;
   final String? model;
@@ -36,6 +38,8 @@ class Product {
     required this.categoryId,
     required this.categoryName,
     required this.category,
+    this.parentCategoryId,
+    this.parentCategoryName,
     required this.condition,
     this.brand,
     this.model,
@@ -111,9 +115,13 @@ class Product {
               id: safeString(json['categoryId']),
               name: safeString(json['categoryName']),
               icon: '',
+              parentId: json['parentCategoryId'] != null ? safeString(json['parentCategoryId']) : null,
+              children: null,
               isActive: true,
               order: 0,
             ),
+      parentCategoryId: json['parentCategoryId'] != null ? safeString(json['parentCategoryId']) : null,
+      parentCategoryName: json['parentCategoryName'] != null ? safeString(json['parentCategoryName']) : null,
       condition: safeString(json['condition']),
       brand: json['brand'] != null ? safeString(json['brand']) : null,
       model: json['model'] != null ? safeString(json['model']) : null,
@@ -160,6 +168,8 @@ class Product {
     String? categoryId,
     String? categoryName,
     Category? category,
+    String? parentCategoryId,
+    String? parentCategoryName,
     String? condition,
     String? brand,
     String? model,
@@ -184,6 +194,8 @@ class Product {
       categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
       category: category ?? this.category,
+      parentCategoryId: parentCategoryId ?? this.parentCategoryId,
+      parentCategoryName: parentCategoryName ?? this.parentCategoryName,
       condition: condition ?? this.condition,
       brand: brand ?? this.brand,
       model: model ?? this.model,

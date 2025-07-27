@@ -629,11 +629,15 @@ class ProductService {
       categoryName: apiProduct['categoryTitle'],
       category: Category(
         id: apiProduct['categoryID']?.toString() ?? '',
-        name: apiProduct['categoryTitle'], // Kategori adı ayrı endpoint'ten gelecek
+        name: apiProduct['categoryTitle'] ?? 'Kategori',
         icon: '',
+        parentId: apiProduct['parentCategoryID']?.toString(), // Alt kategori bilgisi
+        children: null,
         isActive: true,
         order: 0,
       ),
+      parentCategoryId: apiProduct['parentCategoryID']?.toString(),
+      parentCategoryName: apiProduct['parentCategoryTitle'] ?? apiProduct['parentCategoryName'],
       condition: apiProduct['productCondition'] ?? '',
       ownerId: apiProduct['userID']?.toString() ?? '',
       owner: User(
@@ -1250,6 +1254,36 @@ class ProductService {
                 id: item['catID'].toString(),
                 name: item['catName'],
                 icon: item['catImage'] ?? '',
+                parentId: null, // Ana kategoriler için parentId null
+                children: null, // Alt kategoriler ayrı yüklenecek
+                isActive: true,
+                order: 0,
+              ),
+            )
+            .toList(),
+      );
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<List<Category>>> getSubCategories(String parentCategoryId) async {
+    print(
+      '🏷️ ProductService: Getting sub-categories for parent $parentCategoryId from service/general/general/categories/$parentCategoryId',
+    );
+    try {
+      final response = await _httpClient.getWithBasicAuth(
+        'service/general/general/categories/$parentCategoryId',
+        fromJson: (json) => (json['data']['categories'] as List)
+            .map(
+              (item) => Category(
+                id: item['catID'].toString(),
+                name: item['catName'],
+                icon: item['catImage'] ?? '',
+                parentId: parentCategoryId,
+                children: null,
                 isActive: true,
                 order: 0,
               ),

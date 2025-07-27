@@ -17,6 +17,22 @@ class ProductCard extends StatelessWidget {
     this.heroTag,
   });
 
+  String _getCategoryDisplayName(Product product) {
+    if (product.category == null) return 'Kategori Yok';
+    
+    // Eğer ana kategori adı varsa "Ana Kategori > Alt Kategori" formatında göster
+    if (product.parentCategoryName != null && product.parentCategoryName!.isNotEmpty) {
+      return '${product.parentCategoryName} > ${product.category.name}';
+    }
+    
+    // Eğer sadece parentId varsa ama parentCategoryName yoksa
+    if (product.category.parentId != null) {
+      return product.category.name; // Sadece alt kategori adını göster
+    }
+    
+    return product.category.name;
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -164,7 +180,7 @@ class ProductCard extends StatelessWidget {
                         minHeight: 16, // iOS için minimum yükseklik
                       ),
                       child: Text(
-                        product.category.name,
+                        _getCategoryDisplayName(product),
                         style: textTheme.bodySmall?.copyWith(
                           color: AppTheme.primary, // Debug için kırmızı renk
                           fontWeight: FontWeight.w600, // Daha kalın font

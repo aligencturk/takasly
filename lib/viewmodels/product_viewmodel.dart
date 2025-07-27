@@ -20,6 +20,8 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Product> _favoriteProducts = [];
   List<product_model.Product> _myProducts = [];
   List<product_model.Category> _categories = [];
+  List<product_model.Category> _subCategories = [];
+  String? _selectedParentCategoryId;
   List<City> _cities = [];
   List<District> _districts = [];
   List<Condition> _conditions = [];
@@ -49,6 +51,8 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Product> get myProducts => _myProducts;
   List<product_model.Product> get userProducts => _myProducts;
   List<product_model.Category> get categories => _categories;
+  List<product_model.Category> get subCategories => _subCategories;
+  String? get selectedParentCategoryId => _selectedParentCategoryId;
   List<City> get cities => _cities;
   List<District> get districts => _districts;
   List<Condition> get conditions => _conditions;
@@ -401,6 +405,40 @@ class ProductViewModel extends ChangeNotifier {
       print('💥 Categories error: $e');
       _setError('Kategoriler yüklenirken hata oluştu');
     }
+  }
+
+  Future<void> loadSubCategories(String parentCategoryId) async {
+    print('🏷️ Loading sub-categories for parent $parentCategoryId...');
+    try {
+      final response = await _productService.getSubCategories(parentCategoryId);
+      print(
+        '🏷️ Sub-categories response: success=${response.isSuccess}, error=${response.error}',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _subCategories = response.data ?? [];
+        _selectedParentCategoryId = parentCategoryId;
+        print('🏷️ Sub-categories loaded: ${_subCategories.length} items');
+        _subCategories.forEach((cat) => print('  - ${cat.name} (${cat.id})'));
+        notifyListeners();
+      } else {
+        print('🏷️ Sub-categories failed: ${response.error}');
+        _subCategories.clear();
+        _selectedParentCategoryId = null;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('💥 Sub-categories error: $e');
+      _subCategories.clear();
+      _selectedParentCategoryId = null;
+      notifyListeners();
+    }
+  }
+
+  void clearSubCategories() {
+    _subCategories.clear();
+    _selectedParentCategoryId = null;
+    notifyListeners();
   }
 
   Future<void> loadCities() async {
