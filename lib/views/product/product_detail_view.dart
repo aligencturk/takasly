@@ -56,14 +56,14 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
       builder: (context, vm, child) {
         if (vm.isLoading) {
           return const Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppTheme.background,
             body: LoadingWidget(),
           );
         }
         
         if (vm.hasError) {
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppTheme.background,
             body: CustomErrorWidget(
               message: vm.errorMessage ?? 'Ürün detayı yüklenemedi.',
               onRetry: () => vm.getProductDetail(widget.productId),
@@ -74,7 +74,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         final product = vm.selectedProduct;
         if (product == null) {
           return const Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppTheme.background,
             body: Center(
               child: Text(
                 'Ürün bulunamadı.',
@@ -85,17 +85,16 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         }
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.background,
           appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 1,
-            shadowColor: Colors.grey.withOpacity(0.3),
-            iconTheme: const IconThemeData(color: Colors.black),
+            backgroundColor: AppTheme.surface,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: AppTheme.textPrimary),
             title: const Text(
               'İlan Detayı',
               style: TextStyle(
-                color: Colors.black,
-                fontSize: 18,
+                color: AppTheme.textPrimary,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -103,12 +102,12 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
               IconButton(
                 icon: Icon(
                   vm.isFavorite(product.id) ? Icons.favorite : Icons.favorite_border,
-                  color: vm.isFavorite(product.id) ? Colors.red : Colors.grey[600],
+                  color: vm.isFavorite(product.id) ? AppTheme.error : AppTheme.textSecondary,
                 ),
                 onPressed: () => vm.toggleFavorite(product.id),
               ),
               IconButton(
-                icon: Icon(Icons.share, color: Colors.grey[600]),
+                icon: Icon(Icons.share, color: AppTheme.textSecondary),
                 onPressed: () {},
               ),
             ],
@@ -159,7 +158,7 @@ class _ImageCarousel extends StatelessWidget {
     if (images.isEmpty) {
       return Container(
         height: 250,
-        color: Colors.grey[100],
+        color: AppTheme.surface,
         child: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -167,14 +166,15 @@ class _ImageCarousel extends StatelessWidget {
               Icon(
                 Icons.image_not_supported,
                 size: 60,
-                color: Colors.grey,
+                color: AppTheme.textSecondary,
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 12),
               Text(
                 'Fotoğraf Yok',
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: AppTheme.textSecondary,
                   fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -185,6 +185,7 @@ class _ImageCarousel extends StatelessWidget {
 
     return Container(
       height: 250,
+      color: AppTheme.surface,
       child: Stack(
         children: [
           PageView.builder(
@@ -197,15 +198,17 @@ class _ImageCarousel extends StatelessWidget {
                 fit: BoxFit.contain,
                 width: double.infinity,
                 placeholder: (context, url) => Container(
-                  color: Colors.grey[100],
-                  child: const Center(
-                    child: CircularProgressIndicator(),
+                  color: AppTheme.background,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                    ),
                   ),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[100],
-                  child: const Center(
-                    child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                  color: AppTheme.background,
+                  child: Center(
+                    child: Icon(Icons.broken_image, size: 60, color: AppTheme.textSecondary),
                   ),
                 ),
               );
@@ -225,7 +228,9 @@ class _ImageCarousel extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: currentIndex == entry.key ? Colors.white : Colors.white54,
+                      color: currentIndex == entry.key 
+                          ? AppTheme.primary 
+                          : AppTheme.textSecondary,
                     ),
                   );
                 }).toList(),
@@ -235,17 +240,17 @@ class _ImageCarousel extends StatelessWidget {
             top: 16,
             right: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
                 '${currentIndex + 1}/${images.length}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -264,11 +269,12 @@ class _ProductInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Başlık ve Fiyat
+        // Başlık ve Konum
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(16),
+          color: AppTheme.surface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -276,20 +282,26 @@ class _ProductInfo extends StatelessWidget {
                 product.title,
                 style: const TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                  height: 1.3,
                 ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.location_on, 
+                    size: 16, 
+                    color: AppTheme.error
+                  ),
+                  const SizedBox(width: 6),
                   Text(
-                    product.cityTitle + "/" + product.districtTitle,
-                    style: TextStyle(
+                    '${product.cityTitle} / ${product.districtTitle}',
+                    style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -298,11 +310,13 @@ class _ProductInfo extends StatelessWidget {
           ),
         ),
         
-        const Divider(height: 1),
+        const SizedBox(height: 8),
         
         // Ürün Bilgileri
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(16),
+          color: AppTheme.surface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -310,99 +324,91 @@ class _ProductInfo extends StatelessWidget {
                 'İlan Bilgileri',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _InfoRow('Kategori', _getCategoryDisplayName(product)),
               _InfoRow('Durum', product.condition ?? 'Belirtilmemiş'),
               _InfoRow('İlan Tarihi', 
                 "${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}"),
               _InfoRow('İlan No', product.id),
               _InfoRow('Satıcı', product.owner?.name ?? 'Belirtilmemiş'),
-
             ],
           ),
         ),
         
-        const Divider(height: 1),
+        const SizedBox(height: 8),
         
         // Açıklama
         if (product.description != null && product.description.isNotEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Açıklama',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  product.description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        
-        const Divider(height: 1),
-        
-        // Konum
-        Container(
+                  Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(16),
+          color: AppTheme.surface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Konum',
+                'Açıklama',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              Text(
+                product.description,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textPrimary,
+                  height: 1.5,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              ],
+            ),
+          ),
+        
+        const SizedBox(height: 8),
+        
+        // Konum Detayı
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          color: AppTheme.surface,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Konum Bilgileri',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.location_city, size: 18, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.location_city, 
+                    size: 18, 
+                    color: AppTheme.primary
+                  ),
+                  const SizedBox(width: 10),
                   Text(
-                    product.cityTitle + "/" + product.districtTitle,
+                    '${product.cityTitle} / ${product.districtTitle}',
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
-              if (product.districtTitle != null) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.location_on, size: 18, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Text(
-                      product.districtTitle,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ],
           ),
         ),
@@ -415,12 +421,7 @@ class _ProductInfo extends StatelessWidget {
   String _getCategoryDisplayName(dynamic product) {
     if (product.category == null) return 'Belirtilmemiş';
     
-    // Eğer alt kategori varsa "Ana Kategori > Alt Kategori" formatında göster
     if (product.category.parentId != null) {
-      // Ana kategori adını bulmaya çalış
-      String parentName = 'Ana Kategori';
-      // Burada ana kategori adını bulmak için ProductViewModel'e erişim gerekebilir
-      // Şimdilik sadece alt kategori adını gösterelim
       return product.category.name;
     }
     
@@ -428,8 +429,16 @@ class _ProductInfo extends StatelessWidget {
   }
 
   Widget _InfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Color(0xFFE0E0E0),
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -437,9 +446,10 @@ class _ProductInfo extends StatelessWidget {
             width: 100,
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -448,8 +458,8 @@ class _ProductInfo extends StatelessWidget {
               value,
               style: const TextStyle(
                 fontSize: 14,
-                color: Colors.black87,
-                fontWeight: FontWeight.w500,
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -469,35 +479,32 @@ class _ActionBar extends StatelessWidget {
     final chatViewModel = context.read<ChatViewModel>();
     
     if (authViewModel.currentUser == null) {
-      // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
       Navigator.pushNamed(context, '/login');
       return;
     }
 
-    // Kendi ürününe mesaj göndermeye çalışıyorsa uyarı ver
     if (authViewModel.currentUser!.id == product.ownerId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kendi ürününüze mesaj gönderemezsiniz.'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('Kendi ürününüze mesaj gönderemezsiniz.'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
     try {
-      // Önce mevcut chat'i kontrol et
       Chat? existingChat;
       try {
         existingChat = chatViewModel.chats.firstWhere(
           (chat) => chat.tradeId == product.id,
         );
       } catch (e) {
-        // Chat bulunamadı, null kalacak
+        // Chat bulunamadı
       }
 
       if (existingChat != null) {
-        // Mevcut chat varsa aç
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -505,17 +512,14 @@ class _ActionBar extends StatelessWidget {
           ),
         );
       } else {
-        // Yeni chat oluştur
         final chatId = await chatViewModel.createChat(
           tradeId: product.id,
           participantIds: [authViewModel.currentUser!.id, product.ownerId],
         );
 
         if (chatId != null) {
-          // Chat oluşturuldu, chat listesini yenile
           chatViewModel.loadChats(authViewModel.currentUser!.id);
           
-          // Yeni oluşturulan chat'i bul ve aç
           await Future.delayed(const Duration(milliseconds: 500));
           final newChat = chatViewModel.chats.firstWhere(
             (chat) => chat.id == chatId,
@@ -529,9 +533,10 @@ class _ActionBar extends StatelessWidget {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Chat oluşturulamadı. Lütfen tekrar deneyin.'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('Chat oluşturulamadı. Lütfen tekrar deneyin.'),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -540,7 +545,8 @@ class _ActionBar extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Hata: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -550,28 +556,26 @@ class _ActionBar extends StatelessWidget {
     final authViewModel = context.read<AuthViewModel>();
     
     if (authViewModel.currentUser == null) {
-      // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
       Navigator.pushNamed(context, '/login');
       return;
     }
 
-    // Kendi ürününe aramaya çalışıyorsa uyarı ver
     if (authViewModel.currentUser!.id == product.ownerId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kendi ürününüzü arayamazsınız.'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('Kendi ürününüzü arayamazsınız.'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
-    // Burada telefon numarası varsa arama yapılabilir
-    // Şimdilik sadece bilgi mesajı gösterelim
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Arama özelliği yakında eklenecek.'),
-        backgroundColor: Colors.blue,
+      SnackBar(
+        content: const Text('Arama özelliği yakında eklenecek.'),
+        backgroundColor: AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -581,18 +585,12 @@ class _ActionBar extends StatelessWidget {
     final authViewModel = context.read<AuthViewModel>();
     final isOwnProduct = authViewModel.currentUser?.id == product.ownerId;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+          return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          boxShadow: AppTheme.cardShadow,
+        ),
       child: isOwnProduct
           ? _buildOwnProductActions(context)
           : _buildOtherProductActions(context),
@@ -602,46 +600,55 @@ class _ActionBar extends StatelessWidget {
   Widget _buildOwnProductActions(BuildContext context) {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.orange[50],
-            borderRadius: BorderRadius.circular(1),
-            border: Border.all(color: Colors.orange[200]!),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Bu sizin ilanınız. Düzenlemek için profil sayfanıza gidin.',
-                  style: TextStyle(
-                    color: Colors.orange[700],
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                  Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.error.withOpacity(0.1),
+              borderRadius: AppTheme.borderRadius,
+              border: Border.all(color: AppTheme.error.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline, 
+                  color: AppTheme.error, 
+                  size: 20
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Bu sizin ilanınız. Düzenlemek için profil sayfanıza gidin.',
+                    style: TextStyle(
+                      color: AppTheme.error,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
+          height: 45,
           child: OutlinedButton.icon(
             onPressed: () {
-              // Profil sayfasına yönlendir
               Navigator.pushNamed(context, '/profile');
             },
             icon: const Icon(Icons.edit, size: 18),
-            label: const Text('İlanımı Düzenle'),
+            label: const Text(
+              'İlanımı Düzenle',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.blue,
-              side: const BorderSide(color: Colors.blue),
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              foregroundColor: AppTheme.primary,
+              side: BorderSide(color: AppTheme.primary, width: 2),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppTheme.borderRadius,
               ),
             ),
           ),
@@ -654,34 +661,50 @@ class _ActionBar extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => _callOwner(context),
-            icon: const Icon(Icons.phone, size: 18),
-            label: const Text('Ara'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.blue,
-              side: const BorderSide(color: Colors.blue),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            height: 45,
+            child: OutlinedButton.icon(
+              onPressed: () => _callOwner(context),
+              icon: const Icon(Icons.phone, size: 18),
+              label: const Text(
+                'Ara',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primary,
+                side: BorderSide(color: AppTheme.primary, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppTheme.borderRadius,
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 16),
         Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () => _startChat(context),
-            icon: const Icon(Icons.message, size: 18),
-            label: const Text('Mesaj'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            height: 45,
+            child: ElevatedButton.icon(
+              onPressed: () => _startChat(context),
+              icon: const Icon(Icons.message, size: 18),
+              label: const Text(
+                'Mesaj Gönder',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              elevation: 0,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppTheme.borderRadius,
+                ),
+                elevation: 0,
+              ),
             ),
           ),
         ),
