@@ -1,5 +1,4 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'location.dart';
 
 part 'user.g.dart';
 
@@ -43,30 +42,60 @@ class User {
     // DateTime'ları güvenli şekilde parse et
     DateTime parseDateTime(dynamic value) {
       if (value is DateTime) return value;
-      if (value is String) return DateTime.parse(value);
+      if (value is String) {
+        try {
+          return DateTime.parse(value);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
       if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
       return DateTime.now();
     }
 
+    // Güvenli string dönüşümü
+    String safeString(dynamic value) {
+      if (value is String) return value;
+      if (value != null) return value.toString();
+      return '';
+    }
+
+    // Güvenli bool dönüşümü
+    bool safeBool(dynamic value, {bool defaultValue = false}) {
+      if (value is bool) return value;
+      if (value is String) return value.toLowerCase() == 'true';
+      if (value is int) return value != 0;
+      return defaultValue;
+    }
+
     return User(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      firstName: json['firstName'] as String?,
-      lastName: json['lastName'] as String?,
-      email: json['email'] as String,
-      phone: json['phone'] as String?,
-      avatar: json['avatar'] as String?,
-      isVerified: json['isVerified'] as bool? ?? false,
-      isOnline: json['isOnline'] as bool? ?? false,
+      id: safeString(json['id']),
+      name: safeString(json['name']),
+      firstName: json['firstName'] != null ? safeString(json['firstName']) : null,
+      lastName: json['lastName'] != null ? safeString(json['lastName']) : null,
+      email: safeString(json['email']),
+      phone: json['phone'] != null ? safeString(json['phone']) : null,
+      avatar: json['avatar'] != null ? safeString(json['avatar']) : null,
+      isVerified: safeBool(json['isVerified']),
+      isOnline: safeBool(json['isOnline']),
       createdAt: parseDateTime(json['createdAt']),
       updatedAt: parseDateTime(json['updatedAt']),
       lastSeenAt: json['lastSeenAt'] != null ? parseDateTime(json['lastSeenAt']) : null,
-      birthday: json['birthday'] as String?,
-      gender: json['gender'] as String?,
-      token: json['token'] as String?,
+      birthday: json['birthday'] != null ? safeString(json['birthday']) : null,
+      gender: json['gender'] != null ? safeString(json['gender']) : null,
+      token: json['token'] != null ? safeString(json['token']) : null,
     );
   }
-  Map<String, dynamic> toJson() => _$UserToJson(this);
+  Map<String, dynamic> toJson() {
+    final json = _$UserToJson(this);
+    // DateTime'ları string'e çevir
+    json['createdAt'] = createdAt.toIso8601String();
+    json['updatedAt'] = updatedAt.toIso8601String();
+    if (lastSeenAt != null) {
+      json['lastSeenAt'] = lastSeenAt!.toIso8601String();
+    }
+    return json;
+  }
 
   User copyWith({
     String? id,

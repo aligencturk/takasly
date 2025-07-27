@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
-import 'package:takasly/models/city.dart';
-import 'package:takasly/models/condition.dart';
-import 'package:takasly/models/district.dart';
-import 'package:takasly/models/product.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 
 class AddProductView extends StatefulWidget {
@@ -65,6 +61,17 @@ class _AddProductViewState extends State<AddProductView> {
       return;
     }
 
+    // Konum validasyonu
+    if (_selectedCityId == null || _selectedDistrictId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lütfen şehir ve ilçe seçiniz'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
     print('📸 Submitting product with ${_selectedImages.length} images');
     for (int i = 0; i < _selectedImages.length; i++) {
       print('  ${i + 1}. ${_selectedImages[i].path.split('/').last}');
@@ -78,6 +85,8 @@ class _AddProductViewState extends State<AddProductView> {
           conditionId: _selectedConditionId!,
           tradeFor: _tradeForController.text.trim(),
           productImages: _selectedImages,
+          selectedCityId: _selectedCityId,
+          selectedDistrictId: _selectedDistrictId,
         );
 
     if (mounted) {
@@ -172,6 +181,14 @@ class _AddProductViewState extends State<AddProductView> {
             _buildCityDropdown(),
             const SizedBox(height: 16),
             _buildDistrictDropdown(),
+            const SizedBox(height: 8),
+            Text(
+              '📍 Konum bilgileriniz otomatik olarak alınacaktır (uygulama başlangıcında izin verdiyseniz)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
             const SizedBox(height: 24),
 
             _buildSectionTitle(context, 'Takas Tercihleri'),

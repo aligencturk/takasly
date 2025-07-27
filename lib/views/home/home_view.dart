@@ -191,7 +191,7 @@ class _HomeViewState extends State<HomeView> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(15),
                       border: Border.all(color: Colors.grey[300]!),
                     ),
                     child: TextField(

@@ -4,10 +4,9 @@ import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../models/chat.dart';
-import '../../models/user.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
-import '../../utils/logger.dart';
+import '../../views/product/product_detail_view.dart';
 
 class ChatDetailView extends StatefulWidget {
   final Chat chat;
@@ -22,15 +21,21 @@ class ChatDetailView extends StatefulWidget {
 }
 
 class _ChatDetailViewState extends State<ChatDetailView> {
-  static const String _tag = 'ChatDetailView';
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  String? _selectedAutoMessage; // Otomatik mesaj seçeneği için state
 
   @override
   void initState() {
     super.initState();
+    
+    // Scroll listener ekle - yukarı scroll ettiğinde eski mesajları yükle
+    _scrollController.addListener(_onScroll);
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadMessages();
+      // Sayfa açıldığında en aşağıya scroll et
+      _scrollToBottom();
     });
   }
 
@@ -41,9 +46,28 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     super.dispose();
   }
 
+  void _onScroll() {
+    // Yukarı scroll edildiğinde ve en üstteyse eski mesajları yükle
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
+      final chatViewModel = context.read<ChatViewModel>();
+      if (chatViewModel.hasMoreMessages && !chatViewModel.isLoadingMore) {
+        chatViewModel.loadOlderMessages();
+      }
+    }
+  }
+
   void _loadMessages() {
     final chatViewModel = context.read<ChatViewModel>();
+    final authViewModel = context.read<AuthViewModel>();
+    
     chatViewModel.loadMessages(widget.chat.id);
+    
+    // Chat açıldığında mesajları okundu olarak işaretle (kısa bir gecikme ile)
+    if (authViewModel.currentUser != null) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+      });
+    }
   }
 
   void _sendMessage() {
@@ -61,14 +85,20 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       );
       _messageController.clear();
       _scrollToBottom();
+      
+      // Mesaj gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
+      Future.delayed(const Duration(milliseconds: 300), () {
+        chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+      });
     }
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
+        // reverse: true olduğu için en üste scroll et (en yeni mesajlar aşağıda)
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -88,53 +118,143 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
+        height: MediaQuery.of(context).size.height * 0.75,
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
+            // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: Row(
                 children: [
-                  const Text(
-                    'İlanınızı Seçin',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_rounded,
+                      color: AppTheme.primary,
+                      size: 22,
                     ),
                   ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'İlanınızı Seçin',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Paylaşmak istediğiniz ilanı seçin',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
                   ),
                 ],
               ),
             ),
+            // Content
             Expanded(
               child: Consumer<ProductViewModel>(
                 builder: (context, vm, child) {
                   if (vm.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 20),
+                          Text(
+                            'İlanlarınız yükleniyor...',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
                   }
                   
                   if (vm.userProducts.isEmpty) {
-                    return const Center(
-                      child: Text('Henüz ilanınız yok'),
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.inventory_2_outlined,
+                              size: 56,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Henüz ilanınız yok',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'İlan ekledikten sonra burada\ngörünecek',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     );
                   }
                   
@@ -143,73 +263,145 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                     itemCount: vm.userProducts.length,
                     itemBuilder: (context, index) {
                       final product = vm.userProducts[index];
-                      return Card(
+                      return Container(
                         margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: SizedBox(
-                            width: 50,
-                            height: 50,
-                            child: product.images.isNotEmpty && product.images.first.isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      product.images.first,
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          width: 50,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[300],
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: const Icon(
-                                            Icons.image_not_supported,
-                                            color: Colors.grey,
-                                            size: 20,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  )
-                                : Container(
-                                    width: 50,
-                                    height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showMessageSelection(product);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  // Resim
+                                  Container(
+                                    width: 60,
+                                    height: 60,
                                     decoration: BoxDecoration(
-                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.grey[50],
+                                    ),
+                                    child: product.images.isNotEmpty && product.images.first.isNotEmpty
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: Image.network(
+                                              product.images.first,
+                                              width: 60,
+                                              height: 60,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Container(
+                                                  width: 60,
+                                                  height: 60,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[100],
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.image_not_supported_outlined,
+                                                    color: Colors.grey[400],
+                                                    size: 24,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        : Container(
+                                            width: 60,
+                                            height: 60,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[100],
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(
+                                              Icons.image_not_supported_outlined,
+                                              color: Colors.grey[400],
+                                              size: 24,
+                                            ),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // İçerik
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product.title,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                            color: Colors.black87,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.primary.withValues(alpha: 0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                product.categoryName,
+                                                style: TextStyle(
+                                                  color: AppTheme.primary,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            if (product.estimatedValue != null)
+                                              Text(
+                                                '₺${product.estimatedValue!.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 16,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  // Seçim göstergesi
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Icon(
-                                      Icons.image_not_supported,
-                                      color: Colors.grey,
-                                      size: 20,
+                                    child: Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: AppTheme.primary,
+                                      size: 16,
                                     ),
                                   ),
+                                ],
+                              ),
+                            ),
                           ),
-                          title: Text(
-                            product.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            product.categoryName,
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                          trailing: product.estimatedValue != null
-                              ? Text(
-                                  '₺${product.estimatedValue!.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
-                                  ),
-                                )
-                              : null,
-                          onTap: () {
-                            _sendProductMessage(product);
-                            Navigator.pop(context);
-                          },
                         ),
                       );
                     },
@@ -223,7 +415,287 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     );
   }
 
-  void _sendProductMessage(Product product) {
+  void _showMessageSelection(Product product) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primary,
+                          AppTheme.primary.withValues(alpha: 0.8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.message_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Mesaj Seçin',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'İsteğe bağlı olarak mesaj ekleyin',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey[200]!,
+                        width: 1,
+                      ),
+                    ),
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Mesaj seçenekleri
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    // Sadece ilan gönder butonu
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _sendProductOnly(product);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.grey[700],
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: Colors.grey[300]!,
+                              width: 1,
+                            ),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.send_rounded,
+                              size: 20,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Sadece İlan Gönder',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Hazır mesajlar başlığı
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey[100]!,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 18,
+                            color: AppTheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Hazır Mesajlar',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Mesaj seçenekleri
+                    Column(
+                      children: [
+                        _buildMessageOption('Bu ilanım var, ilgilenir misin?', product, Icons.question_mark_rounded),
+                        const SizedBox(height: 12),
+                        _buildMessageOption('Bu ürünü beğendin mi?', product, Icons.favorite_border_rounded),
+                        const SizedBox(height: 12),
+                        _buildMessageOption('Bu ilanım hoşuna gitti mi?', product, Icons.thumb_up_outlined),
+                        const SizedBox(height: 12),
+                        _buildMessageOption('Bu ürünle ilgileniyor musun?', product, Icons.visibility_outlined),
+                        const SizedBox(height: 12),
+                        _buildMessageOption('Bu ilanım nasıl? Beğendin mi?', product, Icons.star_outline_rounded),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageOption(String message, Product product, IconData icon) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey[200]!,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.pop(context);
+            _sendProductWithMessage(product, message);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    ),
+                  child: Icon(
+                    icon,
+                    color: AppTheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.grey[400],
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _sendProductOnly(Product product) {
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
 
@@ -234,6 +706,41 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         senderId: authViewModel.currentUser!.id,
       );
       _scrollToBottom();
+      
+      // Ürün mesajı gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
+      Future.delayed(const Duration(milliseconds: 300), () {
+        chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+      });
+    }
+  }
+
+  void _sendProductWithMessage(Product product, String message) {
+    final authViewModel = context.read<AuthViewModel>();
+    final chatViewModel = context.read<ChatViewModel>();
+
+    if (authViewModel.currentUser != null) {
+      // Önce ürün mesajını gönder
+      chatViewModel.sendProductMessage(
+        chatId: widget.chat.id,
+        product: product,
+        senderId: authViewModel.currentUser!.id,
+      );
+      
+      // Sonra seçilen mesajı gönder
+      Future.delayed(const Duration(milliseconds: 500), () {
+        chatViewModel.sendMessage(
+          chatId: widget.chat.id,
+          content: message,
+          senderId: authViewModel.currentUser!.id,
+        );
+      });
+      
+      _scrollToBottom();
+      
+      // Mesajlar gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
+      Future.delayed(const Duration(milliseconds: 800), () {
+        chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+      });
     }
   }
 
@@ -340,9 +847,39 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: chatViewModel.messages.length,
+                  itemCount: chatViewModel.messages.length + (chatViewModel.isLoadingMore ? 1 : 0),
+                  reverse: true, // Mesajları ters çevir - en yeni en aşağıda
                   itemBuilder: (context, index) {
-                    final message = chatViewModel.messages[index];
+                    // Loading indicator için
+                    if (chatViewModel.isLoadingMore && index == 0) {
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        child: const Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Eski mesajlar yükleniyor...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    // Reverse olduğu için index'i ters çevir
+                    final messageIndex = chatViewModel.isLoadingMore ? index - 1 : index;
+                    final message = chatViewModel.messages[chatViewModel.messages.length - 1 - messageIndex];
                     return _MessageBubble(
                       message: message,
                       isMe: message.senderId == 
@@ -412,13 +949,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(
-                'Takas: ${widget.chat.trade.id}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+            
             ],
           ),
         ),
@@ -433,7 +964,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -441,39 +972,73 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.inventory_2_outlined),
-            onPressed: () {
-              _showProductSelection();
-            },
-            tooltip: 'İlan Gönder',
-          ),
-          IconButton(
-            icon: const Icon(Icons.attach_file),
-            onPressed: () {
-              // Dosya ekleme
-            },
-          ),
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: const InputDecoration(
-                hintText: 'Mesajınızı yazın...',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              maxLines: null,
-              textCapitalization: TextCapitalization.sentences,
-              onSubmitted: (_) => _sendMessage(),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.inventory_2_outlined, size: 20),
+              onPressed: () {
+                _showProductSelection();
+              },
+              tooltip: 'İlan Gönder',
+              color: Colors.grey[700],
+              padding: const EdgeInsets.all(8),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: _sendMessage,
-            color: AppTheme.primary,
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.attach_file, size: 20),
+              onPressed: () {
+                // Dosya ekleme
+              },
+              tooltip: 'Dosya Ekle',
+              color: Colors.grey[700],
+              padding: const EdgeInsets.all(8),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: TextField(
+                controller: _messageController,
+                decoration: const InputDecoration(
+                  hintText: 'Mesajınızı yazın...',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                maxLines: null,
+                textCapitalization: TextCapitalization.sentences,
+                onSubmitted: (_) => _sendMessage(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.send, size: 20),
+              onPressed: _sendMessage,
+              color: Colors.white,
+              padding: const EdgeInsets.all(12),
+            ),
           ),
         ],
       ),
@@ -492,6 +1057,41 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Product mesajları için özel layout
+    if (message.type == MessageType.product && message.product != null) {
+      return Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: EdgeInsets.only(
+            left: isMe ? 64 : 0,
+            right: isMe ? 0 : 64,
+            bottom: 8,
+          ),
+          child: Column(
+            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              _buildProductCard(context, message.product!),
+              const SizedBox(height: 4),
+              Padding(
+                padding: EdgeInsets.only(
+                  left: isMe ? 0 : 8,
+                  right: isMe ? 8 : 0,
+                ),
+                child: Text(
+                  _formatTime(message.createdAt),
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Diğer mesaj tipleri için normal bubble
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -519,9 +1119,6 @@ class _MessageBubble extends StatelessWidget {
                   fontSize: 16,
                 ),
               ),
-            ] else if (message.type == MessageType.product) ...[
-              if (message.product != null)
-                _buildProductCard(message.product!),
             ] else if (message.type == MessageType.image) ...[
               if (message.imageUrl != null)
                 ClipRRect(
@@ -580,108 +1177,174 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildProductCard(Product product) {
-    return Container(
-      width: 250,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (product.images.isNotEmpty && product.images.first.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                product.images.first,
-                width: double.infinity,
-                height: 120,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.image_not_supported,
-                      color: Colors.grey,
-                      size: 32,
-                    ),
-                  );
-                },
-              ),
-            )
-          else
+  Widget _buildProductCard(BuildContext context, Product product) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailView(productId: product.id),
+          ),
+        );
+      },
+      child: Container(
+        width: 260,
+        height: 80,
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Sol taraf - Resim
             Container(
-              width: double.infinity,
-              height: 120,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+                color: Colors.grey[50],
               ),
-              child: const Icon(
-                Icons.image_not_supported,
-                color: Colors.grey,
-                size: 32,
-              ),
+              child: product.images.isNotEmpty && product.images.first.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+                      child: Image.network(
+                        product.images.first,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+                            ),
+                            child: Icon(
+                              Icons.image_not_supported_outlined,
+                              color: Colors.grey[400],
+                              size: 20,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+                      ),
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: Colors.grey[400],
+                        size: 20,
+                      ),
+                    ),
             ),
-          const SizedBox(height: 8),
-          Text(
-            product.title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            product.description,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+            // Sağ taraf - İçerik
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Üst kısım - Başlık
+                    Text(
+                      product.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Colors.black87,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    // Alt kısım - Kategori ve fiyat
+                    Row(
+                      children: [
+                        // Kategori badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            product.categoryName,
+                            style: TextStyle(
+                              color: AppTheme.primary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        // Fiyat
+                        if (product.estimatedValue != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '₺${product.estimatedValue!.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                                color: Colors.green,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-                child: Text(
-                  product.categoryName,
-                  style: TextStyle(
-                    color: AppTheme.primary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+              ),
+            ),
+            // Sağ kenar - Tıklama göstergesi
+            Container(
+              width: 32,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 10,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
+                ],
               ),
-              const Spacer(),
-              if (product.estimatedValue != null)
-                Text(
-                  '₺${product.estimatedValue!.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: Colors.green,
-                  ),
-                ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

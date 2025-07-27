@@ -1507,6 +1507,8 @@ class ProductService {
     required String conditionId,
     required String tradeFor,
     required List<File> productImages,
+    String? selectedCityId,
+    String? selectedDistrictId,
   }) async {
     print('🚀 ProductService.addProduct called');
     print('📝 Parameters:');
@@ -1518,6 +1520,8 @@ class ProductService {
     print('  - conditionId: $conditionId');
     print('  - tradeFor: $tradeFor');
     print('  - productImages count: ${productImages.length}');
+    print('  - selectedCityId: $selectedCityId');
+    print('  - selectedDistrictId: $selectedDistrictId');
 
     try {
       // Kategori bilgilerini al
@@ -1544,6 +1548,24 @@ class ProductService {
         catImage = '';
       }
 
+      // Konum bilgilerini al
+      double? latitude;
+      double? longitude;
+      
+      try {
+        final locationService = LocationService();
+        final position = await locationService.getCurrentLocation();
+        if (position != null) {
+          latitude = position.latitude;
+          longitude = position.longitude;
+          print('📍 Location obtained: $latitude, $longitude');
+        } else {
+          print('⚠️ Could not get current location, using default values');
+        }
+      } catch (e) {
+        print('⚠️ Error getting location: $e');
+      }
+
       // Form fields - Postman form/data formatına uygun
       final fields = <String, String>{
         'userToken': userToken,
@@ -1553,6 +1575,10 @@ class ProductService {
         'conditionID': conditionId,
         'tradeFor': tradeFor,
         'catImage': catImage, // Kategori icon'u eklendi
+        'productCity': selectedCityId ?? '',
+        'productDistrict': selectedDistrictId ?? '',
+        'productLat': latitude?.toString() ?? '',
+        'productLong': longitude?.toString() ?? '',
       };
 
       print('📋 Form fields prepared:');

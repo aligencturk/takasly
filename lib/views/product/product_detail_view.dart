@@ -280,23 +280,6 @@ class _ProductInfo extends StatelessWidget {
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.orange[200]!),
-                ),
-                child: const Text(
-                  'Takas Edilebilir',
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -498,14 +481,14 @@ class _ActionBar extends StatelessWidget {
         // Chat bulunamadı, null kalacak
       }
 
-              if (existingChat != null) {
-          // Mevcut chat varsa aç
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatDetailView(chat: existingChat!),
-            ),
-          );
+      if (existingChat != null) {
+        // Mevcut chat varsa aç
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatDetailView(chat: existingChat!),
+          ),
+        );
       } else {
         // Yeni chat oluştur
         final chatId = await chatViewModel.createChat(
@@ -548,8 +531,41 @@ class _ActionBar extends StatelessWidget {
     }
   }
 
+  void _callOwner(BuildContext context) {
+    final authViewModel = context.read<AuthViewModel>();
+    
+    if (authViewModel.currentUser == null) {
+      // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
+      Navigator.pushNamed(context, '/login');
+      return;
+    }
+
+    // Kendi ürününe aramaya çalışıyorsa uyarı ver
+    if (authViewModel.currentUser!.id == product.ownerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kendi ürününüzü arayamazsınız.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Burada telefon numarası varsa arama yapılabilir
+    // Şimdilik sadece bilgi mesajı gösterelim
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Arama özelliği yakında eklenecek.'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authViewModel = context.read<AuthViewModel>();
+    final isOwnProduct = authViewModel.currentUser?.id == product.ownerId;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -562,42 +578,99 @@ class _ActionBar extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.phone, size: 18),
-              label: const Text('Ara'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.blue,
-                side: const BorderSide(color: Colors.blue),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+      child: isOwnProduct
+          ? _buildOwnProductActions(context)
+          : _buildOtherProductActions(context),
+    );
+  }
+
+  Widget _buildOwnProductActions(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.orange[50],
+            borderRadius: BorderRadius.circular(1),
+            border: Border.all(color: Colors.orange[200]!),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Bu sizin ilanınız. Düzenlemek için profil sayfanıza gidin.',
+                  style: TextStyle(
+                    color: Colors.orange[700],
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              // Profil sayfasına yönlendir
+              Navigator.pushNamed(context, '/profile');
+            },
+            icon: const Icon(Icons.edit, size: 18),
+            label: const Text('İlanımı Düzenle'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.blue,
+              side: const BorderSide(color: Colors.blue),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _startChat(context),
-              icon: const Icon(Icons.message, size: 18),
-              label: const Text('Mesaj'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOtherProductActions(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _callOwner(context),
+            icon: const Icon(Icons.phone, size: 18),
+            label: const Text('Ara'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.blue,
+              side: const BorderSide(color: Colors.blue),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => _startChat(context),
+            icon: const Icon(Icons.message, size: 18),
+            label: const Text('Mesaj'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ),
+      ],
     );
   }
 } 

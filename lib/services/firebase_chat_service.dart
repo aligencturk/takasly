@@ -34,12 +34,36 @@ class FirebaseChatService {
 
       if (imageUrl != null) messageData['imageUrl'] = imageUrl;
       if (replyToId != null) messageData['replyToId'] = replyToId;
-      if (product != null) messageData['product'] = product.toJson();
+      if (product != null) {
+        // Product'ı Firebase uyumlu hale getir
+        messageData['product'] = {
+          'id': product.id,
+          'title': product.title,
+          'description': product.description,
+          'images': product.images,
+          'categoryId': product.categoryId,
+          'categoryName': product.categoryName,
+          'condition': product.condition,
+          'brand': product.brand,
+          'model': product.model,
+          'estimatedValue': product.estimatedValue,
+          'ownerId': product.ownerId,
+          'ownerName': product.owner.name,
+          'tradePreferences': product.tradePreferences,
+          'cityId': product.cityId,
+          'cityTitle': product.cityTitle,
+          'districtId': product.districtId,
+          'districtTitle': product.districtTitle,
+          'status': product.status.name,
+          'createdAt': product.createdAt.toIso8601String(),
+          'updatedAt': product.updatedAt.toIso8601String(),
+        };
+      }
 
       await messageRef.set(messageData);
       
       // Son mesajı chat'e güncelle
-      await _updateLastMessage(chatId, messageRef.key!, content, type);
+      await _updateLastMessage(chatId, messageRef.key!, content, type, senderId);
       
       Logger.info('Mesaj gönderildi: $chatId', tag: _tag);
     } catch (e) {
@@ -48,11 +72,12 @@ class FirebaseChatService {
     }
   }
 
-  // Mesajları real-time dinleme
+  // Mesajları real-time dinleme (sadece son 50 mesaj)
   Stream<List<Message>> getMessagesStream(String chatId) {
     return _database
         .child('messages/$chatId')
         .orderByChild('timestamp')
+        .limitToLast(50) // Sadece son 50 mesajı al
         .onValue
         .map((event) {
       if (event.snapshot.value == null) return [];
@@ -63,9 +88,15 @@ class FirebaseChatService {
       final List<Message> messages = [];
       
       messagesMap.forEach((key, value) {
-        if (value is Map<dynamic, dynamic>) {
-          final messageData = Map<String, dynamic>.from(value);
-          messageData['id'] = key;
+        if (value is Map) {
+          // Firebase'den gelen Map<Object?, Object?> tipini Map<String, dynamic>'e dönüştür
+          final Map<String, dynamic> messageData = {};
+          value.forEach((k, v) {
+            if (k is String) {
+              messageData[k] = v;
+            }
+          });
+          messageData['id'] = key.toString();
           
           // Timestamp'i DateTime'a çevir
           if (messageData['timestamp'] != null) {
@@ -73,7 +104,11 @@ class FirebaseChatService {
             if (timestamp is int) {
               messageData['createdAt'] = DateTime.fromMillisecondsSinceEpoch(timestamp);
             } else if (timestamp is String) {
-              messageData['createdAt'] = DateTime.parse(timestamp);
+              try {
+                messageData['createdAt'] = DateTime.parse(timestamp);
+              } catch (e) {
+                messageData['createdAt'] = DateTime.now();
+              }
             } else {
               messageData['createdAt'] = DateTime.now();
             }
@@ -286,12 +321,49 @@ class FirebaseChatService {
                 return DateTime.now();
               }
               
+              // Son mesaj bilgilerini al
+              Message? lastMessage;
+              if (chatData['lastMessageId'] != null) {
+                try {
+                  // Geçici kullanıcı oluştur (sender bilgisi yok)
+                  final tempUser = User(
+                    id: chatData['lastMessageSenderId'] ?? '',
+                    name: 'Kullanıcı',
+                    email: '',
+                    isVerified: false,
+                    isOnline: false,
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                  );
+                  
+                  lastMessage = Message(
+                    id: chatData['lastMessageId'],
+                    chatId: chatData['id'],
+                    senderId: chatData['lastMessageSenderId'] ?? '',
+                    sender: tempUser,
+                    content: chatData['lastMessageContent'] ?? '',
+                    type: MessageType.values.firstWhere(
+                      (e) => e.name == (chatData['lastMessageType'] ?? 'text'),
+                      orElse: () => MessageType.text,
+                    ),
+                    createdAt: parseChatDateTime(chatData['lastMessageTimestamp'] ?? chatData['updatedAt']),
+                    updatedAt: parseChatDateTime(chatData['lastMessageTimestamp'] ?? chatData['updatedAt']),
+                    isRead: false,
+                    isDeleted: false,
+                  );
+                } catch (e) {
+                  Logger.error('Son mesaj parse hatası: $e', tag: _tag);
+                }
+              }
+              
               final chat = Chat(
                 id: chatData['id'],
                 tradeId: chatData['tradeId'],
                 trade: trade,
                 participantIds: participantIds,
                 participants: participants,
+                lastMessageId: chatData['lastMessageId'],
+                lastMessage: lastMessage,
                 createdAt: parseChatDateTime(chatData['createdAt']),
                 updatedAt: parseChatDateTime(chatData['updatedAt']),
                 lastReadTimes: {},
@@ -319,12 +391,15 @@ class FirebaseChatService {
     String messageId, 
     String content, 
     MessageType type,
+    String senderId,
   ) async {
     try {
       await _database.child('chats/$chatId').update({
         'lastMessageId': messageId,
         'lastMessageContent': content,
         'lastMessageType': type.name,
+        'lastMessageSenderId': senderId,
+        'lastMessageTimestamp': ServerValue.timestamp,
         'updatedAt': ServerValue.timestamp,
       });
     } catch (e) {
@@ -332,7 +407,7 @@ class FirebaseChatService {
     }
   }
 
-  // Okunmamış mesaj sayısını getir
+  // Kullanıcının okunmamış mesaj sayısını real-time dinle
   Stream<int> getUnreadCountStream(String userId) {
     return _database
         .child('messages')
@@ -340,28 +415,129 @@ class FirebaseChatService {
         .map((event) {
       if (event.snapshot.value == null) return 0;
       
-      int unreadCount = 0;
-      final Map<dynamic, dynamic> messagesMap = 
+      final Map<dynamic, dynamic> allMessages = 
           event.snapshot.value as Map<dynamic, dynamic>;
       
-      messagesMap.forEach((chatId, chatMessages) {
-        if (chatMessages is Map<dynamic, dynamic>) {
+      int totalUnreadCount = 0;
+      
+      allMessages.forEach((chatId, chatMessages) {
+        if (chatMessages is Map) {
           chatMessages.forEach((messageId, messageData) {
-            if (messageData is Map<dynamic, dynamic>) {
-              final message = Map<String, dynamic>.from(messageData);
+            if (messageData is Map) {
+              final Map<String, dynamic> message = Map<String, dynamic>.from(messageData);
               
-              // Kendi mesajlarını sayma ve silinmemiş mesajları kontrol et
+              // Mesaj bu kullanıcıya ait değilse ve okunmamışsa say
               if (message['senderId'] != userId && 
-                  message['isRead'] == false && 
+                  message['isRead'] != true && 
                   message['isDeleted'] != true) {
-                unreadCount++;
+                totalUnreadCount++;
               }
             }
           });
         }
       });
       
+      Logger.info('Toplam okunmamış mesaj sayısı: $totalUnreadCount', tag: _tag);
+      return totalUnreadCount;
+    });
+  }
+
+  // Belirli bir chat'teki okunmamış mesaj sayısını getir
+  Stream<int> getChatUnreadCountStream(String chatId, String userId) {
+    return _database
+        .child('messages/$chatId')
+        .onValue
+        .map((event) {
+      if (event.snapshot.value == null) return 0;
+      
+      final Map<dynamic, dynamic> messagesMap = 
+          event.snapshot.value as Map<dynamic, dynamic>;
+      
+      int unreadCount = 0;
+      
+      messagesMap.forEach((messageId, messageData) {
+        if (messageData is Map) {
+          final Map<String, dynamic> message = Map<String, dynamic>.from(messageData);
+          
+          // Mesaj bu kullanıcıya ait değilse ve okunmamışsa say
+          if (message['senderId'] != userId && 
+              message['isRead'] != true && 
+              message['isDeleted'] != true) {
+            unreadCount++;
+          }
+        }
+      });
+      
       return unreadCount;
     });
+  }
+
+  // Daha eski mesajları yükle (pagination için)
+  Future<List<Message>> loadOlderMessages(String chatId, DateTime beforeTime, {int limit = 20}) async {
+    try {
+      final snapshot = await _database
+          .child('messages/$chatId')
+          .orderByChild('timestamp')
+          .endAt(beforeTime.millisecondsSinceEpoch)
+          .limitToLast(limit)
+          .get();
+      
+      if (snapshot.value == null) return [];
+      
+      final Map<dynamic, dynamic> messagesMap = 
+          snapshot.value as Map<dynamic, dynamic>;
+      
+      final List<Message> messages = [];
+      
+      messagesMap.forEach((key, value) {
+        if (value is Map) {
+          final Map<String, dynamic> messageData = {};
+          value.forEach((k, v) {
+            if (k is String) {
+              messageData[k] = v;
+            }
+          });
+          messageData['id'] = key.toString();
+          
+          // Timestamp'i DateTime'a çevir
+          if (messageData['timestamp'] != null) {
+            final timestamp = messageData['timestamp'];
+            if (timestamp is int) {
+              messageData['createdAt'] = DateTime.fromMillisecondsSinceEpoch(timestamp);
+            } else if (timestamp is String) {
+              try {
+                messageData['createdAt'] = DateTime.parse(timestamp);
+              } catch (e) {
+                messageData['createdAt'] = DateTime.now();
+              }
+            } else {
+              messageData['createdAt'] = DateTime.now();
+            }
+            messageData['updatedAt'] = messageData['createdAt'];
+          } else {
+            messageData['createdAt'] = DateTime.now();
+            messageData['updatedAt'] = DateTime.now();
+          }
+          
+          try {
+            final message = Message.fromJson(messageData);
+            if (!message.isDeleted) {
+              messages.add(message);
+            }
+          } catch (e) {
+            Logger.error('Mesaj parse hatası: $e', tag: _tag);
+          }
+        }
+      });
+      
+      // Timestamp'e göre sırala
+      messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      
+      Logger.info('${messages.length} eski mesaj yüklendi', tag: _tag);
+      return messages;
+    } catch (e) {
+      Logger.error('Eski mesaj yükleme hatası: $e', tag: _tag);
+      rethrow;
+    }
   }
 } 

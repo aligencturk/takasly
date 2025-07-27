@@ -178,7 +178,13 @@ class Message {
     // DateTime'ları güvenli şekilde parse et
     DateTime parseDateTime(dynamic value) {
       if (value is DateTime) return value;
-      if (value is String) return DateTime.parse(value);
+      if (value is String) {
+        try {
+          return DateTime.parse(value);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
       if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
       return DateTime.now();
     }
@@ -196,33 +202,136 @@ class Message {
       );
     }
 
+    // Güvenli string dönüşümü
+    String safeString(dynamic value) {
+      if (value is String) return value;
+      if (value != null) return value.toString();
+      return '';
+    }
+
+    // Güvenli bool dönüşümü
+    bool safeBool(dynamic value, {bool defaultValue = false}) {
+      if (value is bool) return value;
+      if (value is String) return value.toLowerCase() == 'true';
+      if (value is int) return value != 0;
+      return defaultValue;
+    }
+
+    // Güvenli Map dönüşümü
+    Map<String, dynamic>? safeMap(dynamic value) {
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) {
+        final Map<String, dynamic> result = {};
+        value.forEach((k, v) {
+          if (k is String) {
+            result[k] = v;
+          }
+        });
+        return result;
+      }
+      return null;
+    }
+
     return Message(
-      id: json['id'] as String,
-      chatId: json['chatId'] as String,
-      senderId: json['senderId'] as String,
-      sender: json['sender'] != null 
-          ? User.fromJson(json['sender'] as Map<String, dynamic>)
-          : createTempUser(json['senderId'] as String),
-      content: json['content'] as String,
+      id: safeString(json['id']),
+      chatId: safeString(json['chatId']),
+      senderId: safeString(json['senderId']),
+      sender: safeMap(json['sender']) != null 
+          ? User.fromJson(safeMap(json['sender'])!)
+          : createTempUser(safeString(json['senderId'])),
+      content: safeString(json['content']),
       type: MessageType.values.firstWhere(
-        (e) => e.name == json['type'],
+        (e) => e.name == safeString(json['type']),
         orElse: () => MessageType.text,
       ),
-      imageUrl: json['imageUrl'] as String?,
+      imageUrl: json['imageUrl'] != null ? safeString(json['imageUrl']) : null,
       createdAt: parseDateTime(json['createdAt']),
       updatedAt: parseDateTime(json['updatedAt']),
-      isRead: json['isRead'] as bool? ?? false,
-      isDeleted: json['isDeleted'] as bool? ?? false,
-      replyToId: json['replyToId'] as String?,
-      replyTo: json['replyTo'] != null 
-          ? Message.fromJson(json['replyTo'] as Map<String, dynamic>)
+      isRead: safeBool(json['isRead']),
+      isDeleted: safeBool(json['isDeleted']),
+      replyToId: json['replyToId'] != null ? safeString(json['replyToId']) : null,
+      replyTo: safeMap(json['replyTo']) != null 
+          ? Message.fromJson(safeMap(json['replyTo'])!)
           : null,
-      product: json['product'] != null 
-          ? Product.fromJson(json['product'] as Map<String, dynamic>)
+      product: safeMap(json['product']) != null 
+          ? _parseProductFromFirebase(safeMap(json['product'])!)
           : null,
     );
   }
   Map<String, dynamic> toJson() => _$MessageToJson(this);
+
+  // Firebase'den gelen product verilerini parse et
+  static Product _parseProductFromFirebase(Map<String, dynamic> productData) {
+    // DateTime'ları güvenli şekilde parse et
+    DateTime parseDateTime(dynamic value) {
+      if (value is DateTime) return value;
+      if (value is String) {
+        try {
+          return DateTime.parse(value);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      return DateTime.now();
+    }
+
+    // Güvenli string dönüşümü
+    String safeString(dynamic value) {
+      if (value is String) return value;
+      if (value != null) return value.toString();
+      return '';
+    }
+
+    // Güvenli liste dönüşümü
+    List<String> safeStringList(dynamic value) {
+      if (value is List) {
+        return value.map((e) => safeString(e)).toList();
+      }
+      return [];
+    }
+
+    return Product(
+      id: safeString(productData['id']),
+      title: safeString(productData['title']),
+      description: safeString(productData['description']),
+      images: safeStringList(productData['images']),
+      categoryId: safeString(productData['categoryId']),
+      categoryName: safeString(productData['categoryName']),
+      category: Category(
+        id: safeString(productData['categoryId']),
+        name: safeString(productData['categoryName']),
+        icon: '',
+        isActive: true,
+        order: 0,
+      ),
+      condition: safeString(productData['condition']),
+      brand: productData['brand'] != null ? safeString(productData['brand']) : null,
+      model: productData['model'] != null ? safeString(productData['model']) : null,
+      estimatedValue: (productData['estimatedValue'] as num?)?.toDouble(),
+      ownerId: safeString(productData['ownerId']),
+      owner: User(
+        id: safeString(productData['ownerId']),
+        name: safeString(productData['ownerName']),
+        email: '',
+        isVerified: false,
+        isOnline: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      tradePreferences: safeStringList(productData['tradePreferences']),
+      status: ProductStatus.values.firstWhere(
+        (e) => e.name == safeString(productData['status']),
+        orElse: () => ProductStatus.active,
+      ),
+      cityId: safeString(productData['cityId']),
+      cityTitle: safeString(productData['cityTitle']),
+      districtId: safeString(productData['districtId']),
+      districtTitle: safeString(productData['districtTitle']),
+      createdAt: parseDateTime(productData['createdAt']),
+      updatedAt: parseDateTime(productData['updatedAt']),
+    );
+  }
 
   Message copyWith({
     String? id,

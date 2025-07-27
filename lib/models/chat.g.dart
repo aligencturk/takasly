@@ -60,6 +60,9 @@ Message _$MessageFromJson(Map<String, dynamic> json) => Message(
   replyTo: json['replyTo'] == null
       ? null
       : Message.fromJson(json['replyTo'] as Map<String, dynamic>),
+  product: json['product'] == null
+      ? null
+      : Product.fromJson(json['product'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
@@ -76,6 +79,7 @@ Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
   'isDeleted': instance.isDeleted,
   'replyToId': instance.replyToId,
   'replyTo': instance.replyTo,
+  'product': instance.product,
 };
 
 const _$MessageTypeEnumMap = {
@@ -87,4 +91,5 @@ const _$MessageTypeEnumMap = {
   MessageType.tradeRejected: 'tradeRejected',
   MessageType.tradeCompleted: 'tradeCompleted',
   MessageType.tradeCancelled: 'tradeCancelled',
+  MessageType.product: 'product',
 };

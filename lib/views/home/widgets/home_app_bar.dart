@@ -11,31 +11,24 @@ class HomeAppBar extends StatelessWidget {
       elevation: 0,
       pinned: true,
       floating: true,
-      title: Text(
-        'Takasly',
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppTheme.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
+      expandedHeight: 60,
+      title: Row(
+        children: [
+          Image.asset(
+            'assets/logo/logo.png',
+            height: 32,
+            width: 32,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Takasly',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
       ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            // TODO: Arama sayfası implementasyonu
-          },
-          icon: const Icon(Icons.search_rounded, color: AppTheme.textPrimary, size: 28),
-          tooltip: 'Ara',
-        ),
-
-        IconButton(
-          onPressed: () {
-            // TODO: Bildirimler sayfası implementasyonu
-          },
-          icon: const Icon(Icons.notifications_outlined, color: AppTheme.textPrimary, size: 28),
-          tooltip: 'Bildirimler',
-        ),
-        const SizedBox(width: 8),
-      ],
     );
   }
 } 

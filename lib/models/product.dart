@@ -1,6 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'user.dart';
-import 'location.dart';
 
 part 'product.g.dart';
 
@@ -58,62 +57,100 @@ class Product {
     // DateTime'ları güvenli şekilde parse et
     DateTime parseDateTime(dynamic value) {
       if (value is DateTime) return value;
-      if (value is String) return DateTime.parse(value);
+      if (value is String) {
+        try {
+          return DateTime.parse(value);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
       if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
       return DateTime.now();
     }
 
+    // Güvenli string dönüşümü
+    String safeString(dynamic value) {
+      if (value is String) return value;
+      if (value != null) return value.toString();
+      return '';
+    }
+
+    // Güvenli liste dönüşümü
+    List<String> safeStringList(dynamic value) {
+      if (value is List) {
+        return value.map((e) => safeString(e)).toList();
+      }
+      return [];
+    }
+
+    // Güvenli Map dönüşümü
+    Map<String, dynamic>? safeMap(dynamic value) {
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) {
+        final Map<String, dynamic> result = {};
+        value.forEach((k, v) {
+          if (k is String) {
+            result[k] = v;
+          }
+        });
+        return result;
+      }
+      return null;
+    }
+
     return Product(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
-      images: (json['images'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ?? [],
-      categoryId: json['categoryId'] as String,
-      categoryName: json['categoryName'] as String,
-      category: json['category'] != null 
-          ? Category.fromJson(json['category'] as Map<String, dynamic>)
+      id: safeString(json['id']),
+      title: safeString(json['title']),
+      description: safeString(json['description']),
+      images: safeStringList(json['images']),
+      categoryId: safeString(json['categoryId']),
+      categoryName: safeString(json['categoryName']),
+      category: safeMap(json['category']) != null 
+          ? Category.fromJson(safeMap(json['category'])!)
           : Category(
-              id: '',
-              name: '',
+              id: safeString(json['categoryId']),
+              name: safeString(json['categoryName']),
               icon: '',
               isActive: true,
               order: 0,
             ),
-      condition: json['condition'] as String,
-      brand: json['brand'] as String?,
-      model: json['model'] as String?,
+      condition: safeString(json['condition']),
+      brand: json['brand'] != null ? safeString(json['brand']) : null,
+      model: json['model'] != null ? safeString(json['model']) : null,
       estimatedValue: (json['estimatedValue'] as num?)?.toDouble(),
-      ownerId: json['ownerId'] as String,
-      owner: json['owner'] != null 
-          ? User.fromJson(json['owner'] as Map<String, dynamic>)
+      ownerId: safeString(json['ownerId']),
+      owner: safeMap(json['owner']) != null 
+          ? User.fromJson(safeMap(json['owner'])!)
           : User(
-              id: '',
-              name: '',
+              id: safeString(json['ownerId']),
+              name: 'Kullanıcı',
               email: '',
               isVerified: false,
               isOnline: false,
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             ),
-      tradePreferences: (json['tradePreferences'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ?? [],
+      tradePreferences: safeStringList(json['tradePreferences']),
       status: ProductStatus.values.firstWhere(
-        (e) => e.name == json['status'],
+        (e) => e.name == safeString(json['status']),
         orElse: () => ProductStatus.active,
       ),
-      cityId: json['cityId'] as String,
-      cityTitle: json['cityTitle'] as String,
-      districtId: json['districtId'] as String,
-      districtTitle: json['districtTitle'] as String,
+      cityId: safeString(json['cityId']),
+      cityTitle: safeString(json['cityTitle']),
+      districtId: safeString(json['districtId']),
+      districtTitle: safeString(json['districtTitle']),
       createdAt: parseDateTime(json['createdAt']),
       updatedAt: parseDateTime(json['updatedAt']),
       expiresAt: json['expiresAt'] != null ? parseDateTime(json['expiresAt']) : null,
     );
   }
-  Map<String, dynamic> toJson() => _$ProductToJson(this);
+  Map<String, dynamic> toJson() {
+    final json = _$ProductToJson(this);
+    // Category ve User nesnelerini Firebase uyumlu hale getir
+    json['category'] = category.toJson();
+    json['owner'] = owner.toJson();
+    return json;
+  }
 
   Product copyWith({
     String? id,
@@ -200,8 +237,58 @@ class Category {
     required this.order,
   });
 
-  factory Category.fromJson(Map<String, dynamic> json) => _$CategoryFromJson(json);
-  Map<String, dynamic> toJson() => _$CategoryToJson(this);
+  factory Category.fromJson(Map<String, dynamic> json) {
+    // Güvenli string dönüşümü
+    String safeString(dynamic value) {
+      if (value is String) return value;
+      if (value != null) return value.toString();
+      return '';
+    }
+
+    // Güvenli int dönüşümü
+    int safeInt(dynamic value, {int defaultValue = 0}) {
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? defaultValue;
+      if (value is num) return value.toInt();
+      return defaultValue;
+    }
+
+    // Güvenli bool dönüşümü
+    bool safeBool(dynamic value, {bool defaultValue = true}) {
+      if (value is bool) return value;
+      if (value is String) return value.toLowerCase() == 'true';
+      if (value is int) return value != 0;
+      return defaultValue;
+    }
+
+    // Güvenli liste dönüşümü
+    List<Category>? safeCategoryList(dynamic value) {
+      if (value is List) {
+        return value.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
+      }
+      return null;
+    }
+
+    return Category(
+      id: safeString(json['id']),
+      name: safeString(json['name']),
+      icon: safeString(json['icon']),
+      parentId: json['parentId'] != null ? safeString(json['parentId']) : null,
+      children: safeCategoryList(json['children']),
+      isActive: safeBool(json['isActive']),
+      order: safeInt(json['order']),
+    );
+  }
+  
+  // Firebase uyumlu toJson metodu
+  Map<String, dynamic> toJson() {
+    final json = _$CategoryToJson(this);
+    // children alanını Firebase uyumlu hale getir
+    if (children != null) {
+      json['children'] = children!.map((child) => child.toJson()).toList();
+    }
+    return json;
+  }
 
   Category copyWith({
     String? id,

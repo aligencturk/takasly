@@ -13,20 +13,24 @@ class ChatViewModel extends ChangeNotifier {
   List<Chat> _chats = [];
   List<Message> _messages = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false; // Pagination için
   String? _error;
   int _unreadCount = 0;
   String? _currentChatId;
   String? _currentUserId;
   Map<String, int> _chatUnreadCounts = {};
+  bool _hasMoreMessages = true; // Daha fazla mesaj var mı?
 
   // Getters
   List<Chat> get chats => _chats;
   List<Message> get messages => _messages;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
   String? get error => _error;
   int get unreadCount => _unreadCount;
   String? get currentChatId => _currentChatId;
   Map<String, int> get chatUnreadCounts => _chatUnreadCounts;
+  bool get hasMoreMessages => _hasMoreMessages;
 
   // Chat'leri yükle
   void loadChats(String userId) {
@@ -38,6 +42,10 @@ class ChatViewModel extends ChangeNotifier {
     try {
       _chatService.getChatsStream(userId).listen(
         (chats) {
+          print('DEBUG: Loaded ${chats.length} chats');
+          for (final chat in chats) {
+            print('DEBUG: Chat ${chat.id} - lastMessage: ${chat.lastMessage?.content ?? 'null'}');
+          }
           _chats = chats;
           _isLoading = false;
           // Her chat için unread count hesapla
@@ -72,6 +80,8 @@ class ChatViewModel extends ChangeNotifier {
         (messages) {
           _messages = messages;
           _isLoading = false;
+          // Unread count'ları güncelle
+          _calculateChatUnreadCounts();
           notifyListeners();
         },
         onError: (error) {
@@ -137,10 +147,42 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  // Mesajı okundu olarak işaretle
+  // Mesajları okundu olarak işaretle
+  Future<void> markMessagesAsRead(String chatId, String userId) async {
+    try {
+      // Bu chat'teki okunmamış mesajları bul
+      final unreadMessages = _messages.where((message) => 
+        message.chatId == chatId && 
+        message.senderId != userId && 
+        !message.isRead && 
+        !message.isDeleted
+      ).toList();
+      
+      // Her okunmamış mesajı işaretle
+      for (final message in unreadMessages) {
+        await _chatService.markMessageAsRead(chatId, message.id);
+      }
+      
+      // Unread count'ları güncelle
+      _calculateChatUnreadCounts();
+      notifyListeners();
+      
+      Logger.info('${unreadMessages.length} mesaj okundu olarak işaretlendi', tag: _tag);
+    } catch (e) {
+      Logger.error('Mesaj okundu işaretleme hatası: $e', tag: _tag);
+    }
+  }
+
+  // Belirli bir mesajı okundu olarak işaretle
   Future<void> markMessageAsRead(String chatId, String messageId) async {
     try {
       await _chatService.markMessageAsRead(chatId, messageId);
+      
+      // Unread count'ları güncelle
+      _calculateChatUnreadCounts();
+      notifyListeners();
+      
+      Logger.info('Mesaj okundu olarak işaretlendi: $messageId', tag: _tag);
     } catch (e) {
       Logger.error('Mesaj okundu işaretleme hatası: $e', tag: _tag);
     }
@@ -218,6 +260,44 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Daha eski mesajları yükle (pagination)
+  Future<void> loadOlderMessages() async {
+    if (_isLoadingMore || !_hasMoreMessages || _messages.isEmpty) return;
+    
+    _isLoadingMore = true;
+    notifyListeners();
+    
+    try {
+      // En eski mesajın zamanını al
+      final oldestMessage = _messages.first;
+      final olderMessages = await _chatService.loadOlderMessages(
+        _currentChatId!,
+        oldestMessage.createdAt,
+        limit: 20,
+      );
+      
+      if (olderMessages.isNotEmpty) {
+        // Yeni mesajları listenin başına ekle
+        _messages.insertAll(0, olderMessages);
+        
+        // Eğer 20'den az mesaj geldiyse, daha fazla mesaj yok demektir
+        if (olderMessages.length < 20) {
+          _hasMoreMessages = false;
+        }
+      } else {
+        _hasMoreMessages = false;
+      }
+      
+      _isLoadingMore = false;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      _isLoadingMore = false;
+      notifyListeners();
+      Logger.error('Eski mesaj yükleme hatası: $e', tag: _tag);
+    }
+  }
+
   // Her chat için unread count hesapla
   void _calculateChatUnreadCounts() {
     _chatUnreadCounts.clear();
@@ -237,5 +317,8 @@ class ChatViewModel extends ChangeNotifier {
       
       _chatUnreadCounts[chat.id] = unreadCount;
     }
+    
+    // Toplam unread count'u hesapla
+    _unreadCount = _chatUnreadCounts.values.fold(0, (sum, count) => sum + count);
   }
 } 

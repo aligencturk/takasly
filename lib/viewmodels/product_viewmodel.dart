@@ -1009,6 +1009,8 @@ class ProductViewModel extends ChangeNotifier {
     required String conditionId,
     required String tradeFor,
     required List<File> productImages,
+    String? selectedCityId,
+    String? selectedDistrictId,
   }) async {
     print('🚀 addProductWithEndpoint başlatıldı');
     print('📝 Parametreler:');
@@ -1018,6 +1020,8 @@ class ProductViewModel extends ChangeNotifier {
     print('  - conditionId: $conditionId');
     print('  - tradeFor: $tradeFor');
     print('  - productImages count: ${productImages.length}');
+    print('  - selectedCityId: $selectedCityId');
+    print('  - selectedDistrictId: $selectedDistrictId');
 
     // Validasyonlar
     if (productTitle.trim().isEmpty || productDescription.trim().isEmpty) {
@@ -1085,6 +1089,8 @@ class ProductViewModel extends ChangeNotifier {
         conditionId: conditionId,
         tradeFor: tradeFor,
         productImages: productImages,
+        selectedCityId: selectedCityId,
+        selectedDistrictId: selectedDistrictId,
       );
 
       print('📡 API response alındı');

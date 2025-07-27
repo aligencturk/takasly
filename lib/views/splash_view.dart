@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../core/constants.dart';
+import '../services/location_service.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -22,12 +23,54 @@ class _SplashViewState extends State<SplashView> {
     
     if (!mounted) return;
     
+    // Konum izinlerini kontrol et ve iste
+    await _requestLocationPermission();
+    
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     
     if (authViewModel.isLoggedIn) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  Future<void> _requestLocationPermission() async {
+    try {
+      print('📍 SplashView: Konum izinleri kontrol ediliyor...');
+      final locationService = LocationService();
+      
+      // Konum servisinin aktif olup olmadığını kontrol et
+      final isLocationEnabled = await locationService.isLocationServiceEnabled();
+      print('📍 Konum servisi aktif mi: $isLocationEnabled');
+      
+      if (!isLocationEnabled) {
+        print('⚠️ Konum servisi kapalı - Emülatörde açmanız gerekebilir');
+        print('📍 Settings > Location > Location services açın');
+        return;
+      }
+      
+      // Konum iznini iste
+      print('📍 Konum izni isteniyor...');
+      final hasPermission = await locationService.requestLocationPermission();
+      print('📍 Konum izni sonucu: $hasPermission');
+      
+      if (hasPermission) {
+        print('✅ Konum izni verildi');
+        // Test için konumu al
+        print('📍 Konum alınmaya çalışılıyor...');
+        final position = await locationService.getCurrentLocation();
+        if (position != null) {
+          print('📍 Konum alındı: ${position.latitude}, ${position.longitude}');
+        } else {
+          print('⚠️ Konum alınamadı - Emülatörde test konumu ayarlayın');
+        }
+      } else {
+        print('❌ Konum izni reddedildi');
+        print('📍 Emülatörde: Settings > Apps > Takasly > Permissions > Location > Allow');
+      }
+    } catch (e) {
+      print('❌ Konum izni alınırken hata: $e');
     }
   }
 
