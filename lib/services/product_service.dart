@@ -465,7 +465,7 @@ class ProductService {
                 ),
                 tradePreferences: [],
                 status: ProductStatus.active,
-                createdAt: _parseDate(productJson['createdAt']),
+                createdAt: _parseDate(productJson['createdAt']?.toString()),
                 updatedAt: DateTime.now(),
                 expiresAt: null,
               );
@@ -622,27 +622,27 @@ class ProductService {
 
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
-      title: apiProduct['productTitle'] ?? '',
-      description: apiProduct['productDesc'] ?? '',
+      title: apiProduct['productTitle']?.toString() ?? '',
+      description: apiProduct['productDesc']?.toString() ?? '',
       images: images,
       categoryId: apiProduct['categoryID']?.toString() ?? '',
-      categoryName: apiProduct['categoryTitle'],
+      categoryName: apiProduct['categoryTitle']?.toString() ?? '',
       category: Category(
         id: apiProduct['categoryID']?.toString() ?? '',
-        name: apiProduct['categoryTitle'] ?? 'Kategori',
+        name: apiProduct['categoryTitle']?.toString() ?? 'Kategori',
         icon: '',
         parentId: apiProduct['parentCategoryID']?.toString(), // Alt kategori bilgisi
         children: null,
         isActive: true,
         order: 0,
       ),
-      condition: apiProduct['productCondition'] ?? '',
+      condition: apiProduct['productCondition']?.toString() ?? '',
       ownerId: apiProduct['userID']?.toString() ?? '',
       owner: User(
         id: apiProduct['userID']?.toString() ?? '',
-        name: apiProduct['userFullname'] ?? 'Kullanıcı',
-        firstName: apiProduct['userFirstname'],
-        lastName: apiProduct['userLastname'],
+        name: apiProduct['userFullname']?.toString() ?? 'Kullanıcı',
+        firstName: apiProduct['userFirstname']?.toString(),
+        lastName: apiProduct['userLastname']?.toString(),
         email: '', // API'de email yok
         isVerified: false,
         isOnline: true,
@@ -652,10 +652,10 @@ class ProductService {
       tradePreferences: [], // API'de trade preferences yok
       status: ProductStatus.active,
       cityId: apiProduct['cityID']?.toString() ?? '',
-      cityTitle: apiProduct['cityTitle'] ?? '',
+      cityTitle: apiProduct['cityTitle']?.toString() ?? '',
       districtId: apiProduct['districtID']?.toString() ?? '',
-      districtTitle: apiProduct['districtTitle'] ?? '',
-      createdAt: _parseDate(apiProduct['createdAt']),
+      districtTitle: apiProduct['districtTitle']?.toString() ?? '',
+      createdAt: _parseDate(apiProduct['createdAt']?.toString()),
       updatedAt: DateTime.now(),
     );
   }
@@ -1478,41 +1478,164 @@ class ProductService {
 
   Future<ApiResponse<void>> addToFavorites(String productId) async {
     try {
-      final response = await _httpClient.post(
-        '${ApiConstants.products}/$productId/favorite',
-        fromJson: (json) => null,
+      // User token'ı al
+      String userToken = '';
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
+        print('🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}');
+      } catch (e) {
+        print('⚠️ Error getting user token: $e');
+      }
+
+      // API body'sini hazırla
+      final body = {
+        'userToken': userToken,
+        'productID': productId,
+      };
+      print('🌐 Add to favorites body: $body');
+
+      final response = await _httpClient.postWithBasicAuth(
+        'service/user/product/addFavorite',
+        body: body,
+        fromJson: (json) {
+          print('📥 Add to favorites response: $json');
+          return null;
+        },
+        useBasicAuth: true,
       );
 
       return response;
     } catch (e) {
+      print('❌ Error adding to favorites: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
 
   Future<ApiResponse<void>> removeFromFavorites(String productId) async {
     try {
-      final response = await _httpClient.delete(
-        '${ApiConstants.products}/$productId/favorite',
-        fromJson: (json) => null,
+      // User token'ı al
+      String userToken = '';
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
+        print('🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}');
+      } catch (e) {
+        print('⚠️ Error getting user token: $e');
+      }
+
+      // API body'sini hazırla
+      final body = {
+        'userToken': userToken,
+        'productID': productId,
+      };
+      print('🌐 Remove from favorites body: $body');
+
+      final response = await _httpClient.deleteWithBasicAuth(
+        'service/user/product/removeFavorite',
+        body: body,
+        fromJson: (json) {
+          print('📥 Remove from favorites response: $json');
+          return null;
+        },
       );
 
       return response;
     } catch (e) {
+      print('❌ Error removing from favorites: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
 
   Future<ApiResponse<List<Product>>> getFavoriteProducts() async {
     try {
-      final response = await _httpClient.get(
-        '${ApiConstants.products}/favorites',
-        fromJson: (json) => (json['products'] as List)
-            .map((item) => Product.fromJson(item))
-            .toList(),
+      // User token'ı al
+      String userToken = '';
+      String userId = '';
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
+        userId = prefs.getString(AppConstants.userIdKey) ?? '';
+        print('🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}');
+        print('🔑 User ID retrieved: $userId');
+      } catch (e) {
+        print('⚠️ Error getting user token: $e');
+      }
+
+      // Query parametreleri hazırla
+      final queryParams = {'userToken': userToken};
+      print('🌐 Get favorites query params: $queryParams');
+
+      final response = await _httpClient.getWithBasicAuth(
+        'service/user/product/2/favoriteList',
+        queryParams: queryParams,
+        fromJson: (json) {
+          print('📥 Get favorites response: $json');
+          
+          // API response formatını kontrol et
+          if (json == null) {
+            print('❌ Get favorites response is null');
+            return <Product>[];
+          }
+
+          // 410 status code için özel handling (başarılı response)
+          if (json case {'error': false, '410': 'Gone'}) {
+            print('🔍 Get favorites - 410 Gone response (success)');
+            if (json['data'] != null && json['data']['products'] != null) {
+              final productsList = json['data']['products'] as List;
+              print('📦 410 response returned ${productsList.length} favorite products');
+              final products = productsList
+                  .map((item) => _transformNewApiProductToModel(item))
+                  .toList();
+              print('📦 Parsed ${products.length} favorite products successfully from 410');
+              return products;
+            }
+            return <Product>[];
+          }
+
+          // Normal success response
+          if (json case {'error': false, 'success': true}) {
+            print('🔍 Get favorites - Normal success response');
+            if (json['data'] != null && json['data']['products'] != null) {
+              final productsList = json['data']['products'] as List;
+              print('📦 Success response returned ${productsList.length} favorite products');
+              final products = productsList
+                  .map((item) => _transformNewApiProductToModel(item))
+                  .toList();
+              print('📦 Parsed ${products.length} favorite products successfully');
+              return products;
+            }
+            return <Product>[];
+          }
+
+          // Boş success response
+          if (json case {'error': false, '200': 'OK'}) {
+            print('🔍 Get favorites - Empty success response');
+            return <Product>[];
+          }
+
+          // Diğer response formatları
+          if (json['data'] != null) {
+            if (json['data']['products'] != null) {
+              final productsList = json['data']['products'] as List;
+              print('📦 Get favorites returned ${productsList.length} products');
+              final products = productsList
+                  .map((item) => _transformNewApiProductToModel(item))
+                  .toList();
+              print('📦 Parsed ${products.length} favorite products successfully');
+              return products;
+            }
+          }
+
+          print('❌ Get favorites - No products found in response');
+          print('❌ Available keys: ${json.keys.toList()}');
+          return <Product>[];
+        },
       );
 
       return response;
     } catch (e) {
+      print('❌ Error getting favorite products: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

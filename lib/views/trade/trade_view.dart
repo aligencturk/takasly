@@ -80,6 +80,15 @@ class _TradeViewState extends State<TradeView>
         '🔄 TradeView - calling productViewModel.loadUserProducts($userId)',
       );
       await productViewModel.loadUserProducts(userId);
+      
+      print(
+        '🔄 TradeView - calling productViewModel.loadFavoriteProducts()',
+      );
+      await productViewModel.loadFavoriteProducts();
+      
+      // Favorilerin yüklendiğini kontrol et
+      print('🔍 TradeView - Checking if favorites loaded successfully');
+      print('🔍 TradeView - favoriteProducts.length: ${productViewModel.favoriteProducts.length}');
     } else {
       print(
         '❌ TradeView - User ID is null or empty, user might not be logged in',
@@ -527,85 +536,259 @@ class _TradeViewState extends State<TradeView>
   }
 
   Widget _buildFavoritesTab() {
-    return Container(
-      color: Color(0xFFF8FAFF),
-      child: Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Animated Container
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFFF56565).withOpacity(0.1),
-                      Color(0xFFE53E3E).withOpacity(0.1),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(60),
-                ),
-                child: Icon(
-                  Icons.favorite_outline,
-                  size: 50,
-                  color: Color(0xFFF56565),
-                ),
-              ),
-              SizedBox(height: 24),
-                             Text(
-                 'Favori İlanların',
-                 style: TextStyle(
-                   fontSize: 18,
-                   fontWeight: FontWeight.w600,
-                   color: Color(0xFF2D3748),
-                 ),
-               ),
-              SizedBox(height: 8),
-                             Text(
-                 'Beğendiğin ilanları burada saklayabileceksin',
-                 style: TextStyle(
-                   fontSize: 14,
-                   color: Color(0xFF718096),
-                 ),
-                 textAlign: TextAlign.center,
-               ),
-              SizedBox(height: 32),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Color(0xFFF56565).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(
-                    color: Color(0xFFF56565).withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.construction_outlined,
-                      size: 18,
+    return Consumer<ProductViewModel>(
+      builder: (context, productViewModel, child) {
+        print('🎨 TradeView._buildFavoritesTab called');
+        print('🎨 TradeView - favoriteProducts.length: ${productViewModel.favoriteProducts.length}');
+        print('🎨 TradeView - isLoadingFavorites: ${productViewModel.isLoadingFavorites}');
+        print('🎨 TradeView - hasErrorFavorites: ${productViewModel.hasErrorFavorites}');
+        print('🎨 TradeView - favoriteErrorMessage: ${productViewModel.favoriteErrorMessage}');
+
+        if (productViewModel.isLoadingFavorites) {
+          print('🎨 TradeView - Showing loading for favorites');
+          return Container(
+            color: Color(0xFFF8FAFF),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: CircularProgressIndicator(
                       color: Color(0xFFF56565),
                     ),
-                    SizedBox(width: 8),
-                                         Text(
-                       'Yakında Aktif',
-                       style: TextStyle(
-                         color: Color(0xFFF56565),
-                         fontSize: 12,
-                         fontWeight: FontWeight.w600,
-                       ),
-                     ),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Favoriler yükleniyor...',
+                    style: TextStyle(
+                      color: Color(0xFFF56565),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (productViewModel.hasErrorFavorites) {
+          print('🎨 TradeView - Showing error for favorites');
+          return CustomErrorWidget(
+            message: productViewModel.favoriteErrorMessage ?? 'Favoriler yüklenirken hata oluştu',
+            onRetry: () async {
+              await productViewModel.loadFavoriteProducts();
+            },
+          );
+        }
+
+        if (productViewModel.favoriteProducts.isEmpty) {
+          print('🎨 TradeView - No favorite products, showing empty state');
+          return Container(
+            color: Color(0xFFF8FAFF),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Animated Container
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFF56565).withOpacity(0.1),
+                            Color(0xFFE53E3E).withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(60),
+                      ),
+                      child: Icon(
+                        Icons.favorite_outline,
+                        size: 50,
+                        color: Color(0xFFF56565),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      'Henüz favori ilanın yok!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2D3748),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Beğendiğin ilanları favorilere ekleyerek burada görebilirsin',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF718096),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 16),
+                    // Yenile butonu ekle
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Color(0xFFF56565).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Color(0xFFF56565).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () async {
+                            print('🔄 TradeView - Manually refreshing favorites');
+                            await productViewModel.loadFavoriteProducts();
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.refresh, color: Color(0xFFF56565), size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Yenile',
+                                  style: TextStyle(
+                                    color: Color(0xFFF56565),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFFF56565).withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            // Ana sayfaya yönlendir
+                            Navigator.of(context).pushReplacementNamed('/home');
+                          },
+                          borderRadius: BorderRadius.circular(25),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.home, color: Colors.white, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'İlanları Keşfet',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ],
+            ),
+          );
+        }
+
+        print('🎨 TradeView - Building favorites grid with ${productViewModel.favoriteProducts.length} products');
+        return Container(
+          color: Color(0xFFF8FAFF),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await productViewModel.loadFavoriteProducts();
+            },
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: productViewModel.favoriteProducts.length,
+                itemBuilder: (context, index) {
+                  final product = productViewModel.favoriteProducts[index];
+                  print('🎨 Building FavoriteProductCard for index $index: ${product.title}');
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          print('🎨 FavoriteProductCard tapped: ${product.title}');
+                          _showFavoriteProductDetails(product);
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: ProductCard(
+                          product: product,
+                          heroTag: 'favorite_${product.id}_$index',
+                          onTap: () {
+                            print('🎨 FavoriteProductCard tapped: ${product.title}');
+                            _showFavoriteProductDetails(product);
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1274,6 +1457,383 @@ class _TradeViewState extends State<TradeView>
     // Eğer ürün güncellendiyse listeyi yenile
     if (result == true) {
       _loadData();
+    }
+  }
+
+  void _showFavoriteProductDetails(dynamic product) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Color(0xFFF8FAFF),
+              ],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.favorite,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        product.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Ürün resmi
+                      if (product.images.isNotEmpty)
+                        Container(
+                          height: 200,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.grey.shade200,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Builder(
+                              builder: (context) {
+                                final imageUrl = product.images.first;
+                                
+                                if (imageUrl.isEmpty || imageUrl == 'null' || imageUrl == 'undefined') {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Color(0xFFF56565).withOpacity(0.1),
+                                          Color(0xFFE53E3E).withOpacity(0.1),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 50,
+                                      color: Color(0xFFF56565),
+                                    ),
+                                  );
+                                }
+                                
+                                return CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Color(0xFFF56565).withOpacity(0.1),
+                                          Color(0xFFE53E3E).withOpacity(0.1),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: Color(0xFFF56565),
+                                      ),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xFFF56565).withOpacity(0.1),
+                                            Color(0xFFE53E3E).withOpacity(0.1),
+                                          ],
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        size: 50,
+                                        color: Color(0xFFF56565),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+
+                      if (product.images.isNotEmpty) SizedBox(height: 20),
+
+                      // Açıklama
+                      _buildDetailCard(
+                        'Açıklama',
+                        product.description.isNotEmpty
+                            ? product.description
+                            : 'Açıklama belirtilmemiş',
+                        icon: Icons.description_outlined,
+                      ),
+
+                      SizedBox(height: 16),
+
+                      // Durum
+                      _buildDetailCard(
+                        'Durum',
+                        product.condition,
+                        icon: Icons.info_outline,
+                        isChip: true,
+                        chipColor: Color(0xFF10B981),
+                      ),
+
+                      SizedBox(height: 16),
+
+                      // Kategori
+                      _buildDetailCard(
+                        'Kategori',
+                        product.category.name,
+                        icon: Icons.category_outlined,
+                      ),
+
+                      SizedBox(height: 16),
+
+                      // Takas tercihleri
+                      if (product.tradePreferences.isNotEmpty)
+                        _buildDetailCard(
+                          'Takas Tercihi',
+                          product.tradePreferences.join(', '),
+                          icon: Icons.swap_horiz_outlined,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Actions
+              Container(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Favorilerden Çıkar butonu
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFFF56565).withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await _removeFromFavorites(product.id);
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.favorite_border, color: Colors.white, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Favorilerden Çıkar',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    // İlanları Keşfet butonu
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF667EEA).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Color(0xFF667EEA).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.of(context).pushReplacementNamed('/home');
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.home, color: Color(0xFF667EEA), size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'İlanları Keşfet',
+                                  style: TextStyle(
+                                    color: Color(0xFF667EEA),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _removeFromFavorites(String productId) async {
+    print('💔 TradeView - Removing product from favorites: $productId');
+
+    try {
+      final productViewModel = Provider.of<ProductViewModel>(
+        context,
+        listen: false,
+      );
+      final success = await productViewModel.toggleFavorite(productId);
+
+      if (success) {
+        print('✅ TradeView - Product removed from favorites successfully');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.favorite_border, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Ürün favorilerden çıkarıldı'),
+                ],
+              ),
+              backgroundColor: Color(0xFFF56565),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              action: SnackBarAction(
+                label: 'Tamam',
+                textColor: Colors.white,
+                onPressed: () {},
+              ),
+            ),
+          );
+        }
+      } else {
+        print('❌ TradeView - Failed to remove product from favorites');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Favorilerden çıkarılamadı'),
+                ],
+              ),
+              backgroundColor: Color(0xFFF56565),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              action: SnackBarAction(
+                label: 'Tamam',
+                textColor: Colors.white,
+                onPressed: () {},
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('💥 TradeView - Remove from favorites exception: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Favorilerden çıkarılırken hata oluştu'),
+              ],
+            ),
+            backgroundColor: Color(0xFFF56565),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
     }
   }
 }

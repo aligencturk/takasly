@@ -40,6 +40,8 @@ class _ProfileViewState extends State<ProfileView>
       final userId = userViewModel.currentUser?.id;
       if (userId != null) {
         productViewModel.loadUserProducts(userId);
+        // Favori ürünleri de yükle
+        productViewModel.loadFavoriteProducts();
       }
     });
   }
@@ -63,10 +65,11 @@ class _ProfileViewState extends State<ProfileView>
 
           final user = userVm.currentUser!;
           final productCount = productVm.myProducts.length;
+          final favoriteCount = productVm.favoriteProducts.length;
           return SingleChildScrollView(
             child: Column(
               children: [
-                _buildProfileHeader(context, user, productCount),
+                _buildProfileHeader(context, user, productCount, favoriteCount),
                 _buildSectionHeader(productCount),
                 _buildProductsSection(user),
                 const SizedBox(height: 20),
@@ -108,7 +111,7 @@ class _ProfileViewState extends State<ProfileView>
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, User user, int productCount) {
+  Widget _buildProfileHeader(BuildContext context, User user, int productCount, int favoriteCount) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
@@ -251,7 +254,7 @@ class _ProfileViewState extends State<ProfileView>
                 _buildStatItem(
                   context,
                   icon: Icons.favorite_border,
-                  count: '0',
+                  count: favoriteCount.toString(),
                   label: 'Favori',
                 ),
                 Container(

@@ -29,8 +29,10 @@ class ProductViewModel extends ChangeNotifier {
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
+  bool _isLoadingFavorites = false;
   bool _hasMore = true;
   String? _errorMessage;
+  String? _favoriteErrorMessage;
 
   int _currentPage = 1;
   String? _currentCategoryId;
@@ -60,9 +62,12 @@ class ProductViewModel extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
+  bool get isLoadingFavorites => _isLoadingFavorites;
   bool get hasMore => _hasMore;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
+  bool get hasErrorFavorites => _favoriteErrorMessage != null;
+  String? get favoriteErrorMessage => _favoriteErrorMessage;
 
   int get currentPage => _currentPage;
   String? get currentCategoryId => _currentFilter.categoryId;
@@ -366,21 +371,39 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadFavoriteProducts() async {
-    _setLoading(true);
-    _clearError();
+    print('🔄 ProductViewModel.loadFavoriteProducts - Starting to load favorite products');
+    _setLoadingFavorites(true);
+    _clearFavoriteError();
 
     try {
+      print('🌐 ProductViewModel.loadFavoriteProducts - Calling productService.getFavoriteProducts()');
       final response = await _productService.getFavoriteProducts();
+      
+      print('📡 ProductViewModel.loadFavoriteProducts - Response received');
+      print('📊 Response isSuccess: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data length: ${response.data?.length ?? 0}');
 
       if (response.isSuccess && response.data != null) {
         _favoriteProducts = response.data!;
+        print('✅ ProductViewModel.loadFavoriteProducts - Successfully loaded ${_favoriteProducts.length} favorite products');
+        
+        // Favori ürünlerin detaylarını yazdır
+        for (int i = 0; i < _favoriteProducts.length; i++) {
+          final product = _favoriteProducts[i];
+          print('📦 Favorite product $i: ${product.title} (ID: ${product.id})');
+        }
       } else {
-        _setError(response.error ?? ErrorMessages.unknownError);
+        final errorMessage = response.error ?? ErrorMessages.unknownError;
+        print('❌ ProductViewModel.loadFavoriteProducts - API error: $errorMessage');
+        _setFavoriteError(errorMessage);
       }
     } catch (e) {
-      _setError(ErrorMessages.unknownError);
+      print('💥 ProductViewModel.loadFavoriteProducts - Exception: $e');
+      _setFavoriteError(ErrorMessages.unknownError);
     } finally {
-      _setLoading(false);
+      _setLoadingFavorites(false);
+      print('🏁 ProductViewModel.loadFavoriteProducts - Completed');
     }
   }
 
@@ -632,27 +655,62 @@ class ProductViewModel extends ChangeNotifier {
 
   Future<bool> toggleFavorite(String productId) async {
     try {
+      print('🔄 ProductViewModel.toggleFavorite - Toggling favorite for product: $productId');
       final isFavorite = _favoriteProducts.any((p) => p.id == productId);
+      print('🔍 ProductViewModel.toggleFavorite - Is currently favorite: $isFavorite');
 
       if (isFavorite) {
+        // Favorilerden çıkar
+        print('🗑️ ProductViewModel.toggleFavorite - Removing from favorites');
         final response = await _productService.removeFromFavorites(productId);
         if (response.isSuccess) {
           _favoriteProducts.removeWhere((p) => p.id == productId);
+          print('✅ ProductViewModel.toggleFavorite - Successfully removed from favorites');
           notifyListeners();
           return true;
+        } else {
+          print('❌ ProductViewModel.toggleFavorite - Failed to remove from favorites: ${response.error}');
         }
       } else {
+        // Favorilere ekle
+        print('❤️ ProductViewModel.toggleFavorite - Adding to favorites');
         final response = await _productService.addToFavorites(productId);
         if (response.isSuccess) {
           // Favorilere eklenen ürünü bulup listeye ekle
-          final product = _products.firstWhere((p) => p.id == productId);
-          _favoriteProducts.add(product);
-          notifyListeners();
-          return true;
+          product_model.Product? productToAdd;
+          
+          // Önce _products listesinde ara
+          try {
+            productToAdd = _products.firstWhere((p) => p.id == productId);
+            print('✅ ProductViewModel.toggleFavorite - Found product in _products list');
+          } catch (e) {
+            print('⚠️ ProductViewModel.toggleFavorite - Product not found in _products, trying _myProducts');
+            // _products'da bulunamazsa _myProducts'da ara
+            try {
+              productToAdd = _myProducts.firstWhere((p) => p.id == productId);
+              print('✅ ProductViewModel.toggleFavorite - Found product in _myProducts list');
+            } catch (e) {
+              print('❌ ProductViewModel.toggleFavorite - Product not found in any list, will reload favorites');
+              // Hiçbir listede bulunamazsa favorileri yeniden yükle
+              await loadFavoriteProducts();
+              notifyListeners();
+              return true;
+            }
+          }
+          
+          if (productToAdd != null) {
+            _favoriteProducts.add(productToAdd);
+            print('✅ ProductViewModel.toggleFavorite - Successfully added to favorites');
+            notifyListeners();
+            return true;
+          }
+        } else {
+          print('❌ ProductViewModel.toggleFavorite - Failed to add to favorites: ${response.error}');
         }
       }
       return false;
     } catch (e) {
+      print('💥 ProductViewModel.toggleFavorite - Exception: $e');
       return false;
     }
   }
@@ -699,13 +757,28 @@ class ProductViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _setLoadingFavorites(bool loading) {
+    _isLoadingFavorites = loading;
+    notifyListeners();
+  }
+
   void _setError(String error) {
     _errorMessage = error;
     notifyListeners();
   }
 
+  void _setFavoriteError(String error) {
+    _favoriteErrorMessage = error;
+    notifyListeners();
+  }
+
   void _clearError() {
     _errorMessage = null;
+    notifyListeners();
+  }
+
+  void _clearFavoriteError() {
+    _favoriteErrorMessage = null;
     notifyListeners();
   }
 
