@@ -5,6 +5,7 @@ import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../models/chat.dart';
+import '../../models/product.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
@@ -14,18 +15,29 @@ class ProductDetailView extends StatelessWidget {
   final String productId;
   const ProductDetailView({super.key, required this.productId});
 
+  void _showSnackBar(BuildContext context, String message, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? AppTheme.error : AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: Provider.of<ProductViewModel>(context, listen: false),
-      child: _ProductDetailBody(productId: productId),
+      child: _ProductDetailBody(productId: productId, onShowSnackBar: (msg, {error = false}) => _showSnackBar(context, msg, error: error)),
     );
   }
 }
 
 class _ProductDetailBody extends StatefulWidget {
   final String productId;
-  const _ProductDetailBody({required this.productId});
+  final void Function(String message, {bool error})? onShowSnackBar;
+  const _ProductDetailBody({required this.productId, this.onShowSnackBar});
 
   @override
   State<_ProductDetailBody> createState() => _ProductDetailBodyState();
@@ -149,7 +161,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
                   ],
                 ),
               ),
-              _ActionBar(product: product),
+              _ActionBar(product: product, onShowSnackBar: widget.onShowSnackBar),
             ],
           ),
         );
@@ -280,7 +292,7 @@ class _ImageCarousel extends StatelessWidget {
 }
 
 class _ProductInfo extends StatelessWidget {
-  final dynamic product;
+  final Product product;
 
   const _ProductInfo({required this.product});
 
@@ -437,7 +449,7 @@ class _ProductInfo extends StatelessWidget {
     );
   }
 
-  String _getCategoryDisplayName(dynamic product) {
+  String _getCategoryDisplayName(Product product) {
     if (product.category == null) return 'Belirtilmemiş';
     
     if (product.category.parentId != null) {
@@ -489,9 +501,10 @@ class _ProductInfo extends StatelessWidget {
 }
 
 class _ActionBar extends StatelessWidget {
-  final dynamic product;
+  final Product product;
+  final void Function(String message, {bool error})? onShowSnackBar;
 
-  const _ActionBar({required this.product});
+  const _ActionBar({required this.product, this.onShowSnackBar});
 
   Future<void> _startChat(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
@@ -503,13 +516,43 @@ class _ActionBar extends StatelessWidget {
     }
 
     if (authViewModel.currentUser!.id == product.ownerId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Kendi ürününüze mesaj gönderemezsiniz.'),
-          backgroundColor: AppTheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      onShowSnackBar?.call('Kendi ürününüze mesaj gönderemezsiniz.', error: true);
+      return;
+    }
+
+    // 1. Mesaj yazma dialogu aç
+    final message = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        String tempMessage = '';
+        return AlertDialog(
+          title: const Text('Mesaj Gönder'),
+          content: TextField(
+            autofocus: true,
+            maxLines: 3,
+            decoration: const InputDecoration(hintText: 'Mesajınızı yazın...'),
+            onChanged: (val) => tempMessage = val,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Vazgeç'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (tempMessage.trim().isNotEmpty) {
+                  Navigator.of(context).pop(tempMessage.trim());
+                }
+              },
+              child: const Text('Gönder'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (message == null || message.trim().isEmpty) {
+      // Kullanıcı mesaj yazmadan kapattı
       return;
     }
 
@@ -524,6 +567,12 @@ class _ActionBar extends StatelessWidget {
       }
 
       if (existingChat != null) {
+        // Chat zaten varsa mesajı gönder
+        await chatViewModel.sendMessage(
+          chatId: existingChat.id,
+          content: message,
+          senderId: authViewModel.currentUser!.id,
+        );
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -537,37 +586,34 @@ class _ActionBar extends StatelessWidget {
         );
 
         if (chatId != null) {
-          chatViewModel.loadChats(authViewModel.currentUser!.id);
-          
+          // Chat oluşturulduktan sonra mesajı gönder
+          await chatViewModel.sendMessage(
+            chatId: chatId,
+            content: message,
+            senderId: authViewModel.currentUser!.id,
+          );
+          // Chat listesini yenile
           await Future.delayed(const Duration(milliseconds: 500));
-          final newChat = chatViewModel.chats.firstWhere(
-            (chat) => chat.id == chatId,
-          );
-          
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatDetailView(chat: newChat),
-            ),
-          );
+          chatViewModel.loadChats(authViewModel.currentUser!.id);
+          // Yeni oluşturulan chat'i bul
+          final chatList = chatViewModel.chats.where((chat) => chat.id == chatId).toList();
+          if (chatList.isNotEmpty) {
+            final newChat = chatList.first;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatDetailView(chat: newChat),
+              ),
+            );
+          } else {
+            onShowSnackBar?.call('Chat bulunamadı.', error: true);
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Chat oluşturulamadı. Lütfen tekrar deneyin.'),
-              backgroundColor: AppTheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          onShowSnackBar?.call('Chat oluşturulamadı. Lütfen tekrar deneyin.', error: true);
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Hata: $e'),
-          backgroundColor: AppTheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      onShowSnackBar?.call('Hata: $e', error: true);
     }
   }
 
@@ -580,23 +626,11 @@ class _ActionBar extends StatelessWidget {
     }
 
     if (authViewModel.currentUser!.id == product.ownerId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Kendi ürününüzü arayamazsınız.'),
-          backgroundColor: AppTheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      onShowSnackBar?.call('Kendi ürününüzü arayamazsınız.', error: true);
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Arama özelliği yakında eklenecek.'),
-        backgroundColor: AppTheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    onShowSnackBar?.call('Arama özelliği yakında eklenecek.', error: false);
   }
 
   @override

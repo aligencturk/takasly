@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../models/chat.dart';
@@ -129,19 +130,82 @@ class _ChatListViewState extends State<ChatListView> {
             child: ListView.builder(
               itemCount: chatViewModel.chats.length,
               itemBuilder: (context, index) {
-                final chat = chatViewModel.chats[index];
-                return _ChatListItem(
-                  chat: chat,
-                  currentUserId: authViewModel.currentUser?.id ?? '',
-                  unreadCount: chatViewModel.chatUnreadCounts[chat.id] ?? 0,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatDetailView(chat: chat),
+                // Pinli sohbetler üstte gözüksün diye sıralama
+                final sortedChats = [
+                  ...chatViewModel.chats.where((c) => c.isPinned == true),
+                  ...chatViewModel.chats.where((c) => c.isPinned != true),
+                ];
+                final chat = sortedChats[index];
+                return Slidable(
+                  key: Key(chat.id),
+                  startActionPane: ActionPane(
+                    motion: const DrawerMotion(),
+                    extentRatio: 0.25,
+                    children: [
+                      SlidableAction(
+                        onPressed: (context) {
+                          chatViewModel.togglePinChat(chat.id);
+                        },
+                        backgroundColor: chat.isPinned == true ? Colors.grey : AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        icon: chat.isPinned == true ? Icons.push_pin : Icons.push_pin_outlined,
+                        label: chat.isPinned == true ? 'Sabiti Kaldır' : 'Sabitle',
                       ),
-                    );
-                  },
+                    ],
+                  ),
+                  endActionPane: ActionPane(
+                    motion: const DrawerMotion(),
+                    extentRatio: 0.25,
+                    children: [
+                      SlidableAction(
+                        onPressed: (context) async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Sohbeti Sil'),
+                              content: const Text('Bu sohbeti silmek istediğinize emin misiniz?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: const Text('Vazgeç'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: const Text('Sil'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            chatViewModel.deleteChat(chat.id);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Sohbet silindi')),
+                            );
+                          }
+                        },
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete,
+                        label: 'Sil',
+                      ),
+                    ],
+                  ),
+                  child: _ChatListItem(
+                    chat: chat,
+                    currentUserId: authViewModel.currentUser?.id ?? '',
+                    unreadCount: chatViewModel.chatUnreadCounts[chat.id] ?? 0,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatDetailView(chat: chat),
+                        ),
+                      );
+                    },
+                    onPinToggle: () {
+                      chatViewModel.togglePinChat(chat.id);
+                    },
+                  ),
                 );
               },
             ),
@@ -157,12 +221,14 @@ class _ChatListItem extends StatelessWidget {
   final String currentUserId;
   final int unreadCount;
   final VoidCallback onTap;
+  final VoidCallback onPinToggle;
 
   const _ChatListItem({
     required this.chat,
     required this.currentUserId,
     required this.unreadCount,
     required this.onTap,
+    required this.onPinToggle,
   });
 
   @override
@@ -221,7 +287,6 @@ class _ChatListItem extends StatelessWidget {
                       ),
                     ),
             ),
-           
           ],
         ),
         title: Row(

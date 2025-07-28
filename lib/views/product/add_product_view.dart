@@ -70,24 +70,32 @@ class _AddProductViewState extends State<AddProductView> {
   }
 
   bool _canGoToNextStep() {
+    bool canGo = false;
     switch (_currentStep) {
       case 0: // Fotoğraflar
-        return _selectedImages.isNotEmpty;
+        canGo = _selectedImages.isNotEmpty;
+        break;
       case 1: // Ürün Detayları
-        return _titleController.text.trim().isNotEmpty && 
+        canGo = _titleController.text.trim().isNotEmpty && 
                _descriptionController.text.trim().isNotEmpty;
+        break;
       case 2: // Kategorizasyon
-        return _selectedCategoryId != null && 
-               _selectedConditionId != null &&
-               (_selectedSubCategoryId != null || 
-                Provider.of<ProductViewModel>(context, listen: false).subCategories.isEmpty);
+        canGo = _selectedCategoryId != null && _selectedConditionId != null;
+        break;
       case 3: // Konum
-        return _selectedCityId != null && _selectedDistrictId != null;
+        canGo = _selectedCityId != null && _selectedDistrictId != null;
+        break;
       case 4: // Takas Tercihleri
-        return _tradeForController.text.trim().isNotEmpty;
+        canGo = _tradeForController.text.trim().isNotEmpty;
+        break;
       default:
-        return false;
+        canGo = false;
     }
+    
+    print('🔍 Step $_currentStep canGo: $canGo');
+    print('🔍 Trade text: "${_tradeForController.text.trim()}"');
+    
+    return canGo;
   }
 
   void _nextStep() {
@@ -313,11 +321,28 @@ class _AddProductViewState extends State<AddProductView> {
           const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: _currentStep == _totalSteps - 1
-                  ? (_canGoToNextStep() ? _submitProduct : null)
-                  : (_canGoToNextStep() ? _nextStep : null),
+              onPressed: () {
+                print('🔍 Button pressed - Current step: $_currentStep, Total steps: $_totalSteps');
+                print('🔍 Can go to next step: ${_canGoToNextStep()}');
+                
+                if (_currentStep == _totalSteps - 1) {
+                  if (_canGoToNextStep()) {
+                    _submitProduct();
+                  } else {
+                    print('❌ Cannot submit - validation failed');
+                  }
+                } else {
+                  if (_canGoToNextStep()) {
+                    _nextStep();
+                  } else {
+                    print('❌ Cannot go to next step - validation failed');
+                  }
+                }
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
+                backgroundColor: _currentStep == _totalSteps - 1
+                    ? (_canGoToNextStep() ? AppTheme.primary : Colors.grey)
+                    : (_canGoToNextStep() ? AppTheme.primary : Colors.grey),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -334,10 +359,7 @@ class _AddProductViewState extends State<AddProductView> {
       case 0: return _selectedImages.isNotEmpty;
       case 1: return _titleController.text.trim().isNotEmpty && 
                    _descriptionController.text.trim().isNotEmpty;
-      case 2: return _selectedCategoryId != null && 
-                   _selectedConditionId != null &&
-                   (_selectedSubCategoryId != null || 
-                    Provider.of<ProductViewModel>(context, listen: false).subCategories.isEmpty);
+      case 2: return _selectedCategoryId != null && _selectedConditionId != null;
       case 3: return _selectedCityId != null && _selectedDistrictId != null;
       case 4: return _tradeForController.text.trim().isNotEmpty;
       default: return false;

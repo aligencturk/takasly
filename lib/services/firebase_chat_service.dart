@@ -540,4 +540,18 @@ class FirebaseChatService {
       rethrow;
     }
   }
+
+  // Chat silme
+  Future<void> deleteChat(String chatId) async {
+    try {
+      // Chat'i sil
+      await _database.child('chats/$chatId').remove();
+      // Mesajları sil
+      await _database.child('messages/$chatId').remove();
+      Logger.info('Chat ve mesajları silindi: $chatId', tag: _tag);
+    } catch (e) {
+      Logger.error('Chat silme hatası: $e', tag: _tag);
+      rethrow;
+    }
+  }
 } 

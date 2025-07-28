@@ -321,4 +321,29 @@ class ChatViewModel extends ChangeNotifier {
     // Toplam unread count'u hesapla
     _unreadCount = _chatUnreadCounts.values.fold(0, (sum, count) => sum + count);
   }
+
+  // Chat sil
+  Future<void> deleteChat(String chatId) async {
+    try {
+      // Backend'den sil (varsa)
+      await _chatService.deleteChat(chatId);
+      // Local listeden sil
+      _chats.removeWhere((chat) => chat.id == chatId);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      Logger.error('Chat silme hatası: $e', tag: _tag);
+    }
+  }
+
+  // Chat sabitle / sabiti kaldır
+  void togglePinChat(String chatId) {
+    final index = _chats.indexWhere((chat) => chat.id == chatId);
+    if (index != -1) {
+      final chat = _chats[index];
+      _chats[index] = chat.copyWith(isPinned: !(chat.isPinned));
+      notifyListeners();
+    }
+  }
 } 
