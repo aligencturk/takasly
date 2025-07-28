@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
-import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/filter_bottom_sheet.dart';
-import '../../models/product_filter.dart';
 import 'widgets/category_list.dart';
 import '../profile/profile_view.dart';
 import '../product/add_product_view.dart';
@@ -14,6 +13,7 @@ import '../trade/trade_view.dart';
 import '../chat/chat_list_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
+
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -215,9 +215,9 @@ class _HomeViewState extends State<HomeView> {
                           fontSize: 14,
                         ),
                         prefixIcon: Icon(
-                          Icons.search,
+                          FontAwesomeIcons.search,
                           color: Colors.grey[500],
-                          size: 20,
+                          size: 15,
                         ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
@@ -257,11 +257,11 @@ class _HomeViewState extends State<HomeView> {
                   child: IconButton(
                     onPressed: () => _showFilterBottomSheet(vm),
                     icon: Icon(
-                      Icons.tune,
+                      FontAwesomeIcons.filter,
                       color: vm.currentFilter.hasActiveFilters
                           ? Colors.white
                           : Colors.grey[600],
-                      size: 20,
+                      size: 15,
                     ),
                   ),
                 ),

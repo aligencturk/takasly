@@ -33,6 +33,7 @@ dependencies:
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
   flutter_slidable: ^3.0.0
+  font_awesome_flutter: ^10.7.0
   
   # Local Storage
   shared_preferences: ^2.3.3

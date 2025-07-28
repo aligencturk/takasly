@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../models/chat.dart';
@@ -146,10 +147,10 @@ class _ChatListViewState extends State<ChatListView> {
                         onPressed: (context) {
                           chatViewModel.togglePinChat(chat.id);
                         },
-                        backgroundColor: chat.isPinned == true ? Colors.grey : AppTheme.primary,
+                        backgroundColor: chat.isPinned == true ? Colors.orange : AppTheme.primary,
                         foregroundColor: Colors.white,
-                        icon: chat.isPinned == true ? Icons.push_pin : Icons.push_pin_outlined,
-                        label: chat.isPinned == true ? 'Sabiti Kaldır' : 'Sabitle',
+                        icon: chat.isPinned == true ? FontAwesomeIcons.thumbtackSlash : FontAwesomeIcons.thumbtack,
+                        label: chat.isPinned == true ? 'Kaldır' : 'Sabitle',
                       ),
                     ],
                   ),

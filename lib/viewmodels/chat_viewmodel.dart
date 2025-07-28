@@ -322,13 +322,29 @@ class ChatViewModel extends ChangeNotifier {
     _unreadCount = _chatUnreadCounts.values.fold(0, (sum, count) => sum + count);
   }
 
-  // Chat sil
+  // Chat sil (soft delete)
   Future<void> deleteChat(String chatId) async {
     try {
-      // Backend'den sil (varsa)
-      await _chatService.deleteChat(chatId);
-      // Local listeden sil
-      _chats.removeWhere((chat) => chat.id == chatId);
+      // Kullanıcı ID'sini al
+      final currentUserId = _currentUserId;
+      if (currentUserId == null) return;
+
+      // Chat'i bul
+      final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
+      if (chatIndex == -1) return;
+
+      final chat = _chats[chatIndex];
+      
+      // deletedBy listesine kullanıcı ID'sini ekle
+      final updatedDeletedBy = List<String>.from(chat.deletedBy)..add(currentUserId);
+      final updatedChat = chat.copyWith(deletedBy: updatedDeletedBy);
+      
+      // Local listeyi güncelle
+      _chats[chatIndex] = updatedChat;
+      
+      // Firebase'e güncelle
+      await _chatService.updateChatDeletedBy(chatId, updatedDeletedBy);
+      
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -344,6 +360,27 @@ class ChatViewModel extends ChangeNotifier {
       final chat = _chats[index];
       _chats[index] = chat.copyWith(isPinned: !(chat.isPinned));
       notifyListeners();
+    }
+  }
+
+  // Boş chat'i sil (WhatsApp mantığı - mesaj gönderilmeden çıkılırsa)
+  Future<void> deleteEmptyChat(String chatId) async {
+    try {
+      // Chat'teki mesajları kontrol et
+      final chatMessages = _messages.where((message) => message.chatId == chatId).toList();
+      
+      // Eğer hiç mesaj yoksa chat'i sil
+      if (chatMessages.isEmpty) {
+        await _chatService.deleteChat(chatId);
+        
+        // Local listeyi güncelle
+        _chats.removeWhere((chat) => chat.id == chatId);
+        notifyListeners();
+        
+        Logger.info('Boş chat silindi: $chatId', tag: _tag);
+      }
+    } catch (e) {
+      Logger.error('Boş chat silme hatası: $e', tag: _tag);
     }
   }
 } 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../core/app_theme.dart';
 
 class CustomBottomNav extends StatelessWidget {
@@ -27,17 +28,15 @@ class CustomBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: Container(
-          height: 70,
+          height: 66,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Ana Sayfa'),
-              // İkon boyutunu küçültmek için _buildNavItem fonksiyonunu değiştiremiyorsak, fonksiyonun içinde icon boyutunu parametreyle değiştiremeyiz.
-              // Bu yüzden sadece Sohbet ikonunun boyutunu küçültmek için _buildNavItem fonksiyonunu kopyalayıp burada inline olarak kullanabiliriz.
-              _buildNavItem(1, Icons.chat_bubble_outline, Icons.chat_bubble, 'Sohbet'),
+              _buildNavItem(0, FontAwesomeIcons.house, FontAwesomeIcons.house, 'Ana Sayfa'),
+              _buildNavItem(1, FontAwesomeIcons.comments, FontAwesomeIcons.comments, 'Sohbet'),
               _buildCenterTradeButton(),
-              _buildNavItem(3, Icons.swap_horiz_outlined, Icons.swap_horiz, 'Takaslarım'),
-              _buildNavItem(4, Icons.person_outline, Icons.person, 'Hesap'),
+              _buildNavItem(3, FontAwesomeIcons.list, FontAwesomeIcons.list, 'Takaslarım'),
+              _buildNavItem(4, FontAwesomeIcons.user, FontAwesomeIcons.user, 'Hesap'),
             ],
           ),
         ),
@@ -58,7 +57,7 @@ class CustomBottomNav extends StatelessWidget {
             Icon(
               isActive ? activeIcon : icon,
               color: isActive ? AppTheme.primary : AppTheme.textSecondary,
-              size: 24,
+              size: 20,
             ),
             const SizedBox(height: 2),
             Text(
@@ -105,10 +104,10 @@ class CustomBottomNav extends StatelessWidget {
                   width: 3,
                 ),
               ),
-              child: const Icon(
-                Icons.swap_horiz,
+              child: Icon(
+                FontAwesomeIcons.exchange,
                 color: AppTheme.surface,
-                size: 28,
+                size: 20,
               ),
             ),
           ),

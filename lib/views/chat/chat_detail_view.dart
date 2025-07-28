@@ -24,6 +24,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String? _selectedAutoMessage; // Otomatik mesaj seçeneği için state
+  bool _hasMessageSent = false; // Mesaj gönderildi mi kontrolü için
 
   @override
   void initState() {
@@ -43,6 +44,21 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    
+    // Kullanıcı sayfadan çıktığında boş chat'i sil (WhatsApp mantığı)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Eğer hiç mesaj gönderilmediyse chat'i sil
+      if (!_hasMessageSent) {
+        final chatViewModel = context.read<ChatViewModel>();
+        final chatMessages = chatViewModel.messages.where((message) => message.chatId == widget.chat.id).toList();
+        
+        // Eğer hiç mesaj yoksa chat'i sil
+        if (chatMessages.isEmpty) {
+          chatViewModel.deleteEmptyChat(widget.chat.id);
+        }
+      }
+    });
+    
     super.dispose();
   }
 
@@ -85,6 +101,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       );
       _messageController.clear();
       _scrollToBottom();
+      
+      // Mesaj gönderildi flag'ini set et
+      _hasMessageSent = true;
       
       // Mesaj gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -707,6 +726,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       );
       _scrollToBottom();
       
+      // Mesaj gönderildi flag'ini set et
+      _hasMessageSent = true;
+      
       // Ürün mesajı gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
       Future.delayed(const Duration(milliseconds: 300), () {
         chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
@@ -736,6 +758,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       });
       
       _scrollToBottom();
+      
+      // Mesaj gönderildi flag'ini set et
+      _hasMessageSent = true;
       
       // Mesajlar gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
       Future.delayed(const Duration(milliseconds: 800), () {

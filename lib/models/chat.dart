@@ -19,6 +19,7 @@ class Chat {
   final Map<String, DateTime> lastReadTimes;
   final bool isActive;
   final bool isPinned;
+  final List<String> deletedBy;
 
   const Chat({
     required this.id,
@@ -33,6 +34,7 @@ class Chat {
     required this.lastReadTimes,
     required this.isActive,
     this.isPinned = false,
+    this.deletedBy = const [],
   });
 
   factory Chat.fromJson(Map<String, dynamic> json) {
@@ -96,10 +98,16 @@ class Chat {
           ?? {},
       isActive: json['isActive'] as bool? ?? true,
       isPinned: json['isPinned'] as bool? ?? false,
+      deletedBy: (json['deletedBy'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ?? [],
     );
   }
   Map<String, dynamic> toJson() => _$ChatToJson(this)
-    ..addAll({'isPinned': isPinned});
+    ..addAll({
+      'isPinned': isPinned,
+      'deletedBy': deletedBy,
+    });
 
   Chat copyWith({
     String? id,
@@ -114,6 +122,7 @@ class Chat {
     Map<String, DateTime>? lastReadTimes,
     bool? isActive,
     bool? isPinned,
+    List<String>? deletedBy,
   }) {
     return Chat(
       id: id ?? this.id,
@@ -128,6 +137,7 @@ class Chat {
       lastReadTimes: lastReadTimes ?? this.lastReadTimes,
       isActive: isActive ?? this.isActive,
       isPinned: isPinned ?? this.isPinned,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 

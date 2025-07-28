@@ -368,9 +368,19 @@ class FirebaseChatService {
                 updatedAt: parseChatDateTime(chatData['updatedAt']),
                 lastReadTimes: {},
                 isActive: chatData['isActive'] ?? true,
+                isPinned: chatData['isPinned'] ?? false,
+                deletedBy: (chatData['deletedBy'] as List<dynamic>?)
+                    ?.map((e) => e as String)
+                    .toList() ?? [],
               );
               
-              chats.add(chat);
+              // Kullanıcının silmediği chat'leri filtrele
+              if (!chat.deletedBy.contains(userId)) {
+                // Sadece son mesajı olan chat'leri ekle (WhatsApp mantığı)
+                if (chat.lastMessage != null) {
+                  chats.add(chat);
+                }
+              }
             } catch (e) {
               Logger.error('Chat parse hatası: $e', tag: _tag);
             }
@@ -551,6 +561,17 @@ class FirebaseChatService {
       Logger.info('Chat ve mesajları silindi: $chatId', tag: _tag);
     } catch (e) {
       Logger.error('Chat silme hatası: $e', tag: _tag);
+      rethrow;
+    }
+  }
+
+  // Chat deletedBy listesini güncelle
+  Future<void> updateChatDeletedBy(String chatId, List<String> deletedBy) async {
+    try {
+      await _database.child('chats/$chatId/deletedBy').set(deletedBy);
+      Logger.info('Chat deletedBy güncellendi: $chatId', tag: _tag);
+    } catch (e) {
+      Logger.error('Chat deletedBy güncelleme hatası: $e', tag: _tag);
       rethrow;
     }
   }

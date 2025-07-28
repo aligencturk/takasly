@@ -520,42 +520,6 @@ class _ActionBar extends StatelessWidget {
       return;
     }
 
-    // 1. Mesaj yazma dialogu aç
-    final message = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        String tempMessage = '';
-        return AlertDialog(
-          title: const Text('Mesaj Gönder'),
-          content: TextField(
-            autofocus: true,
-            maxLines: 3,
-            decoration: const InputDecoration(hintText: 'Mesajınızı yazın...'),
-            onChanged: (val) => tempMessage = val,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Vazgeç'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (tempMessage.trim().isNotEmpty) {
-                  Navigator.of(context).pop(tempMessage.trim());
-                }
-              },
-              child: const Text('Gönder'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (message == null || message.trim().isEmpty) {
-      // Kullanıcı mesaj yazmadan kapattı
-      return;
-    }
-
     try {
       Chat? existingChat;
       try {
@@ -567,12 +531,7 @@ class _ActionBar extends StatelessWidget {
       }
 
       if (existingChat != null) {
-        // Chat zaten varsa mesajı gönder
-        await chatViewModel.sendMessage(
-          chatId: existingChat.id,
-          content: message,
-          senderId: authViewModel.currentUser!.id,
-        );
+        // Chat zaten varsa direkt chat sayfasına git
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -580,18 +539,13 @@ class _ActionBar extends StatelessWidget {
           ),
         );
       } else {
+        // Yeni chat oluştur ve direkt chat sayfasına git
         final chatId = await chatViewModel.createChat(
           tradeId: product.id,
           participantIds: [authViewModel.currentUser!.id, product.ownerId],
         );
 
         if (chatId != null) {
-          // Chat oluşturulduktan sonra mesajı gönder
-          await chatViewModel.sendMessage(
-            chatId: chatId,
-            content: message,
-            senderId: authViewModel.currentUser!.id,
-          );
           // Chat listesini yenile
           await Future.delayed(const Duration(milliseconds: 500));
           chatViewModel.loadChats(authViewModel.currentUser!.id);
