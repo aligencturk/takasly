@@ -51,6 +51,10 @@ dependencies:
   # Image Picker
   image_picker: ^1.1.2
   
+  # Sharing and URL Launcher
+  share_plus: ^7.2.2
+  url_launcher: ^6.2.5
+  
   # Logging
   logger: ^2.4.0
   google_fonts: ^6.2.1

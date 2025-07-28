@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
@@ -62,6 +65,52 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   void _onScroll() {
     setState(() {
       _scrollOffset = _scrollController.offset;
+    });
+  }
+
+  void _shareProduct(BuildContext context, Product product) {
+    // Ürün detay sayfası için link oluştur
+    final productUrl = 'https://takasly.com/product/${product.id}';
+    
+    final shareText = '''
+${product.title}
+
+${product.description ?? 'Açıklama bulunmuyor'}
+
+📍 ${product.cityTitle} / ${product.districtTitle}
+🏷️ ${product.category?.name ?? 'Kategori belirtilmemiş'}
+📅 ${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}
+
+🔗 Ürün linki: $productUrl
+
+Takasly uygulamasından paylaşıldı.
+''';
+
+    // Sistem paylaşma menüsünü kullan
+    Share.share(
+      shareText,
+      subject: 'Takasly - ${product.title}',
+    ).then((_) {
+      // Paylaşma işlemi sonrasında kullanıcıya bildirim göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.share, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text('İlan paylaşıldı'),
+              ],
+            ),
+            backgroundColor: AppTheme.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     });
   }
 
@@ -137,7 +186,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
               ),
               IconButton(
                 icon: Icon(Icons.share, color: AppTheme.surface),
-                onPressed: () {},
+                onPressed: () => _shareProduct(context, product),
               ),
             ],
           ),
