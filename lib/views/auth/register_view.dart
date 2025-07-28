@@ -21,60 +21,68 @@ class RegisterView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Logo ve Başlık
-                Icon(
-                  Icons.swap_horiz_rounded,
-                  size: 64,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Hesap Oluştur',
-                  textAlign: TextAlign.center,
-                  style: textTheme.displaySmall?.copyWith(
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/auth/2.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Logo ve Başlık
+                  Icon(
+                    Icons.swap_horiz_rounded,
+                    size: 64,
                     color: colorScheme.primary,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Takasly ailesine katıl, eşyalarını takasla.',
-                  textAlign: TextAlign.center,
-                  style: textTheme.titleMedium,
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Hesap Oluştur',
+                    textAlign: TextAlign.center,
+                    style: textTheme.displaySmall?.copyWith(
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Takasly ailesine katıl, eşyalarını takasla.',
+                    textAlign: TextAlign.center,
+                    style: textTheme.titleMedium,
+                  ),
 
-                const SizedBox(height: 48),
+                  const SizedBox(height: 48),
 
-                // Kayıt Formu
-                const _RegisterForm(),
+                  // Kayıt Formu
+                  const _RegisterForm(),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Giriş Yap Butonu
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text("Zaten hesabın var mı?", style: textTheme.bodyMedium),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        'Giriş Yap',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.bold,
+                  // Giriş Yap Butonu
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Zaten hesabın var mı?", style: textTheme.bodyMedium),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(
+                          'Giriş Yap',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

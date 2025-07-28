@@ -71,9 +71,9 @@ class _HomeViewState extends State<HomeView> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromRGBO(203, 222, 255, 1),
-              Color.fromRGBO(245, 248, 255, 1),
-              Color.fromRGBO(255, 255, 255, 1),
+              Color(0xFFF0F9F4),
+              Color(0xFFF7F8FA),
+              Color(0xFFFFFFFF),
             ],
             stops: [0.0, 0.6, 1.0],
           ),
