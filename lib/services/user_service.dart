@@ -507,7 +507,7 @@ class UserService {
                   userDataToTransform['userPhone'] ??
                   userDataToTransform['phone'],
               'avatar':
-                  userDataToTransform['userAvatar'] ??
+                  userDataToTransform['profilePhoto'] ??
                   userDataToTransform['avatar'],
               
               'isVerified':
