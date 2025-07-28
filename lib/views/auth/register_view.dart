@@ -13,11 +13,12 @@ class RegisterView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -30,39 +31,17 @@ class RegisterView extends StatelessWidget {
         ),
         child: SafeArea(
           child: Center(
-            child: SingleChildScrollView(
+            child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo ve Başlık
-                  Icon(
-                    Icons.swap_horiz_rounded,
-                    size: 64,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Hesap Oluştur',
-                    textAlign: TextAlign.center,
-                    style: textTheme.displaySmall?.copyWith(
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Takasly ailesine katıl, eşyalarını takasla.',
-                    textAlign: TextAlign.center,
-                    style: textTheme.titleMedium,
-                  ),
-
-                  const SizedBox(height: 48),
-
+                  const SizedBox(height: 140),
                   // Kayıt Formu
                   const _RegisterForm(),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Giriş Yap Butonu
                   Row(
@@ -188,9 +167,12 @@ class _RegisterFormState extends State<_RegisterForm> {
                 child: TextFormField(
                   controller: _firstNameController,
                   textCapitalization: TextCapitalization.words,
+                  style: const TextStyle(fontSize: 14),
                   decoration: const InputDecoration(
                     labelText: 'Ad',
-                    prefixIcon: Icon(Icons.person_outline),
+                    prefixIcon: Icon(Icons.person_outline, size: 20),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    isDense: true,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -203,14 +185,17 @@ class _RegisterFormState extends State<_RegisterForm> {
                   },
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
                   controller: _lastNameController,
                   textCapitalization: TextCapitalization.words,
+                  style: const TextStyle(fontSize: 14),
                   decoration: const InputDecoration(
                     labelText: 'Soyad',
-                    prefixIcon: Icon(Icons.person_outline),
+                    prefixIcon: Icon(Icons.person_outline, size: 20),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    isDense: true,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -225,15 +210,18 @@ class _RegisterFormState extends State<_RegisterForm> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // E-posta
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
+            style: const TextStyle(fontSize: 14),
             decoration: const InputDecoration(
               labelText: 'E-posta',
-              prefixIcon: Icon(Icons.email_outlined),
+              prefixIcon: Icon(Icons.email_outlined, size: 20),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              isDense: true,
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -247,16 +235,19 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // Telefon
           TextFormField(
             controller: _phoneController,
             keyboardType: TextInputType.phone,
+            style: const TextStyle(fontSize: 14),
             decoration: const InputDecoration(
               labelText: 'Telefon',
-              prefixIcon: Icon(Icons.phone_outlined),
+              prefixIcon: Icon(Icons.phone_outlined, size: 20),
               hintText: '05XX XXX XX XX',
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              isDense: true,
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -271,20 +262,22 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // Şifre
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
+            style: const TextStyle(fontSize: 14),
             decoration: InputDecoration(
               labelText: 'Şifre',
-              prefixIcon: const Icon(Icons.lock_outline),
+              prefixIcon: const Icon(Icons.lock_outline, size: 20),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
+                  size: 20,
                 ),
                 onPressed: () {
                   setState(() {
@@ -292,6 +285,8 @@ class _RegisterFormState extends State<_RegisterForm> {
                   });
                 },
               ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              isDense: true,
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -300,20 +295,22 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // Şifre Tekrar
           TextFormField(
             controller: _confirmPasswordController,
             obscureText: _obscureConfirmPassword,
+            style: const TextStyle(fontSize: 14),
             decoration: InputDecoration(
               labelText: 'Şifre Tekrar',
-              prefixIcon: const Icon(Icons.lock_outline),
+              prefixIcon: const Icon(Icons.lock_outline, size: 20),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscureConfirmPassword
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
+                  size: 20,
                 ),
                 onPressed: () {
                   setState(() {
@@ -321,6 +318,8 @@ class _RegisterFormState extends State<_RegisterForm> {
                   });
                 },
               ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              isDense: true,
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -332,7 +331,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           // Kullanım Koşulları ve KVKK
           CheckboxListTile(
@@ -344,11 +343,12 @@ class _RegisterFormState extends State<_RegisterForm> {
             },
             title: Text(
               'Kullanım Koşullarını kabul ediyorum',
-              style: textTheme.bodyMedium,
+              style: const TextStyle(fontSize: 12),
             ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             activeColor: colorScheme.primary,
+            dense: true,
           ),
           CheckboxListTile(
             value: _acceptKvkk,
@@ -359,29 +359,36 @@ class _RegisterFormState extends State<_RegisterForm> {
             },
             title: Text(
               'KVKK Aydınlatma Metnini okudum ve kabul ediyorum',
-              style: textTheme.bodyMedium,
+              style: const TextStyle(fontSize: 12),
             ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             activeColor: colorScheme.primary,
+            dense: true,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
 
           // Kayıt Ol Butonu
           Consumer<AuthViewModel>(
             builder: (context, authViewModel, child) {
-              return ElevatedButton(
-                onPressed: authViewModel.isLoading ? null : _submitRegister,
-                child: authViewModel.isLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text('Hesap Oluştur'),
+              return SizedBox(
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: authViewModel.isLoading ? null : _submitRegister,
+                  style: ElevatedButton.styleFrom(
+                    textStyle: const TextStyle(fontSize: 14),
+                  ),
+                  child: authViewModel.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 30,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Hesap Oluştur'),
+                ),
               );
             },
           ),
