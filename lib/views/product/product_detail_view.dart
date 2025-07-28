@@ -466,7 +466,7 @@ class _ProductInfo extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 color: AppTheme.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
@@ -476,7 +476,7 @@ class _ProductInfo extends StatelessWidget {
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 color: AppTheme.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
@@ -685,11 +685,11 @@ class _ActionBar extends StatelessWidget {
             height: 45,
             child: OutlinedButton.icon(
               onPressed: () => _callOwner(context),
-              icon: const Icon(Icons.phone, size: 18),
+              icon: const Icon(Icons.phone, size: 16),
               label: const Text(
                 'Ara',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -709,11 +709,11 @@ class _ActionBar extends StatelessWidget {
             height: 45,
             child: ElevatedButton.icon(
               onPressed: () => _startChat(context),
-              icon: const Icon(Icons.message, size: 18),
+              icon: const Icon(Icons.message, size: 16),
               label: const Text(
                 'Mesaj Gönder',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),

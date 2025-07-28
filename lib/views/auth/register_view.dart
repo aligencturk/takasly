@@ -26,7 +26,7 @@ class RegisterView extends StatelessWidget {
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/auth/2.png'),
-            fit: BoxFit.cover,
+            fit: BoxFit.fill,
           ),
         ),
         child: SafeArea(

@@ -204,7 +204,7 @@ class _ChatListItem extends StatelessWidget {
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontSize: 16,
                             ),
                           );
                         },
@@ -217,7 +217,7 @@ class _ChatListItem extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontSize: 16,
                       ),
                     ),
             ),
@@ -231,19 +231,19 @@ class _ChatListItem extends StatelessWidget {
                 otherParticipant?.name ?? 'Bilinmeyen Kullanıcı',
                 style: TextStyle(
                   fontWeight: unreadCount > 0 ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 16,
+                  fontSize: 13,
                   color: unreadCount > 0 ? Colors.black87 : Colors.black87,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-              ),
+              ),  
             ),
             const SizedBox(width: 8),
             Text(
               _formatTime(chat.lastMessage?.createdAt ?? chat.updatedAt),
               style: TextStyle(
                 color: unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
@@ -260,19 +260,19 @@ class _ChatListItem extends StatelessWidget {
                   if (chat.lastMessage!.type == MessageType.product)
                     Icon(
                       Icons.inventory_2_outlined,
-                      size: 16,
+                      size: 15,
                       color: unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
                     )
                   else if (chat.lastMessage!.type == MessageType.image)
                     Icon(
                       Icons.image_outlined,
-                      size: 16,
+                      size: 15,
                       color: unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
                     )
                   else
                     Icon(
                       Icons.message_outlined,
-                      size: 16,
+                      size: 15,
                       color: unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
                     ),
                   const SizedBox(width: 4),
@@ -285,7 +285,7 @@ class _ChatListItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: unreadCount > 0 ? Colors.black87 : Colors.grey[600],
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.w400,
                     ),
                   ),
