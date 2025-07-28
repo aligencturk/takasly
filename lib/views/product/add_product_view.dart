@@ -26,6 +26,28 @@ class _AddProductViewState extends State<AddProductView> {
   List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
 
+  // Step management
+  int _currentStep = 0;
+  final int _totalSteps = 5;
+
+  // Step titles
+  final List<String> _stepTitles = [
+    'Fotoğraflar',
+    'Ürün Detayları',
+    'Kategorizasyon',
+    'Konum',
+    'Takas Tercihleri',
+  ];
+
+  // Step icons
+  final List<IconData> _stepIcons = [
+    Icons.photo_library,
+    Icons.description,
+    Icons.category,
+    Icons.location_on,
+    Icons.swap_horiz,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -33,7 +55,6 @@ class _AddProductViewState extends State<AddProductView> {
       final vm = Provider.of<ProductViewModel>(context, listen: false);
       vm.loadCities();
       vm.loadConditions();
-      // Kategorileri de yükleyelim (eğer yüklü değilse)
       if (vm.categories.isEmpty) {
         vm.loadCategories();
       }
@@ -48,10 +69,46 @@ class _AddProductViewState extends State<AddProductView> {
     super.dispose();
   }
 
+  bool _canGoToNextStep() {
+    switch (_currentStep) {
+      case 0: // Fotoğraflar
+        return _selectedImages.isNotEmpty;
+      case 1: // Ürün Detayları
+        return _titleController.text.trim().isNotEmpty && 
+               _descriptionController.text.trim().isNotEmpty;
+      case 2: // Kategorizasyon
+        return _selectedCategoryId != null && 
+               _selectedConditionId != null &&
+               (_selectedSubCategoryId != null || 
+                Provider.of<ProductViewModel>(context, listen: false).subCategories.isEmpty);
+      case 3: // Konum
+        return _selectedCityId != null && _selectedDistrictId != null;
+      case 4: // Takas Tercihleri
+        return _tradeForController.text.trim().isNotEmpty;
+      default:
+        return false;
+    }
+  }
+
+  void _nextStep() {
+    if (_canGoToNextStep() && _currentStep < _totalSteps - 1) {
+      setState(() {
+        _currentStep++;
+      });
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() {
+        _currentStep--;
+      });
+    }
+  }
+
   Future<void> _submitProduct() async {
     if (!_formKey.currentState!.validate()) return;
     
-    // Resim validasyonu
     if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -62,7 +119,6 @@ class _AddProductViewState extends State<AddProductView> {
       return;
     }
 
-    // Konum validasyonu
     if (_selectedCityId == null || _selectedDistrictId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -78,7 +134,6 @@ class _AddProductViewState extends State<AddProductView> {
       print('  ${i + 1}. ${_selectedImages[i].path.split('/').last}');
     }
 
-    // Kategori ID'sini belirle (alt kategori varsa onu kullan, yoksa ana kategoriyi)
     final categoryId = _selectedSubCategoryId ?? _selectedCategoryId;
     
     final success = await Provider.of<ProductViewModel>(context, listen: false)
@@ -124,97 +179,537 @@ class _AddProductViewState extends State<AddProductView> {
       appBar: AppBar(
         title: const Text('Ürün Ekle'),
         centerTitle: true,
-        actions: [
-          Consumer<ProductViewModel>(
-            builder: (context, vm, child) {
-              return TextButton(
-                onPressed: vm.isLoading ? null : _submitProduct,
-                child: vm.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        'Yayınla',
-                        style: textTheme.titleMedium?.copyWith(
-                          color: AppTheme.primary,
-                        ),
-                      ),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24.0),
-          children: [
-            _buildSectionTitle(context, 'Ürün Fotoğrafları'),
-            const SizedBox(height: 16),
-            _buildImagePicker(),
-            const SizedBox(height: 24),
-
-            _buildSectionTitle(context, 'Ürün Detayları'),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Ürün Başlığı'),
-              validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
+      body: Column(
+        children: [
+          // Step Progress Header
+          _buildStepProgressHeader(),
+          
+          // Main Content
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: _buildCurrentStep(),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Açıklama'),
-              maxLines: 4,
-              validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
-            ),
-            const SizedBox(height: 24),
-
-            _buildSectionTitle(context, 'Kategorizasyon'),
-            const SizedBox(height: 16),
-            _buildCategoryDropdown(),
-            const SizedBox(height: 16),
-            _buildSubCategoryDropdown(),
-            const SizedBox(height: 16),
-            _buildConditionDropdown(),
-            const SizedBox(height: 24),
-
-            _buildSectionTitle(context, 'Konum'),
-            const SizedBox(height: 16),
-            _buildCityDropdown(),
-            const SizedBox(height: 16),
-            _buildDistrictDropdown(),
-            const SizedBox(height: 8),
-            Text(
-              '📍 Konum bilgileriniz otomatik olarak alınacaktır (uygulama başlangıcında izin verdiyseniz)',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            _buildSectionTitle(context, 'Takas Tercihleri'),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _tradeForController,
-              decoration: const InputDecoration(
-                labelText: 'Ne ile takas etmek istersin?',
-              ),
-              maxLines: 2,
-              validator: (v) => v!.isEmpty ? 'Takas tercihi zorunludur' : null,
-            ),
-          ],
-        ),
+          ),
+          
+          // Navigation Buttons
+          _buildNavigationButtons(),
+        ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(title, style: Theme.of(context).textTheme.titleLarge);
+  Widget _buildStepProgressHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Step indicator
+          Row(
+            children: [
+              Text(
+                'Adım ${_currentStep + 1} / $_totalSteps',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _stepTitles[_currentStep],
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Progress bar
+          LinearProgressIndicator(
+            value: (_currentStep + 1) / _totalSteps,
+            backgroundColor: Colors.grey.shade200,
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+            minHeight: 6,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Step dots
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_totalSteps, (index) {
+              final isCompleted = _isStepCompleted(index);
+              final isCurrent = index == _currentStep;
+              
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                child: InkWell(
+                  onTap: () {
+                    if (index <= _currentStep || (index == _currentStep + 1 && _canGoToNextStep())) {
+                      setState(() {
+                        _currentStep = index;
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: isCompleted 
+                          ? Colors.green
+                          : isCurrent 
+                              ? AppTheme.primary
+                              : Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 4,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _currentStep > 0 ? _previousStep : null,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: BorderSide(color: AppTheme.primary),
+              ),
+              child: const Text('Geri'),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _currentStep == _totalSteps - 1
+                  ? (_canGoToNextStep() ? _submitProduct : null)
+                  : (_canGoToNextStep() ? _nextStep : null),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text(_currentStep == _totalSteps - 1 ? 'Tamamla' : 'İleri'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isStepCompleted(int step) {
+    switch (step) {
+      case 0: return _selectedImages.isNotEmpty;
+      case 1: return _titleController.text.trim().isNotEmpty && 
+                   _descriptionController.text.trim().isNotEmpty;
+      case 2: return _selectedCategoryId != null && 
+                   _selectedConditionId != null &&
+                   (_selectedSubCategoryId != null || 
+                    Provider.of<ProductViewModel>(context, listen: false).subCategories.isEmpty);
+      case 3: return _selectedCityId != null && _selectedDistrictId != null;
+      case 4: return _tradeForController.text.trim().isNotEmpty;
+      default: return false;
+    }
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return _buildPhotosStep();
+      case 1:
+        return _buildProductDetailsStep();
+      case 2:
+        return _buildCategorizationStep();
+      case 3:
+        return _buildLocationStep();
+      case 4:
+        return _buildTradePreferencesStep();
+      default:
+        return const Center(child: Text('Bilinmeyen adım'));
+    }
+  }
+
+  Widget _buildPhotosStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _stepIcons[0],
+                  color: AppTheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ürün Fotoğrafları',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ürününüzün en iyi şekilde görünmesi için kaliteli fotoğraflar ekleyin',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Image picker
+          _buildImagePicker(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductDetailsStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _stepIcons[1],
+                  color: AppTheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ürün Detayları',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ürününüzü en iyi şekilde tanımlayın',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Form fields
+          TextFormField(
+            controller: _titleController,
+            decoration: const InputDecoration(
+              labelText: 'Ürün Başlığı',
+              hintText: 'Örn: iPhone 13 Pro Max 256GB',
+            ),
+            validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
+          ),
+          const SizedBox(height: 24),
+          TextFormField(
+            controller: _descriptionController,
+            decoration: const InputDecoration(
+              labelText: 'Açıklama',
+              hintText: 'Ürününüzün detaylarını, özelliklerini ve durumunu açıklayın',
+            ),
+            maxLines: 6,
+            validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategorizationStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _stepIcons[2],
+                  color: AppTheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Kategorizasyon',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ürününüzü doğru kategoride sınıflandırın',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Form fields
+          _buildCategoryDropdown(),
+          const SizedBox(height: 24),
+          _buildSubCategoryDropdown(),
+          const SizedBox(height: 24),
+          _buildConditionDropdown(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _stepIcons[3],
+                  color: AppTheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Konum',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ürününüzün bulunduğu yeri belirtin',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Form fields
+          _buildCityDropdown(),
+          const SizedBox(height: 24),
+          _buildDistrictDropdown(),
+          const SizedBox(height: 16),
+          
+          // Info card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: AppTheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Konum bilgileriniz otomatik olarak alınacaktır (uygulama başlangıcında izin verdiyseniz)',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTradePreferencesStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _stepIcons[4],
+                  color: AppTheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Takas Tercihleri',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ne ile takas etmek istediğinizi belirtin',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Form fields
+          TextFormField(
+            controller: _tradeForController,
+            decoration: const InputDecoration(
+              labelText: 'Ne ile takas etmek istersin?',
+              hintText: 'Örn: MacBook Pro, para, başka bir telefon...',
+            ),
+            maxLines: 4,
+            validator: (v) => v!.isEmpty ? 'Takas tercihi zorunludur' : null,
+          ),
+          const SizedBox(height: 24),
+          
+          // Info card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.lightbulb_outline, color: Colors.blue),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Daha spesifik olursanız, uygun takas teklifleri alma şansınız artar',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // -- Dropdown Widget'ları --
@@ -233,7 +728,7 @@ class _AddProductViewState extends State<AddProductView> {
           onChanged: (value) {
             setState(() {
               _selectedCategoryId = value;
-              _selectedSubCategoryId = null; // Alt kategori seçimini sıfırla
+              _selectedSubCategoryId = null;
             });
             if (value != null) {
               vm.loadSubCategories(value);
@@ -350,22 +845,19 @@ class _AddProductViewState extends State<AddProductView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // İlk resim ekleme butonu (eğer hiç resim yoksa)
         if (_selectedImages.isEmpty) ...[
           _buildAddImageButton(),
           const SizedBox(height: 16),
         ],
 
-        // Seçilen resimler grid'i
         if (_selectedImages.isNotEmpty) ...[
           SizedBox(
             height: 120,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: _selectedImages.length + 1, // +1 for add button
+              itemCount: _selectedImages.length + 1,
               itemBuilder: (context, index) {
                 if (index == _selectedImages.length) {
-                  // Add more images button
                   return _buildAddImageButton();
                 }
                 return _buildImagePreview(_selectedImages[index], index);
@@ -375,12 +867,11 @@ class _AddProductViewState extends State<AddProductView> {
           const SizedBox(height: 16),
         ],
 
-        // Bilgi metni
         Text(
           'En az 1, en fazla 5 fotoğraf ekleyebilirsiniz. İlk fotoğraf kapak resmi olacaktır.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey.shade600,
+          ),
         ),
       ],
     );
@@ -438,7 +929,6 @@ class _AddProductViewState extends State<AddProductView> {
       ),
       child: Stack(
         children: [
-          // Resim
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.file(
@@ -449,7 +939,6 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           ),
 
-          // Kapak resmi badge'i (ilk resim için)
           if (index == 0)
             Positioned(
               top: 4,
@@ -471,7 +960,6 @@ class _AddProductViewState extends State<AddProductView> {
               ),
             ),
 
-          // Silme butonu
           Positioned(
             top: 4,
             right: 4,
@@ -506,7 +994,6 @@ class _AddProductViewState extends State<AddProductView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle bar
               Container(
                 width: 40,
                 height: 4,
@@ -517,17 +1004,15 @@ class _AddProductViewState extends State<AddProductView> {
                 ),
               ),
 
-              // Title
               Text(
                 'Fotoğraf Seç',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
 
               const SizedBox(height: 20),
 
-              // Options
               ListTile(
                 leading: Container(
                   width: 48,
@@ -604,7 +1089,6 @@ class _AddProductViewState extends State<AddProductView> {
 
   Future<void> _pickMultipleImages() async {
     try {
-      // Maksimum seçilebilecek resim sayısını hesapla
       final int remainingSlots = 5 - _selectedImages.length;
       if (remainingSlots <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -616,7 +1100,6 @@ class _AddProductViewState extends State<AddProductView> {
         return;
       }
 
-      // pickMultipleMedia kullanarak hem tek hem çoklu seçimi destekle
       final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia(
         maxWidth: 1920,
         maxHeight: 1920,
@@ -624,7 +1107,6 @@ class _AddProductViewState extends State<AddProductView> {
       );
 
       if (pickedFiles.isNotEmpty) {
-        // Sadece kalan slot kadar resim al
         final List<XFile> filesToAdd = pickedFiles.take(remainingSlots).toList();
         
         setState(() {
@@ -636,7 +1118,6 @@ class _AddProductViewState extends State<AddProductView> {
         print('📸 ${filesToAdd.length} images added');
         print('📸 Total images: ${_selectedImages.length}');
 
-        // Eğer seçilen resim sayısı kalan slottan fazlaysa uyarı ver
         if (pickedFiles.length > remainingSlots) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

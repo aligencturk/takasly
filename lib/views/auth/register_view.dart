@@ -12,7 +12,7 @@ class RegisterView extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: Colors.white,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -22,26 +22,77 @@ class RegisterView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/auth/2.png'),
-            fit: BoxFit.fill,
+      body: Column(
+        children: [
+          // Üst yeşil bölüm
+          Container(
+            height: MediaQuery.of(context).size.height * 0.3,
+            decoration: const BoxDecoration(
+              color: Color(0xFF27AE60),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Sol taraftaki "Hemen Hesap Oluştur" metni
+                Positioned(
+                  left: 24,
+                  top: 80,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 40),
+                      Text(
+                        'Hemen',
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                      Text(
+                        'Hesap',
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                      Text(
+                        'Oluştur',
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
+          
+          // Alt beyaz bölüm
+          Expanded(
+            child: Container(
+              color: Colors.white,
               padding: const EdgeInsets.all(24.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 140),
                   // Kayıt Formu
-                  const _RegisterForm(),
+                  const Expanded(
+                    child: SingleChildScrollView(
+                      child: _RegisterForm(),
+                    ),
+                  ),
 
-                  const SizedBox(height: 16),
 
                   // Giriş Yap Butonu
                   Row(
@@ -64,7 +115,7 @@ class RegisterView extends StatelessWidget {
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -171,7 +222,7 @@ class _RegisterFormState extends State<_RegisterForm> {
                   decoration: const InputDecoration(
                     labelText: 'Ad',
                     prefixIcon: Icon(Icons.person_outline, size: 20),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     isDense: true,
                   ),
                   validator: (value) {
@@ -210,7 +261,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // E-posta
           TextFormField(
@@ -235,7 +286,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Telefon
           TextFormField(
@@ -262,7 +313,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Şifre
           TextFormField(
@@ -295,7 +346,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Şifre Tekrar
           TextFormField(
@@ -331,7 +382,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           // Kullanım Koşulları ve KVKK
           CheckboxListTile(
@@ -366,7 +417,7 @@ class _RegisterFormState extends State<_RegisterForm> {
             activeColor: colorScheme.primary,
             dense: true,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
           // Kayıt Ol Butonu
           Consumer<AuthViewModel>(
