@@ -685,12 +685,12 @@ class _TradeViewState extends State<TradeView>
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFFF56565), Color(0xFFE53E3E)],
+                          colors: [Color(0xFF10B981), Color(0xFF10B981)],
                         ),
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: Color(0xFFF56565).withOpacity(0.3),
+                            color: Color(0xFF10B981).withOpacity(0.3),
                             blurRadius: 20,
                             offset: Offset(0, 10),
                           ),
@@ -1765,7 +1765,15 @@ class _TradeViewState extends State<TradeView>
 
       if (success) {
         print('✅ TradeView - Product removed from favorites successfully');
+        print('✅ TradeView - Current favorite products count: ${productViewModel.favoriteProducts.length}');
+        print('✅ TradeView - Current favorite product IDs: ${productViewModel.favoriteProducts.map((p) => p.id).toList()}');
+        
+        // UI'ı manuel olarak yeniden build et
         if (mounted) {
+          setState(() {
+            print('🔄 TradeView - setState called to refresh UI');
+          });
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(

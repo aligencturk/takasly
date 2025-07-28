@@ -1478,14 +1478,17 @@ class ProductService {
 
   Future<ApiResponse<void>> addToFavorites(String productId) async {
     try {
-      // User token'ı al
+      // User token ve userId'yi al
       String userToken = '';
+      String userId = '';
       try {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
+        userId = prefs.getString(AppConstants.userIdKey) ?? '';
         print('🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}');
+        print('🔑 User ID retrieved: $userId');
       } catch (e) {
-        print('⚠️ Error getting user token: $e');
+        print('⚠️ Error getting user data: $e');
       }
 
       // API body'sini hazırla
@@ -1513,15 +1516,19 @@ class ProductService {
   }
 
   Future<ApiResponse<void>> removeFromFavorites(String productId) async {
+    print('🔄 ProductService.removeFromFavorites - Starting for product ID: $productId');
     try {
-      // User token'ı al
+      // User token ve userId'yi al
       String userToken = '';
+      String userId = '';
       try {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
+        userId = prefs.getString(AppConstants.userIdKey) ?? '';
         print('🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}');
+        print('🔑 User ID retrieved: $userId');
       } catch (e) {
-        print('⚠️ Error getting user token: $e');
+        print('⚠️ Error getting user data: $e');
       }
 
       // API body'sini hazırla
@@ -1531,14 +1538,61 @@ class ProductService {
       };
       print('🌐 Remove from favorites body: $body');
 
-      final response = await _httpClient.deleteWithBasicAuth(
+      print('🌐 Calling removeFromFavorites API with endpoint: service/user/product/removeFavorite');
+      print('🌐 Full URL: ${ApiConstants.fullUrl}service/user/product/removeFavorite');
+      print('🌐 Request body: $body');
+      final response = await _httpClient.postWithBasicAuth(
         'service/user/product/removeFavorite',
         body: body,
+        useBasicAuth: true,
         fromJson: (json) {
           print('📥 Remove from favorites response: $json');
+          print('📊 Remove from favorites response type: ${json.runtimeType}');
+          print('📊 Remove from favorites response keys: ${json is Map ? json.keys.toList() : 'Not a map'}');
+          if (json is Map) {
+            print('📊 Remove from favorites success: ${json['success']}');
+            print('📊 Remove from favorites error: ${json['error']}');
+            print('📊 Remove from favorites message: ${json['message']}');
+            
+            // API response'unu detaylı analiz et
+            if (json.containsKey('error') && json.containsKey('200')) {
+              final errorValue = json['error'];
+              final statusValue = json['200'];
+              print('📊 Remove from favorites - Special format detected');
+              print('📊 Remove from favorites - Error: $errorValue, Status: $statusValue');
+              
+              if (errorValue == false && statusValue == 'OK') {
+                print('✅ Remove from favorites - Success with special format');
+                return null;
+              }
+            }
+            
+            // Normal success response
+            if (json.containsKey('success') && json['success'] == true) {
+              print('✅ Remove from favorites - Success with normal format');
+              return null;
+            }
+            
+            // 410 status code için özel handling
+            if (json.containsKey('error') && json['error'] == false && json.containsKey('410')) {
+              print('✅ Remove from favorites - Success with 410 format');
+              return null;
+            }
+          }
           return null;
         },
       );
+      
+      print('📡 Remove from favorites API call completed');
+      print('📡 Response isSuccess: ${response.isSuccess}');
+      print('📡 Response error: ${response.error}');
+      
+      // API response'unu detaylı analiz et
+      if (response.isSuccess) {
+        print('✅ Remove from favorites - API call was successful');
+      } else {
+        print('❌ Remove from favorites - API call failed: ${response.error}');
+      }
 
       return response;
     } catch (e) {
@@ -1566,11 +1620,20 @@ class ProductService {
       final queryParams = {'userToken': userToken};
       print('🌐 Get favorites query params: $queryParams');
 
+      print('🌐 Calling getFavoriteProducts API with endpoint: service/user/product/$userId/favoriteList');
+      print('🌐 Full URL: ${ApiConstants.fullUrl}service/user/product/$userId/favoriteList');
+      print('🌐 Query params: $queryParams');
       final response = await _httpClient.getWithBasicAuth(
-        'service/user/product/2/favoriteList',
+        'service/user/product/$userId/favoriteList',
         queryParams: queryParams,
         fromJson: (json) {
           print('📥 Get favorites response: $json');
+          print('📊 Get favorites response type: ${json.runtimeType}');
+          if (json is Map) {
+            print('📊 Get favorites response keys: ${json.keys.toList()}');
+            print('📊 Get favorites success: ${json['success']}');
+            print('📊 Get favorites error: ${json['error']}');
+          }
           
           // API response formatını kontrol et
           if (json == null) {
@@ -1584,6 +1647,13 @@ class ProductService {
             if (json['data'] != null && json['data']['products'] != null) {
               final productsList = json['data']['products'] as List;
               print('📦 410 response returned ${productsList.length} favorite products');
+              
+              // Ürün detaylarını logla
+              for (int i = 0; i < productsList.length; i++) {
+                final product = productsList[i];
+                print('📦 Favorite product $i: ${product['productTitle']} (ID: ${product['productID']})');
+              }
+              
               final products = productsList
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();

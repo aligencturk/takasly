@@ -318,8 +318,13 @@ class HttpClient {
       print('📥 DELETE Response Status: ${response.statusCode}');
       print('📥 DELETE Response Headers: ${response.headers}');
       print('📥 DELETE Response Body: ${response.body}');
+      print('📥 DELETE Response Body Length: ${response.body.length}');
+      print('📥 DELETE Response Body isEmpty: ${response.body.isEmpty}');
 
-      return await _handleResponse<T>(response, fromJson, isBasicAuth: true);
+      final apiResponse = await _handleResponse<T>(response, fromJson, isBasicAuth: true);
+      print('📥 DELETE _handleResponse result - isSuccess: ${apiResponse.isSuccess}');
+      print('📥 DELETE _handleResponse result - error: ${apiResponse.error}');
+      return apiResponse;
     } on SocketException catch (e) {
       print('🚫 DELETE Socket Exception: $e');
       return ApiResponse<T>.error(ErrorMessages.networkError);
@@ -356,14 +361,18 @@ class HttpClient {
             print('✅ 410 - Parsed data: $data');
 
             if (fromJson != null) {
-              return ApiResponse<T>.success(fromJson(data));
+              final result = fromJson(data);
+              print('✅ 410 - fromJson result: $result');
+              return ApiResponse<T>.success(result);
             } else {
+              print('✅ 410 - Returning data directly');
               return ApiResponse<T>.success(data);
             }
           } catch (e) {
             print('⚠️ 410 - Failed to parse JSON: $e');
             print('⚠️ 410 - Raw response body: "${response.body}"');
             // JSON parse edilemiyorsa, raw response'u döndür
+            print('⚠️ 410 - Returning null due to JSON parse error');
             return ApiResponse<T>.success(null);
           }
         } else {

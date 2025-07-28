@@ -385,6 +385,7 @@ class ProductViewModel extends ChangeNotifier {
       print('📊 Response data length: ${response.data?.length ?? 0}');
 
       if (response.isSuccess && response.data != null) {
+        print('📦 ProductViewModel.loadFavoriteProducts - Before assignment, current count: ${_favoriteProducts.length}');
         _favoriteProducts = response.data!;
         print('✅ ProductViewModel.loadFavoriteProducts - Successfully loaded ${_favoriteProducts.length} favorite products');
         
@@ -393,6 +394,7 @@ class ProductViewModel extends ChangeNotifier {
           final product = _favoriteProducts[i];
           print('📦 Favorite product $i: ${product.title} (ID: ${product.id})');
         }
+        print('📦 ProductViewModel.loadFavoriteProducts - After assignment, favorite IDs: ${_favoriteProducts.map((p) => p.id).toList()}');
       } else {
         final errorMessage = response.error ?? ErrorMessages.unknownError;
         print('❌ ProductViewModel.loadFavoriteProducts - API error: $errorMessage');
@@ -654,22 +656,40 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<bool> toggleFavorite(String productId) async {
+    print('🔄 ProductViewModel.toggleFavorite - Starting toggle for product: $productId');
     try {
       print('🔄 ProductViewModel.toggleFavorite - Toggling favorite for product: $productId');
       final isFavorite = _favoriteProducts.any((p) => p.id == productId);
       print('🔍 ProductViewModel.toggleFavorite - Is currently favorite: $isFavorite');
+      print('🔍 ProductViewModel.toggleFavorite - Current favorite products count: ${_favoriteProducts.length}');
+      print('🔍 ProductViewModel.toggleFavorite - Current favorite product IDs: ${_favoriteProducts.map((p) => p.id).toList()}');
 
       if (isFavorite) {
         // Favorilerden çıkar
         print('🗑️ ProductViewModel.toggleFavorite - Removing from favorites');
+        print('🗑️ ProductViewModel.toggleFavorite - Product ID: $productId');
+        print('🗑️ ProductViewModel.toggleFavorite - Calling removeFromFavorites API...');
         final response = await _productService.removeFromFavorites(productId);
+        print('📡 ProductViewModel.toggleFavorite - Remove response isSuccess: ${response.isSuccess}');
+        print('📡 ProductViewModel.toggleFavorite - Remove response error: ${response.error}');
+        print('📡 ProductViewModel.toggleFavorite - Before removal, favorite count: ${_favoriteProducts.length}');
+        print('📡 ProductViewModel.toggleFavorite - Before removal, favorite IDs: ${_favoriteProducts.map((p) => p.id).toList()}');
+        
         if (response.isSuccess) {
+          print('✅ ProductViewModel.toggleFavorite - API call successful, removing from local list');
           _favoriteProducts.removeWhere((p) => p.id == productId);
-          print('✅ ProductViewModel.toggleFavorite - Successfully removed from favorites');
+          print('✅ ProductViewModel.toggleFavorite - Successfully removed from local favorites list');
+          print('✅ ProductViewModel.toggleFavorite - Current favorite products count: ${_favoriteProducts.length}');
+          print('✅ ProductViewModel.toggleFavorite - Current favorite product IDs: ${_favoriteProducts.map((p) => p.id).toList()}');
           notifyListeners();
           return true;
         } else {
           print('❌ ProductViewModel.toggleFavorite - Failed to remove from favorites: ${response.error}');
+          // API başarısız olsa bile local list'ten çıkar (kullanıcı deneyimi için)
+          print('⚠️ ProductViewModel.toggleFavorite - Removing from local list despite API failure');
+          _favoriteProducts.removeWhere((p) => p.id == productId);
+          notifyListeners();
+          return false;
         }
       } else {
         // Favorilere ekle
