@@ -41,14 +41,23 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   @override
+  void deactivate() {
+    // Widget deaktive edildiğinde (sayfa değiştiğinde) boş chat'i temizle
+    _cleanupEmptyChat();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    
-    // Kullanıcı sayfadan çıktığında boş chat'i sil (WhatsApp mantığı)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Eğer hiç mesaj gönderilmediyse chat'i sil
-      if (!_hasMessageSent) {
+    super.dispose();
+  }
+
+  void _cleanupEmptyChat() {
+    // Eğer hiç mesaj gönderilmediyse ve widget hala mounted ise
+    if (mounted && !_hasMessageSent) {
+      try {
         final chatViewModel = context.read<ChatViewModel>();
         final chatMessages = chatViewModel.messages.where((message) => message.chatId == widget.chat.id).toList();
         
@@ -56,10 +65,11 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         if (chatMessages.isEmpty) {
           chatViewModel.deleteEmptyChat(widget.chat.id);
         }
+      } catch (e) {
+        // Context artık geçerli değilse hata yakala
+        // Bu durumda hiçbir şey yapma
       }
-    });
-    
-    super.dispose();
+    }
   }
 
   void _onScroll() {
