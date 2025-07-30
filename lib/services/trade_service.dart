@@ -246,10 +246,11 @@ class TradeService {
         meetingLocation: meetingLocation,
       );
 
-      final response = await _httpClient.post(
+      final response = await _httpClient.postWithBasicAuth(
         ApiConstants.startTrade,
         body: request.toJson(),
         fromJson: (json) => StartTradeResponse.fromJson(json),
+        useBasicAuth: true,
       );
 
       if (response.isSuccess) {
