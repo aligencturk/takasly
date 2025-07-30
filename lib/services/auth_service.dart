@@ -519,22 +519,15 @@ class AuthService {
 
   Future<ApiResponse<void>> logout() async {
     try {
-      final response = await _httpClient.post(
-        ApiConstants.logout,
-        fromJson: (json) => null,
-      );
-
-      // API çağrısı başarılı veya başarısız olsa da local verileri temizle
+      Logger.debug('🚪 AuthService.logout called');
+      
+      // API çağrısı yapmadan direkt local verileri temizle
       await _clearUserData();
-
-      if (response.isSuccess) {
-        return ApiResponse.success(null);
-      }
-
-      return response;
+      
+      Logger.debug('✅ AuthService.logout - Local data cleared successfully');
+      return ApiResponse.success(null);
     } catch (e) {
-      // Hata durumunda da local verileri temizle
-      await _clearUserData();
+      Logger.error('❌ AuthService.logout - Exception: $e', error: e);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

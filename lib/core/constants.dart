@@ -22,7 +22,6 @@ class ApiConstants {
   static const String checkCode = '/service/auth/code/checkCode';
   static const String againSendCode = '/service/auth/code/againSendCode';
   static const String profile = '/auth/profile';
-  static const String logout = '/auth/logout';
 
   // User Service Endpoints
   static const String userProfile = '/service/user/id';
