@@ -14,6 +14,7 @@ import 'views/auth/email_verification_view.dart';
 import 'views/auth/reset_password_view.dart';
 import 'views/home/home_view.dart';
 import 'views/trade/trade_view.dart';
+
 import 'views/profile/profile_view.dart';
 import 'views/chat/chat_list_view.dart';
 import 'views/location_test_view.dart';
@@ -63,6 +64,7 @@ class TakaslyApp extends StatelessWidget {
           '/home': (context) => const HomeView(),
           '/profile': (context) => const ProfileView(),
           '/trade': (context) => const TradeView(),
+
           '/reset-password': (context) => const ResetPasswordView(),
           '/chats': (context) => const ChatListView(),
           '/location-test': (context) => const LocationTestView(),

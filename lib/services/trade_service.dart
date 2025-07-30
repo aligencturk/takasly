@@ -264,4 +264,27 @@ class TradeService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  /// Takas durumları endpoint'i
+  Future<ApiResponse<TradeStatusesResponse>> getTradeStatuses() async {
+    try {
+      Logger.info('Takas durumları yükleniyor...', tag: _tag);
+      
+      final response = await _httpClient.getWithBasicAuth(
+        ApiConstants.tradeStatuses,
+        fromJson: (json) => TradeStatusesResponse.fromJson(json),
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Takas durumları başarıyla yüklendi: ${response.data?.data?.statuses?.length ?? 0} durum', tag: _tag);
+      } else {
+        Logger.error('Takas durumları yükleme hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas durumları exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 } 

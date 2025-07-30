@@ -13,6 +13,7 @@ class TradeViewModel extends ChangeNotifier {
   List<Trade> _cancelledTrades = [];
   Trade? _selectedTrade;
   Map<String, int> _statistics = {};
+  List<TradeStatusModel> _tradeStatuses = [];
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -32,6 +33,7 @@ class TradeViewModel extends ChangeNotifier {
   List<Trade> get cancelledTrades => _cancelledTrades;
   Trade? get selectedTrade => _selectedTrade;
   Map<String, int> get statistics => _statistics;
+  List<TradeStatusModel> get tradeStatuses => _tradeStatuses;
 
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
@@ -48,20 +50,21 @@ class TradeViewModel extends ChangeNotifier {
   }
 
   Future<void> loadInitialData() async {
+    Logger.info('TradeViewModel başlatılıyor...', tag: 'TradeViewModel');
+    
+    // Takas durumlarını yükle
+    await loadTradeStatuses();
+    
     // Temporarily disable trade loading since endpoints don't exist
     // TODO: Implement when trade endpoints are available
-    print(
-      '🔄 TradeViewModel.loadInitialData - Trade endpoints not implemented yet',
-    );
+    Logger.info('Trade endpoints henüz implement edilmedi', tag: 'TradeViewModel');
     _setLoading(false);
     _clearError();
   }
 
   // Alias for loadInitialData for backward compatibility
   Future<void> fetchMyTrades() async {
-    print(
-      '🔄 TradeViewModel.fetchMyTrades - Trade endpoints not implemented yet',
-    );
+    Logger.info('fetchMyTrades çağrıldı - Trade endpoints henüz implement edilmedi', tag: 'TradeViewModel');
     _setLoading(false);
     _clearError();
   }
@@ -468,6 +471,46 @@ class TradeViewModel extends ChangeNotifier {
   void _clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Takas durumlarını yükle
+  Future<void> loadTradeStatuses() async {
+    try {
+      Logger.info('Takas durumları yükleniyor...', tag: 'TradeViewModel');
+      
+      final response = await _tradeService.getTradeStatuses();
+
+      if (response.isSuccess && response.data != null) {
+        _tradeStatuses = response.data!.data?.statuses ?? [];
+        Logger.info('Takas durumları başarıyla yüklendi: ${_tradeStatuses.length} durum', tag: 'TradeViewModel');
+        notifyListeners();
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas durumları yükleme hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+      }
+    } catch (e) {
+      Logger.error('Takas durumları exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Status ID'ye göre status title'ı getir
+  String getStatusTitleById(int statusId) {
+    final status = _tradeStatuses.firstWhere(
+      (s) => s.statusID == statusId,
+      orElse: () => const TradeStatusModel(statusID: 0, statusTitle: 'Bilinmeyen'),
+    );
+    return status.statusTitle;
+  }
+
+  /// Status title'a göre status ID'yi getir
+  int getStatusIdByTitle(String statusTitle) {
+    final status = _tradeStatuses.firstWhere(
+      (s) => s.statusTitle == statusTitle,
+      orElse: () => const TradeStatusModel(statusID: 0, statusTitle: 'Bilinmeyen'),
+    );
+    return status.statusID;
   }
 
   @override

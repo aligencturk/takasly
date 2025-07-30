@@ -303,4 +303,93 @@ class StartTradeData {
   String toString() {
     return 'StartTradeData(message: $message)';
   }
+}
+
+@JsonSerializable()
+class TradeStatusModel {
+  final int statusID;
+  final String statusTitle;
+
+  const TradeStatusModel({
+    required this.statusID,
+    required this.statusTitle,
+  });
+
+  factory TradeStatusModel.fromJson(Map<String, dynamic> json) {
+    return TradeStatusModel(
+      statusID: json['statusID'] as int? ?? 0,
+      statusTitle: json['statusTitle'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'statusID': statusID,
+    'statusTitle': statusTitle,
+  };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TradeStatusModel && other.statusID == statusID;
+  }
+
+  @override
+  int get hashCode => statusID.hashCode;
+
+  @override
+  String toString() {
+    return 'TradeStatusModel(statusID: $statusID, statusTitle: $statusTitle)';
+  }
+}
+
+@JsonSerializable()
+class TradeStatusesResponse {
+  final bool error;
+  final bool success;
+  final TradeStatusesData? data;
+
+  const TradeStatusesResponse({
+    required this.error,
+    required this.success,
+    this.data,
+  });
+
+  factory TradeStatusesResponse.fromJson(Map<String, dynamic> json) {
+    return TradeStatusesResponse(
+      error: json['error'] as bool? ?? false,
+      success: json['success'] as bool? ?? false,
+      data: json['data'] != null 
+          ? TradeStatusesData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TradeStatusesResponse(error: $error, success: $success, statusesCount: ${data?.statuses?.length ?? 0})';
+  }
+}
+
+@JsonSerializable()
+class TradeStatusesData {
+  final List<TradeStatusModel>? statuses;
+
+  const TradeStatusesData({
+    this.statuses,
+  });
+
+  factory TradeStatusesData.fromJson(Map<String, dynamic> json) {
+    return TradeStatusesData(
+      statuses: json['statuses'] != null
+          ? (json['statuses'] as List)
+              .map((item) => TradeStatusModel.fromJson(item as Map<String, dynamic>))
+              .toList()
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TradeStatusesData(statusesCount: ${statuses?.length ?? 0})';
+  }
 } 

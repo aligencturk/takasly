@@ -136,6 +136,7 @@ class _TradeViewState extends State<TradeView>
             fontWeight: FontWeight.w600,
           ),
         ),
+
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primary,
