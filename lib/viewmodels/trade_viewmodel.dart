@@ -14,6 +14,7 @@ class TradeViewModel extends ChangeNotifier {
   Trade? _selectedTrade;
   Map<String, int> _statistics = {};
   List<TradeStatusModel> _tradeStatuses = [];
+  List<DeliveryType> _deliveryTypes = [];
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -34,6 +35,7 @@ class TradeViewModel extends ChangeNotifier {
   Trade? get selectedTrade => _selectedTrade;
   Map<String, int> get statistics => _statistics;
   List<TradeStatusModel> get tradeStatuses => _tradeStatuses;
+  List<DeliveryType> get deliveryTypes => _deliveryTypes;
 
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
@@ -54,6 +56,9 @@ class TradeViewModel extends ChangeNotifier {
     
     // Takas durumlarını yükle
     await loadTradeStatuses();
+    
+    // Teslimat türlerini yükle
+    await loadDeliveryTypes();
     
     // Temporarily disable trade loading since endpoints don't exist
     // TODO: Implement when trade endpoints are available
@@ -511,6 +516,46 @@ class TradeViewModel extends ChangeNotifier {
       orElse: () => const TradeStatusModel(statusID: 0, statusTitle: 'Bilinmeyen'),
     );
     return status.statusID;
+  }
+
+  /// Teslimat türlerini yükle
+  Future<void> loadDeliveryTypes() async {
+    try {
+      Logger.info('Teslimat türleri yükleniyor...', tag: 'TradeViewModel');
+      
+      final response = await _tradeService.getDeliveryTypes();
+
+      if (response.isSuccess && response.data != null) {
+        _deliveryTypes = response.data!.data?.deliveryTypes ?? [];
+        Logger.info('Teslimat türleri başarıyla yüklendi: ${_deliveryTypes.length} tür', tag: 'TradeViewModel');
+        notifyListeners();
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Teslimat türleri yükleme hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+      }
+    } catch (e) {
+      Logger.error('Teslimat türleri exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Delivery ID'ye göre delivery title'ı getir
+  String getDeliveryTitleById(int deliveryId) {
+    final delivery = _deliveryTypes.firstWhere(
+      (d) => d.deliveryID == deliveryId,
+      orElse: () => const DeliveryType(deliveryID: 0, deliveryTitle: 'Bilinmeyen'),
+    );
+    return delivery.deliveryTitle;
+  }
+
+  /// Delivery title'a göre delivery ID'yi getir
+  int getDeliveryIdByTitle(String deliveryTitle) {
+    final delivery = _deliveryTypes.firstWhere(
+      (d) => d.deliveryTitle == deliveryTitle,
+      orElse: () => const DeliveryType(deliveryID: 0, deliveryTitle: 'Bilinmeyen'),
+    );
+    return delivery.deliveryID;
   }
 
   @override

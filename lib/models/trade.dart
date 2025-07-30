@@ -392,4 +392,93 @@ class TradeStatusesData {
   String toString() {
     return 'TradeStatusesData(statusesCount: ${statuses?.length ?? 0})';
   }
+}
+
+@JsonSerializable()
+class DeliveryType {
+  final int deliveryID;
+  final String deliveryTitle;
+
+  const DeliveryType({
+    required this.deliveryID,
+    required this.deliveryTitle,
+  });
+
+  factory DeliveryType.fromJson(Map<String, dynamic> json) {
+    return DeliveryType(
+      deliveryID: json['deliveryID'] as int? ?? 0,
+      deliveryTitle: json['deliveryTitle'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'deliveryID': deliveryID,
+    'deliveryTitle': deliveryTitle,
+  };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DeliveryType && other.deliveryID == deliveryID;
+  }
+
+  @override
+  int get hashCode => deliveryID.hashCode;
+
+  @override
+  String toString() {
+    return 'DeliveryType(deliveryID: $deliveryID, deliveryTitle: $deliveryTitle)';
+  }
+}
+
+@JsonSerializable()
+class DeliveryTypesResponse {
+  final bool error;
+  final bool success;
+  final DeliveryTypesData? data;
+
+  const DeliveryTypesResponse({
+    required this.error,
+    required this.success,
+    this.data,
+  });
+
+  factory DeliveryTypesResponse.fromJson(Map<String, dynamic> json) {
+    return DeliveryTypesResponse(
+      error: json['error'] as bool? ?? false,
+      success: json['success'] as bool? ?? false,
+      data: json['data'] != null 
+          ? DeliveryTypesData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'DeliveryTypesResponse(error: $error, success: $success, deliveryTypesCount: ${data?.deliveryTypes?.length ?? 0})';
+  }
+}
+
+@JsonSerializable()
+class DeliveryTypesData {
+  final List<DeliveryType>? deliveryTypes;
+
+  const DeliveryTypesData({
+    this.deliveryTypes,
+  });
+
+  factory DeliveryTypesData.fromJson(Map<String, dynamic> json) {
+    return DeliveryTypesData(
+      deliveryTypes: json['deliveryTypes'] != null
+          ? (json['deliveryTypes'] as List)
+              .map((item) => DeliveryType.fromJson(item as Map<String, dynamic>))
+              .toList()
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'DeliveryTypesData(deliveryTypesCount: ${deliveryTypes?.length ?? 0})';
+  }
 } 

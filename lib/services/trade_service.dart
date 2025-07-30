@@ -287,4 +287,27 @@ class TradeService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  /// Teslimat türleri endpoint'i
+  Future<ApiResponse<DeliveryTypesResponse>> getDeliveryTypes() async {
+    try {
+      Logger.info('Teslimat türleri yükleniyor...', tag: _tag);
+      
+      final response = await _httpClient.getWithBasicAuth(
+        ApiConstants.deliveryTypes,
+        fromJson: (json) => DeliveryTypesResponse.fromJson(json),
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Teslimat türleri başarıyla yüklendi: ${response.data?.data?.deliveryTypes?.length ?? 0} tür', tag: _tag);
+      } else {
+        Logger.error('Teslimat türleri yükleme hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Teslimat türleri exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 } 

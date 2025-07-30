@@ -23,7 +23,7 @@ class StartTradeView extends StatefulWidget {
 
 class _StartTradeViewState extends State<StartTradeView> {
   Product? _selectedSenderProduct;
-  int _selectedDeliveryType = 1; // Varsayılan: Yüz yüze
+  int _selectedDeliveryType = 1; // Varsayılan: Kargolanacak
   final TextEditingController _meetingLocationController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
   final AuthService _authService = AuthService();
@@ -35,6 +35,26 @@ class _StartTradeViewState extends State<StartTradeView> {
   void initState() {
     super.initState();
     Logger.info('StartTradeView başlatıldı', tag: 'StartTradeView');
+    
+    // Kullanıcının ürünlerini yükle
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserProducts();
+    });
+  }
+
+  Future<void> _loadUserProducts() async {
+    try {
+      final userId = await _authService.getCurrentUserId();
+      if (userId != null) {
+        final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+        await productViewModel.loadUserProducts(userId);
+        Logger.info('Kullanıcı ürünleri yüklendi: ${productViewModel.myProducts.length} ürün', tag: 'StartTradeView');
+      } else {
+        Logger.error('Kullanıcı ID bulunamadı', tag: 'StartTradeView');
+      }
+    } catch (e) {
+      Logger.error('Kullanıcı ürünleri yükleme hatası: $e', tag: 'StartTradeView');
+    }
   }
 
   @override
@@ -84,12 +104,7 @@ class _StartTradeViewState extends State<StartTradeView> {
                   ),
                   SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () async {
-                      final userId = await _authService.getCurrentUserId();
-                      if (userId != null) {
-                        productViewModel.loadUserProducts(userId);
-                      }
-                    },
+                    onPressed: () => _loadUserProducts(),
                     child: Text('Tekrar Dene'),
                   ),
                 ],
@@ -117,8 +132,8 @@ class _StartTradeViewState extends State<StartTradeView> {
                 
                 SizedBox(height: 24),
                 
-                // Buluşma yeri (sadece yüz yüze için)
-                if (_selectedDeliveryType == 1) ...[
+                // Buluşma yeri (sadece elden teslim için)
+                if (_selectedDeliveryType == 2) ...[
                   _buildMeetingLocationSection(),
                   SizedBox(height: 24),
                 ],
@@ -291,11 +306,15 @@ class _StartTradeViewState extends State<StartTradeView> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Takas Edeceğiniz Ürün',
+                  _selectedSenderProduct != null 
+                      ? 'Ürün Seçildi' 
+                      : 'Takas Edeceğiniz Ürün',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                    color: _selectedSenderProduct != null 
+                        ? AppTheme.primary 
+                        : AppTheme.textPrimary,
                   ),
                 ),
               ),
@@ -303,43 +322,118 @@ class _StartTradeViewState extends State<StartTradeView> {
           ),
           SizedBox(height: 16),
           
-          if (productViewModel.myProducts.isEmpty)
+          // Seçili ürün gösterimi
+          if (_selectedSenderProduct != null) ...[
             Container(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: AppTheme.primary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
               ),
-              child: Column(
+              child: Row(
                 children: [
-                  Icon(
-                    Icons.inventory_2_outlined,
-                    size: 48,
-                    color: Colors.grey.shade400,
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey.shade200,
+                    ),
+                    child: _selectedSenderProduct!.images.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              _selectedSenderProduct!.images.first,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(Icons.image_not_supported, color: Colors.grey.shade400);
+                              },
+                            ),
+                          )
+                        : Icon(Icons.image_not_supported, color: Colors.grey.shade400),
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Henüz ürününüz yok',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Seçili Ürün:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          _selectedSenderProduct!.title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Takas yapabilmek için önce ürün eklemelisiniz',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade500,
-                    ),
-                    textAlign: TextAlign.center,
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedSenderProduct = null;
+                      });
+                    },
+                    icon: Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(),
                   ),
                 ],
               ),
-            )
-          else
+            ),
+            SizedBox(height: 16),
+          ],
+          
+          if (_selectedSenderProduct == null) ...[
+            if (productViewModel.myProducts.isEmpty)
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Henüz ürününüz yok',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Takas yapabilmek için önce ürün eklemelisiniz',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+            else
             GridView.builder(
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
@@ -448,153 +542,166 @@ class _StartTradeViewState extends State<StartTradeView> {
                 );
               },
             ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildDeliveryTypeSection() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+    return Consumer<TradeViewModel>(
+      builder: (context, tradeViewModel, child) {
+        final deliveryTypes = tradeViewModel.deliveryTypes;
+        
+        if (deliveryTypes.isEmpty) {
+          return Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: Offset(0, 8),
                 ),
-                child: Icon(
-                  Icons.local_shipping_outlined,
-                  color: AppTheme.primary,
-                  size: 20,
-                ),
+              ],
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  CircularProgressIndicator(color: AppTheme.primary),
+                  SizedBox(height: 12),
+                  Text(
+                    'Teslimat türleri yükleniyor...',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ],
               ),
-              SizedBox(width: 12),
-              Text(
-                'Teslimat Türü',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                ),
+            ),
+          );
+        }
+
+        return Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 20,
+                offset: Offset(0, 8),
               ),
             ],
           ),
-          SizedBox(height: 16),
-          
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedDeliveryType = 1;
-                    });
-                  },
-                  child: Container(
-                    padding: EdgeInsets.all(16),
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _selectedDeliveryType == 1 
-                          ? AppTheme.primary.withOpacity(0.1) 
-                          : Colors.grey.shade50,
+                      color: AppTheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedDeliveryType == 1 
-                            ? AppTheme.primary 
-                            : Colors.grey.shade200,
-                      ),
                     ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.people_outline,
-                          color: _selectedDeliveryType == 1 
-                              ? AppTheme.primary 
-                              : Colors.grey.shade600,
-                          size: 24,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Yüz Yüze',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: _selectedDeliveryType == 1 
-                                ? AppTheme.primary 
-                                : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
+                    child: Icon(
+                      Icons.local_shipping_outlined,
+                      color: AppTheme.primary,
+                      size: 20,
                     ),
                   ),
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedDeliveryType = 2;
-                    });
-                  },
-                  child: Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: _selectedDeliveryType == 2 
-                          ? AppTheme.primary.withOpacity(0.1) 
-                          : Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedDeliveryType == 2 
-                            ? AppTheme.primary 
-                            : Colors.grey.shade200,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.local_shipping_outlined,
-                          color: _selectedDeliveryType == 2 
-                              ? AppTheme.primary 
-                              : Colors.grey.shade600,
-                          size: 24,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Kargo',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: _selectedDeliveryType == 2 
-                                ? AppTheme.primary 
-                                : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
+                  SizedBox(width: 12),
+                  Text(
+                    'Teslimat Türü',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
-                ),
+                ],
               ),
+              SizedBox(height: 16),
+              
+              // Dinamik teslimat türleri
+              ...deliveryTypes.map((deliveryType) {
+                final isSelected = _selectedDeliveryType == deliveryType.deliveryID;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedDeliveryType = deliveryType.deliveryID;
+                      });
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isSelected 
+                            ? AppTheme.primary.withOpacity(0.1) 
+                            : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected 
+                              ? AppTheme.primary 
+                              : Colors.grey.shade200,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _getDeliveryTypeIcon(deliveryType.deliveryID),
+                            color: isSelected 
+                                ? AppTheme.primary 
+                                : Colors.grey.shade600,
+                            size: 24,
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              deliveryType.deliveryTitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected 
+                                    ? AppTheme.primary 
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                          if (isSelected)
+                            Icon(
+                              Icons.check_circle,
+                              color: AppTheme.primary,
+                              size: 20,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  IconData _getDeliveryTypeIcon(int deliveryId) {
+    switch (deliveryId) {
+      case 1: // Kargolanacak
+        return Icons.local_shipping_outlined;
+      case 2: // Elden Teslim
+        return Icons.people_outline;
+      case 3: // Kapıya Teslim
+        return Icons.home_outlined;
+      default:
+        return Icons.local_shipping_outlined;
+    }
   }
 
   Widget _buildMeetingLocationSection() {
@@ -795,8 +902,8 @@ class _StartTradeViewState extends State<StartTradeView> {
       return;
     }
 
-    if (_selectedDeliveryType == 1 && _meetingLocationController.text.trim().isEmpty) {
-      _showError('Yüz yüze takas için buluşma yeri zorunludur');
+    if (_selectedDeliveryType == 2 && _meetingLocationController.text.trim().isEmpty) {
+      _showError('Elden teslim için buluşma yeri zorunludur');
       return;
     }
 
@@ -822,7 +929,7 @@ class _StartTradeViewState extends State<StartTradeView> {
         senderProductID: int.parse(_selectedSenderProduct!.id),
         receiverProductID: int.parse(widget.receiverProduct.id),
         deliveryTypeID: _selectedDeliveryType,
-        meetingLocation: _selectedDeliveryType == 1 
+        meetingLocation: _selectedDeliveryType == 2 
             ? _meetingLocationController.text.trim() 
             : null,
       );

@@ -39,6 +39,7 @@ class ApiConstants {
   // Trade Service Endpoints
   static const String startTrade = '/service/user/product/startTrade';
   static const String tradeStatuses = '/service/general/general/tradeStatuses';
+  static const String deliveryTypes = '/service/general/general/deliveryTypes';
 
   // Headers
   static const String contentType = 'Content-Type';
