@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/trade.dart';
 import '../services/trade_service.dart';
 import '../core/constants.dart';
+import '../utils/logger.dart';
 
 class TradeViewModel extends ChangeNotifier {
   final TradeService _tradeService = TradeService();
@@ -365,6 +366,47 @@ class TradeViewModel extends ChangeNotifier {
         return false;
       }
     } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Takas başlatma metodu
+  Future<bool> startTrade({
+    required String userToken,
+    required int senderProductID,
+    required int receiverProductID,
+    required int deliveryTypeID,
+    String? meetingLocation,
+  }) async {
+    Logger.info('Takas başlatma işlemi başlatılıyor...', tag: 'TradeViewModel');
+    
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _tradeService.startTrade(
+        userToken: userToken,
+        senderProductID: senderProductID,
+        receiverProductID: receiverProductID,
+        deliveryTypeID: deliveryTypeID,
+        meetingLocation: meetingLocation,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('Takas başlatma başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
+        _setLoading(false);
+        return true;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas başlatma hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Takas başlatma exception: $e', tag: 'TradeViewModel');
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;

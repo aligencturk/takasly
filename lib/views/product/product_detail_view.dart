@@ -7,12 +7,14 @@ import 'dart:io';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/trade_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../chat/chat_detail_view.dart';
+import '../trade/start_trade_view.dart';
 
 class ProductDetailView extends StatelessWidget {
   final String productId;
@@ -715,57 +717,107 @@ class _ActionBar extends StatelessWidget {
   }
 
   Widget _buildOtherProductActions(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: SizedBox(
-            height: 45,
-            child: OutlinedButton.icon(
-              onPressed: () => _callOwner(context),
-              icon: const Icon(Icons.phone, size: 16),
-              label: const Text(
-                'Ara',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primary,
-                side: BorderSide(color: AppTheme.primary, width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppTheme.borderRadius,
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 45,
+                child: OutlinedButton.icon(
+                  onPressed: () => _callOwner(context),
+                  icon: const Icon(Icons.phone, size: 16),
+                  label: const Text(
+                    'Ara',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primary,
+                    side: BorderSide(color: AppTheme.primary, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppTheme.borderRadius,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: SizedBox(
+                height: 45,
+                child: ElevatedButton.icon(
+                  onPressed: () => _startChat(context),
+                  icon: const Icon(Icons.message, size: 16),
+                  label: const Text(
+                    'Mesaj Gönder',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppTheme.borderRadius,
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: SizedBox(
-            height: 45,
-            child: ElevatedButton.icon(
-              onPressed: () => _startChat(context),
-              icon: const Icon(Icons.message, size: 16),
-              label: const Text(
-                'Mesaj Gönder',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 45,
+          child: ElevatedButton.icon(
+            onPressed: () => _startTrade(context),
+            icon: const Icon(Icons.swap_horiz, size: 16),
+            label: const Text(
+              'Takas Başlat',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppTheme.borderRadius,
-                ),
-                elevation: 0,
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppTheme.borderRadius,
               ),
+              elevation: 0,
             ),
           ),
         ),
       ],
+    );
+  }
+
+  void _startTrade(BuildContext context) {
+    final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+    final product = productViewModel.selectedProduct;
+    
+    if (product == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ürün bilgileri yüklenemedi'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StartTradeView(receiverProduct: product),
+      ),
     );
   }
 } 

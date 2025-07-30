@@ -35,6 +35,9 @@ class ApiConstants {
       '/service/user/product'; // {userId}/productList eklenecek
   static const String allProducts = 'service/user/product/allProductList';
   static const String categoriesList = '/service/general/general/categories/0';
+  
+  // Trade Service Endpoints
+  static const String startTrade = '/service/user/product/startTrade';
 
   // Headers
   static const String contentType = 'Content-Type';

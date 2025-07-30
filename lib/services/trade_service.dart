@@ -1,6 +1,7 @@
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/trade.dart';
+import '../utils/logger.dart';
 
 class TradeService {
   final HttpClient _httpClient = HttpClient();
@@ -222,6 +223,44 @@ class TradeService {
 
       return response;
     } catch (e) {
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Takas başlatma endpoint'i
+  Future<ApiResponse<StartTradeResponse>> startTrade({
+    required String userToken,
+    required int senderProductID,
+    required int receiverProductID,
+    required int deliveryTypeID,
+    String? meetingLocation,
+  }) async {
+    try {
+      Logger.info('Takas başlatma isteği gönderiliyor...', tag: _tag);
+      
+      final request = StartTradeRequest(
+        userToken: userToken,
+        senderProductID: senderProductID,
+        receiverProductID: receiverProductID,
+        deliveryTypeID: deliveryTypeID,
+        meetingLocation: meetingLocation,
+      );
+
+      final response = await _httpClient.post(
+        ApiConstants.startTrade,
+        body: request.toJson(),
+        fromJson: (json) => StartTradeResponse.fromJson(json),
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Takas başlatma başarılı: ${response.data?.data?.message}', tag: _tag);
+      } else {
+        Logger.error('Takas başlatma hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas başlatma exception: $e', tag: _tag);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

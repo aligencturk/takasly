@@ -226,3 +226,81 @@ class TradeOffer {
     return 'TradeOffer(id: $id, user: ${user.name}, product: ${product.title})';
   }
 } 
+
+@JsonSerializable()
+class StartTradeRequest {
+  final String userToken;
+  final int senderProductID;
+  final int receiverProductID;
+  final int deliveryTypeID;
+  final String? meetingLocation;
+
+  const StartTradeRequest({
+    required this.userToken,
+    required this.senderProductID,
+    required this.receiverProductID,
+    required this.deliveryTypeID,
+    this.meetingLocation,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'userToken': userToken,
+    'senderProductID': senderProductID,
+    'receiverProductID': receiverProductID,
+    'deliveryTypeID': deliveryTypeID,
+    if (meetingLocation != null) 'meetingLocation': meetingLocation,
+  };
+
+  @override
+  String toString() {
+    return 'StartTradeRequest(senderProductID: $senderProductID, receiverProductID: $receiverProductID, deliveryTypeID: $deliveryTypeID)';
+  }
+}
+
+@JsonSerializable()
+class StartTradeResponse {
+  final bool error;
+  final bool success;
+  final StartTradeData? data;
+
+  const StartTradeResponse({
+    required this.error,
+    required this.success,
+    this.data,
+  });
+
+  factory StartTradeResponse.fromJson(Map<String, dynamic> json) {
+    return StartTradeResponse(
+      error: json['error'] as bool? ?? false,
+      success: json['success'] as bool? ?? false,
+      data: json['data'] != null 
+          ? StartTradeData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'StartTradeResponse(error: $error, success: $success, message: ${data?.message})';
+  }
+}
+
+@JsonSerializable()
+class StartTradeData {
+  final String message;
+
+  const StartTradeData({
+    required this.message,
+  });
+
+  factory StartTradeData.fromJson(Map<String, dynamic> json) {
+    return StartTradeData(
+      message: json['message'] as String? ?? '',
+    );
+  }
+
+  @override
+  String toString() {
+    return 'StartTradeData(message: $message)';
+  }
+} 
