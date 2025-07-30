@@ -311,4 +311,66 @@ class TradeService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  /// Takas tamamlama endpoint'i
+  Future<ApiResponse<TradeCompleteResponse>> completeTradeWithStatus({
+    required String userToken,
+    required int offerID,
+    required int statusID,
+    String? meetingLocation,
+    TradeReview? review,
+  }) async {
+    try {
+      Logger.info('Takas tamamlama isteği gönderiliyor...', tag: _tag);
+      
+      final request = TradeCompleteRequest(
+        userToken: userToken,
+        offerID: offerID,
+        statusID: statusID,
+        meetingLocation: meetingLocation,
+        review: review,
+      );
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.tradeComplete,
+        body: request.toJson(),
+        fromJson: (json) => TradeCompleteResponse.fromJson(json),
+        useBasicAuth: true,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Takas tamamlama başarılı: ${response.data?.data?.message}', tag: _tag);
+      } else {
+        Logger.error('Takas tamamlama hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas tamamlama exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Kullanıcının takasları endpoint'i
+  Future<ApiResponse<UserTradesResponse>> getUserTrades(int userId) async {
+    try {
+      Logger.info('Kullanıcı takasları yükleniyor... UserID: $userId', tag: _tag);
+      
+      final response = await _httpClient.getWithBasicAuth(
+        '${ApiConstants.userTrades}/$userId/tradeList',
+        fromJson: (json) => UserTradesResponse.fromJson(json),
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Kullanıcı takasları başarıyla yüklendi: ${response.data?.data?.trades?.length ?? 0} takas', tag: _tag);
+      } else {
+        Logger.error('Kullanıcı takasları yükleme hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Kullanıcı takasları exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 } 

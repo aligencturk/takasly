@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/trade_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../services/auth_service.dart';
+import '../../models/trade.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../../widgets/product_card.dart';
@@ -86,6 +87,10 @@ class _TradeViewState extends State<TradeView>
       );
       await productViewModel.loadFavoriteProducts();
       
+      // Kullanıcı takaslarını yükle
+      print('🔄 TradeView - calling tradeViewModel.loadUserTrades($userId)');
+      await tradeViewModel.loadUserTrades(int.parse(userId));
+      
       // Favorilerin yüklendiğini kontrol et
       print('🔍 TradeView - Checking if favorites loaded successfully');
       print('🔍 TradeView - favoriteProducts.length: ${productViewModel.favoriteProducts.length}');
@@ -136,6 +141,7 @@ class _TradeViewState extends State<TradeView>
             fontWeight: FontWeight.w600,
           ),
         ),
+
 
         bottom: TabBar(
           controller: _tabController,
@@ -454,86 +460,379 @@ class _TradeViewState extends State<TradeView>
   }
 
   Widget _buildTradedItemsTab() {
-    return Container(
-      color: Color(0xFFF8FAFF),
-      child: Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Animated Container
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF10B981).withOpacity(0.1),
-                      Color(0xFF059669).withOpacity(0.1),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(60),
-                ),
-                child: Icon(
-                  Icons.swap_horiz_outlined,
-                  size: 50,
-                  color: Color(0xFF10B981),
-                ),
-              ),
-              SizedBox(height: 24),
-                             Text(
-                 'Takas Geçmişin',
-                 style: TextStyle(
-                   fontSize: 18,
-                   fontWeight: FontWeight.w600,
-                   color: Color(0xFF2D3748),
-                 ),
-               ),
-              SizedBox(height: 8),
-                             Text(
-                 'Tamamlanan takaslarını burada görebileceksin',
-                 style: TextStyle(
-                   fontSize: 14,
-                   color: Color(0xFF718096),
-                 ),
-                 textAlign: TextAlign.center,
-               ),
-              SizedBox(height: 32),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Color(0xFF10B981).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(
-                    color: Color(0xFF10B981).withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.construction_outlined,
-                      size: 18,
-                      color: Color(0xFF10B981),
+    return Consumer<TradeViewModel>(
+      builder: (context, tradeViewModel, child) {
+        if (tradeViewModel.isLoading) {
+          return Container(
+            color: Color(0xFFF8FAFF),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF10B981)),
+                  SizedBox(height: 16),
+                  Text(
+                    'Takaslarınız yükleniyor...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF718096),
                     ),
-                    SizedBox(width: 8),
-                                         Text(
-                       'Yakında Aktif',
-                       style: TextStyle(
-                         color: Color(0xFF10B981),
-                         fontSize: 12,
-                         fontWeight: FontWeight.w600,
-                       ),
-                     ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (tradeViewModel.hasError) {
+          return Container(
+            color: Color(0xFFF8FAFF),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text(
+                    tradeViewModel.errorMessage ?? 'Bir hata oluştu',
+                    style: TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final userId = await _authService.getCurrentUserId();
+                      if (userId != null) {
+                        tradeViewModel.loadUserTrades(int.parse(userId));
+                      }
+                    },
+                    child: Text('Tekrar Dene'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final trades = tradeViewModel.userTrades;
+        
+        if (trades.isEmpty) {
+          return Container(
+            color: Color(0xFFF8FAFF),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF10B981).withOpacity(0.1),
+                            Color(0xFF059669).withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(60),
+                      ),
+                      child: Icon(
+                        Icons.swap_horiz_outlined,
+                        size: 50,
+                        color: Color(0xFF10B981),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      'Henüz takasınız yok',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2D3748),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'İlk takasınızı başlatarak takas yolculuğuna başlayın',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF718096),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               ),
-            ],
+            ),
+          );
+        }
+
+        return Container(
+          color: Color(0xFFF8FAFF),
+          child: ListView.builder(
+            padding: EdgeInsets.all(16),
+            itemCount: trades.length,
+            itemBuilder: (context, index) {
+              final trade = trades[index];
+              return _buildTradeCard(trade);
+            },
           ),
-        ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTradeCard(UserTrade trade) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Takas başlığı ve durumu
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _getStatusColor(trade.statusID).withOpacity(0.1),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(trade.statusID),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getStatusIcon(trade.statusID),
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Takas #${trade.offerID}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      Text(
+                        trade.statusTitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _getStatusColor(trade.statusID),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  trade.createdAt,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF718096),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Ürünler
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Benim ürünüm
+                Expanded(
+                  child: _buildProductCard(trade.myProduct, 'Benim Ürünüm'),
+                ),
+                SizedBox(width: 16),
+                // Takas ikonu
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF10B981).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.swap_horiz,
+                    color: Color(0xFF10B981),
+                    size: 20,
+                  ),
+                ),
+                SizedBox(width: 16),
+                // Onların ürünü
+                Expanded(
+                  child: _buildProductCard(trade.theirProduct, 'Onların Ürünü'),
+                ),
+              ],
+            ),
+          ),
+          
+          // Teslimat bilgileri
+          if (trade.meetingLocation != null)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    color: Color(0xFF718096),
+                    size: 16,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${trade.deliveryType} - ${trade.meetingLocation}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF718096),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
+  }
+
+  Widget _buildProductCard(TradeProduct product, String title) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Color(0xFFF7FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF718096),
+            ),
+          ),
+          SizedBox(height: 8),
+          if (product.productImage.isNotEmpty)
+            Container(
+              height: 60,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade200,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  product.productImage,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.image_not_supported, color: Colors.grey.shade400);
+                  },
+                ),
+              ),
+            ),
+          SizedBox(height: 8),
+          Text(
+            product.productTitle,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2D3748),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 4),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Color(0xFF10B981).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              product.productCondition,
+              style: TextStyle(
+                fontSize: 10,
+                color: Color(0xFF10B981),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(int statusId) {
+    switch (statusId) {
+      case 1: // Takas Başlatıldı
+        return Colors.blue;
+      case 2: // Kargoya Verildi
+        return Colors.orange;
+      case 3: // Teslim Edildi / Alındı
+        return Colors.green;
+      case 4: // Tamamlandı
+        return Color(0xFF10B981);
+      case 5: // İptal Edildi
+        return Colors.red;
+      case 6: // Beklemede
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(int statusId) {
+    switch (statusId) {
+      case 1: // Takas Başlatıldı
+        return Icons.play_arrow;
+      case 2: // Kargoya Verildi
+        return Icons.local_shipping;
+      case 3: // Teslim Edildi / Alındı
+        return Icons.check_circle;
+      case 4: // Tamamlandı
+        return Icons.done_all;
+      case 5: // İptal Edildi
+        return Icons.cancel;
+      case 6: // Beklemede
+        return Icons.pause;
+      default:
+        return Icons.help;
+    }
   }
 
   Widget _buildFavoritesTab() {

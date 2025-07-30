@@ -15,6 +15,7 @@ class TradeViewModel extends ChangeNotifier {
   Map<String, int> _statistics = {};
   List<TradeStatusModel> _tradeStatuses = [];
   List<DeliveryType> _deliveryTypes = [];
+  List<UserTrade> _userTrades = [];
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -36,6 +37,7 @@ class TradeViewModel extends ChangeNotifier {
   Map<String, int> get statistics => _statistics;
   List<TradeStatusModel> get tradeStatuses => _tradeStatuses;
   List<DeliveryType> get deliveryTypes => _deliveryTypes;
+  List<UserTrade> get userTrades => _userTrades;
 
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
@@ -60,9 +62,9 @@ class TradeViewModel extends ChangeNotifier {
     // Teslimat türlerini yükle
     await loadDeliveryTypes();
     
-    // Temporarily disable trade loading since endpoints don't exist
-    // TODO: Implement when trade endpoints are available
-    Logger.info('Trade endpoints henüz implement edilmedi', tag: 'TradeViewModel');
+    // Kullanıcı takaslarını yükle (eğer kullanıcı giriş yapmışsa)
+    // TODO: Kullanıcı ID'si alınıp loadUserTrades çağrılacak
+    
     _setLoading(false);
     _clearError();
   }
@@ -556,6 +558,88 @@ class TradeViewModel extends ChangeNotifier {
       orElse: () => const DeliveryType(deliveryID: 0, deliveryTitle: 'Bilinmeyen'),
     );
     return delivery.deliveryID;
+  }
+
+  /// Takas durumunu güncelle ve tamamla
+  Future<bool> completeTradeWithStatus({
+    required String userToken,
+    required int offerID,
+    required int statusID,
+    String? meetingLocation,
+    TradeReview? review,
+  }) async {
+    Logger.info('Takas durumu güncelleme işlemi başlatılıyor...', tag: 'TradeViewModel');
+    
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _tradeService.completeTradeWithStatus(
+        userToken: userToken,
+        offerID: offerID,
+        statusID: statusID,
+        meetingLocation: meetingLocation,
+        review: review,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('Takas durumu güncelleme başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
+        _setLoading(false);
+        return true;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas durumu güncelleme hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Takas durumu güncelleme exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Kullanıcının takaslarını yükle
+  Future<void> loadUserTrades(int userId) async {
+    try {
+      Logger.info('Kullanıcı takasları yükleniyor... UserID: $userId', tag: 'TradeViewModel');
+      
+      final response = await _tradeService.getUserTrades(userId);
+
+      if (response.isSuccess && response.data != null) {
+        _userTrades = response.data!.data?.trades ?? [];
+        Logger.info('Kullanıcı takasları başarıyla yüklendi: ${_userTrades.length} takas', tag: 'TradeViewModel');
+        notifyListeners();
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Kullanıcı takasları yükleme hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+      }
+    } catch (e) {
+      Logger.error('Kullanıcı takasları exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Duruma göre takasları filtrele
+  List<UserTrade> getTradesByStatus(int statusId) {
+    return _userTrades.where((trade) => trade.statusID == statusId).toList();
+  }
+
+  /// Duruma göre takasları filtrele (title ile)
+  List<UserTrade> getTradesByStatusTitle(String statusTitle) {
+    return _userTrades.where((trade) => trade.statusTitle == statusTitle).toList();
+  }
+
+  /// Offer ID'ye göre takas getir
+  UserTrade? getTradeByOfferId(int offerId) {
+    try {
+      return _userTrades.firstWhere((trade) => trade.offerID == offerId);
+    } catch (e) {
+      return null;
+    }
   }
 
   @override

@@ -481,4 +481,335 @@ class DeliveryTypesData {
   String toString() {
     return 'DeliveryTypesData(deliveryTypesCount: ${deliveryTypes?.length ?? 0})';
   }
+}
+
+@JsonSerializable()
+class TradeReview {
+  final int toUserID;
+  final int rating;
+  final String comment;
+
+  const TradeReview({
+    required this.toUserID,
+    required this.rating,
+    required this.comment,
+  });
+
+  factory TradeReview.fromJson(Map<String, dynamic> json) {
+    return TradeReview(
+      toUserID: json['toUserID'] as int? ?? 0,
+      rating: json['rating'] as int? ?? 0,
+      comment: json['comment'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'toUserID': toUserID,
+    'rating': rating,
+    'comment': comment,
+  };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TradeReview && 
+           other.toUserID == toUserID && 
+           other.rating == rating;
+  }
+
+  @override
+  int get hashCode => toUserID.hashCode ^ rating.hashCode;
+
+  @override
+  String toString() {
+    return 'TradeReview(toUserID: $toUserID, rating: $rating, comment: $comment)';
+  }
+}
+
+@JsonSerializable()
+class TradeCompleteRequest {
+  final String userToken;
+  final int offerID;
+  final int statusID;
+  final String? meetingLocation;
+  final TradeReview? review;
+
+  const TradeCompleteRequest({
+    required this.userToken,
+    required this.offerID,
+    required this.statusID,
+    this.meetingLocation,
+    this.review,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'userToken': userToken,
+    'offerID': offerID,
+    'statusID': statusID,
+    if (meetingLocation != null) 'meetingLocation': meetingLocation,
+    if (review != null) 'review': review!.toJson(),
+  };
+
+  @override
+  String toString() {
+    return 'TradeCompleteRequest(offerID: $offerID, statusID: $statusID, hasReview: ${review != null})';
+  }
+}
+
+@JsonSerializable()
+class TradeCompleteResponse {
+  final bool error;
+  final bool success;
+  final TradeCompleteData? data;
+
+  const TradeCompleteResponse({
+    required this.error,
+    required this.success,
+    this.data,
+  });
+
+  factory TradeCompleteResponse.fromJson(Map<String, dynamic> json) {
+    return TradeCompleteResponse(
+      error: json['error'] as bool? ?? false,
+      success: json['success'] as bool? ?? false,
+      data: json['data'] != null 
+          ? TradeCompleteData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TradeCompleteResponse(error: $error, success: $success, message: ${data?.message})';
+  }
+}
+
+@JsonSerializable()
+class TradeCompleteData {
+  final String message;
+
+  const TradeCompleteData({
+    required this.message,
+  });
+
+  factory TradeCompleteData.fromJson(Map<String, dynamic> json) {
+    return TradeCompleteData(
+      message: json['message'] as String? ?? '',
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TradeCompleteData(message: $message)';
+  }
+}
+
+@JsonSerializable()
+class UserTrade {
+  final int offerID;
+  final int statusID;
+  final String statusTitle;
+  final String deliveryType;
+  final String? meetingLocation;
+  final String createdAt;
+  final String? completedAt;
+  final TradeProduct myProduct;
+  final TradeProduct theirProduct;
+
+  const UserTrade({
+    required this.offerID,
+    required this.statusID,
+    required this.statusTitle,
+    required this.deliveryType,
+    this.meetingLocation,
+    required this.createdAt,
+    this.completedAt,
+    required this.myProduct,
+    required this.theirProduct,
+  });
+
+  factory UserTrade.fromJson(Map<String, dynamic> json) {
+    return UserTrade(
+      offerID: json['offerID'] as int? ?? 0,
+      statusID: json['statusID'] as int? ?? 0,
+      statusTitle: json['statusTitle'] as String? ?? '',
+      deliveryType: json['deliveryType'] as String? ?? '',
+      meetingLocation: json['meetingLocation'] as String?,
+      createdAt: json['createdAt'] as String? ?? '',
+      completedAt: json['completedAt'] as String?,
+      myProduct: TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>),
+      theirProduct: TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'offerID': offerID,
+    'statusID': statusID,
+    'statusTitle': statusTitle,
+    'deliveryType': deliveryType,
+    if (meetingLocation != null) 'meetingLocation': meetingLocation,
+    'createdAt': createdAt,
+    if (completedAt != null) 'completedAt': completedAt,
+    'myProduct': myProduct.toJson(),
+    'theirProduct': theirProduct.toJson(),
+  };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is UserTrade && other.offerID == offerID;
+  }
+
+  @override
+  int get hashCode => offerID.hashCode;
+
+  @override
+  String toString() {
+    return 'UserTrade(offerID: $offerID, statusTitle: $statusTitle, deliveryType: $deliveryType)';
+  }
+}
+
+@JsonSerializable()
+class TradeProduct {
+  final int productID;
+  final String productTitle;
+  final String productDesc;
+  final String productImage;
+  final String productCondition;
+  final String tradeFor;
+  final String categoryTitle;
+  final int userID;
+  final int categoryID;
+  final int conditionID;
+  final int cityID;
+  final int districtID;
+  final String cityTitle;
+  final String? districtTitle;
+  final String createdAt;
+  final bool isFavorite;
+
+  const TradeProduct({
+    required this.productID,
+    required this.productTitle,
+    required this.productDesc,
+    required this.productImage,
+    required this.productCondition,
+    required this.tradeFor,
+    required this.categoryTitle,
+    required this.userID,
+    required this.categoryID,
+    required this.conditionID,
+    required this.cityID,
+    required this.districtID,
+    required this.cityTitle,
+    this.districtTitle,
+    required this.createdAt,
+    required this.isFavorite,
+  });
+
+  factory TradeProduct.fromJson(Map<String, dynamic> json) {
+    return TradeProduct(
+      productID: json['productID'] as int? ?? 0,
+      productTitle: json['productTitle'] as String? ?? '',
+      productDesc: json['productDesc'] as String? ?? '',
+      productImage: json['productImage'] as String? ?? '',
+      productCondition: json['productCondition'] as String? ?? '',
+      tradeFor: json['tradeFor'] as String? ?? '',
+      categoryTitle: json['categoryTitle'] as String? ?? '',
+      userID: json['userID'] as int? ?? 0,
+      categoryID: json['categoryID'] as int? ?? 0,
+      conditionID: json['conditionID'] as int? ?? 0,
+      cityID: json['cityID'] as int? ?? 0,
+      districtID: json['districtID'] as int? ?? 0,
+      cityTitle: json['cityTitle'] as String? ?? '',
+      districtTitle: json['districtTitle'] as String?,
+      createdAt: json['createdAt'] as String? ?? '',
+      isFavorite: json['isFavorite'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'productID': productID,
+    'productTitle': productTitle,
+    'productDesc': productDesc,
+    'productImage': productImage,
+    'productCondition': productCondition,
+    'tradeFor': tradeFor,
+    'categoryTitle': categoryTitle,
+    'userID': userID,
+    'categoryID': categoryID,
+    'conditionID': conditionID,
+    'cityID': cityID,
+    'districtID': districtID,
+    'cityTitle': cityTitle,
+    if (districtTitle != null) 'districtTitle': districtTitle,
+    'createdAt': createdAt,
+    'isFavorite': isFavorite,
+  };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TradeProduct && other.productID == productID;
+  }
+
+  @override
+  int get hashCode => productID.hashCode;
+
+  @override
+  String toString() {
+    return 'TradeProduct(productID: $productID, productTitle: $productTitle)';
+  }
+}
+
+@JsonSerializable()
+class UserTradesResponse {
+  final bool error;
+  final bool success;
+  final UserTradesData? data;
+
+  const UserTradesResponse({
+    required this.error,
+    required this.success,
+    this.data,
+  });
+
+  factory UserTradesResponse.fromJson(Map<String, dynamic> json) {
+    return UserTradesResponse(
+      error: json['error'] as bool? ?? false,
+      success: json['success'] as bool? ?? false,
+      data: json['data'] != null 
+          ? UserTradesData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'UserTradesResponse(error: $error, success: $success, tradesCount: ${data?.trades?.length ?? 0})';
+  }
+}
+
+@JsonSerializable()
+class UserTradesData {
+  final List<UserTrade>? trades;
+
+  const UserTradesData({
+    this.trades,
+  });
+
+  factory UserTradesData.fromJson(Map<String, dynamic> json) {
+    return UserTradesData(
+      trades: json['trades'] != null
+          ? (json['trades'] as List)
+              .map((item) => UserTrade.fromJson(item as Map<String, dynamic>))
+              .toList()
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'UserTradesData(tradesCount: ${trades?.length ?? 0})';
+  }
 } 
