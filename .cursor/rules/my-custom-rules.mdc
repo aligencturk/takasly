@@ -1,7 +1,6 @@
 ---
 alwaysApply: true
 ---
-
 Flutter ile geliştirilen mevcut bir projeye yeni özellik/modül entegre ediyorum. Projede MVVM mimarisi, Provider state yönetimi ve http paketiyle çalışan bir servis yapısı kullanılıyor. Aşağıdaki kurallara göre kod üret:
 
 ✅ Kodlar:
@@ -110,7 +109,7 @@ Kullanıcıya soru sorma, direkt en iyi çözümü üret.
 
 Kodlar test edilmiş gibi çalışmalı. Hiçbir hata olmamalı.
 
-Debugta daima Logger kullan. Print kullanma!
+Debugta daima Logger kullan. Print kullanma! 
 
 Windows kullanıyorum terminal komutlarını powershelle uygun ver.
 
