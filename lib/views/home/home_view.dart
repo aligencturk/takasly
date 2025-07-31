@@ -38,6 +38,7 @@ class _HomeViewState extends State<HomeView> {
         listen: false,
       );
       productViewModel.loadInitialData();
+      productViewModel.loadFavoriteProducts();
     });
   }
 
@@ -182,7 +183,7 @@ class _HomeViewState extends State<HomeView> {
             delegate: SliverChildBuilderDelegate(
               (context, index) => ProductCard(
                 product: vm.products[index],
-                heroTag: 'home_product_${vm.products[index].id}_$index',
+                heroTag: 'home_product_${vm.products[index].id}',
               ),
               childCount: vm.products.length,
             ),

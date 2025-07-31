@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
+import 'package:provider/provider.dart';
+import 'package:takasly/viewmodels/product_viewmodel.dart';
 import '../../views/product/product_detail_view.dart';
 
 class ProductCard extends StatelessWidget {
@@ -21,10 +23,6 @@ class ProductCard extends StatelessWidget {
     if (product.category == null) return 'Kategori Yok';
     
     // Eğer alt kategori varsa sadece alt kategori adını göster
-    if (product.category.parentId != null) {
-      return product.category.name;
-    }
-    
     return product.category.name;
   }
 
@@ -53,66 +51,22 @@ class ProductCard extends StatelessWidget {
             // Resim
             Expanded(
               flex: 5,
-              child: Hero(
-                tag: heroTag ?? 'product_image_${product.id}_${DateTime.now().millisecondsSinceEpoch}',
-                child: Builder(
-                  builder: (context) {
-                    final imageUrl = product.images.isNotEmpty ? product.images.first : '';
-                    
-                    // Resim URL'si boş veya geçersizse placeholder göster
-                    final uri = Uri.tryParse(imageUrl);
-                    if (imageUrl.isEmpty || 
-                        imageUrl == 'null' || 
-                        imageUrl == 'undefined' ||
-                        imageUrl.contains('product_68852b20b6cac.png') ||
-                        uri == null ||
-                        !uri.hasAbsolutePath) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            topRight: Radius.circular(8),
-                          ),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.image_not_supported_outlined,
-                                color: Colors.grey[400],
-                                size: 32,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Resim yok',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                    
-                    return ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                        topRight: Radius.circular(8),
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.contain,
-                        width: double.infinity,
-                        placeholder: (context, url) => Shimmer.fromColors(
-                          baseColor: Colors.grey[200]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: Container(color: Colors.white),
-                        ),
-                        errorWidget: (context, url, error) {
+              child: Stack(
+                children: [
+                  Hero(
+                    tag: heroTag ?? 'product_image_${product.id}',
+                    child: Builder(
+                      builder: (context) {
+                        final imageUrl = product.images.isNotEmpty ? product.images.first : '';
+                        
+                        // Resim URL'si boş veya geçersizse placeholder göster
+                        final uri = Uri.tryParse(imageUrl);
+                        if (imageUrl.isEmpty || 
+                            imageUrl == 'null' || 
+                            imageUrl == 'undefined' ||
+                            imageUrl.contains('product_68852b20b6cac.png') ||
+                            uri == null ||
+                            !uri.hasAbsolutePath) {
                           return Container(
                             decoration: BoxDecoration(
                               color: Colors.grey[50],
@@ -132,7 +86,7 @@ class ProductCard extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Resim yüklenemedi',
+                                    'Resim yok',
                                     style: TextStyle(
                                       color: Colors.grey[500],
                                       fontSize: 10,
@@ -142,11 +96,96 @@ class ProductCard extends StatelessWidget {
                               ),
                             ),
                           );
-                        },
-                      ),
-                    );
-                  },
-                ),
+                        }
+                        
+                        return ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            topRight: Radius.circular(8),
+                          ),
+                          child: CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.contain,
+                            width: double.infinity,
+                            placeholder: (context, url) => Shimmer.fromColors(
+                              baseColor: Colors.grey[200]!,
+                              highlightColor: Colors.grey[100]!,
+                              child: Container(color: Colors.white),
+                            ),
+                            errorWidget: (context, url, error) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(8),
+                                    topRight: Radius.circular(8),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.image_not_supported_outlined,
+                                        color: Colors.grey[400],
+                                        size: 32,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Resim yüklenemedi',
+                                        style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // Favori kalp ikonu
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Consumer<ProductViewModel>(
+                      builder: (context, productViewModel, child) {
+                        final isFavorite = productViewModel.isFavorite(product.id);
+                        return GestureDetector(
+                          onTap: () async {
+                            final success = await productViewModel.toggleFavorite(product.id);
+                            if (success != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    success 
+                                      ? 'Ürün favorilere eklendi' 
+                                      : 'Ürün favorilerden çıkarıldı',
+                                  ),
+                                  duration: const Duration(seconds: 1),
+                                  backgroundColor: success ? Colors.green : Colors.orange,
+                                ),
+                              );
+                            }
+                          },
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              key: ValueKey('favorite_${product.id}'),
+                              color: isFavorite ? Colors.red : Colors.grey[600],
+                              size: 22,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             // Bilgiler

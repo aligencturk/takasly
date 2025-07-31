@@ -1246,23 +1246,42 @@ class ProductService {
     try {
       final response = await _httpClient.getWithBasicAuth(
         ApiConstants.categoriesList,
-        fromJson: (json) => (json['data']['categories'] as List)
-            .map(
-              (item) => Category(
-                id: item['catID'].toString(),
-                name: item['catName'],
-                icon: item['catImage'] ?? '',
-                parentId: null, // Ana kategoriler için parentId null
-                children: null, // Alt kategoriler ayrı yüklenecek
-                isActive: true,
-                order: 0,
-              ),
-            )
-            .toList(),
+        fromJson: (json) {
+          print('🔍 Raw Categories API Response: $json');
+          
+          if (json['data'] == null || json['data']['categories'] == null) {
+            print('❌ Categories API response has no data or categories field');
+            return <Category>[];
+          }
+          
+          final categoriesList = json['data']['categories'] as List;
+          print('🏷️ Categories API returned ${categoriesList.length} categories');
+          
+          // Kategori verilerini detaylı logla
+          for (int i = 0; i < categoriesList.length; i++) {
+            final category = categoriesList[i];
+            print('🏷️ Category $i: ${category['catName']} (Icon: ${category['catImage']})');
+          }
+          
+          return categoriesList
+              .map(
+                (item) => Category(
+                  id: item['catID'].toString(),
+                  name: item['catName'],
+                  icon: item['catImage'] ?? '',
+                  parentId: null, // Ana kategoriler için parentId null
+                  children: null, // Alt kategoriler ayrı yüklenecek
+                  isActive: true,
+                  order: 0,
+                ),
+              )
+              .toList();
+        },
       );
 
       return response;
     } catch (e) {
+      print('❌ ProductService: Error getting categories: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

@@ -420,7 +420,14 @@ class ProductViewModel extends ChangeNotifier {
       if (response.isSuccess && response.data != null) {
         _categories = response.data ?? [];
         print('🏷️ Categories loaded: ${_categories.length} items');
-        _categories.forEach((cat) => print('  - ${cat.name} (${cat.id})'));
+        
+        // Kategori detaylarını logla
+        print('🏷️ Loaded ${_categories.length} categories:');
+        for (int i = 0; i < _categories.length; i++) {
+          final category = _categories[i];
+          print('  ${i + 1}. ${category.name} (Icon: "${category.icon}")');
+        }
+        
         notifyListeners();
       } else {
         print('🏷️ Categories failed: ${response.error}');
