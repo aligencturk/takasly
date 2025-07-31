@@ -16,6 +16,105 @@ import '../../widgets/error_widget.dart';
 import '../chat/chat_detail_view.dart';
 import '../../utils/logger.dart';
 
+// Tam ekran görsel görüntüleme sayfası
+class FullScreenImageView extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+
+  const FullScreenImageView({
+    super.key,
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<FullScreenImageView> createState() => _FullScreenImageViewState();
+}
+
+class _FullScreenImageViewState extends State<FullScreenImageView> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          '${_currentIndex + 1}/${widget.images.length}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      body: PageView.builder(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        itemCount: widget.images.length,
+        itemBuilder: (context, index) {
+          return InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 3.0,
+            child: Center(
+              child: CachedNetworkImage(
+                imageUrl: widget.images[index],
+                fit: BoxFit.contain,
+                placeholder: (context, url) => Container(
+                  color: Colors.black,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.black,
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      size: 60,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class ProductDetailView extends StatelessWidget {
   final String productId;
   const ProductDetailView({super.key, required this.productId});
@@ -234,6 +333,18 @@ class _ImageCarousel extends StatelessWidget {
     required this.currentIndex,
   });
 
+  void _openFullScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullScreenImageView(
+          images: images,
+          initialIndex: currentIndex,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (images.isEmpty) {
@@ -274,23 +385,47 @@ class _ImageCarousel extends StatelessWidget {
             onPageChanged: onPageChanged,
             itemCount: images.length,
             itemBuilder: (context, index) {
-              return CachedNetworkImage(
-                imageUrl: images[index],
-                fit: BoxFit.contain,
-                width: double.infinity,
-                placeholder: (context, url) => Container(
-                  color: AppTheme.background,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+              return GestureDetector(
+                onTap: () => _openFullScreen(context),
+                child: Stack(
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: images[index],
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      placeholder: (context, url) => Container(
+                        color: AppTheme.background,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: AppTheme.background,
+                        child: Center(
+                          child: Icon(Icons.broken_image, size: 60, color: AppTheme.textSecondary),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: AppTheme.background,
-                  child: Center(
-                    child: Icon(Icons.broken_image, size: 60, color: AppTheme.textSecondary),
-                  ),
+                    // Tam ekran göstergesi
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.fullscreen,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
