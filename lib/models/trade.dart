@@ -613,7 +613,7 @@ class UserTrade {
   final String? meetingLocation;
   final String createdAt;
   final String? completedAt;
-  final TradeProduct myProduct;
+  final TradeProduct? myProduct;
   final TradeProduct theirProduct;
 
   const UserTrade({
@@ -624,7 +624,7 @@ class UserTrade {
     this.meetingLocation,
     required this.createdAt,
     this.completedAt,
-    required this.myProduct,
+    this.myProduct,
     required this.theirProduct,
   });
 
@@ -637,7 +637,9 @@ class UserTrade {
       meetingLocation: json['meetingLocation'] as String?,
       createdAt: json['createdAt'] as String? ?? '',
       completedAt: json['completedAt'] as String?,
-      myProduct: TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>),
+      myProduct: json['myProduct'] != null 
+          ? TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>)
+          : null,
       theirProduct: TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>),
     );
   }

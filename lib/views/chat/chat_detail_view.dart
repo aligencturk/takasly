@@ -994,15 +994,6 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                             size: 16,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Sohbet Konusu İlan',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -1150,9 +1141,6 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   Widget _buildChatProductCard(Product product) {
-    final authViewModel = context.read<AuthViewModel>();
-    final isMyProduct = authViewModel.currentUser?.id == product.ownerId;
-    
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1163,73 +1151,46 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppTheme.primary.withValues(alpha: 0.1),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.all(12),
+        color: Colors.white,
         child: Row(
           children: [
             // Sol taraf - Resim
             Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.grey[50],
-              ),
+              width: 50,
+              height: 50,
+              color: Colors.grey[50],
               child: product.images.isNotEmpty && product.images.first.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        product.images.first,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.image_not_supported_outlined,
-                              color: Colors.grey[400],
-                              size: 24,
-                            ),
-                          );
-                        },
-                      ),
+                  ? Image.network(
+                      product.images.first,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 50,
+                          height: 50,
+                          color: Colors.grey[100],
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: Colors.grey[400],
+                            size: 20,
+                          ),
+                        );
+                      },
                     )
                   : Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      width: 50,
+                      height: 50,
+                      color: Colors.grey[100],
                       child: Icon(
                         Icons.image_not_supported_outlined,
                         color: Colors.grey[400],
-                        size: 24,
+                        size: 20,
                       ),
                     ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             // Orta kısım - İçerik
             Expanded(
               child: Column(
@@ -1239,48 +1200,21 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                     product.title,
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                      fontSize: 14,
                       color: Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
-                  // Ürün sahibi bilgisi
+                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 14,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        isMyProduct ? 'Sizin ilanınız' : '${product.owner.name}',
+                        product.categoryName,
                         style: TextStyle(
-                          fontSize: 12,
                           color: Colors.grey[600],
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          product.categoryName,
-                          style: TextStyle(
-                            color: AppTheme.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
                         ),
                       ),
                       const Spacer(),
@@ -1289,7 +1223,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                           '₺${product.estimatedValue!.toStringAsFixed(0)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
-                            fontSize: 16,
+                            fontSize: 14,
                             color: Colors.green,
                           ),
                         ),
@@ -1298,19 +1232,12 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             // Sağ taraf - Tıklama göstergesi
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.arrow_forward_ios,
-                color: AppTheme.primary,
-                size: 16,
-              ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey[400],
+              size: 14,
             ),
           ],
         ),
