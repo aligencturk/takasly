@@ -24,6 +24,7 @@ class _AddProductViewState extends State<AddProductView> {
   String? _selectedCityId;
   String? _selectedDistrictId;
   List<File> _selectedImages = [];
+  int _coverImageIndex = 0; // Kapak fotoğrafı indeksi
   final ImagePicker _imagePicker = ImagePicker();
 
   // Step management
@@ -815,13 +816,20 @@ class _AddProductViewState extends State<AddProductView> {
       builder: (context, vm, child) {
         return DropdownButtonFormField<String>(
           value: _selectedCityId,
-          decoration: const InputDecoration(labelText: 'İl'),
-          items: vm.cities
-              .map(
-                (city) =>
-                    DropdownMenuItem(value: city.id, child: Text(city.name)),
-              )
-              .toList(),
+          decoration: const InputDecoration(
+            labelText: 'İl',
+            hintText: 'İl seçiniz',
+          ),
+          hint: const Text('İl seçiniz'),
+          items: [
+            const DropdownMenuItem<String>(
+              value: null,
+              child: Text('İl seçiniz', style: TextStyle(color: Colors.grey)),
+            ),
+            ...vm.cities.map(
+              (city) => DropdownMenuItem(value: city.id, child: Text(city.name)),
+            ),
+          ],
           onChanged: (value) {
             setState(() {
               _selectedCityId = value;
@@ -842,14 +850,19 @@ class _AddProductViewState extends State<AddProductView> {
           value: _selectedDistrictId,
           decoration: InputDecoration(
             labelText: 'İlçe',
+            hintText: 'İlçe seçiniz',
             enabled: _selectedCityId != null,
           ),
-          items: vm.districts
-              .map(
-                (dist) =>
-                    DropdownMenuItem(value: dist.id, child: Text(dist.name)),
-              )
-              .toList(),
+          hint: const Text('İlçe seçiniz'),
+          items: [
+            const DropdownMenuItem<String>(
+              value: null,
+              child: Text('İlçe seçiniz', style: TextStyle(color: Colors.grey)),
+            ),
+            ...vm.districts.map(
+              (dist) => DropdownMenuItem(value: dist.id, child: Text(dist.name)),
+            ),
+          ],
           onChanged: _selectedCityId == null
               ? null
               : (value) => setState(() => _selectedDistrictId = value),
@@ -890,7 +903,7 @@ class _AddProductViewState extends State<AddProductView> {
         ],
 
         Text(
-          'En az 1, en fazla 5 fotoğraf ekleyebilirsiniz. İlk fotoğraf kapak resmi olacaktır.',
+          'En az 1, en fazla 5 fotoğraf ekleyebilirsiniz. Yıldız ikonuna tıklayarak kapak resmi seçebilirsiniz.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.grey.shade600,
           ),
@@ -941,13 +954,18 @@ class _AddProductViewState extends State<AddProductView> {
   }
 
   Widget _buildImagePreview(File image, int index) {
+    final isCoverImage = index == _coverImageIndex;
+    
     return Container(
       width: 100,
       height: 100,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(
+          color: isCoverImage ? AppTheme.primary : Colors.grey.shade300,
+          width: isCoverImage ? 2 : 1,
+        ),
       ),
       child: Stack(
         children: [
@@ -961,7 +979,8 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           ),
 
-          if (index == 0)
+          // Kapak resmi göstergesi
+          if (isCoverImage)
             Positioned(
               top: 4,
               left: 4,
@@ -982,6 +1001,30 @@ class _AddProductViewState extends State<AddProductView> {
               ),
             ),
 
+          // Kapak resmi yapma butonu (kapak resmi değilse)
+          if (!isCoverImage)
+            Positioned(
+              top: 4,
+              left: 4,
+              child: GestureDetector(
+                onTap: () => _setCoverImage(index),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.star,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ),
+
+          // Silme butonu
           Positioned(
             top: 4,
             right: 4,
@@ -1091,10 +1134,15 @@ class _AddProductViewState extends State<AddProductView> {
       if (pickedFile != null) {
         setState(() {
           _selectedImages.add(File(pickedFile.path));
+          // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
+          if (_selectedImages.length == 1) {
+            _coverImageIndex = 0;
+          }
         });
 
         print('📸 Image added: ${pickedFile.path}');
         print('📸 Total images: ${_selectedImages.length}');
+        print('📸 Cover image index: $_coverImageIndex');
       }
     } catch (e) {
       print('❌ Error picking image: $e');
@@ -1135,10 +1183,15 @@ class _AddProductViewState extends State<AddProductView> {
           for (final file in filesToAdd) {
             _selectedImages.add(File(file.path));
           }
+          // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
+          if (_selectedImages.length == filesToAdd.length) {
+            _coverImageIndex = 0;
+          }
         });
 
         print('📸 ${filesToAdd.length} images added');
         print('📸 Total images: ${_selectedImages.length}');
+        print('📸 Cover image index: $_coverImageIndex');
 
         if (pickedFiles.length > remainingSlots) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1165,8 +1218,43 @@ class _AddProductViewState extends State<AddProductView> {
   void _removeImage(int index) {
     setState(() {
       _selectedImages.removeAt(index);
+      
+      // Eğer silinen resim kapak resmiyse, ilk resmi kapak resmi yap
+      if (index == _coverImageIndex) {
+        _coverImageIndex = 0;
+      } else if (index < _coverImageIndex) {
+        // Eğer silinen resim kapak resminden önceyse, kapak resmi indeksini güncelle
+        _coverImageIndex--;
+      }
     });
     print('🗑️ Image removed at index $index');
     print('📸 Remaining images: ${_selectedImages.length}');
+    print('📸 Cover image index: $_coverImageIndex');
+  }
+
+  void _setCoverImage(int index) {
+    setState(() {
+      _coverImageIndex = index;
+    });
+    print('⭐ Cover image set to index: $index');
+    
+    // Kullanıcıya bilgi ver
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.star, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            const Text('Kapak resmi olarak ayarlandı'),
+          ],
+        ),
+        backgroundColor: AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
   }
 }
