@@ -355,7 +355,7 @@ class HttpClient {
         print('✅ 410 - Response body: "${response.body}"');
         print('✅ 410 - Response body isEmpty: ${response.body.isEmpty}');
 
-        if (response.body.isNotEmpty) {
+        if (response.body.isNotEmpty && response.body.trim() != 'null') {
           try {
             final data = json.decode(response.body);
             print('✅ 410 - Parsed data: $data');
@@ -371,13 +371,37 @@ class HttpClient {
           } catch (e) {
             print('⚠️ 410 - Failed to parse JSON: $e');
             print('⚠️ 410 - Raw response body: "${response.body}"');
-            // JSON parse edilemiyorsa, raw response'u döndür
-            print('⚠️ 410 - Returning null due to JSON parse error');
-            return ApiResponse<T>.success(null);
+            // JSON parse edilemiyorsa, fromJson fonksiyonu varsa boş data ile çağır
+            if (fromJson != null) {
+              try {
+                // Boş bir Map ile fromJson'u çağır
+                final result = fromJson({});
+                print('⚠️ 410 - Returning empty fromJson result: $result');
+                return ApiResponse<T>.success(result);
+              } catch (e2) {
+                print('⚠️ 410 - fromJson failed with empty data: $e2');
+                return ApiResponse<T>.success(null);
+              }
+            } else {
+              print('⚠️ 410 - Returning null due to JSON parse error');
+              return ApiResponse<T>.success(null);
+            }
           }
         } else {
-          print('⚠️ 410 - Empty response body');
-          return ApiResponse<T>.success(null);
+          print('⚠️ 410 - Empty or null response body');
+          if (fromJson != null) {
+            try {
+              // Boş bir Map ile fromJson'u çağır
+              final result = fromJson({});
+              print('⚠️ 410 - Returning empty fromJson result: $result');
+              return ApiResponse<T>.success(result);
+            } catch (e) {
+              print('⚠️ 410 - fromJson failed with empty data: $e');
+              return ApiResponse<T>.success(null);
+            }
+          } else {
+            return ApiResponse<T>.success(null);
+          }
         }
       }
 

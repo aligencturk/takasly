@@ -629,19 +629,49 @@ class UserTrade {
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {
-    return UserTrade(
-      offerID: json['offerID'] as int? ?? 0,
-      statusID: json['statusID'] as int? ?? 0,
-      statusTitle: json['statusTitle'] as String? ?? '',
-      deliveryType: json['deliveryType'] as String? ?? '',
-      meetingLocation: json['meetingLocation'] as String?,
-      createdAt: json['createdAt'] as String? ?? '',
-      completedAt: json['completedAt'] as String?,
-      myProduct: json['myProduct'] != null 
-          ? TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>)
-          : null,
-      theirProduct: TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>),
-    );
+    try {
+      return UserTrade(
+        offerID: json['offerID'] as int? ?? 0,
+        statusID: json['statusID'] as int? ?? 0,
+        statusTitle: json['statusTitle'] as String? ?? '',
+        deliveryType: json['deliveryType'] as String? ?? '',
+        meetingLocation: json['meetingLocation'] as String?,
+        createdAt: json['createdAt'] as String? ?? '',
+        completedAt: json['completedAt'] as String?,
+        myProduct: json['myProduct'] != null 
+            ? TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>)
+            : null,
+        theirProduct: TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>),
+      );
+    } catch (e) {
+      // JSON parse hatası durumunda varsayılan değerlerle oluştur
+      print('⚠️ UserTrade.fromJson error: $e');
+      print('⚠️ JSON data: $json');
+      return UserTrade(
+        offerID: 0,
+        statusID: 0,
+        statusTitle: 'Bilinmeyen',
+        deliveryType: 'Bilinmeyen',
+        createdAt: '',
+        theirProduct: TradeProduct(
+          productID: 0,
+          productTitle: 'Bilinmeyen Ürün',
+          productDesc: '',
+          productImage: '',
+          productCondition: 'Bilinmeyen',
+          tradeFor: '',
+          categoryTitle: '',
+          userID: 0,
+          categoryID: 0,
+          conditionID: 0,
+          cityID: 0,
+          districtID: 0,
+          cityTitle: '',
+          createdAt: '',
+          isFavorite: false,
+        ),
+      );
+    }
   }
 
   Map<String, dynamic> toJson() => {
@@ -710,24 +740,47 @@ class TradeProduct {
   });
 
   factory TradeProduct.fromJson(Map<String, dynamic> json) {
-    return TradeProduct(
-      productID: json['productID'] as int? ?? 0,
-      productTitle: json['productTitle'] as String? ?? '',
-      productDesc: json['productDesc'] as String? ?? '',
-      productImage: json['productImage'] as String? ?? '',
-      productCondition: json['productCondition'] as String? ?? '',
-      tradeFor: json['tradeFor'] as String? ?? '',
-      categoryTitle: json['categoryTitle'] as String? ?? '',
-      userID: json['userID'] as int? ?? 0,
-      categoryID: json['categoryID'] as int? ?? 0,
-      conditionID: json['conditionID'] as int? ?? 0,
-      cityID: json['cityID'] as int? ?? 0,
-      districtID: json['districtID'] as int? ?? 0,
-      cityTitle: json['cityTitle'] as String? ?? '',
-      districtTitle: json['districtTitle'] as String?,
-      createdAt: json['createdAt'] as String? ?? '',
-      isFavorite: json['isFavorite'] as bool? ?? false,
-    );
+    try {
+      return TradeProduct(
+        productID: json['productID'] as int? ?? 0,
+        productTitle: json['productTitle'] as String? ?? '',
+        productDesc: json['productDesc'] as String? ?? '',
+        productImage: json['productImage'] as String? ?? '',
+        productCondition: json['productCondition'] as String? ?? '',
+        tradeFor: json['tradeFor'] as String? ?? '',
+        categoryTitle: json['categoryTitle'] as String? ?? '',
+        userID: json['userID'] as int? ?? 0,
+        categoryID: json['categoryID'] as int? ?? 0,
+        conditionID: json['conditionID'] as int? ?? 0,
+        cityID: json['cityID'] as int? ?? 0,
+        districtID: json['districtID'] as int? ?? 0,
+        cityTitle: json['cityTitle'] as String? ?? '',
+        districtTitle: json['districtTitle'] as String?,
+        createdAt: json['createdAt'] as String? ?? '',
+        isFavorite: json['isFavorite'] as bool? ?? false,
+      );
+    } catch (e) {
+      // JSON parse hatası durumunda varsayılan değerlerle oluştur
+      print('⚠️ TradeProduct.fromJson error: $e');
+      print('⚠️ JSON data: $json');
+      return TradeProduct(
+        productID: 0,
+        productTitle: 'Bilinmeyen Ürün',
+        productDesc: '',
+        productImage: '',
+        productCondition: 'Bilinmeyen',
+        tradeFor: '',
+        categoryTitle: '',
+        userID: 0,
+        categoryID: 0,
+        conditionID: 0,
+        cityID: 0,
+        districtID: 0,
+        cityTitle: '',
+        createdAt: '',
+        isFavorite: false,
+      );
+    }
   }
 
   Map<String, dynamic> toJson() => {
@@ -777,13 +830,24 @@ class UserTradesResponse {
   });
 
   factory UserTradesResponse.fromJson(Map<String, dynamic> json) {
-    return UserTradesResponse(
-      error: json['error'] as bool? ?? false,
-      success: json['success'] as bool? ?? false,
-      data: json['data'] != null 
-          ? UserTradesData.fromJson(json['data'] as Map<String, dynamic>)
-          : null,
-    );
+    try {
+      return UserTradesResponse(
+        error: json['error'] as bool? ?? false,
+        success: json['success'] as bool? ?? false,
+        data: json['data'] != null 
+            ? UserTradesData.fromJson(json['data'] as Map<String, dynamic>)
+            : null,
+      );
+    } catch (e) {
+      // JSON parse hatası durumunda boş response döndür
+      print('⚠️ UserTradesResponse.fromJson error: $e');
+      print('⚠️ JSON data: $json');
+      return UserTradesResponse(
+        error: false,
+        success: true,
+        data: UserTradesData(trades: []),
+      );
+    }
   }
 
   @override
@@ -801,13 +865,20 @@ class UserTradesData {
   });
 
   factory UserTradesData.fromJson(Map<String, dynamic> json) {
-    return UserTradesData(
-      trades: json['trades'] != null
-          ? (json['trades'] as List)
-              .map((item) => UserTrade.fromJson(item as Map<String, dynamic>))
-              .toList()
-          : null,
-    );
+    try {
+      return UserTradesData(
+        trades: json['trades'] != null
+            ? (json['trades'] as List)
+                .map((item) => UserTrade.fromJson(item as Map<String, dynamic>))
+                .toList()
+            : null,
+      );
+    } catch (e) {
+      // JSON parse hatası durumunda boş liste döndür
+      print('⚠️ UserTradesData.fromJson error: $e');
+      print('⚠️ JSON data: $json');
+      return UserTradesData(trades: []);
+    }
   }
 
   @override

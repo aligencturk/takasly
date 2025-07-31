@@ -332,6 +332,25 @@ class _ChatListItem extends StatelessWidget {
                       ),
                     ),
             ),
+            // Sabitlenmiş sohbet için "Sabit" yazısı
+            if (chat.isPinned == true)
+              Positioned(
+                top: 0,
+                left: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white, width: 1),
+                  ),
+                  child: const Icon(
+                    FontAwesomeIcons.thumbtack,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                ),
+              ),
           ],
         ),
         title: Row(

@@ -370,7 +370,12 @@ class TradeService {
       return response;
     } catch (e) {
       Logger.error('Kullanıcı takasları exception: $e', tag: _tag);
-      return ApiResponse.error(ErrorMessages.unknownError);
+      // Exception durumunda boş response döndür
+      return ApiResponse.success(UserTradesResponse(
+        error: false,
+        success: true,
+        data: UserTradesData(trades: []),
+      ));
     }
   }
 

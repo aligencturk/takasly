@@ -613,9 +613,17 @@ class TradeViewModel extends ChangeNotifier {
       
       final response = await _tradeService.getUserTrades(userId);
 
-      if (response.isSuccess && response.data != null) {
-        _userTrades = response.data!.data?.trades ?? [];
-        Logger.info('Kullanıcı takasları başarıyla yüklendi: ${_userTrades.length} takas', tag: 'TradeViewModel');
+      if (response.isSuccess) {
+        // Response data null olabilir, güvenli şekilde kontrol et
+        if (response.data != null) {
+          _userTrades = response.data!.data?.trades ?? [];
+          Logger.info('Kullanıcı takasları başarıyla yüklendi: ${_userTrades.length} takas', tag: 'TradeViewModel');
+        } else {
+          // 410 durumunda data null olabilir, boş liste kullan
+          _userTrades = [];
+          Logger.info('410 durumu - Boş takas listesi kullanılıyor', tag: 'TradeViewModel');
+        }
+        _clearError();
         notifyListeners();
       } else {
         final errorMsg = response.error ?? ErrorMessages.unknownError;

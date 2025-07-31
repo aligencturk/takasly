@@ -87,7 +87,12 @@ class _TradeViewState extends State<TradeView>
       
       // Kullanıcı takaslarını yükle
       print('🔄 TradeView - calling tradeViewModel.loadUserTrades($userId)');
-      await tradeViewModel.loadUserTrades(int.parse(userId));
+      try {
+        await tradeViewModel.loadUserTrades(int.parse(userId));
+      } catch (e) {
+        print('⚠️ TradeView - loadUserTrades exception: $e');
+        // Exception durumunda hata gösterme, sadece log'la
+      }
       
       // Favorilerin yüklendiğini kontrol et
       print('🔍 TradeView - Checking if favorites loaded successfully');
@@ -133,7 +138,7 @@ class _TradeViewState extends State<TradeView>
         backgroundColor: AppTheme.background,
         elevation: 0,
         title: Text(
-          'Hesabım',
+          'Takaslarım',
           style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.w600,
@@ -341,7 +346,11 @@ class _TradeViewState extends State<TradeView>
                     onPressed: () async {
                       final userId = await _authService.getCurrentUserId();
                       if (userId != null) {
-                        tradeViewModel.loadUserTrades(int.parse(userId));
+                        try {
+                          await tradeViewModel.loadUserTrades(int.parse(userId));
+                        } catch (e) {
+                          print('⚠️ TradeView - Retry loadUserTrades exception: $e');
+                        }
                       }
                     },
                     child: Text('Tekrar Dene'),
