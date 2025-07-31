@@ -28,6 +28,7 @@ class _EditProductViewState extends State<EditProductView> {
   final _tradePreferencesController = TextEditingController();
 
   String? _selectedCategoryId;
+  String? _selectedSubCategoryId;
   String? _selectedConditionId;
   String? _selectedCityId;
   String? _selectedDistrictId;
@@ -41,46 +42,63 @@ class _EditProductViewState extends State<EditProductView> {
     _initializeFields();
     // Şehirleri yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProductViewModel>().loadCities();
+      try {
+        context.read<ProductViewModel>().loadCities();
+      } catch (e) {
+        print('Error loading cities: $e');
+      }
     });
   }
 
   void _initializeFields() {
-    // Mevcut ürün bilgilerini form alanlarına yükle
-    _titleController.text = widget.product.title;
-    _descriptionController.text = widget.product.description;
+    try {
+      // Mevcut ürün bilgilerini form alanlarına yükle
+      _titleController.text = widget.product.title;
+      _descriptionController.text = widget.product.description;
 
-    _tradePreferencesController.text = widget.product.tradePreferences?.join(', ') ?? '';
-    
-    _selectedCategoryId = widget.product.categoryId;
-    _existingImages = List.from(widget.product.images);
-    
-    // Location bilgilerini yükle
-    if (widget.product.cityId != null) {
-      _selectedCityId = widget.product.cityId;
-      _selectedDistrictId = widget.product.districtId;
+      _tradePreferencesController.text = widget.product.tradePreferences?.join(', ') ?? '';
       
-      // Eğer şehir seçili ise ilçeleri yükle
-      if (_selectedCityId != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          context.read<ProductViewModel>().loadDistricts(_selectedCityId!);
-        });
+      _selectedCategoryId = widget.product.categoryId;
+      _selectedSubCategoryId = null; // Product modelinde subCategoryId yok
+      _existingImages = List.from(widget.product.images);
+      
+      // Location bilgilerini yükle
+      if (widget.product.cityId != null) {
+        _selectedCityId = widget.product.cityId;
+        _selectedDistrictId = widget.product.districtId;
+        
+        // Eğer şehir seçili ise ilçeleri yükle
+        if (_selectedCityId != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            try {
+              context.read<ProductViewModel>().loadDistricts(_selectedCityId!);
+            } catch (e) {
+              print('Error loading districts: $e');
+            }
+          });
+        }
       }
+      
+      // Condition'ı name'den id'ye çevir
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          final productViewModel = context.read<ProductViewModel>();
+          if (productViewModel.conditions.isNotEmpty) {
+            final condition = productViewModel.conditions.firstWhere(
+              (c) => c.name == widget.product.condition,
+              orElse: () => productViewModel.conditions.first,
+            );
+            setState(() {
+              _selectedConditionId = condition.id;
+            });
+          }
+        } catch (e) {
+          print('Error setting condition: $e');
+        }
+      });
+    } catch (e) {
+      print('Error initializing fields: $e');
     }
-    
-    // Condition'ı name'den id'ye çevir
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final productViewModel = context.read<ProductViewModel>();
-      if (productViewModel.conditions.isNotEmpty) {
-        final condition = productViewModel.conditions.firstWhere(
-          (c) => c.name == widget.product.condition,
-          orElse: () => productViewModel.conditions.first,
-        );
-        setState(() {
-          _selectedConditionId = condition.id;
-        });
-      }
-    });
   }
 
   @override
@@ -135,6 +153,8 @@ class _EditProductViewState extends State<EditProductView> {
                   _buildSectionTitle(context, 'Kategorizasyon'),
                   const SizedBox(height: 16),
                   _buildCategoryDropdown(),
+                  const SizedBox(height: 16),
+                  _buildSubCategoryDropdown(),
                   const SizedBox(height: 16),
                   _buildConditionDropdown(),
                   const SizedBox(height: 24),
@@ -200,20 +220,94 @@ class _EditProductViewState extends State<EditProductView> {
   Widget _buildCategoryDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
-        return DropdownButtonFormField<String>(
-          value: _selectedCategoryId,
-          decoration: const InputDecoration(labelText: 'Kategori'),
-          items: vm.categories
-              .map(
-                (cat) => DropdownMenuItem(
-                  value: cat.id,
-                  child: Text(cat.name),
-                ),
-              )
-              .toList(),
-          onChanged: (value) => setState(() => _selectedCategoryId = value),
-          validator: (v) => v == null ? 'Kategori seçimi zorunludur' : null,
-        );
+        try {
+          // Seçili değer geçerli mi kontrol et
+          String? validValue = _selectedCategoryId;
+          if (validValue != null) {
+            final hasValidValue = vm.categories.any((c) => c.id == validValue);
+            if (!hasValidValue) {
+              validValue = null;
+            }
+          }
+
+          return DropdownButtonFormField<String>(
+            value: validValue,
+            decoration: const InputDecoration(labelText: 'Ana Kategori'),
+            items: vm.categories
+                .map(
+                  (cat) => DropdownMenuItem(
+                    value: cat.id,
+                    child: Text(cat.name),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedCategoryId = value;
+                _selectedSubCategoryId = null; // Alt kategoriyi sıfırla
+              });
+              // Alt kategorileri yükle
+              if (value != null) {
+                vm.loadSubCategories(value);
+              }
+            },
+            validator: (v) => v == null ? 'Ana kategori seçimi zorunludur' : null,
+          );
+        } catch (e) {
+          print('Error building category dropdown: $e');
+          return DropdownButtonFormField<String>(
+            decoration: const InputDecoration(labelText: 'Ana Kategori'),
+            items: const [],
+            onChanged: (value) {},
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildSubCategoryDropdown() {
+    return Consumer<ProductViewModel>(
+      builder: (context, vm, child) {
+        try {
+          // Seçili değer geçerli mi kontrol et
+          String? validValue = _selectedSubCategoryId;
+          if (validValue != null) {
+            final hasValidValue = vm.subCategories.any((c) => c.id == validValue);
+            if (!hasValidValue) {
+              validValue = null;
+            }
+          }
+
+          return DropdownButtonFormField<String>(
+            value: validValue,
+            decoration: InputDecoration(
+              labelText: 'Alt Kategori',
+              enabled: _selectedCategoryId != null,
+            ),
+            items: vm.subCategories
+                .map(
+                  (cat) => DropdownMenuItem(
+                    value: cat.id,
+                    child: Text(cat.name),
+                  ),
+                )
+                .toList(),
+            onChanged: _selectedCategoryId == null
+                ? null
+                : (value) => setState(() => _selectedSubCategoryId = value),
+            validator: (v) => v == null ? 'Alt kategori seçimi zorunludur' : null,
+          );
+        } catch (e) {
+          print('Error building sub category dropdown: $e');
+          return DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              labelText: 'Alt Kategori',
+              enabled: _selectedCategoryId != null,
+            ),
+            items: const [],
+            onChanged: (value) {},
+          );
+        }
       },
     );
   }
@@ -221,17 +315,35 @@ class _EditProductViewState extends State<EditProductView> {
   Widget _buildConditionDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
-        return DropdownButtonFormField<String>(
-          value: _selectedConditionId,
-          decoration: const InputDecoration(labelText: 'Ürün Durumu'),
-          items: vm.conditions
-              .map(
-                (con) => DropdownMenuItem(value: con.id, child: Text(con.name)),
-              )
-              .toList(),
-          onChanged: (value) => setState(() => _selectedConditionId = value),
-          validator: (v) => v == null ? 'Durum seçimi zorunludur' : null,
-        );
+        try {
+          // Seçili değer geçerli mi kontrol et
+          String? validValue = _selectedConditionId;
+          if (validValue != null) {
+            final hasValidValue = vm.conditions.any((c) => c.id == validValue);
+            if (!hasValidValue) {
+              validValue = null;
+            }
+          }
+
+          return DropdownButtonFormField<String>(
+            value: validValue,
+            decoration: const InputDecoration(labelText: 'Ürün Durumu'),
+            items: vm.conditions
+                .map(
+                  (con) => DropdownMenuItem(value: con.id, child: Text(con.name)),
+                )
+                .toList(),
+            onChanged: (value) => setState(() => _selectedConditionId = value),
+            validator: (v) => v == null ? 'Durum seçimi zorunludur' : null,
+          );
+        } catch (e) {
+          print('Error building condition dropdown: $e');
+          return DropdownButtonFormField<String>(
+            decoration: const InputDecoration(labelText: 'Ürün Durumu'),
+            items: const [],
+            onChanged: (value) {},
+          );
+        }
       },
     );
   }
@@ -239,26 +351,44 @@ class _EditProductViewState extends State<EditProductView> {
   Widget _buildCityDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
-        return DropdownButtonFormField<String>(
-          value: _selectedCityId,
-          decoration: const InputDecoration(labelText: 'İl'),
-          items: vm.cities
-              .map(
-                (city) =>
-                    DropdownMenuItem(value: city.id, child: Text(city.name)),
-              )
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedCityId = value;
-              _selectedDistrictId = null;
-            });
-            if (value != null) {
-              context.read<ProductViewModel>().loadDistricts(value);
+        try {
+          // Seçili değer geçerli mi kontrol et
+          String? validValue = _selectedCityId;
+          if (validValue != null) {
+            final hasValidValue = vm.cities.any((c) => c.id == validValue);
+            if (!hasValidValue) {
+              validValue = null;
             }
-          },
-          validator: (v) => v == null ? 'İl seçimi zorunludur' : null,
-        );
+          }
+
+          return DropdownButtonFormField<String>(
+            value: validValue,
+            decoration: const InputDecoration(labelText: 'İl'),
+            items: vm.cities
+                .map(
+                  (city) =>
+                      DropdownMenuItem(value: city.id, child: Text(city.name)),
+                )
+                .toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedCityId = value;
+                _selectedDistrictId = null;
+              });
+              if (value != null) {
+                context.read<ProductViewModel>().loadDistricts(value);
+              }
+            },
+            validator: (v) => v == null ? 'İl seçimi zorunludur' : null,
+          );
+        } catch (e) {
+          print('Error building city dropdown: $e');
+          return DropdownButtonFormField<String>(
+            decoration: const InputDecoration(labelText: 'İl'),
+            items: const [],
+            onChanged: (value) {},
+          );
+        }
       },
     );
   }
@@ -266,23 +396,44 @@ class _EditProductViewState extends State<EditProductView> {
   Widget _buildDistrictDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
-        return DropdownButtonFormField<String>(
-          value: _selectedDistrictId,
-          decoration: InputDecoration(
-            labelText: 'İlçe',
-            enabled: _selectedCityId != null,
-          ),
-          items: vm.districts
-              .map(
-                (dist) =>
-                    DropdownMenuItem(value: dist.id, child: Text(dist.name)),
-              )
-              .toList(),
-          onChanged: _selectedCityId == null
-              ? null
-              : (value) => setState(() => _selectedDistrictId = value),
-          validator: (v) => v == null ? 'İlçe seçimi zorunludur' : null,
-        );
+        try {
+          // Seçili değer geçerli mi kontrol et
+          String? validValue = _selectedDistrictId;
+          if (validValue != null) {
+            final hasValidValue = vm.districts.any((c) => c.id == validValue);
+            if (!hasValidValue) {
+              validValue = null;
+            }
+          }
+
+          return DropdownButtonFormField<String>(
+            value: validValue,
+            decoration: InputDecoration(
+              labelText: 'İlçe',
+              enabled: _selectedCityId != null,
+            ),
+            items: vm.districts
+                .map(
+                  (dist) =>
+                      DropdownMenuItem(value: dist.id, child: Text(dist.name)),
+                )
+                .toList(),
+            onChanged: _selectedCityId == null
+                ? null
+                : (value) => setState(() => _selectedDistrictId = value),
+            validator: (v) => v == null ? 'İlçe seçimi zorunludur' : null,
+          );
+        } catch (e) {
+          print('Error building district dropdown: $e');
+          return DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              labelText: 'İlçe',
+              enabled: _selectedCityId != null,
+            ),
+            items: const [],
+            onChanged: (value) {},
+          );
+        }
       },
     );
   }
@@ -475,7 +626,7 @@ class _EditProductViewState extends State<EditProductView> {
     });
   }
 
-  Future<void> _updateProduct() async {
+    Future<void> _updateProduct() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -519,13 +670,23 @@ class _EditProductViewState extends State<EditProductView> {
         districtTitle = _selectedDistrictId;
       }
       
+      // Condition ID'sini name'e çevir
+      String? conditionName;
+      if (_selectedConditionId != null) {
+        final condition = productViewModel.conditions.firstWhere(
+          (c) => c.id == _selectedConditionId,
+          orElse: () => productViewModel.conditions.first,
+        );
+        conditionName = condition.name;
+      }
+
       final success = await productViewModel.updateProduct(
         productId: widget.product.id,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         images: allImages.isNotEmpty ? allImages : null,
         categoryId: _selectedCategoryId,
-        condition: _selectedConditionId,
+        condition: conditionName,
         brand: null,
         model: null,
         estimatedValue: null,
