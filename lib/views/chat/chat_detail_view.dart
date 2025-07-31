@@ -1190,7 +1190,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        isMyProduct ? 'Sizin ilanınız' : 'Diğer kullanıcının ilanı',
+                        isMyProduct ? 'Sizin ilanınız' : '${product.owner.name}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
