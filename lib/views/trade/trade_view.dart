@@ -5,6 +5,7 @@ import '../../viewmodels/trade_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 import '../../models/trade.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
@@ -275,6 +276,52 @@ class _TradeViewState extends State<TradeView>
           );
         }
 
+        // Durum filtreleme butonu
+        Widget _buildStatusFilterButton() {
+          return Container(
+            margin: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _showStatusFilterDialog(tradeViewModel),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              Icon(Icons.filter_list, color: Color(0xFF10B981), size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Durum Filtrele',
+                                style: TextStyle(
+                                  color: Color(0xFF2D3748),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Spacer(),
+                              Icon(Icons.arrow_drop_down, color: Color(0xFF10B981)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         if (tradeViewModel.hasError) {
           return Container(
             color: Color(0xFFF8FAFF),
@@ -361,19 +408,32 @@ class _TradeViewState extends State<TradeView>
 
         return Container(
           color: Color(0xFFF8FAFF),
-          child: ListView.builder(
-            padding: EdgeInsets.all(16),
-            itemCount: trades.length,
-            itemBuilder: (context, index) {
-              final trade = trades[index];
-              return TradeCard(
-                trade: trade,
-                onTap: () {
-                  // Takas detayına git
-                  Logger.info('Takas detayına gidiliyor: ${trade.offerID}', tag: 'TradeView');
-                },
-              );
-            },
+          child: Column(
+            children: [
+              _buildStatusFilterButton(),
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: trades.length,
+                  itemBuilder: (context, index) {
+                    final trade = trades[index];
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 16),
+                      child: TradeCard(
+                        trade: trade,
+                        onTap: () {
+                          // Takas detayına git
+                          Logger.info('Takas detayına gidiliyor: ${trade.offerID}', tag: 'TradeView');
+                        },
+                        onStatusChange: (newStatusId) {
+                          _showStatusChangeDialog(trade, newStatusId);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -1382,6 +1442,126 @@ class _TradeViewState extends State<TradeView>
           ),
         );
       }
+    }
+  }
+
+  /// Durum filtreleme dialog'u göster
+  void _showStatusFilterDialog(TradeViewModel tradeViewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Durum Filtrele'),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Tümü seçeneği
+              ListTile(
+                title: Text('Tümü'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Tüm takasları göster
+                },
+              ),
+              // Durum seçenekleri
+              ...tradeViewModel.tradeStatuses.map((status) => ListTile(
+                title: Text(status.statusTitle),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Seçilen duruma göre filtrele
+                },
+              )).toList(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Durum değiştirme dialog'u göster
+  void _showStatusChangeDialog(UserTrade trade, int newStatusId) {
+    final newStatusTitle = _getStatusTitleById(newStatusId);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Durum Değiştir'),
+        content: Text('Takas durumunu "$newStatusTitle" olarak değiştirmek istediğinizden emin misiniz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _updateTradeStatus(trade, newStatusId);
+            },
+            child: Text('Değiştir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Takas durumunu güncelle
+  Future<void> _updateTradeStatus(UserTrade trade, int newStatusId) async {
+    try {
+      final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+      final userService = UserService();
+      final userToken = await userService.getUserToken();
+      
+      if (userToken == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kullanıcı token\'ı bulunamadı')),
+        );
+        return;
+      }
+
+      final success = await tradeViewModel.updateTradeStatus(
+        userToken: userToken,
+        offerID: trade.offerID,
+        newStatusID: newStatusId,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Takas durumu başarıyla güncellendi'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(tradeViewModel.errorMessage ?? 'Durum güncellenirken hata oluştu'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Durum güncellenirken hata oluştu: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Status ID'ye göre status title'ı getir
+  String _getStatusTitleById(int statusId) {
+    switch (statusId) {
+      case 1: return 'Onay Bekliyor';
+      case 2: return 'Takas Başlatıldı';
+      case 3: return 'Kargoya Verildi';
+      case 4: return 'Teslim Edildi / Alındı';
+      case 5: return 'Tamamlandı';
+      case 6: return 'Beklemede';
+      case 7: return 'İptal Edildi';
+      case 8: return 'Reddedildi';
+      default: return 'Bilinmeyen';
     }
   }
 } 

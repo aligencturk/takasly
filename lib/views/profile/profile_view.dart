@@ -490,7 +490,8 @@ class _ProfileViewState extends State<ProfileView>
                 children: [
                   ProductCard(
                     product: product,
-                    heroTag: 'profile_product_${product.id}_$index',
+                    heroTag: 'profile_my_product_${product.id}_$index',
+                    hideFavoriteIcon: true, // Kullanıcının kendi ilanlarında favori ikonunu gizle
                     onTap: () {
                       // TODO: Ürün detay sayfasına yönlendir
                       ScaffoldMessenger.of(context).showSnackBar(

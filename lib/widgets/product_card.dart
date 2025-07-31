@@ -5,7 +5,6 @@ import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
-import 'package:takasly/viewmodels/auth_viewmodel.dart';
 import 'package:takasly/utils/logger.dart';
 import '../../views/product/product_detail_view.dart';
 
@@ -13,12 +12,14 @@ class ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback? onTap;
   final String? heroTag;
+  final bool hideFavoriteIcon;
 
   const ProductCard({
     super.key,
     required this.product,
     this.onTap,
     this.heroTag,
+    this.hideFavoriteIcon = false,
   });
 
   String _getCategoryDisplayName(Product product) {
@@ -66,7 +67,7 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 children: [
                   Hero(
-                    tag: heroTag ?? 'product_image_${product.id}',
+                    tag: heroTag ?? 'default_product_${product.id}',
                     child: Builder(
                       builder: (context) {
                         final imageUrl = product.images.isNotEmpty ? product.images.first : '';
@@ -160,18 +161,12 @@ class ProductCard extends StatelessWidget {
                       },
                     ),
                   ),
-                  // Favori kalp ikonu - sadece kullanıcının kendi ilanı değilse göster
-                  Consumer2<ProductViewModel, AuthViewModel>(
-                    builder: (context, productViewModel, authViewModel, child) {
-                      final currentUser = authViewModel.currentUser;
-                      final isOwnProduct = currentUser != null && currentUser.id == product.ownerId;
-                      
-                      // Debug log ekle
-                      Logger.debug('ProductCard - Product ID: ${product.id}, Owner ID: ${product.ownerId}, Current User ID: ${currentUser?.id}, Is Own Product: $isOwnProduct');
-                      
-                      // Kullanıcının kendi ilanı ise favori ikonunu gösterme
-                      if (isOwnProduct) {
-                        Logger.debug('ProductCard - Hiding favorite icon for own product: ${product.id}');
+                  // Favori kalp ikonu - sadece hideFavoriteIcon false ise göster
+                  Consumer<ProductViewModel>(
+                    builder: (context, productViewModel, child) {
+                      // Eğer hideFavoriteIcon true ise favori ikonunu gösterme
+                      if (hideFavoriteIcon) {
+                        Logger.debug('ProductCard - Hiding favorite icon due to hideFavoriteIcon parameter for product: ${product.id}');
                         return const SizedBox.shrink();
                       }
                       

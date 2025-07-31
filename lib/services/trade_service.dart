@@ -412,4 +412,41 @@ class TradeService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  /// Takas durumu güncelleme endpoint'i
+  Future<ApiResponse<ConfirmTradeResponse>> updateTradeStatus({
+    required String userToken,
+    required int offerID,
+    required int statusID,
+  }) async {
+    try {
+      Logger.info('Takas durumu güncelleme isteği gönderiliyor... OfferID: $offerID, Yeni Durum: $statusID', tag: _tag);
+      
+      final request = {
+        'userToken': userToken,
+        'offerID': offerID,
+        'statusID': statusID,
+      };
+
+      Logger.debug('Takas durumu güncelleme request: $request', tag: _tag);
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.updateTradeStatus,
+        body: request,
+        fromJson: (json) => ConfirmTradeResponse.fromJson(json),
+        useBasicAuth: true,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Takas durumu güncelleme başarılı: ${response.data?.data?.message}', tag: _tag);
+      } else {
+        Logger.error('Takas durumu güncelleme hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas durumu güncelleme exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 } 

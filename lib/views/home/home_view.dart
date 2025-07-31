@@ -181,10 +181,17 @@ class _HomeViewState extends State<HomeView> {
               childAspectRatio: 0.8,
             ),
             delegate: SliverChildBuilderDelegate(
-              (context, index) => ProductCard(
-                product: vm.products[index],
-                heroTag: 'home_product_${vm.products[index].id}',
-              ),
+              (context, index) {
+                final product = vm.products[index];
+                // Kullanıcının kendi ürünü olup olmadığını kontrol et
+                final isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
+                
+                return ProductCard(
+                  product: product,
+                  heroTag: 'home_product_${product.id}_$index',
+                  hideFavoriteIcon: isOwnProduct, // Kullanıcının kendi ürünü ise favori ikonunu gizle
+                );
+              },
               childCount: vm.products.length,
             ),
           ),

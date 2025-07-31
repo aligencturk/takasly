@@ -10,11 +10,13 @@ import 'package:takasly/utils/logger.dart';
 class TradeCard extends StatelessWidget {
   final UserTrade trade;
   final VoidCallback? onTap;
+  final Function(int)? onStatusChange;
 
   const TradeCard({
     super.key,
     required this.trade,
     this.onTap,
+    this.onStatusChange,
   });
 
   String _getStatusText(int statusId) {

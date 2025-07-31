@@ -278,25 +278,13 @@ Takasly uygulamasından paylaşıldı.
               ),
             ),
             actions: [
-              // Favori ikonu - sadece kullanıcının kendi ilanı değilse göster
-              Consumer<AuthViewModel>(
-                builder: (context, authViewModel, child) {
-                  final currentUser = authViewModel.currentUser;
-                  final isOwnProduct = currentUser != null && currentUser.id == product.ownerId;
-                  
-                  // Kullanıcının kendi ilanı ise favori ikonunu gösterme
-                  if (isOwnProduct) {
-                    return const SizedBox.shrink();
-                  }
-                  
-                  return IconButton(
-                    icon: Icon(
-                      vm.isFavorite(product.id) ? Icons.favorite : Icons.favorite_border,
-                      color: vm.isFavorite(product.id) ? AppTheme.error : AppTheme.surface,
-                    ),
-                    onPressed: () => vm.toggleFavorite(product.id),
-                  );
-                },
+              // Favori ikonu
+              IconButton(
+                icon: Icon(
+                  vm.isFavorite(product.id) ? Icons.favorite : Icons.favorite_border,
+                  color: vm.isFavorite(product.id) ? AppTheme.error : AppTheme.surface,
+                ),
+                onPressed: () => vm.toggleFavorite(product.id),
               ),
               IconButton(
                 icon: Icon(Icons.share, color: AppTheme.surface),

@@ -712,6 +712,47 @@ class TradeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Takas durumunu değiştir
+  Future<bool> updateTradeStatus({
+    required String userToken,
+    required int offerID,
+    required int newStatusID,
+  }) async {
+    Logger.info('Takas durumu güncelleniyor... OfferID: $offerID, Yeni Durum: $newStatusID', tag: 'TradeViewModel');
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _tradeService.updateTradeStatus(
+        userToken: userToken,
+        offerID: offerID,
+        statusID: newStatusID,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('Takas durumu güncelleme başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
+        
+        // Başarılı işlem sonrası kullanıcı takaslarını yenile
+        await _refreshUserTrades();
+        
+        _setLoading(false);
+        return true;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas durumu güncelleme hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Takas durumu güncelleme exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
