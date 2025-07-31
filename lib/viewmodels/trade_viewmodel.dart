@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/trade.dart';
 import '../services/trade_service.dart';
+import '../services/auth_service.dart';
 import '../core/constants.dart';
 import '../utils/logger.dart';
 
@@ -406,6 +407,10 @@ class TradeViewModel extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
         Logger.info('Takas başlatma başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
+        
+        // Başarılı işlem sonrası kullanıcı takaslarını yenile
+        await _refreshUserTrades();
+        
         _setLoading(false);
         return true;
       } else {
@@ -672,7 +677,7 @@ class TradeViewModel extends ChangeNotifier {
         Logger.info('Takas onaylama başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
         
         // Başarılı işlem sonrası kullanıcı takaslarını yenile
-        // TODO: Kullanıcı ID'si alınıp loadUserTrades çağrılacak
+        await _refreshUserTrades();
         
         _setLoading(false);
         return true;
@@ -688,6 +693,22 @@ class TradeViewModel extends ChangeNotifier {
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
+    }
+  }
+
+  /// Kullanıcı takaslarını yenile
+  Future<void> _refreshUserTrades() async {
+    try {
+      // Kullanıcı ID'sini al
+      final authService = AuthService();
+      final userId = await authService.getCurrentUserId();
+      
+      if (userId != null && userId.isNotEmpty) {
+        await loadUserTrades(int.parse(userId));
+        Logger.info('Kullanıcı takasları yenilendi', tag: 'TradeViewModel');
+      }
+    } catch (e) {
+      Logger.error('Kullanıcı takasları yenileme hatası: $e', tag: 'TradeViewModel');
     }
   }
 

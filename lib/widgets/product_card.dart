@@ -5,6 +5,8 @@ import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
+import 'package:takasly/viewmodels/auth_viewmodel.dart';
+import 'package:takasly/utils/logger.dart';
 import '../../views/product/product_detail_view.dart';
 
 class ProductCard extends StatelessWidget {
@@ -20,10 +22,20 @@ class ProductCard extends StatelessWidget {
   });
 
   String _getCategoryDisplayName(Product product) {
-    if (product.category == null) return 'Kategori Yok';
+    // Debug için kategori bilgilerini logla
+    Logger.debug('Product ${product.id} - categoryName: "${product.categoryName}", category.name: "${product.category.name}"');
     
-    // Eğer alt kategori varsa sadece alt kategori adını göster
-    return product.category.name;
+    // Önce categoryName alanını kontrol et (API'den gelen)
+    if (product.categoryName.isNotEmpty && product.categoryName != 'null') {
+      return product.categoryName;
+    }
+    
+    // Eğer categoryName boşsa, category nesnesini kontrol et
+    if (product.category != null && product.category.name.isNotEmpty) {
+      return product.category.name;
+    }
+    
+    return 'Kategori Yok';
   }
 
   @override

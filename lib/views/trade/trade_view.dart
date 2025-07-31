@@ -8,7 +8,9 @@ import '../../models/trade.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/trade_card.dart';
 import '../../core/app_theme.dart';
+import '../../utils/logger.dart';
 
 class TradeView extends StatefulWidget {
   const TradeView({super.key});
@@ -363,7 +365,13 @@ class _TradeViewState extends State<TradeView>
             itemCount: trades.length,
             itemBuilder: (context, index) {
               final trade = trades[index];
-              return _buildTradeCard(trade);
+              return TradeCard(
+                trade: trade,
+                onTap: () {
+                  // Takas detayına git
+                  Logger.info('Takas detayına gidiliyor: ${trade.offerID}', tag: 'TradeView');
+                },
+              );
             },
           ),
         );
