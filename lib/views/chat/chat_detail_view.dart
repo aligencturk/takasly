@@ -7,6 +7,7 @@ import '../../models/chat.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
 import '../../views/product/product_detail_view.dart';
+import '../../views/trade/start_trade_view.dart';
 import '../../widgets/product_card.dart';
 
 class ChatDetailView extends StatefulWidget {
@@ -883,6 +884,46 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     }
   }
 
+  void _startTrade(BuildContext context, Product product) {
+    final authViewModel = context.read<AuthViewModel>();
+    
+    // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
+    if (authViewModel.currentUser == null) {
+      Navigator.pushNamed(context, '/login');
+      return;
+    }
+
+    // Kullanıcı kendi ürünüyle takas yapmaya çalışıyorsa uyarı göster
+    if (authViewModel.currentUser!.id == product.ownerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Kendi ürününüzle takas yapamazsınız'),
+            ],
+          ),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Takas başlatma sayfasına yönlendir
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StartTradeView(receiverProduct: product),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Sohbete ait ürün bilgisini kullan
@@ -894,6 +935,31 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // Takas Başlat butonu
+          if (chatProduct != null)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: ElevatedButton(
+                onPressed: () => _startTrade(context, chatProduct!),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppTheme.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                  minimumSize: const Size(0, 32),
+                ),
+                child: const Text(
+                  'Takas Başlat',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.more_vert),
             onPressed: () {
