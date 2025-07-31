@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/trade_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 import '../../services/auth_service.dart';
 import '../../models/trade.dart';
 import '../../widgets/loading_widget.dart';

@@ -751,9 +751,9 @@ class ProductService {
         order: 0,
       ),
       condition: apiProduct['productCondition'] ?? '',
-      ownerId: '', // API'de owner bilgisi yok, boş bırakıyoruz
+      ownerId: apiProduct['userID']?.toString() ?? '', // Kullanıcı ID'sini al
       owner: User(
-        id: '',
+        id: apiProduct['userID']?.toString() ?? '',
         name: 'Kullanıcı',
         email: '',
         isVerified: false,

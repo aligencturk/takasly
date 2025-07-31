@@ -160,14 +160,26 @@ class ProductCard extends StatelessWidget {
                       },
                     ),
                   ),
-                  // Favori kalp ikonu
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Consumer<ProductViewModel>(
-                      builder: (context, productViewModel, child) {
-                        final isFavorite = productViewModel.isFavorite(product.id);
-                        return GestureDetector(
+                  // Favori kalp ikonu - sadece kullanıcının kendi ilanı değilse göster
+                  Consumer2<ProductViewModel, AuthViewModel>(
+                    builder: (context, productViewModel, authViewModel, child) {
+                      final currentUser = authViewModel.currentUser;
+                      final isOwnProduct = currentUser != null && currentUser.id == product.ownerId;
+                      
+                      // Debug log ekle
+                      Logger.debug('ProductCard - Product ID: ${product.id}, Owner ID: ${product.ownerId}, Current User ID: ${currentUser?.id}, Is Own Product: $isOwnProduct');
+                      
+                      // Kullanıcının kendi ilanı ise favori ikonunu gösterme
+                      if (isOwnProduct) {
+                        Logger.debug('ProductCard - Hiding favorite icon for own product: ${product.id}');
+                        return const SizedBox.shrink();
+                      }
+                      
+                      final isFavorite = productViewModel.isFavorite(product.id);
+                      return Positioned(
+                        top: 8,
+                        right: 8,
+                        child: GestureDetector(
                           onTap: () async {
                             final success = await productViewModel.toggleFavorite(product.id);
                             if (success != null) {
@@ -193,9 +205,9 @@ class ProductCard extends StatelessWidget {
                               size: 22,
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
