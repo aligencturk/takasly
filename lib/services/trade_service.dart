@@ -454,4 +454,49 @@ class TradeService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  /// Takas tamamlandığında yorum ve yıldız ile birlikte tamamla
+  Future<ApiResponse<ConfirmTradeResponse>> completeTradeWithReview({
+    required String userToken,
+    required int offerID,
+    required int statusID,
+    required int toUserID,
+    required int rating,
+    required String comment,
+  }) async {
+    try {
+      Logger.info('Takas tamamlama ve yorum gönderme isteği gönderiliyor... OfferID: $offerID, Rating: $rating', tag: _tag);
+      
+      final request = {
+        'userToken': userToken,
+        'offerID': offerID,
+        'statusID': statusID,
+        'review': {
+          'toUserID': toUserID,
+          'rating': rating,
+          'comment': comment,
+        },
+      };
+
+      Logger.debug('Takas tamamlama request: $request', tag: _tag);
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.tradeComplete,
+        body: request,
+        fromJson: (json) => ConfirmTradeResponse.fromJson(json),
+        useBasicAuth: true,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Takas tamamlama ve yorum gönderme başarılı: ${response.data?.data?.message}', tag: _tag);
+      } else {
+        Logger.error('Takas tamamlama hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas tamamlama exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 } 

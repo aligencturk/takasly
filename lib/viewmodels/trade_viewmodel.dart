@@ -761,6 +761,53 @@ class TradeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Takas tamamlandığında yorum ve yıldız ile birlikte tamamla
+  Future<bool> completeTradeWithReview({
+    required String userToken,
+    required int offerID,
+    required int statusID,
+    required int toUserID,
+    required int rating,
+    required String comment,
+  }) async {
+    Logger.info('Takas tamamlanıyor ve yorum gönderiliyor... OfferID: $offerID, Rating: $rating', tag: 'TradeViewModel');
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _tradeService.completeTradeWithReview(
+        userToken: userToken,
+        offerID: offerID,
+        statusID: statusID,
+        toUserID: toUserID,
+        rating: rating,
+        comment: comment,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('Takas tamamlama ve yorum gönderme başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
+        
+        // Başarılı işlem sonrası kullanıcı takaslarını yenile
+        await _refreshUserTrades();
+        
+        _setLoading(false);
+        return true;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas tamamlama hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Takas tamamlama exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();

@@ -267,11 +267,11 @@ class _TradeViewState extends State<TradeView>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(color: Color(0xFF10B981)),
-                  SizedBox(height: 16),
+                  SizedBox(height: 12),
                   Text(
-                    'Takaslarınız yükleniyor...',
+                    'Yükleniyor...',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       color: Color(0xFF718096),
                     ),
                   ),
@@ -281,48 +281,51 @@ class _TradeViewState extends State<TradeView>
           );
         }
 
-        // Durum filtreleme butonu
+        // Kompakt durum filtreleme butonu
         Widget _buildStatusFilterButton() {
           return Container(
-            margin: EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _showStatusFilterDialog(tradeViewModel),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              Icon(Icons.filter_list, color: Color(0xFF10B981), size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                'Durum Filtrele',
-                                style: TextStyle(
-                                  color: Color(0xFF2D3748),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Spacer(),
-                              Icon(Icons.arrow_drop_down, color: Color(0xFF10B981)),
-                            ],
+            margin: EdgeInsets.all(12),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey[300]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showStatusFilterDialog(tradeViewModel),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.filter_list, color: Color(0xFF10B981), size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'Durum Filtrele',
+                          style: TextStyle(
+                            color: Color(0xFF2D3748),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ),
+                        SizedBox(width: 4),
+                        Icon(Icons.arrow_drop_down, color: Color(0xFF10B981), size: 18),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           );
         }
@@ -334,14 +337,14 @@ class _TradeViewState extends State<TradeView>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  SizedBox(height: 16),
+                  Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  SizedBox(height: 12),
                   Text(
                     tradeViewModel.errorMessage ?? 'Bir hata oluştu',
-                    style: TextStyle(color: Colors.red),
+                    style: TextStyle(color: Colors.red, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 16),
+                  SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () async {
                       final userId = await _authService.getCurrentUserId();
@@ -368,13 +371,13 @@ class _TradeViewState extends State<TradeView>
             color: Color(0xFFF8FAFF),
             child: Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 120,
-                      height: 120,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -382,28 +385,28 @@ class _TradeViewState extends State<TradeView>
                             Color(0xFF059669).withOpacity(0.1),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(60),
+                        borderRadius: BorderRadius.circular(40),
                       ),
                       child: Icon(
                         Icons.swap_horiz_outlined,
-                        size: 50,
+                        size: 32,
                         color: Color(0xFF10B981),
                       ),
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: 16),
                     Text(
                       'Henüz takasınız yok',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF2D3748),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 6),
                     Text(
                       'İlk takasınızı başlatarak takas yolculuğuna başlayın',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Color(0xFF718096),
                       ),
                       textAlign: TextAlign.center,
@@ -422,12 +425,12 @@ class _TradeViewState extends State<TradeView>
               _buildStatusFilterButton(),
               Expanded(
                 child: ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 12),
                   itemCount: trades.length,
                   itemBuilder: (context, index) {
                     final trade = trades[index];
                     return Container(
-                      margin: EdgeInsets.only(bottom: 16),
+                      margin: EdgeInsets.only(bottom: 12),
                       child: TradeCard(
                         trade: trade,
                         onTap: () {
@@ -435,7 +438,12 @@ class _TradeViewState extends State<TradeView>
                           Logger.info('Takas detayına gidiliyor: ${trade.offerID}', tag: 'TradeView');
                         },
                         onStatusChange: (newStatusId) {
-                          _showStatusChangeDialog(trade, newStatusId);
+                          // Eğer StatusID 4 (Teslim Edildi) ise yorum dialog'unu aç
+                          if (newStatusId == 4) {
+                            _showTradeCompleteDialog(trade);
+                          } else {
+                            _showStatusChangeDialog(trade);
+                          }
                         },
                       ),
                     );
@@ -795,14 +803,14 @@ class _TradeViewState extends State<TradeView>
             color: Color(0xFFF8FAFF),
             child: Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Animated Container
                     Container(
-                      width: 120,
-                      height: 120,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -810,38 +818,38 @@ class _TradeViewState extends State<TradeView>
                             Color(0xFFE53E3E).withOpacity(0.1),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(60),
+                        borderRadius: BorderRadius.circular(40),
                       ),
                       child: Icon(
                         Icons.favorite_outline,
-                        size: 50,
+                        size: 32,
                         color: Color(0xFFF56565),
                       ),
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: 16),
                     Text(
                       'Henüz favori ilanın yok!',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF2D3748),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 6),
                     Text(
                       'Beğendiğin ilanları favorilere ekleyerek burada görebilirsin',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Color(0xFF718096),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 12),
                     // Yenile butonu ekle
                     Container(
                       decoration: BoxDecoration(
                         color: Color(0xFFF56565).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: Color(0xFFF56565).withOpacity(0.3),
                         ),
@@ -853,19 +861,19 @@ class _TradeViewState extends State<TradeView>
                             print('🔄 TradeView - Manually refreshing favorites');
                             await productViewModel.loadFavoriteProducts();
                           },
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.refresh, color: Color(0xFFF56565), size: 18),
-                                SizedBox(width: 8),
+                                Icon(Icons.refresh, color: Color(0xFFF56565), size: 16),
+                                SizedBox(width: 6),
                                 Text(
                                   'Yenile',
                                   style: TextStyle(
                                     color: Color(0xFFF56565),
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -876,18 +884,18 @@ class _TradeViewState extends State<TradeView>
                       ),
                     ),
 
-                    SizedBox(height: 16),
+                    SizedBox(height: 12),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Color(0xFF10B981), Color(0xFF10B981)],
                         ),
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
                             color: Color(0xFF10B981).withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: Offset(0, 10),
+                            blurRadius: 15,
+                            offset: Offset(0, 8),
                           ),
                         ],
                       ),
@@ -898,19 +906,19 @@ class _TradeViewState extends State<TradeView>
                             // Ana sayfaya yönlendir
                             Navigator.of(context).pushReplacementNamed('/home');
                           },
-                          borderRadius: BorderRadius.circular(25),
+                          borderRadius: BorderRadius.circular(20),
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.home, color: Colors.white, size: 20),
-                                SizedBox(width: 8),
+                                Icon(Icons.home, color: Colors.white, size: 18),
+                                SizedBox(width: 6),
                                 Text(
                                   'İlanları Keşfet',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -935,13 +943,13 @@ class _TradeViewState extends State<TradeView>
               await productViewModel.loadFavoriteProducts();
             },
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(12),
               child: GridView.builder(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.75,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.7,
                 ),
                 itemCount: productViewModel.favoriteProducts.length,
                 itemBuilder: (context, index) {
@@ -950,12 +958,12 @@ class _TradeViewState extends State<TradeView>
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: Offset(0, 8),
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 12,
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
@@ -966,7 +974,7 @@ class _TradeViewState extends State<TradeView>
                           print('🎨 FavoriteProductCard tapped: ${product.title}');
                           _showFavoriteProductDetails(product);
                         },
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         child: ProductCard(
                           product: product,
                           heroTag: 'favorite_${product.id}_$index',
@@ -1456,47 +1464,187 @@ class _TradeViewState extends State<TradeView>
 
   /// Durum filtreleme dialog'u göster
   void _showStatusFilterDialog(TradeViewModel tradeViewModel) {
+    int? selectedStatusId;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Durum Filtrele'),
+        title: Row(
+          children: [
+            Icon(Icons.filter_list, color: Color(0xFF10B981), size: 24),
+            SizedBox(width: 8),
+            Text('Durum Filtrele'),
+          ],
+        ),
         content: Container(
           width: double.maxFinite,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Tümü seçeneği
-              ListTile(
-                title: Text('Tümü'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Tüm takasları göster
+              RadioListTile<int?>(
+                title: Row(
+                  children: [
+                    Icon(Icons.all_inclusive, color: Color(0xFF10B981), size: 20),
+                    SizedBox(width: 8),
+                    Text('Tümü', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                value: null,
+                groupValue: selectedStatusId,
+                onChanged: (value) {
+                  selectedStatusId = value;
                 },
+                activeColor: Color(0xFF10B981),
               ),
+              Divider(),
               // Durum seçenekleri
-              ...tradeViewModel.tradeStatuses.map((status) => ListTile(
-                title: Text(status.statusTitle),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Seçilen duruma göre filtrele
+              ...tradeViewModel.tradeStatuses.map((status) => RadioListTile<int?>(
+                title: Row(
+                  children: [
+                    Icon(_getStatusIcon(status.statusID), color: _getStatusColor(status.statusID), size: 20),
+                    SizedBox(width: 8),
+                    Text(status.statusTitle),
+                  ],
+                ),
+                subtitle: Text(
+                  '${tradeViewModel.userTrades.where((trade) => trade.statusID == status.statusID).length} takas',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                value: status.statusID,
+                groupValue: selectedStatusId,
+                onChanged: (value) {
+                  selectedStatusId = value;
                 },
+                activeColor: Color(0xFF10B981),
               )).toList(),
             ],
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Seçilen duruma göre filtreleme işlemi
+              if (selectedStatusId != null) {
+                print('Seçilen durum ID: $selectedStatusId');
+                // Burada filtreleme işlemi yapılacak
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF10B981),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Filtrele'),
+          ),
+        ],
       ),
     );
   }
 
-  /// Durum değiştirme dialog'u göster
-  void _showStatusChangeDialog(UserTrade trade, int newStatusId) {
-    final newStatusTitle = _getStatusTitleById(newStatusId);
+  /// Durum değiştirme dropdown dialog'u göster
+  void _showStatusChangeDialog(UserTrade trade) {
+    int? selectedStatusId;
+    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Durum Değiştir'),
-        content: Text('Takas durumunu "$newStatusTitle" olarak değiştirmek istediğinizden emin misiniz?'),
+        title: Row(
+          children: [
+            Icon(Icons.update, color: Color(0xFF10B981), size: 24),
+            SizedBox(width: 8),
+            Text('Durum Değiştir'),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Yeni durumu seçin:',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 16),
+              
+              // Mevcut durum gösterimi
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(trade.statusID).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _getStatusColor(trade.statusID).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(_getStatusIcon(trade.statusID), color: _getStatusColor(trade.statusID), size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Mevcut: ${_getStatusTitleById(trade.statusID)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _getStatusColor(trade.statusID),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              SizedBox(height: 16),
+              
+              // Dropdown
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButtonFormField<int>(
+                  value: selectedStatusId,
+                  decoration: InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border: InputBorder.none,
+                    hintText: 'Durum seçin...',
+                    hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                  ),
+                  items: tradeViewModel.tradeStatuses
+                      .where((status) => status.statusID != trade.statusID) // Mevcut durumu hariç tut
+                      .map((status) => DropdownMenuItem<int>(
+                        value: status.statusID,
+                        child: Row(
+                          children: [
+                            Icon(_getStatusIcon(status.statusID), color: _getStatusColor(status.statusID), size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              status.statusTitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: _getStatusColor(status.statusID),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ))
+                      .toList(),
+                  onChanged: (value) {
+                    selectedStatusId = value;
+                  },
+                  dropdownColor: Colors.white,
+                  icon: Icon(Icons.arrow_drop_down, color: Color(0xFF10B981)),
+                  style: TextStyle(color: Colors.black, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1504,10 +1652,138 @@ class _TradeViewState extends State<TradeView>
           ),
           ElevatedButton(
             onPressed: () async {
+              if (selectedStatusId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Lütfen bir durum seçin'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+              
               Navigator.pop(context);
-              await _updateTradeStatus(trade, newStatusId);
+              
+              // Eğer takas tamamlanıyorsa (statusID = 5) veya teslim edildiyse (statusID = 4), yorum dialog'unu göster
+              if (selectedStatusId == 5 || selectedStatusId == 4) {
+                _showTradeCompleteDialog(trade);
+                return;
+              }
+              
+              await _updateTradeStatus(trade, selectedStatusId!);
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF10B981),
+              foregroundColor: Colors.white,
+            ),
             child: Text('Değiştir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Takas tamamlandığında yorum ve yıldız verme dialog'u göster
+  void _showTradeCompleteDialog(UserTrade trade) {
+    double rating = 5.0;
+    final TextEditingController commentController = TextEditingController();
+    
+    // Dialog başlığını duruma göre ayarla
+    String dialogTitle = trade.statusID == 4 ? 'Teslim Edildi' : 'Takas Tamamlandı';
+    String dialogSubtitle = trade.statusID == 4 
+        ? 'Ürün teslim edildi! Karşı tarafa yorum ve puan verin.'
+        : 'Takasınızı tamamladınız! Karşı tarafa yorum ve puan verin.';
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.star, color: Colors.amber, size: 24),
+            SizedBox(width: 8),
+            Text(dialogTitle),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                dialogSubtitle,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 20),
+              
+              // Yıldız değerlendirmesi
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Puan: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  SizedBox(width: 8),
+                  ...List.generate(5, (index) {
+                    return GestureDetector(
+                      onTap: () {
+                        rating = index + 1.0;
+                        // State'i güncellemek için dialog'u yeniden build et
+                        Navigator.pop(context);
+                        _showTradeCompleteDialog(trade);
+                      },
+                      child: Icon(
+                        index < rating ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 32,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              
+              SizedBox(height: 20),
+              
+              // Yorum alanı
+              TextField(
+                controller: commentController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Takas deneyiminizi paylaşın...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Color(0xFF10B981), width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (commentController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Lütfen bir yorum yazın'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+              
+              Navigator.pop(context);
+              await _completeTradeWithReview(trade, rating.toInt(), commentController.text.trim());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF10B981),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Tamamla'),
           ),
         ],
       ),
@@ -1553,6 +1829,86 @@ class _TradeViewState extends State<TradeView>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Durum güncellenirken hata oluştu: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Takas tamamlandığında yorum ve yıldız ile birlikte tamamla
+  Future<void> _completeTradeWithReview(UserTrade trade, int rating, String comment) async {
+    try {
+      final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+      final userService = UserService();
+      final userToken = await userService.getUserToken();
+      
+      if (userToken == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kullanıcı token\'ı bulunamadı')),
+        );
+        return;
+      }
+
+      // Karşı tarafın kullanıcı ID'sini bul
+      int? toUserID;
+      if (trade.myProduct != null && trade.theirProduct != null) {
+        // Eğer benim ürünüm varsa, karşı tarafın ürününün sahibi
+        toUserID = trade.theirProduct!.userID;
+      } else if (trade.theirProduct != null) {
+        toUserID = trade.theirProduct!.userID;
+      }
+
+      if (toUserID == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Karşı taraf bilgisi bulunamadı')),
+        );
+        return;
+      }
+
+      final success = await tradeViewModel.completeTradeWithReview(
+        userToken: userToken,
+        offerID: trade.offerID,
+        statusID: 4, // Tamamlandı
+        toUserID: toUserID,
+        rating: rating,
+        comment: comment,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Takas başarıyla tamamlandı ve yorum gönderildi'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        
+        // Takasları yeniden yükle
+        final userId = await _authService.getCurrentUserId();
+        if (userId != null) {
+          await tradeViewModel.loadUserTrades(int.parse(userId));
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanırken hata oluştu'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Takas tamamlanırken hata oluştu: $e'),
           backgroundColor: Colors.red,
         ),
       );
