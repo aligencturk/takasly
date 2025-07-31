@@ -11,6 +11,7 @@ import '../profile/profile_view.dart';
 import '../product/add_product_view.dart';
 import '../trade/trade_view.dart';
 import '../chat/chat_list_view.dart';
+import '../home/search_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
 
@@ -199,43 +200,42 @@ class _HomeViewState extends State<HomeView> {
             margin: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
+                // Arama butonu
                 Expanded(
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Ürün ara...',
-                        hintStyle: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 14,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SearchView(),
                         ),
-                        prefixIcon: Icon(
-                          FontAwesomeIcons.search,
-                          color: Colors.grey[500],
-                          size: 15,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                      );
+                    },
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.grey[300]!),
                       ),
-                      style: const TextStyle(fontSize: 14),
-                      onSubmitted: (query) {
-                        if (query.trim().isNotEmpty) {
-                          final filter = vm.currentFilter.copyWith(
-                            searchQuery: query.trim(),
-                          );
-                          vm.applyFilter(filter);
-                        } else {
-                          vm.clearFilters();
-                        }
-                      },
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 16),
+                          Icon(
+                            FontAwesomeIcons.search,
+                            color: Colors.grey[500],
+                            size: 15,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Ürün ara...',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
