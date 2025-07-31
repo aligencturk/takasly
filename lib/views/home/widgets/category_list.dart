@@ -19,17 +19,17 @@ class CategoryList extends StatelessWidget {
           if (vm.isLoading && vm.categories.isEmpty) {
             // TODO: Skeleton loader (Shimmer) eklenecek
             return SizedBox(
-              height: isSmallScreen ? 70 : 80,
+              height: isSmallScreen ? 90 : 100,
               child: const Center(child: CircularProgressIndicator()),
             );
           }
           
           return SizedBox(
-            height: isSmallScreen ? 70 : 80,
+            height: isSmallScreen ? 90 : 100, // Yüksekliği artırdım çünkü metin 2 satıra çıkabilir
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(
-                horizontal: isSmallScreen ? 12 : 16,
+                horizontal: isSmallScreen ? 16 : 20,
               ),
               itemCount: vm.categories.length + 1, // "Tümü" için +1
               itemBuilder: (context, index) {
@@ -81,36 +81,47 @@ class CategoryList extends StatelessWidget {
     final iconSize = isSmallScreen ? 20.0 : 24.0;
     final containerSize = isSmallScreen ? 45.0 : 50.0;
     final spacing = isSmallScreen ? 6.0 : 8.0;
-    final rightPadding = isSmallScreen ? 8.0 : 10.0;
+    final horizontalPadding = isSmallScreen ? 8.0 : 10.0;
     
-    return Padding(
-      padding: EdgeInsets.only(right: rightPadding),
+    return Container(
+      width: isSmallScreen ? 70.0 : 80.0, // Sabit genişlik
+      margin: EdgeInsets.symmetric(horizontal: horizontalPadding / 2),
       child: GestureDetector(
         onTap: onTap,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min, // Minimum boyut kullan
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: containerSize,
-              height: containerSize,
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
-                boxShadow: isSelected ? AppTheme.cardShadow : null,
-              ),
-              child: Icon(icon, color: color, size: iconSize),
-            ),
-            SizedBox(height: spacing),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: AppTheme.textPrimary,
-                    fontSize: isSmallScreen ? 11 : 12,
+            // İkon container'ı - sabit yükseklik
+            Container(
+              height: containerSize + spacing + 32, // İkon + spacing + metin için sabit yükseklik
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start, // Üstten başla
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: containerSize,
+                    height: containerSize,
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
+                      boxShadow: isSelected ? AppTheme.cardShadow : null,
+                    ),
+                    child: Icon(icon, color: color, size: iconSize),
                   ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+                  SizedBox(height: spacing),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: AppTheme.textPrimary,
+                          fontSize: isSmallScreen ? 11 : 12,
+                        ),
+                    maxLines: 2, // İki satıra kadar izin ver
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center, // Metni ortala
+                  ),
+                ],
+              ),
             ),
           ],
         ),
