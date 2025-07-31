@@ -9,6 +9,7 @@ import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:takasly/widgets/product_card.dart';
 import 'edit_profile_view.dart';
+import '../product/edit_product_view.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -468,18 +469,65 @@ class _ProfileViewState extends State<ProfileView>
               childAspectRatio: 0.75,
             ),
             itemCount: productViewModel.myProducts.length,
-            itemBuilder: (context, index) => ProductCard(
-              product: productViewModel.myProducts[index],
-              heroTag: 'profile_product_${productViewModel.myProducts[index].id}_$index',
-              onTap: () {
-                // TODO: Ürün detay sayfasına yönlendir
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${productViewModel.myProducts[index].title} ürününe tıklandı'),
+            itemBuilder: (context, index) {
+              final product = productViewModel.myProducts[index];
+              return Stack(
+                children: [
+                  ProductCard(
+                    product: product,
+                    heroTag: 'profile_product_${product.id}_$index',
+                    onTap: () {
+                      // TODO: Ürün detay sayfasına yönlendir
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${product.title} ürününe tıklandı'),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
+                                     // İlanı Güncelle butonu (sol üst)
+                   Positioned(
+                     top: 7,
+                     left: 7,
+                     child: Material(
+                       color: Colors.transparent,
+                       child: InkWell(
+                         onTap: () => _editProduct(product),
+                         borderRadius: BorderRadius.circular(16),
+                         child: const Padding(
+                           padding: EdgeInsets.all(6),
+                           child: Icon(
+                             Icons.edit_outlined,
+                             color: Colors.orange,
+                             size: 18,
+                           ),
+                         ),
+                       ),
+                     ),
+                   ),
+                   // İlanı Sil butonu (sağ üst)
+                   Positioned(
+                     top: 7,
+                     right: 7,
+                     child: Material(
+                       color: Colors.transparent,
+                       child: InkWell(
+                         onTap: () => _showDeleteConfirmDialog(product),
+                         borderRadius: BorderRadius.circular(16),
+                         child: const Padding(
+                           padding: EdgeInsets.all(6),
+                           child: Icon(
+                             Icons.delete_outline,
+                             color: Colors.red,
+                             size: 18,
+                           ),
+                         ),
+                       ),
+                     ),
+                   ),
+                ],
+              );
+            },
           ),
         );
       },
@@ -525,6 +573,170 @@ class _ProfileViewState extends State<ProfileView>
         ],
       ],
     );
+  }
+
+  void _editProduct(Product product) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProductView(product: product),
+      ),
+    );
+
+    // Eğer ürün güncellendiyse listeyi yenile
+    if (result == true && mounted) {
+      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+      final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+      
+      // Kullanıcı verilerini yenile
+      userViewModel.forceRefreshUser();
+      
+      // Kullanıcının ürünlerini yenile
+      final userId = userViewModel.currentUser?.id;
+      if (userId != null) {
+        productViewModel.loadUserProducts(userId);
+      }
+    }
+  }
+
+  void _showDeleteConfirmDialog(Product product) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.delete_outline, color: Colors.red[700], size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('İlanı Sil'),
+          ],
+        ),
+        content: Text(
+          '"${product.title}" adlı ilanı silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _deleteProduct(product);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Sil'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteProduct(Product product) async {
+    // Loading dialog göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Text('${product.title} siliniyor...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+      final success = await productViewModel.deleteUserProduct(product.id);
+
+      // Loading dialog'u kapat
+      if (mounted) Navigator.pop(context);
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('"${product.title}" başarıyla silindi'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          final errorMessage = productViewModel.errorMessage ?? 'İlan silinemedi';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('Hata: $errorMessage'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Loading dialog'u kapat
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                const Text('İlan silinirken hata oluştu'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _showLogoutConfirmDialog() {
