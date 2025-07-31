@@ -40,13 +40,17 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      Logger.info('ChatViewModel: Chat\'ler yükleniyor... userId= [1m$userId [0m', tag: _tag);
+      
       _chatService.getChatsStream(userId).listen(
         (chats) {
-          print('DEBUG: Loaded ${chats.length} chats');
+          Logger.info('ChatViewModel:  [1m${chats.length} [0m chat yüklendi', tag: _tag);
           for (final chat in chats) {
-            print('DEBUG: Chat ${chat.id} - lastMessage: ${chat.lastMessage?.content ?? 'null'}');
+            Logger.debug('ChatViewModel: Chat ${chat.id} - tradeId=${chat.tradeId} - lastMessage: ${chat.lastMessage?.content ?? 'null'}', tag: _tag);
           }
-          _chats = chats;
+          // Kullanıcı tarafından silinenleri filtrele
+          final filteredChats = chats.where((chat) => !chat.deletedBy.contains(userId)).toList();
+          _chats = filteredChats;
           _isLoading = false;
           // Her chat için unread count hesapla
           _calculateChatUnreadCounts();
@@ -56,14 +60,14 @@ class ChatViewModel extends ChangeNotifier {
           _error = error.toString();
           _isLoading = false;
           notifyListeners();
-          Logger.error('Chat yükleme hatası: $error', tag: _tag);
+          Logger.error('ChatViewModel: Chat yükleme hatası: $error', tag: _tag);
         },
       );
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      Logger.error('Chat yükleme hatası: $e', tag: _tag);
+      Logger.error('ChatViewModel: Chat yükleme hatası: $e', tag: _tag);
     }
   }
 
@@ -205,15 +209,19 @@ class ChatViewModel extends ChangeNotifier {
     required List<String> participantIds,
   }) async {
     try {
+      Logger.info('ChatViewModel: Chat oluşturma isteği - tradeId=$tradeId, participants=$participantIds', tag: _tag);
+      
       final chatId = await _chatService.createChat(
         tradeId: tradeId,
         participantIds: participantIds,
       );
+      
+      Logger.info('ChatViewModel: Chat başarıyla oluşturuldu - chatId=$chatId', tag: _tag);
       return chatId;
     } catch (e) {
       _error = e.toString();
       notifyListeners();
-      Logger.error('Chat oluşturma hatası: $e', tag: _tag);
+      Logger.error('ChatViewModel: Chat oluşturma hatası: $e', tag: _tag);
       return null;
     }
   }
@@ -327,39 +335,71 @@ class ChatViewModel extends ChangeNotifier {
     try {
       // Kullanıcı ID'sini al
       final currentUserId = _currentUserId;
-      if (currentUserId == null) return;
+      if (currentUserId == null) {
+        Logger.error('ChatViewModel: currentUserId null, chat silinemez', tag: _tag);
+        return;
+      }
+
+      Logger.info('ChatViewModel: Chat silme işlemi başlatılıyor - chatId=$chatId, currentUserId=$currentUserId', tag: _tag);
 
       // Chat'i bul
       final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
-      if (chatIndex == -1) return;
+      if (chatIndex == -1) {
+        Logger.error('ChatViewModel: Chat bulunamadı - chatId=$chatId', tag: _tag);
+        return;
+      }
 
       final chat = _chats[chatIndex];
+      Logger.info('ChatViewModel: Chat bulundu - chatId=$chatId, currentDeletedBy=${chat.deletedBy}', tag: _tag);
       
       // deletedBy listesine kullanıcı ID'sini ekle
       final updatedDeletedBy = List<String>.from(chat.deletedBy)..add(currentUserId);
       final updatedChat = chat.copyWith(deletedBy: updatedDeletedBy);
       
-      // Local listeyi güncelle
-      _chats[chatIndex] = updatedChat;
+      // Local listeyi güncelle - chat'i listeden kaldır
+      _chats.removeAt(chatIndex);
       
       // Firebase'e güncelle
       await _chatService.updateChatDeletedBy(chatId, updatedDeletedBy);
       
-      notifyListeners();
+      // Unread count'ları güncelle
+      _calculateChatUnreadCounts();
+      
+      // Güvenli şekilde notifyListeners çağır
+      try {
+        notifyListeners();
+      } catch (e) {
+        Logger.warning('ChatViewModel: notifyListeners hatası (widget dispose edilmiş olabilir): $e', tag: _tag);
+      }
+      
+      Logger.info('ChatViewModel: Chat başarıyla silindi - chatId=$chatId', tag: _tag);
     } catch (e) {
       _error = e.toString();
-      notifyListeners();
-      Logger.error('Chat silme hatası: $e', tag: _tag);
+      try {
+        notifyListeners();
+      } catch (notifyError) {
+        Logger.warning('ChatViewModel: notifyListeners hatası (widget dispose edilmiş olabilir): $notifyError', tag: _tag);
+      }
+      Logger.error('ChatViewModel: Chat silme hatası: $e', tag: _tag);
+      rethrow;
     }
   }
 
   // Chat sabitle / sabiti kaldır
   void togglePinChat(String chatId) {
-    final index = _chats.indexWhere((chat) => chat.id == chatId);
-    if (index != -1) {
-      final chat = _chats[index];
-      _chats[index] = chat.copyWith(isPinned: !(chat.isPinned));
-      notifyListeners();
+    try {
+      final index = _chats.indexWhere((chat) => chat.id == chatId);
+      if (index != -1) {
+        final chat = _chats[index];
+        _chats[index] = chat.copyWith(isPinned: !(chat.isPinned));
+        try {
+          notifyListeners();
+        } catch (e) {
+          Logger.warning('ChatViewModel: togglePinChat notifyListeners hatası: $e', tag: _tag);
+        }
+      }
+    } catch (e) {
+      Logger.error('Chat sabitleme hatası: $e', tag: _tag);
     }
   }
 
@@ -375,12 +415,28 @@ class ChatViewModel extends ChangeNotifier {
         
         // Local listeyi güncelle
         _chats.removeWhere((chat) => chat.id == chatId);
-        notifyListeners();
+        try {
+          notifyListeners();
+        } catch (e) {
+          Logger.warning('ChatViewModel: deleteEmptyChat notifyListeners hatası: $e', tag: _tag);
+        }
         
         Logger.info('Boş chat silindi: $chatId', tag: _tag);
       }
     } catch (e) {
       Logger.error('Boş chat silme hatası: $e', tag: _tag);
+    }
+  }
+
+  // Chat'i id ile getir
+  Future<Chat?> getChatById(String chatId) async {
+    try {
+      Logger.info('ChatViewModel: getChatById çağrıldı - chatId=$chatId', tag: _tag);
+      final chat = await _chatService.getChatById(chatId);
+      return chat;
+    } catch (e) {
+      Logger.error('ChatViewModel: getChatById hatası: $e', tag: _tag);
+      return null;
     }
   }
 } 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../core/constants.dart';
 import '../services/location_service.dart';
+import '../utils/logger.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -15,62 +16,87 @@ class _SplashViewState extends State<SplashView> {
   @override
   void initState() {
     super.initState();
+    Logger.info('🚀 SplashView initialized');
     _checkAuthStatus();
   }
 
   Future<void> _checkAuthStatus() async {
-    await Future.delayed(const Duration(seconds: 2));
+    Logger.info('🔍 SplashView: Checking authentication status...');
+    
+    // Kısa bir delay (hot reload için daha hızlı)
+    await Future.delayed(const Duration(milliseconds: 500));
     
     if (!mounted) return;
     
-    // Konum izinlerini kontrol et ve iste
-    await _requestLocationPermission();
-    
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     
-    if (authViewModel.isLoggedIn) {
+    // Hot reload durumunu kontrol et
+    await authViewModel.checkHotReloadState();
+    
+    // AuthViewModel'in initialization'ını bekle
+    int retryCount = 0;
+    while (!authViewModel.isInitialized && retryCount < 10) {
+      Logger.info('⏳ Waiting for AuthViewModel initialization... (attempt ${retryCount + 1})');
+      await Future.delayed(const Duration(milliseconds: 200));
+      retryCount++;
+    }
+    
+    if (!authViewModel.isInitialized) {
+      Logger.warning('⚠️ AuthViewModel not initialized after retries, forcing reinitialize...');
+      await authViewModel.reinitializeForHotReload();
+    }
+    
+    // Konum izinlerini kontrol et (arka planda)
+    _requestLocationPermission();
+    
+    if (!mounted) return;
+    
+    // Authentication durumuna göre yönlendir
+    if (authViewModel.isLoggedIn && authViewModel.currentUser != null) {
+      Logger.info('✅ User is logged in, navigating to home: ${authViewModel.currentUser!.name}');
       Navigator.pushReplacementNamed(context, '/home');
     } else {
+      Logger.info('❌ User is not logged in, navigating to login');
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
   Future<void> _requestLocationPermission() async {
     try {
-      print('📍 SplashView: Konum izinleri kontrol ediliyor...');
+      Logger.info('📍 SplashView: Checking location permissions...');
       final locationService = LocationService();
       
       // Konum servisinin aktif olup olmadığını kontrol et
       final isLocationEnabled = await locationService.isLocationServiceEnabled();
-      print('📍 Konum servisi aktif mi: $isLocationEnabled');
+      Logger.info('📍 Location service enabled: $isLocationEnabled');
       
       if (!isLocationEnabled) {
-        print('⚠️ Konum servisi kapalı - Emülatörde açmanız gerekebilir');
-        print('📍 Settings > Location > Location services açın');
+        Logger.warning('⚠️ Location service is disabled - Enable in emulator settings');
+        Logger.info('📍 Settings > Location > Location services açın');
         return;
       }
       
       // Konum iznini iste
-      print('📍 Konum izni isteniyor...');
+      Logger.info('📍 Requesting location permission...');
       final hasPermission = await locationService.requestLocationPermission();
-      print('📍 Konum izni sonucu: $hasPermission');
+      Logger.info('📍 Location permission result: $hasPermission');
       
       if (hasPermission) {
-        print('✅ Konum izni verildi');
+        Logger.info('✅ Location permission granted');
         // Test için konumu al
-        print('📍 Konum alınmaya çalışılıyor...');
+        Logger.info('📍 Getting current location...');
         final position = await locationService.getCurrentLocation();
         if (position != null) {
-          print('📍 Konum alındı: ${position.latitude}, ${position.longitude}');
+          Logger.info('📍 Location obtained: ${position.latitude}, ${position.longitude}');
         } else {
-          print('⚠️ Konum alınamadı - Emülatörde test konumu ayarlayın');
+          Logger.warning('⚠️ Could not get location - Set test location in emulator');
         }
       } else {
-        print('❌ Konum izni reddedildi');
-        print('📍 Emülatörde: Settings > Apps > Takasly > Permissions > Location > Allow');
+        Logger.warning('❌ Location permission denied');
+        Logger.info('📍 In emulator: Settings > Apps > Takasly > Permissions > Location > Allow');
       }
     } catch (e) {
-      print('❌ Konum izni alınırken hata: $e');
+      Logger.error('❌ Error getting location permission: $e', error: e);
     }
   }
 

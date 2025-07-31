@@ -813,3 +813,75 @@ class UserTradesData {
     return 'UserTradesData(tradesCount: ${trades?.length ?? 0})';
   }
 } 
+
+/// Takas onaylama request modeli
+class ConfirmTradeRequest {
+  final String userToken;
+  final int offerID;
+  final int isConfirm; // 1: Onaylıyor, 0: Onaylamıyor
+  final String cancelDesc; // Onaylamadıysa reddetme sebebi
+
+  ConfirmTradeRequest({
+    required this.userToken,
+    required this.offerID,
+    required this.isConfirm,
+    required this.cancelDesc,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userToken': userToken,
+      'offerID': offerID,
+      'isConfirm': isConfirm,
+      'cancelDesc': cancelDesc,
+    };
+  }
+
+  factory ConfirmTradeRequest.fromJson(Map<String, dynamic> json) {
+    return ConfirmTradeRequest(
+      userToken: json['userToken'] ?? '',
+      offerID: json['offerID'] ?? 0,
+      isConfirm: json['isConfirm'] ?? 0,
+      cancelDesc: json['cancelDesc'] ?? '',
+    );
+  }
+}
+
+/// Takas onaylama response modeli
+class ConfirmTradeResponse {
+  final bool error;
+  final bool success;
+  final ConfirmTradeData? data;
+  final String? status410;
+
+  ConfirmTradeResponse({
+    required this.error,
+    required this.success,
+    this.data,
+    this.status410,
+  });
+
+  factory ConfirmTradeResponse.fromJson(Map<String, dynamic> json) {
+    return ConfirmTradeResponse(
+      error: json['error'] ?? false,
+      success: json['success'] ?? false,
+      data: json['data'] != null ? ConfirmTradeData.fromJson(json['data']) : null,
+      status410: json['410'],
+    );
+  }
+}
+
+/// Takas onaylama data modeli
+class ConfirmTradeData {
+  final String message;
+
+  ConfirmTradeData({
+    required this.message,
+  });
+
+  factory ConfirmTradeData.fromJson(Map<String, dynamic> json) {
+    return ConfirmTradeData(
+      message: json['message'] ?? '',
+    );
+  }
+} 

@@ -642,6 +642,55 @@ class TradeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Takas onaylama metodu
+  Future<bool> confirmTrade({
+    required String userToken,
+    required int offerID,
+    required bool isConfirm,
+    String? cancelDesc,
+  }) async {
+    Logger.info('Takas onaylama işlemi başlatılıyor... OfferID: $offerID, Onay: $isConfirm', tag: 'TradeViewModel');
+    
+    // Validasyon kontrolleri
+    if (!isConfirm && (cancelDesc == null || cancelDesc.trim().isEmpty)) {
+      _setError('Reddetme sebebi zorunludur');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _tradeService.confirmTrade(
+        userToken: userToken,
+        offerID: offerID,
+        isConfirm: isConfirm,
+        cancelDesc: cancelDesc,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('Takas onaylama başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
+        
+        // Başarılı işlem sonrası kullanıcı takaslarını yenile
+        // TODO: Kullanıcı ID'si alınıp loadUserTrades çağrılacak
+        
+        _setLoading(false);
+        return true;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas onaylama hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Takas onaylama exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();

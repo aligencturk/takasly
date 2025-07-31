@@ -15,6 +15,7 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../chat/chat_detail_view.dart';
 import '../trade/start_trade_view.dart';
+import '../../utils/logger.dart';
 
 class ProductDetailView extends StatelessWidget {
   final String productId;
@@ -572,13 +573,15 @@ class _ActionBar extends StatelessWidget {
     }
 
     try {
+      
       Chat? existingChat;
       try {
         existingChat = chatViewModel.chats.firstWhere(
           (chat) => chat.tradeId == product.id,
         );
+        Logger.info('Mevcut chat bulundu:  [1m${existingChat.id} [0m');
       } catch (e) {
-        // Chat bulunamadı
+        Logger.info('Mevcut chat bulunamadı, yeni chat oluşturulacak');
       }
 
       if (existingChat != null) {
@@ -590,34 +593,67 @@ class _ActionBar extends StatelessWidget {
           ),
         );
       } else {
-        // Yeni chat oluştur ve direkt chat sayfasına git
+        // Yeni chat oluştur
+        Logger.info('Yeni chat oluşturuluyor... Product ID: ${product.id}');
         final chatId = await chatViewModel.createChat(
-          tradeId: product.id,
+          tradeId: product.id, // Product ID'sini tradeId olarak kullan
           participantIds: [authViewModel.currentUser!.id, product.ownerId],
         );
 
         if (chatId != null) {
-          // Chat listesini yenile
-          await Future.delayed(const Duration(milliseconds: 500));
-          chatViewModel.loadChats(authViewModel.currentUser!.id);
-          // Yeni oluşturulan chat'i bul
-          final chatList = chatViewModel.chats.where((chat) => chat.id == chatId).toList();
-          if (chatList.isNotEmpty) {
-            final newChat = chatList.first;
+          // Yeni chat'i doğrudan getir ve yönlendir
+          final newChat = await chatViewModel.getChatById(chatId);
+          if (newChat != null) {
+            Logger.info('Yeni chat doğrudan getirildi ve chat sayfasına yönlendiriliyor: ${newChat.id}');
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => ChatDetailView(chat: newChat),
               ),
             );
+            return;
+          }
+          // Yedek: Polling ile bulmaya çalış (çok nadir gerekebilir)
+          chatViewModel.loadChats(authViewModel.currentUser!.id);
+          Chat? polledChat;
+          int retryCount = 0;
+          const maxRetries = 10;
+          while (polledChat == null && retryCount < maxRetries) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            retryCount++;
+            Logger.info('Chat arama denemesi $retryCount/$maxRetries...');
+            try {
+              polledChat = chatViewModel.chats.firstWhere((chat) => chat.id == chatId);
+              Logger.info('Chat ID ile bulundu: ${polledChat.id}');
+              break;
+            } catch (e) {
+              try {
+                polledChat = chatViewModel.chats.firstWhere((chat) => chat.tradeId == product.id);
+                Logger.info('Chat tradeId ile bulundu: ${polledChat.id}');
+                break;
+              } catch (e2) {
+                Logger.info('Chat henüz bulunamadı, tekrar deneniyor... (${chatViewModel.chats.length} chat var)');
+              }
+            }
+          }
+          if (polledChat != null) {
+            Logger.info('Polling ile chat bulundu ve chat sayfasına yönlendiriliyor: ${polledChat.id}');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatDetailView(chat: polledChat!),
+              ),
+            );
           } else {
-            onShowSnackBar?.call('Chat bulunamadı.', error: true);
+            Logger.error('Chat oluşturuldu ama $maxRetries deneme sonrası bulunamadı: $chatId');
+            onShowSnackBar?.call('Chat oluşturuldu ama bulunamadı. Lütfen tekrar deneyin.', error: true);
           }
         } else {
           onShowSnackBar?.call('Chat oluşturulamadı. Lütfen tekrar deneyin.', error: true);
         }
       }
     } catch (e) {
+      Logger.error('Chat başlatma hatası: $e');
       onShowSnackBar?.call('Hata: $e', error: true);
     }
   }

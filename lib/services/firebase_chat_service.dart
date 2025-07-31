@@ -170,17 +170,22 @@ class FirebaseChatService {
     required List<String> participantIds,
   }) async {
     try {
+      Logger.info('Chat oluşturma isteği: tradeId=$tradeId, participants=$participantIds', tag: _tag);
+      
       // Tüm chat'leri al ve client-side filtrele
       final allChatsSnapshot = await _database.child('chats').get();
       
       if (allChatsSnapshot.value != null) {
         final allChats = allChatsSnapshot.value as Map<dynamic, dynamic>;
+        Logger.info('Mevcut chat sayısı: ${allChats.length}', tag: _tag);
         
         // Aynı trade ve katılımcılara sahip chat var mı kontrol et
         for (final entry in allChats.entries) {
           final chatData = Map<String, dynamic>.from(entry.value as Map);
           final chatTradeId = chatData['tradeId'] as String?;
           final chatParticipantIds = List<String>.from(chatData['participantIds'] ?? []);
+          
+          Logger.debug('Chat kontrol: ${entry.key} - tradeId=$chatTradeId, participants=$chatParticipantIds', tag: _tag);
           
           // Trade ID ve katılımcı listesi aynı mı kontrol et
           if (chatTradeId == tradeId &&
@@ -193,6 +198,7 @@ class FirebaseChatService {
       }
       
       // Mevcut chat yoksa yeni oluştur
+      Logger.info('Yeni chat oluşturuluyor...', tag: _tag);
       final chatRef = _database.child('chats').push();
       final chatId = chatRef.key!;
       
@@ -250,15 +256,22 @@ class FirebaseChatService {
 
   // Chat'leri getir
   Stream<List<Chat>> getChatsStream(String userId) {
+    Logger.info('FirebaseChatService: Chat stream başlatılıyor... userId=$userId', tag: _tag);
+    
     return _database
         .child('chats')
         .orderByChild('updatedAt')
         .onValue
         .asyncMap((event) async {
-      if (event.snapshot.value == null) return [];
+      if (event.snapshot.value == null) {
+        Logger.info('FirebaseChatService: Hiç chat bulunamadı', tag: _tag);
+        return [];
+      }
       
       final Map<dynamic, dynamic> chatsMap = 
           event.snapshot.value as Map<dynamic, dynamic>;
+      
+      Logger.info('FirebaseChatService: ${chatsMap.length} chat Firebase\'den alındı', tag: _tag);
       
       final List<Chat> chats = [];
       
@@ -270,7 +283,7 @@ class FirebaseChatService {
           final chatData = Map<String, dynamic>.from(value);
           chatData['id'] = key;
           
-
+          Logger.debug('FirebaseChatService: Chat işleniyor - ID: $key, tradeId: ${chatData['tradeId']}', tag: _tag);
           
           // Sadece kullanıcının katıldığı chat'leri filtrele
           final List<String> participantIds = 
@@ -376,14 +389,17 @@ class FirebaseChatService {
               
               // Kullanıcının silmediği chat'leri filtrele
               if (!chat.deletedBy.contains(userId)) {
-                // Sadece son mesajı olan chat'leri ekle (WhatsApp mantığı)
-                if (chat.lastMessage != null) {
-                  chats.add(chat);
-                }
+                // Tüm chat'leri ekle (son mesaj kontrolü kaldırıldı)
+                chats.add(chat);
+                Logger.debug('FirebaseChatService: Chat eklendi - ID: ${chat.id}, tradeId: ${chat.tradeId}', tag: _tag);
+              } else {
+                Logger.debug('FirebaseChatService: Chat atlandı (kullanıcı tarafından silinmiş) - ID: ${chat.id}', tag: _tag);
               }
             } catch (e) {
               Logger.error('Chat parse hatası: $e', tag: _tag);
             }
+          } else {
+            Logger.debug('FirebaseChatService: Chat atlandı (kullanıcı katılımcı değil) - ID: $key', tag: _tag);
           }
         }
       }
@@ -391,6 +407,7 @@ class FirebaseChatService {
       // Son güncelleme zamanına göre sırala
       chats.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       
+      Logger.info('FirebaseChatService: ${chats.length} chat döndürülüyor', tag: _tag);
       return chats;
     });
   }
@@ -568,11 +585,84 @@ class FirebaseChatService {
   // Chat deletedBy listesini güncelle
   Future<void> updateChatDeletedBy(String chatId, List<String> deletedBy) async {
     try {
+      Logger.info('FirebaseChatService: Chat deletedBy güncelleniyor - chatId=$chatId, deletedBy=$deletedBy', tag: _tag);
+      
       await _database.child('chats/$chatId/deletedBy').set(deletedBy);
-      Logger.info('Chat deletedBy güncellendi: $chatId', tag: _tag);
+      
+      Logger.info('FirebaseChatService: Chat deletedBy başarıyla güncellendi - chatId=$chatId', tag: _tag);
     } catch (e) {
-      Logger.error('Chat deletedBy güncelleme hatası: $e', tag: _tag);
+      Logger.error('FirebaseChatService: Chat deletedBy güncelleme hatası: $e', tag: _tag);
       rethrow;
+    }
+  }
+
+  // Chat'i id ile getir
+  Future<Chat?> getChatById(String chatId) async {
+    try {
+      final snapshot = await _database.child('chats/$chatId').get();
+      if (snapshot.value != null) {
+        final chatData = Map<String, dynamic>.from(snapshot.value as Map);
+        chatData['id'] = chatId;
+        // Katılımcı kullanıcıları getir
+        final List<String> participantIds = List<String>.from(chatData['participantIds'] ?? []);
+        final List<User> participants = [];
+        for (final participantId in participantIds) {
+          final user = await getUserById(participantId);
+          if (user != null) {
+            participants.add(user);
+          }
+        }
+        // Geçici Trade objesi oluştur
+        final emptyUser = User(
+          id: '',
+          name: '',
+          email: '',
+          isVerified: false,
+          isOnline: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        final trade = Trade(
+          id: chatData['tradeId'],
+          offererUserId: '',
+          offererUser: emptyUser,
+          receiverUserId: '',
+          receiverUser: emptyUser,
+          offeredProductIds: [],
+          offeredProducts: [],
+          requestedProductIds: [],
+          requestedProducts: [],
+          status: TradeStatus.pending,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        DateTime parseChatDateTime(dynamic value) {
+          if (value is DateTime) return value;
+          if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+          if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+          return DateTime.now();
+        }
+        final chat = Chat(
+          id: chatData['id'],
+          tradeId: chatData['tradeId'],
+          trade: trade,
+          participantIds: participantIds,
+          participants: participants,
+          lastMessageId: chatData['lastMessageId'],
+          lastMessage: null, // Detaylı mesajı ayrıca çekmek gerekebilir
+          createdAt: parseChatDateTime(chatData['createdAt']),
+          updatedAt: parseChatDateTime(chatData['updatedAt']),
+          lastReadTimes: {},
+          isActive: chatData['isActive'] ?? true,
+          isPinned: chatData['isPinned'] ?? false,
+          deletedBy: (chatData['deletedBy'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+        );
+        return chat;
+      }
+      return null;
+    } catch (e) {
+      Logger.error('getChatById hatası: $e', tag: _tag);
+      return null;
     }
   }
 } 

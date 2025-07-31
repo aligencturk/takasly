@@ -6,6 +6,7 @@ import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../core/app_theme.dart';
+import '../../utils/logger.dart';
 import 'chat_detail_view.dart';
 
 class ChatListView extends StatefulWidget {
@@ -29,7 +30,7 @@ class _ChatListViewState extends State<ChatListView> {
     final chatViewModel = context.read<ChatViewModel>();
     
     if (authViewModel.currentUser != null) {
-      print('DEBUG: Loading chats for user ${authViewModel.currentUser!.id}');
+      Logger.info('ChatListView: Loading chats for user ${authViewModel.currentUser!.id}');
       chatViewModel.loadChats(authViewModel.currentUser!.id);
       chatViewModel.loadUnreadCount(authViewModel.currentUser!.id);
     }
@@ -164,7 +165,7 @@ class _ChatListViewState extends State<ChatListView> {
                             context: context,
                             builder: (context) => AlertDialog(
                               title: const Text('Sohbeti Sil'),
-                              content: const Text('Bu sohbeti silmek istediğinize emin misiniz?'),
+                              content: const Text('Bu sohbeti silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz.'),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(context).pop(false),
@@ -172,16 +173,59 @@ class _ChatListViewState extends State<ChatListView> {
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.of(context).pop(true),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
                                   child: const Text('Sil'),
                                 ),
                               ],
                             ),
                           );
-                          if (confirm == true) {
-                            chatViewModel.deleteChat(chat.id);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Sohbet silindi')),
-                            );
+                          
+                          if (confirm == true && context.mounted) {
+                            try {
+                              // Loading göster
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text('Sohbet siliniyor...'),
+                                    ],
+                                  ),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                              
+                              await chatViewModel.deleteChat(chat.id);
+                              
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Sohbet başarıyla silindi'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              Logger.error('Chat silme hatası: $e');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Sohbet silinirken hata oluştu: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           }
                         },
                         backgroundColor: Colors.red,
@@ -386,12 +430,12 @@ class _ChatListItem extends StatelessWidget {
 
   String _getLastMessageText() {
     if (chat.lastMessage == null) {
-      print('DEBUG: lastMessage is null for chat ${chat.id}');
+      Logger.debug('ChatListItem: lastMessage is null for chat ${chat.id}');
       return 'Henüz mesaj yok';
     }
 
     final message = chat.lastMessage!;
-    print('DEBUG: lastMessage type: ${message.type}, content: ${message.content}');
+    Logger.debug('ChatListItem: lastMessage type: ${message.type}, content: ${message.content}');
     
     switch (message.type) {
       case MessageType.text:

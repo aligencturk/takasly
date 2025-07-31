@@ -555,19 +555,19 @@ class AuthService {
 
   Future<User?> getCurrentUser() async {
     try {
-      Logger.debug('👤 AuthService.getCurrentUser called');
+      Logger.info('👤 AuthService.getCurrentUser - Quick fetch for hot reload');
       final prefs = await SharedPreferences.getInstance();
       final userDataString = prefs.getString(AppConstants.userDataKey);
 
-      if (userDataString != null) {
-        Logger.debug('✅ AuthService.getCurrentUser - User data found');
+      if (userDataString != null && userDataString.isNotEmpty) {
+        Logger.debug('✅ AuthService.getCurrentUser - User data found, length: ${userDataString.length}');
         final userData = json.decode(userDataString);
         final user = User.fromJson(userData);
-        Logger.debug('✅ AuthService.getCurrentUser - User: ${user.id} - ${user.name}');
+        Logger.info('✅ AuthService.getCurrentUser - User loaded: ${user.id} - ${user.name}');
         return user;
       }
 
-      Logger.debug('❌ AuthService.getCurrentUser - No user data found');
+      Logger.warning('❌ AuthService.getCurrentUser - No user data found');
       return null;
     } catch (e) {
       Logger.error('❌ AuthService.getCurrentUser - Exception: $e', error: e);
@@ -725,16 +725,22 @@ class AuthService {
 
   Future<bool> isLoggedIn() async {
     try {
+      Logger.info('🔍 AuthService.isLoggedIn - Quick check for hot reload');
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.userTokenKey);
       final userId = prefs.getString(AppConstants.userIdKey);
-      Logger.debug('isLoggedIn kontrolü: userId=[$userId], token=[$token]');
-      return token != null &&
+      
+      Logger.debug('🔍 AuthService.isLoggedIn - userId=[$userId], token=[${token?.substring(0, token.length > 10 ? 10 : token.length)}...]');
+      
+      final isLoggedIn = token != null &&
           token.isNotEmpty &&
           userId != null &&
           userId.isNotEmpty;
+          
+      Logger.info('🔍 AuthService.isLoggedIn - Result: $isLoggedIn');
+      return isLoggedIn;
     } catch (e) {
-      Logger.error('isLoggedIn exception: $e', error: e);
+      Logger.error('❌ AuthService.isLoggedIn - Exception: $e', error: e);
       return false;
     }
   }

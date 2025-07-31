@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../services/firebase_chat_service.dart';
 import '../core/constants.dart';
 import 'product_viewmodel.dart';
+import '../utils/logger.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -14,6 +15,7 @@ class AuthViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool _isLoggedIn = false;
   String? _errorMessage;
+  bool _isInitialized = false; // Hot reload kontrolü için
 
   // ProductViewModel referansını ayarla
   void setProductViewModel(ProductViewModel productViewModel) {
@@ -26,23 +28,86 @@ class AuthViewModel extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
+  bool get isInitialized => _isInitialized;
 
   AuthViewModel() {
+    Logger.info('🚀 AuthViewModel constructor called');
     _initializeAuth();
   }
 
   Future<void> _initializeAuth() async {
+    if (_isInitialized) {
+      Logger.info('🔄 AuthViewModel already initialized, skipping...');
+      return;
+    }
+
+    Logger.info('🔐 AuthViewModel initializing authentication...');
     _setLoading(true);
+    
     try {
+      // Hızlı kontrol - SharedPreferences'dan direkt oku
       _isLoggedIn = await _authService.isLoggedIn();
+      Logger.info('🔍 Quick login check result: $_isLoggedIn');
+      
       if (_isLoggedIn) {
+        Logger.info('✅ User is logged in, fetching current user data...');
         _currentUser = await _authService.getCurrentUser();
+        
+        if (_currentUser != null) {
+          Logger.info('✅ Current user loaded: ${_currentUser!.name} (${_currentUser!.id})');
+          
+          // Firebase'e kullanıcıyı kaydet (hot reload için)
+          try {
+            await _firebaseChatService.saveUser(_currentUser!);
+            Logger.info('✅ User saved to Firebase for hot reload');
+          } catch (e) {
+            Logger.warning('⚠️ Firebase save error during hot reload: $e');
+          }
+        } else {
+          Logger.warning('⚠️ User is logged in but current user data is null');
+          _isLoggedIn = false;
+        }
+      } else {
+        Logger.info('❌ User is not logged in');
       }
+      
+      _isInitialized = true;
+      Logger.info('✅ AuthViewModel initialization completed');
     } catch (e) {
+      Logger.error('❌ AuthViewModel initialization error: $e', error: e);
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
     }
+  }
+
+  // Hot reload için manuel yeniden başlatma
+  Future<void> reinitializeForHotReload() async {
+    Logger.info('🔄 Reinitializing AuthViewModel for hot reload...');
+    _isInitialized = false;
+    await _initializeAuth();
+  }
+
+  // Hot reload durumunu kontrol et ve gerekirse yeniden başlat
+  Future<void> checkHotReloadState() async {
+    Logger.info('🔄 Checking hot reload state...');
+    
+    // Eğer zaten initialized değilse, initialize et
+    if (!_isInitialized) {
+      Logger.info('🔄 Not initialized, running initialization...');
+      await _initializeAuth();
+      return;
+    }
+    
+    // Eğer initialized ama user data yoksa, yeniden kontrol et
+    if (_isInitialized && _currentUser == null && _isLoggedIn) {
+      Logger.warning('⚠️ Initialized but no user data, rechecking...');
+      _isInitialized = false;
+      await _initializeAuth();
+      return;
+    }
+    
+    Logger.info('✅ Hot reload state check completed - User: ${_currentUser?.name ?? 'None'}, LoggedIn: $_isLoggedIn');
   }
 
   Future<bool> login(String email, String password) async {

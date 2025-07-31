@@ -373,4 +373,43 @@ class TradeService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  /// Takas onaylama endpoint'i
+  Future<ApiResponse<ConfirmTradeResponse>> confirmTrade({
+    required String userToken,
+    required int offerID,
+    required bool isConfirm,
+    String? cancelDesc,
+  }) async {
+    try {
+      Logger.info('Takas onaylama isteği gönderiliyor... OfferID: $offerID, Onay: $isConfirm', tag: _tag);
+      
+      final request = ConfirmTradeRequest(
+        userToken: userToken,
+        offerID: offerID,
+        isConfirm: isConfirm ? 1 : 0,
+        cancelDesc: cancelDesc ?? '',
+      );
+
+      Logger.debug('Takas onaylama request: ${request.toJson()}', tag: _tag);
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.confirmTrade,
+        body: request.toJson(),
+        fromJson: (json) => ConfirmTradeResponse.fromJson(json),
+        useBasicAuth: true,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Takas onaylama başarılı: ${response.data?.data?.message}', tag: _tag);
+      } else {
+        Logger.error('Takas onaylama hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas onaylama exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 } 
