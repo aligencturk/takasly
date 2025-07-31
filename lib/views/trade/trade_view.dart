@@ -514,7 +514,7 @@ class _TradeViewState extends State<TradeView>
     );
   }
 
-  Widget _buildProductCard(TradeProduct product, String title) {
+  Widget _buildProductCard(TradeProduct? product, String title) {
     return Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -534,7 +534,55 @@ class _TradeViewState extends State<TradeView>
             ),
           ),
           SizedBox(height: 8),
-          if (product.productImage.isNotEmpty)
+          if (product != null) ...[
+            if (product.productImage.isNotEmpty)
+              Container(
+                height: 60,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey.shade200,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    product.productImage,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(Icons.image_not_supported, color: Colors.grey.shade400);
+                    },
+                  ),
+                ),
+              ),
+            SizedBox(height: 8),
+            Text(
+              product.productTitle,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2D3748),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 4),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Color(0xFF10B981).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                product.productCondition,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Color(0xFF10B981),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ] else ...[
+            // Ürün silinmiş durumu
             Container(
               height: 60,
               width: double.infinity,
@@ -542,44 +590,25 @@ class _TradeViewState extends State<TradeView>
                 borderRadius: BorderRadius.circular(8),
                 color: Colors.grey.shade200,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  product.productImage,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(Icons.image_not_supported, color: Colors.grey.shade400);
-                  },
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.delete_outline, color: Colors.grey.shade400, size: 24),
+                    SizedBox(height: 4),
+                    Text(
+                      'Ürün Silinmiş',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          SizedBox(height: 8),
-          Text(
-            product.productTitle,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF2D3748),
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: 4),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Color(0xFF10B981).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              product.productCondition,
-              style: TextStyle(
-                fontSize: 10,
-                color: Color(0xFF10B981),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+          ],
         ],
       ),
     );

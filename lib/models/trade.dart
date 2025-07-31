@@ -652,7 +652,7 @@ class UserTrade {
     if (meetingLocation != null) 'meetingLocation': meetingLocation,
     'createdAt': createdAt,
     if (completedAt != null) 'completedAt': completedAt,
-    'myProduct': myProduct.toJson(),
+    if (myProduct != null) 'myProduct': myProduct!.toJson(),
     'theirProduct': theirProduct.toJson(),
   };
 
