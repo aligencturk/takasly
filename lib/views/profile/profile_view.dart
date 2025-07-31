@@ -114,78 +114,116 @@ class _ProfileViewState extends State<ProfileView>
 
   Widget _buildProfileHeader(BuildContext context, User user, int productCount, int favoriteCount) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey[100],
-              border: Border.all(color: Colors.grey[300]!, width: 2),
-            ),
-            child: user.avatar != null
-                ? ClipOval(
-                    child: Image.network(
-                      user.avatar!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.grey,
-                        );
-                      },
+          // Üst kısım - Avatar ve İstatistikler
+          Row(
+            children: [
+              // Avatar
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey[300]!, width: 1),
+                ),
+                child: ClipOval(
+                  child: user.avatar != null
+                      ? Image.network(
+                          user.avatar!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[100],
+                              child: const Icon(
+                                Icons.person,
+                                size: 40,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: Colors.grey[100],
+                          child: const Icon(
+                            Icons.person,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        ),
+                ),
+              ),
+              
+              const SizedBox(width: 24),
+              
+              // İstatistikler
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildInstagramStatItem(
+                      count: productCount.toString(),
+                      label: 'İlan',
                     ),
-                  )
-                : const Icon(
-                    Icons.person,
-                    size: 50,
-                    color: Colors.grey,
+                    _buildInstagramStatItem(
+                      count: favoriteCount.toString(),
+                      label: 'Favori',
+                    ),
+                    _buildInstagramStatItem(
+                      count: '0',
+                      label: 'Puan',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Kullanıcı Bilgileri
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Kullanıcı Adı
+              Row(
+                children: [
+                  Text(
+                    user.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
-          ),
-          const SizedBox(height: 20),
-          
-          // Kullanıcı Adı
-          Text(
-            user.name,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 6),
-          
-          // Email
-          Text(
-            user.email,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-          
-          // Telefon (varsa)
-          if (user.phone != null && user.phone!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.phone,
-                  size: 14,
+                  if (user.isVerified) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.verified,
+                      size: 16,
+                      color: Colors.blue[600],
+                    ),
+                  ],
+                ],
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Email
+              Text(
+                user.email,
+                style: TextStyle(
+                  fontSize: 14,
                   color: Colors.grey[600],
                 ),
-                const SizedBox(width: 4),
+              ),
+              
+              // Telefon (varsa)
+              if (user.phone != null && user.phone!.isNotEmpty) ...[
+                const SizedBox(height: 4),
                 Text(
                   user.phone!,
                   style: TextStyle(
@@ -194,122 +232,73 @@ class _ProfileViewState extends State<ProfileView>
                   ),
                 ),
               ],
-            ),
-          ],
+            ],
+          ),
           
-          // Doğrulanmış rozeti
-          if (user.isVerified) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.green[200]!),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.verified,
-                    size: 16,
-                    color: Colors.green[700],
+          const SizedBox(height: 16),
+          
+          // Butonlar
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                    
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditProfileView(),
+                      ),
+                    );
+                    
+                    if (result == true && mounted) {
+                      userViewModel.forceRefreshUser();
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black87,
+                    side: BorderSide(color: Colors.grey[300]!),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Doğrulanmış',
+                  child: const Text(
+                    'Profili Düzenle',
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green[700],
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-          
-          const SizedBox(height: 24),
-          
-          // İstatistikler
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildStatItem(
-                  context,
-                  icon: Icons.inventory_2_outlined,
-                  count: productCount.toString(),
-                  label: 'Aktif İlan',
-                ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: Colors.grey[300],
-                ),
-                _buildStatItem(
-                  context,
-                  icon: Icons.favorite_border,
-                  count: favoriteCount.toString(),
-                  label: 'Favori',
-                ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: Colors.grey[300],
-                ),
-                _buildStatItem(
-                  context,
-                  icon: Icons.star_outline,
-                  count: '0',
-                  label: 'Puan',
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Profil Düzenle Butonu
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () async {
-                final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-                
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const EditProfileView(),
+              
+              const SizedBox(width: 8),
+              
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    // TODO: Ürün ekleme sayfasına yönlendir
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black87,
+                    side: BorderSide(color: Colors.grey[300]!),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                );
-                
-                if (result == true && mounted) {
-                  userViewModel.forceRefreshUser();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  child: const Text(
+                    'Ürün Ekle',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
-              child: const Text(
-                'Profili Düzenle',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
+            ],
           ),
         ],
       ),
@@ -335,6 +324,32 @@ class _ProfileViewState extends State<ProfileView>
           ),
         ),
         const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInstagramStatItem({
+    required String count,
+    required String label,
+  }) {
+    return Column(
+      children: [
+        Text(
+          count,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
@@ -485,46 +500,46 @@ class _ProfileViewState extends State<ProfileView>
                       );
                     },
                   ),
-                                     // İlanı Güncelle butonu (sol üst)
-                   Positioned(
-                     top: 7,
-                     left: 7,
-                     child: Material(
-                       color: Colors.transparent,
-                       child: InkWell(
-                         onTap: () => _editProduct(product),
-                         borderRadius: BorderRadius.circular(16),
-                         child: const Padding(
-                           padding: EdgeInsets.all(6),
-                           child: Icon(
-                             Icons.edit_outlined,
-                             color: Colors.orange,
-                             size: 18,
-                           ),
-                         ),
-                       ),
-                     ),
-                   ),
-                   // İlanı Sil butonu (sağ üst)
-                   Positioned(
-                     top: 7,
-                     right: 7,
-                     child: Material(
-                       color: Colors.transparent,
-                       child: InkWell(
-                         onTap: () => _showDeleteConfirmDialog(product),
-                         borderRadius: BorderRadius.circular(16),
-                         child: const Padding(
-                           padding: EdgeInsets.all(6),
-                           child: Icon(
-                             Icons.delete_outline,
-                             color: Colors.red,
-                             size: 18,
-                           ),
-                         ),
-                       ),
-                     ),
-                   ),
+                  // İlanı Güncelle butonu (sol üst)
+                  Positioned(
+                    top: 7,
+                    left: 7,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _editProduct(product),
+                        borderRadius: BorderRadius.circular(16),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            color: Colors.orange,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // İlanı Sil butonu (sağ üst)
+                  Positioned(
+                    top: 7,
+                    right: 7,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _showDeleteConfirmDialog(product),
+                        borderRadius: BorderRadius.circular(16),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               );
             },
