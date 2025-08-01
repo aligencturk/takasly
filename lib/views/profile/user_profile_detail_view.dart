@@ -20,13 +20,16 @@ class UserProfileDetailView extends StatefulWidget {
   State<UserProfileDetailView> createState() => _UserProfileDetailViewState();
 }
 
-class _UserProfileDetailViewState extends State<UserProfileDetailView> {
+class _UserProfileDetailViewState extends State<UserProfileDetailView>
+    with SingleTickerProviderStateMixin {
   late UserProfileDetailViewModel _viewModel;
+  TabController? _tabController;
 
   @override
   void initState() {
     super.initState();
     _viewModel = UserProfileDetailViewModel();
+    _tabController = TabController(length: 2, vsync: this);
     _viewModel.setUserToken(widget.userToken);
     _loadProfileDetail();
   }
@@ -36,6 +39,13 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
       userToken: widget.userToken,
       userId: widget.userId,
     );
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    _viewModel.dispose();
+    super.dispose();
   }
 
   @override
@@ -76,24 +86,47 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
               );
             }
 
+            final profile = viewModel.profileDetail!;
+            
             return RefreshIndicator(
               onRefresh: () => _viewModel.refreshProfileDetail(
                 userToken: widget.userToken,
                 userId: widget.userId,
               ),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildProfileHeader(viewModel.profileDetail!),
-                    _buildSectionHeader(viewModel.profileDetail!.products.length),
-                    _buildProductsSection(viewModel.profileDetail!),
-                    const SizedBox(height: 16),
-                    _buildReviewsSectionHeader(viewModel.profileDetail!.reviews.length),
-                    _buildReviewsSection(viewModel.profileDetail!),
-                    const SizedBox(height: 32),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  _buildProfileHeader(profile),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    color: Colors.white,
+                    child: _tabController != null ? TabBar(
+                      controller: _tabController!,
+                      labelColor: AppTheme.primary,
+                      unselectedLabelColor: Colors.grey[600],
+                      indicatorColor: AppTheme.primary,
+                      indicatorWeight: 2,
+                      tabs: const [
+                        Tab(
+                          icon: Icon(Icons.inventory_2_outlined, size: 20),
+                          text: 'İlanlar',
+                        ),
+                        Tab(
+                          icon: Icon(Icons.rate_review_outlined, size: 20),
+                          text: 'Yorumlar',
+                        ),
+                      ],
+                    ) : const SizedBox.shrink(),
+                  ),
+                  Expanded(
+                    child: _tabController != null ? TabBarView(
+                      controller: _tabController!,
+                      children: [
+                        _buildProductsTab(profile),
+                        _buildReviewsTab(profile),
+                      ],
+                    ) : const SizedBox.shrink(),
+                  ),
+                ],
               ),
             );
           },
@@ -231,85 +264,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
     );
   }
 
-  Widget _buildSectionHeader(int productCount) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      color: Colors.white,
-      child: Row(
-        children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            color: AppTheme.primary,
-            size: 22,
-          ),
-          const SizedBox(width: 10),
-          const Text(
-            'İlanlar',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            color: Colors.grey[100],
-            child: Text(
-              '$productCount ürün',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewsSectionHeader(int reviewCount) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      color: Colors.white,
-      child: Row(
-        children: [
-          Icon(
-            Icons.rate_review_outlined,
-            color: AppTheme.primary,
-            size: 22,
-          ),
-          const SizedBox(width: 10),
-          const Text(
-            'Yorumlar',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            color: Colors.grey[100],
-            child: Text(
-              '$reviewCount yorum',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductsSection(UserProfileDetail profile) {
+  Widget _buildProductsTab(UserProfileDetail profile) {
     if (profile.products.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -454,7 +409,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
     );
   }
 
-  Widget _buildReviewsSection(UserProfileDetail profile) {
+  Widget _buildReviewsTab(UserProfileDetail profile) {
     if (profile.reviews.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -468,18 +423,92 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
       );
     }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      color: Colors.white,
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: profile.reviews.length,
-        itemBuilder: (context, index) {
-          final review = profile.reviews[index];
-          return _buildReviewItem(review);
-        },
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Ortalama puan ve toplam yorum sayısı
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(20),
+            color: Colors.white,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildReviewStatItem(
+                  icon: Icons.star,
+                  value: profile.averageRating.toStringAsFixed(1),
+                  label: 'Ortalama Puan',
+                  color: Colors.amber,
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: Colors.grey[300],
+                ),
+                _buildReviewStatItem(
+                  icon: Icons.rate_review,
+                  value: profile.totalReviews.toString(),
+                  label: 'Toplam Yorum',
+                  color: AppTheme.primary,
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Yorumlar listesi
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            color: Colors.white,
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: profile.reviews.length,
+              itemBuilder: (context, index) {
+                final review = profile.reviews[index];
+                return _buildReviewItem(review);
+              },
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildReviewStatItem({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: 26,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -625,11 +654,5 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _viewModel.dispose();
-    super.dispose();
   }
 } 
