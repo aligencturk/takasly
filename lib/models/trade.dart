@@ -614,7 +614,7 @@ class UserTrade {
   final String createdAt;
   final String? completedAt;
   final TradeProduct? myProduct;
-  final TradeProduct theirProduct;
+  final TradeProduct? theirProduct;
 
   const UserTrade({
     required this.offerID,
@@ -625,51 +625,72 @@ class UserTrade {
     required this.createdAt,
     this.completedAt,
     this.myProduct,
-    required this.theirProduct,
+    this.theirProduct,
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {
     try {
-      return UserTrade(
-        offerID: json['offerID'] as int? ?? 0,
-        statusID: json['statusID'] as int? ?? 0,
-        statusTitle: json['statusTitle'] as String? ?? '',
-        deliveryType: json['deliveryType'] as String? ?? '',
-        meetingLocation: json['meetingLocation'] as String?,
-        createdAt: json['createdAt'] as String? ?? '',
-        completedAt: json['completedAt'] as String?,
-        myProduct: json['myProduct'] != null 
-            ? TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>)
-            : null,
-        theirProduct: TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>),
+      // Debug: JSON verisini logla
+      print('🔍 UserTrade.fromJson - JSON data: $json');
+      
+      final offerID = json['offerID'] as int? ?? 0;
+      final statusID = json['statusID'] as int? ?? 0;
+      final statusTitle = json['statusTitle'] as String? ?? '';
+      final deliveryType = json['deliveryType'] as String? ?? '';
+      final meetingLocation = json['meetingLocation'] as String?;
+      final createdAt = json['createdAt'] as String? ?? '';
+      final completedAt = json['completedAt'] as String?;
+      
+      // myProduct güvenli parse
+      TradeProduct? myProduct;
+      try {
+        if (json['myProduct'] != null) {
+          myProduct = TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>);
+        }
+      } catch (e) {
+        print('⚠️ UserTrade.fromJson - myProduct parse error: $e');
+        myProduct = null;
+      }
+      
+      // theirProduct güvenli parse
+      TradeProduct? theirProduct;
+      try {
+        if (json['theirProduct'] != null) {
+          theirProduct = TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>);
+        }
+      } catch (e) {
+        print('⚠️ UserTrade.fromJson - theirProduct parse error: $e');
+        theirProduct = null;
+      }
+      
+      final userTrade = UserTrade(
+        offerID: offerID,
+        statusID: statusID,
+        statusTitle: statusTitle,
+        deliveryType: deliveryType,
+        meetingLocation: meetingLocation,
+        createdAt: createdAt,
+        completedAt: completedAt,
+        myProduct: myProduct,
+        theirProduct: theirProduct,
       );
+      
+      print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, statusID=$statusID');
+      return userTrade;
     } catch (e) {
       // JSON parse hatası durumunda varsayılan değerlerle oluştur
       print('⚠️ UserTrade.fromJson error: $e');
       print('⚠️ JSON data: $json');
       return UserTrade(
-        offerID: 0,
-        statusID: 0,
-        statusTitle: 'Bilinmeyen',
-        deliveryType: 'Bilinmeyen',
-        createdAt: '',
-        theirProduct: TradeProduct(
-          productID: 0,
-          productTitle: 'Bilinmeyen Ürün',
-          productDesc: '',
-          productImage: '',
-          productCondition: 'Bilinmeyen',
-          tradeFor: '',
-          categoryTitle: '',
-          userID: 0,
-          categoryID: 0,
-          conditionID: 0,
-          cityID: 0,
-          districtID: 0,
-          cityTitle: '',
-          createdAt: '',
-          isFavorite: false,
-        ),
+        offerID: json['offerID'] as int? ?? 0,
+        statusID: json['statusID'] as int? ?? 0,
+        statusTitle: json['statusTitle'] as String? ?? 'Bilinmeyen',
+        deliveryType: json['deliveryType'] as String? ?? 'Bilinmeyen',
+        meetingLocation: json['meetingLocation'] as String?,
+        createdAt: json['createdAt'] as String? ?? '',
+        completedAt: json['completedAt'] as String?,
+        myProduct: null,
+        theirProduct: null,
       );
     }
   }
@@ -683,7 +704,7 @@ class UserTrade {
     'createdAt': createdAt,
     if (completedAt != null) 'completedAt': completedAt,
     if (myProduct != null) 'myProduct': myProduct!.toJson(),
-    'theirProduct': theirProduct.toJson(),
+    if (theirProduct != null) 'theirProduct': theirProduct!.toJson(),
   };
 
   @override
@@ -741,24 +762,47 @@ class TradeProduct {
 
   factory TradeProduct.fromJson(Map<String, dynamic> json) {
     try {
-      return TradeProduct(
-        productID: json['productID'] as int? ?? 0,
-        productTitle: json['productTitle'] as String? ?? '',
-        productDesc: json['productDesc'] as String? ?? '',
-        productImage: json['productImage'] as String? ?? '',
-        productCondition: json['productCondition'] as String? ?? '',
-        tradeFor: json['tradeFor'] as String? ?? '',
-        categoryTitle: json['categoryTitle'] as String? ?? '',
-        userID: json['userID'] as int? ?? 0,
-        categoryID: json['categoryID'] as int? ?? 0,
-        conditionID: json['conditionID'] as int? ?? 0,
-        cityID: json['cityID'] as int? ?? 0,
-        districtID: json['districtID'] as int? ?? 0,
-        cityTitle: json['cityTitle'] as String? ?? '',
-        districtTitle: json['districtTitle'] as String?,
-        createdAt: json['createdAt'] as String? ?? '',
-        isFavorite: json['isFavorite'] as bool? ?? false,
+      // Debug: JSON verisini logla
+      print('🔍 TradeProduct.fromJson - JSON data: $json');
+      
+      final productID = json['productID'] as int? ?? 0;
+      final productTitle = json['productTitle'] as String? ?? '';
+      final productDesc = json['productDesc'] as String? ?? '';
+      final productImage = json['productImage'] as String? ?? '';
+      final productCondition = json['productCondition'] as String? ?? '';
+      final tradeFor = json['tradeFor'] as String? ?? '';
+      final categoryTitle = json['categoryTitle'] as String? ?? '';
+      final userID = json['userID'] as int? ?? 0;
+      final categoryID = json['categoryID'] as int? ?? 0;
+      final conditionID = json['conditionID'] as int? ?? 0;
+      final cityID = json['cityID'] as int? ?? 0;
+      final districtID = json['districtID'] as int? ?? 0;
+      final cityTitle = json['cityTitle'] as String? ?? '';
+      final districtTitle = json['districtTitle'] as String?;
+      final createdAt = json['createdAt'] as String? ?? '';
+      final isFavorite = json['isFavorite'] as bool? ?? false;
+      
+      final tradeProduct = TradeProduct(
+        productID: productID,
+        productTitle: productTitle,
+        productDesc: productDesc,
+        productImage: productImage,
+        productCondition: productCondition,
+        tradeFor: tradeFor,
+        categoryTitle: categoryTitle,
+        userID: userID,
+        categoryID: categoryID,
+        conditionID: conditionID,
+        cityID: cityID,
+        districtID: districtID,
+        cityTitle: cityTitle,
+        districtTitle: districtTitle,
+        createdAt: createdAt,
+        isFavorite: isFavorite,
       );
+      
+      print('✅ TradeProduct.fromJson - Successfully created: productID=$productID, productTitle=$productTitle');
+      return tradeProduct;
     } catch (e) {
       // JSON parse hatası durumunda varsayılan değerlerle oluştur
       print('⚠️ TradeProduct.fromJson error: $e');
@@ -831,13 +875,30 @@ class UserTradesResponse {
 
   factory UserTradesResponse.fromJson(Map<String, dynamic> json) {
     try {
-      return UserTradesResponse(
-        error: json['error'] as bool? ?? false,
-        success: json['success'] as bool? ?? false,
-        data: json['data'] != null 
-            ? UserTradesData.fromJson(json['data'] as Map<String, dynamic>)
-            : null,
+      // Debug: JSON verisini logla
+      print('🔍 UserTradesResponse.fromJson - JSON data: $json');
+      
+      final error = json['error'] as bool? ?? false;
+      final success = json['success'] as bool? ?? false;
+      
+      UserTradesData? data;
+      try {
+        if (json['data'] != null) {
+          data = UserTradesData.fromJson(json['data'] as Map<String, dynamic>);
+        }
+      } catch (e) {
+        print('⚠️ UserTradesResponse.fromJson - data parse error: $e');
+        data = UserTradesData(trades: []);
+      }
+      
+      final response = UserTradesResponse(
+        error: error,
+        success: success,
+        data: data,
       );
+      
+      print('✅ UserTradesResponse.fromJson - Successfully created: error=$error, success=$success, tradesCount=${data?.trades?.length ?? 0}');
+      return response;
     } catch (e) {
       // JSON parse hatası durumunda boş response döndür
       print('⚠️ UserTradesResponse.fromJson error: $e');
@@ -866,13 +927,36 @@ class UserTradesData {
 
   factory UserTradesData.fromJson(Map<String, dynamic> json) {
     try {
-      return UserTradesData(
-        trades: json['trades'] != null
-            ? (json['trades'] as List)
-                .map((item) => UserTrade.fromJson(item as Map<String, dynamic>))
-                .toList()
-            : null,
-      );
+      // Debug: JSON verisini logla
+      print('🔍 UserTradesData.fromJson - JSON data: $json');
+      
+      List<UserTrade>? trades;
+      try {
+        if (json['trades'] != null) {
+          final tradesList = json['trades'] as List;
+          print('🔍 UserTradesData.fromJson - Found ${tradesList.length} trades in JSON');
+          
+          trades = <UserTrade>[];
+          for (int i = 0; i < tradesList.length; i++) {
+            try {
+              final tradeJson = tradesList[i] as Map<String, dynamic>;
+              final trade = UserTrade.fromJson(tradeJson);
+              trades.add(trade);
+              print('✅ UserTradesData.fromJson - Successfully parsed trade $i: offerID=${trade.offerID}');
+            } catch (e) {
+              print('⚠️ UserTradesData.fromJson - Failed to parse trade $i: $e');
+              // Hatalı trade'i atla
+            }
+          }
+        }
+      } catch (e) {
+        print('⚠️ UserTradesData.fromJson - trades parse error: $e');
+        trades = [];
+      }
+      
+      final data = UserTradesData(trades: trades);
+      print('✅ UserTradesData.fromJson - Successfully created with ${trades?.length ?? 0} trades');
+      return data;
     } catch (e) {
       // JSON parse hatası durumunda boş liste döndür
       print('⚠️ UserTradesData.fromJson error: $e');

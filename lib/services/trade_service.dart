@@ -362,7 +362,15 @@ class TradeService {
       );
 
       if (response.isSuccess) {
-        Logger.info('Kullanıcı takasları başarıyla yüklendi: ${response.data?.data?.trades?.length ?? 0} takas', tag: _tag);
+        final tradesCount = response.data?.data?.trades?.length ?? 0;
+        Logger.info('Kullanıcı takasları başarıyla yüklendi: $tradesCount takas', tag: _tag);
+        
+        // Debug: Her trade'i logla
+        if (response.data?.data?.trades != null) {
+          for (var trade in response.data!.data!.trades!) {
+            Logger.debug('Trade: offerID=${trade.offerID}, statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: _tag);
+          }
+        }
       } else {
         Logger.error('Kullanıcı takasları yükleme hatası: ${response.error}', tag: _tag);
       }

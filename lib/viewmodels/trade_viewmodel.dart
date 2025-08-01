@@ -17,6 +17,8 @@ class TradeViewModel extends ChangeNotifier {
   List<TradeStatusModel> _tradeStatuses = [];
   List<DeliveryType> _deliveryTypes = [];
   List<UserTrade> _userTrades = [];
+  String? _currentUserId;
+  String? get currentUserId => _currentUserId;
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -495,6 +497,12 @@ class TradeViewModel extends ChangeNotifier {
       if (response.isSuccess && response.data != null) {
         _tradeStatuses = response.data!.data?.statuses ?? [];
         Logger.info('Takas durumları başarıyla yüklendi: ${_tradeStatuses.length} durum', tag: 'TradeViewModel');
+        
+        // Debug: API'den gelen durumları logla
+        for (var status in _tradeStatuses) {
+          Logger.info('Durum ID: ${status.statusID}, Başlık: ${status.statusTitle}', tag: 'TradeViewModel');
+        }
+        
         notifyListeners();
       } else {
         final errorMsg = response.error ?? ErrorMessages.unknownError;
@@ -610,14 +618,39 @@ class TradeViewModel extends ChangeNotifier {
   Future<void> loadUserTrades(int userId) async {
     try {
       Logger.info('Kullanıcı takasları yükleniyor... UserID: $userId', tag: 'TradeViewModel');
+      _currentUserId = userId.toString();
       
       final response = await _tradeService.getUserTrades(userId);
 
       if (response.isSuccess) {
         // Response data null olabilir, güvenli şekilde kontrol et
         if (response.data != null) {
-          _userTrades = response.data!.data?.trades ?? [];
-          Logger.info('Kullanıcı takasları başarıyla yüklendi: ${_userTrades.length} takas', tag: 'TradeViewModel');
+          // Trades listesi null olabilir, güvenli şekilde kontrol et
+          final trades = response.data!.data?.trades ?? [];
+          
+          // Her trade'i güvenli şekilde parse et
+          final validTrades = <UserTrade>[];
+          for (var trade in trades) {
+            try {
+              // Trade zaten parse edilmiş olmalı, sadece geçerliliğini kontrol et
+              if (trade.offerID > 0) {
+                validTrades.add(trade);
+              } else {
+                Logger.warning('Geçersiz trade bulundu: offerID = ${trade.offerID}', tag: 'TradeViewModel');
+              }
+            } catch (e) {
+              Logger.error('Trade parse hatası: $e', tag: 'TradeViewModel');
+              // Hatalı trade'i atla
+            }
+          }
+          
+          _userTrades = validTrades;
+          Logger.info('Kullanıcı takasları başarıyla yüklendi: ${_userTrades.length} geçerli takas', tag: 'TradeViewModel');
+          
+          // Yüklenen takasların detaylarını log'la
+          for (var trade in _userTrades) {
+            Logger.info('📋 Yüklenen Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeViewModel');
+          }
         } else {
           // 410 durumunda data null olabilir, boş liste kullan
           _userTrades = [];
@@ -707,16 +740,26 @@ class TradeViewModel extends ChangeNotifier {
   /// Kullanıcı takaslarını yenile
   Future<void> _refreshUserTrades() async {
     try {
+      Logger.info('🔄 _refreshUserTrades başlatılıyor...', tag: 'TradeViewModel');
+      
       // Kullanıcı ID'sini al
       final authService = AuthService();
       final userId = await authService.getCurrentUserId();
       
       if (userId != null && userId.isNotEmpty) {
+        Logger.info('🔄 Kullanıcı ID bulundu: $userId, loadUserTrades çağrılıyor...', tag: 'TradeViewModel');
         await loadUserTrades(int.parse(userId));
-        Logger.info('Kullanıcı takasları yenilendi', tag: 'TradeViewModel');
+        Logger.info('✅ Kullanıcı takasları yenilendi - _userTrades.length: ${_userTrades.length}', tag: 'TradeViewModel');
+        
+        // Yenilenen takasların durumlarını log'la
+        for (var trade in _userTrades) {
+          Logger.info('🔄 Yenilenen Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeViewModel');
+        }
+      } else {
+        Logger.warning('⚠️ Kullanıcı ID bulunamadı', tag: 'TradeViewModel');
       }
     } catch (e) {
-      Logger.error('Kullanıcı takasları yenileme hatası: $e', tag: 'TradeViewModel');
+      Logger.error('❌ Kullanıcı takasları yenileme hatası: $e', tag: 'TradeViewModel');
     }
   }
 

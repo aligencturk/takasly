@@ -74,6 +74,10 @@ class _TradeViewState extends State<TradeView>
     print('🔄 TradeView - calling tradeViewModel.fetchMyTrades()');
     tradeViewModel.fetchMyTrades();
 
+    // Takas durumlarını yükle
+    print('🔄 TradeView - calling tradeViewModel.loadTradeStatuses()');
+    await tradeViewModel.loadTradeStatuses();
+
     // Dinamik kullanıcı ID'sini al
     print('🔄 TradeView - getting current user ID');
     final userId = await _authService.getCurrentUserId();
@@ -259,6 +263,15 @@ class _TradeViewState extends State<TradeView>
   Widget _buildTradedItemsTab() {
     return Consumer<TradeViewModel>(
       builder: (context, tradeViewModel, child) {
+        Logger.debug('🔄 TradeView Consumer builder called - userTrades.length: ${tradeViewModel.userTrades.length}', tag: 'TradeView');
+        Logger.debug('🔄 TradeView Consumer builder called - isLoading: ${tradeViewModel.isLoading}', tag: 'TradeView');
+        Logger.debug('🔄 TradeView Consumer builder called - hasError: ${tradeViewModel.hasError}', tag: 'TradeView');
+        
+        // TradeViewModel'deki her trade'in durumunu log'la
+        for (var trade in tradeViewModel.userTrades) {
+          Logger.debug('🔄 TradeView Consumer - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeView');
+        }
+        
         if (tradeViewModel.isLoading) {
           return Container(
             color: Color(0xFFF8FAFF),
@@ -365,6 +378,12 @@ class _TradeViewState extends State<TradeView>
         }
 
         final trades = tradeViewModel.userTrades;
+        Logger.debug('🔄 TradeView - trades.length: ${trades.length}', tag: 'TradeView');
+        
+        // Her trade'in durumunu log'la
+        for (var trade in trades) {
+          Logger.debug('🔄 TradeView - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeView');
+        }
         
         if (trades.isEmpty) {
           return Container(
@@ -429,20 +448,31 @@ class _TradeViewState extends State<TradeView>
                   itemCount: trades.length,
                   itemBuilder: (context, index) {
                     final trade = trades[index];
+                    Logger.debug('🔄 TradeView ListView.builder - index: $index, trade #${trade.offerID}: statusID=${trade.statusID}', tag: 'TradeView');
+                    
+                    // TradeViewModel'den güncel trade bilgisini al
+                    final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID) ?? trade;
+                    Logger.debug('🔄 TradeView ListView.builder - updated trade #${updatedTrade.offerID}: statusID=${updatedTrade.statusID}', tag: 'TradeView');
+                    
                     return Container(
                       margin: EdgeInsets.only(bottom: 12),
                       child: TradeCard(
-                        trade: trade,
+                        trade: updatedTrade,
+                        currentUserId: tradeViewModel.currentUserId,
                         onTap: () {
                           // Takas detayına git
-                          Logger.info('Takas detayına gidiliyor: ${trade.offerID}', tag: 'TradeView');
+                          Logger.info('Takas detayına gidiliyor: ${updatedTrade.offerID}', tag: 'TradeView');
                         },
                         onStatusChange: (newStatusId) {
-                          // Eğer StatusID 4 (Teslim Edildi) ise yorum dialog'unu aç
+                          // TradeCard'dan gelen newStatusId aslında mevcut durum
+                          // Bu durumda sadece dialog açılması gerekiyor
+                          Logger.info('TradeCard onStatusChange çağrıldı: $newStatusId', tag: 'TradeView');
+                          
+                          // Eğer mevcut durum 4 (Tamamlandı) ise yorum dialog'unu aç
                           if (newStatusId == 4) {
-                            _showTradeCompleteDialog(trade);
+                            _showTradeCompleteDialog(updatedTrade);
                           } else {
-                            _showStatusChangeDialog(trade);
+                            _showStatusChangeDialog(updatedTrade);
                           }
                         },
                       ),
@@ -702,18 +732,22 @@ class _TradeViewState extends State<TradeView>
 
   Color _getStatusColor(int statusId) {
     switch (statusId) {
-      case 1: // Takas Başlatıldı
-        return Colors.blue;
-      case 2: // Kargoya Verildi
+      case 1: // Beklemede / Pending
         return Colors.orange;
-      case 3: // Teslim Edildi / Alındı
+      case 2: // Onaylandı / Approved
         return Colors.green;
-      case 4: // Tamamlandı
-        return Color(0xFF10B981);
-      case 5: // İptal Edildi
+      case 3: // İptal Edildi / Cancelled
         return Colors.red;
-      case 6: // Beklemede
+      case 4: // Tamamlandı / Completed
+        return Color(0xFF10B981);
+      case 5: // Reddedildi / Rejected
+        return Colors.red;
+      case 6: // Beklemede / Pending (alternatif)
         return Colors.grey;
+      case 7: // Engellendi / Blocked
+        return Colors.red;
+      case 8: // İptal / Cancel (alternatif)
+        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -721,18 +755,22 @@ class _TradeViewState extends State<TradeView>
 
   IconData _getStatusIcon(int statusId) {
     switch (statusId) {
-      case 1: // Takas Başlatıldı
-        return Icons.play_arrow;
-      case 2: // Kargoya Verildi
-        return Icons.local_shipping;
-      case 3: // Teslim Edildi / Alındı
+      case 1: // Beklemede / Pending
+        return Icons.pending;
+      case 2: // Onaylandı / Approved
         return Icons.check_circle;
-      case 4: // Tamamlandı
-        return Icons.done_all;
-      case 5: // İptal Edildi
+      case 3: // İptal Edildi / Cancelled
         return Icons.cancel;
-      case 6: // Beklemede
+      case 4: // Tamamlandı / Completed
+        return Icons.done_all;
+      case 5: // Reddedildi / Rejected
+        return Icons.block;
+      case 6: // Beklemede / Pending (alternatif)
         return Icons.pause;
+      case 7: // Engellendi / Blocked
+        return Icons.block;
+      case 8: // İptal / Cancel (alternatif)
+        return Icons.cancel;
       default:
         return Icons.help;
     }
@@ -1466,6 +1504,18 @@ class _TradeViewState extends State<TradeView>
   void _showStatusFilterDialog(TradeViewModel tradeViewModel) {
     int? selectedStatusId;
     
+    // API'den gelen durumları kontrol et
+    if (tradeViewModel.tradeStatuses.isEmpty) {
+      // Durumlar yüklenmemişse önce yükle
+      tradeViewModel.loadTradeStatuses().then((_) {
+        // Durumlar yüklendikten sonra dialog'u tekrar göster
+        if (mounted) {
+          _showStatusFilterDialog(tradeViewModel);
+        }
+      });
+      return;
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1498,7 +1548,7 @@ class _TradeViewState extends State<TradeView>
                 activeColor: Color(0xFF10B981),
               ),
               Divider(),
-              // Durum seçenekleri
+              // API'den gelen durum seçenekleri
               ...tradeViewModel.tradeStatuses.map((status) => RadioListTile<int?>(
                 title: Row(
                   children: [
@@ -1531,7 +1581,7 @@ class _TradeViewState extends State<TradeView>
               Navigator.pop(context);
               // TODO: Seçilen duruma göre filtreleme işlemi
               if (selectedStatusId != null) {
-                print('Seçilen durum ID: $selectedStatusId');
+                Logger.info('Seçilen durum ID: $selectedStatusId', tag: 'TradeView');
                 // Burada filtreleme işlemi yapılacak
               }
             },
@@ -1550,6 +1600,18 @@ class _TradeViewState extends State<TradeView>
   void _showStatusChangeDialog(UserTrade trade) {
     int? selectedStatusId;
     final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    
+    // API'den gelen durumları kontrol et
+    if (tradeViewModel.tradeStatuses.isEmpty) {
+      // Durumlar yüklenmemişse önce yükle
+      tradeViewModel.loadTradeStatuses().then((_) {
+        // Durumlar yüklendikten sonra dialog'u tekrar göster
+        if (mounted) {
+          _showStatusChangeDialog(trade);
+        }
+      });
+      return;
+    }
     
     showDialog(
       context: context,
@@ -1587,7 +1649,7 @@ class _TradeViewState extends State<TradeView>
                     Icon(_getStatusIcon(trade.statusID), color: _getStatusColor(trade.statusID), size: 20),
                     SizedBox(width: 8),
                     Text(
-                      'Mevcut: ${_getStatusTitleById(trade.statusID)}',
+                      'Mevcut: ${tradeViewModel.getStatusTitleById(trade.statusID)}',
                       style: TextStyle(
                         fontSize: 14,
                         color: _getStatusColor(trade.statusID),
@@ -1600,7 +1662,7 @@ class _TradeViewState extends State<TradeView>
               
               SizedBox(height: 16),
               
-              // Dropdown
+              // Dropdown - API'den gelen durumları kullan
               Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey[300]!),
@@ -1664,13 +1726,40 @@ class _TradeViewState extends State<TradeView>
               
               Navigator.pop(context);
               
-              // Eğer takas tamamlanıyorsa (statusID = 5) veya teslim edildiyse (statusID = 4), yorum dialog'unu göster
-              if (selectedStatusId == 5 || selectedStatusId == 4) {
-                _showTradeCompleteDialog(trade);
-                return;
-              }
+              // Seçilen durumun tamamlanma durumunu kontrol et
+              final selectedStatus = tradeViewModel.tradeStatuses.firstWhere(
+                (status) => status.statusID == selectedStatusId,
+                orElse: () => const TradeStatusModel(statusID: 0, statusTitle: ''),
+              );
               
-              await _updateTradeStatus(trade, selectedStatusId!);
+              // Önce durumu güncelle
+              final updateSuccess = await _updateTradeStatus(trade, selectedStatusId!);
+              
+              if (updateSuccess) {
+                Logger.info('✅ Durum güncelleme başarılı, UI yenileniyor...', tag: 'TradeView');
+                
+                // Manuel olarak TradeViewModel'i yenile
+                final userId = await _authService.getCurrentUserId();
+                if (userId != null) {
+                  await tradeViewModel.loadUserTrades(int.parse(userId));
+                  Logger.info('✅ TradeViewModel manuel olarak yenilendi', tag: 'TradeView');
+                  
+                  // Yenilenen trade'i kontrol et
+                  final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID);
+                  if (updatedTrade != null) {
+                    Logger.info('✅ Güncellenmiş trade bulundu: #${updatedTrade.offerID}, statusID=${updatedTrade.statusID}', tag: 'TradeView');
+                  } else {
+                    Logger.warning('⚠️ Güncellenmiş trade bulunamadı: #${trade.offerID}', tag: 'TradeView');
+                  }
+                }
+                
+                // Eğer durum güncelleme başarılıysa ve tamamlanma durumundaysa yorum dialog'unu göster
+                if (selectedStatus.statusID == 4 || selectedStatus.statusID == 5) {
+                  _showTradeCompleteDialog(trade);
+                }
+              } else {
+                Logger.error('❌ Durum güncelleme başarısız', tag: 'TradeView');
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFF10B981),
@@ -1777,7 +1866,11 @@ class _TradeViewState extends State<TradeView>
               }
               
               Navigator.pop(context);
-              await _completeTradeWithReview(trade, rating.toInt(), commentController.text.trim());
+              final success = await _completeTradeWithReview(trade, rating.toInt(), commentController.text.trim());
+              if (success) {
+                // Başarılı işlem sonrası ek işlemler gerekebilir
+                Logger.info('Takas tamamlama ve yorum gönderme başarılı', tag: 'TradeView');
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFF10B981),
@@ -1791,7 +1884,7 @@ class _TradeViewState extends State<TradeView>
   }
 
   /// Takas durumunu güncelle
-  Future<void> _updateTradeStatus(UserTrade trade, int newStatusId) async {
+  Future<bool> _updateTradeStatus(UserTrade trade, int newStatusId) async {
     try {
       final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
       final userService = UserService();
@@ -1801,7 +1894,7 @@ class _TradeViewState extends State<TradeView>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Kullanıcı token\'ı bulunamadı')),
         );
-        return;
+        return false;
       }
 
       final success = await tradeViewModel.updateTradeStatus(
@@ -1817,6 +1910,7 @@ class _TradeViewState extends State<TradeView>
             backgroundColor: Colors.green,
           ),
         );
+        return true;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1824,6 +1918,7 @@ class _TradeViewState extends State<TradeView>
             backgroundColor: Colors.red,
           ),
         );
+        return false;
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1832,11 +1927,12 @@ class _TradeViewState extends State<TradeView>
           backgroundColor: Colors.red,
         ),
       );
+      return false;
     }
   }
 
   /// Takas tamamlandığında yorum ve yıldız ile birlikte tamamla
-  Future<void> _completeTradeWithReview(UserTrade trade, int rating, String comment) async {
+  Future<bool> _completeTradeWithReview(UserTrade trade, int rating, String comment) async {
     try {
       final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
       final userService = UserService();
@@ -1846,7 +1942,7 @@ class _TradeViewState extends State<TradeView>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Kullanıcı token\'ı bulunamadı')),
         );
-        return;
+        return false;
       }
 
       // Karşı tarafın kullanıcı ID'sini bul
@@ -1862,7 +1958,7 @@ class _TradeViewState extends State<TradeView>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Karşı taraf bilgisi bulunamadı')),
         );
-        return;
+        return false;
       }
 
       final success = await tradeViewModel.completeTradeWithReview(
@@ -1896,7 +1992,17 @@ class _TradeViewState extends State<TradeView>
         final userId = await _authService.getCurrentUserId();
         if (userId != null) {
           await tradeViewModel.loadUserTrades(int.parse(userId));
+          Logger.info('✅ TradeViewModel manuel olarak yenilendi (completeTradeWithReview)', tag: 'TradeView');
+          
+          // Yenilenen trade'i kontrol et
+          final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID);
+          if (updatedTrade != null) {
+            Logger.info('✅ Güncellenmiş trade bulundu (completeTradeWithReview): #${updatedTrade.offerID}, statusID=${updatedTrade.statusID}', tag: 'TradeView');
+          } else {
+            Logger.warning('⚠️ Güncellenmiş trade bulunamadı (completeTradeWithReview): #${trade.offerID}', tag: 'TradeView');
+          }
         }
+        return true;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1904,6 +2010,7 @@ class _TradeViewState extends State<TradeView>
             backgroundColor: Colors.red,
           ),
         );
+        return false;
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1912,21 +2019,9 @@ class _TradeViewState extends State<TradeView>
           backgroundColor: Colors.red,
         ),
       );
+      return false;
     }
   }
 
-  /// Status ID'ye göre status title'ı getir
-  String _getStatusTitleById(int statusId) {
-    switch (statusId) {
-      case 1: return 'Onay Bekliyor';
-      case 2: return 'Takas Başlatıldı';
-      case 3: return 'Kargoya Verildi';
-      case 4: return 'Teslim Edildi / Alındı';
-      case 5: return 'Tamamlandı';
-      case 6: return 'Beklemede';
-      case 7: return 'İptal Edildi';
-      case 8: return 'Reddedildi';
-      default: return 'Bilinmeyen';
-    }
-  }
+
 } 

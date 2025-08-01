@@ -10,17 +10,29 @@ import 'package:takasly/utils/logger.dart';
 
 class TradeCard extends StatelessWidget {
   final UserTrade trade;
+  final String? currentUserId;
   final VoidCallback? onTap;
   final Function(int)? onStatusChange;
 
   const TradeCard({
     super.key,
     required this.trade,
+    required this.currentUserId,
     this.onTap,
     this.onStatusChange,
   });
 
-  String _getStatusText(int statusId) {
+  String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
+    // API'den gelen durumları kullanmak için TradeViewModel'e erişim sağla
+    if (tradeViewModel != null && tradeViewModel.tradeStatuses.isNotEmpty) {
+      final status = tradeViewModel.tradeStatuses.firstWhere(
+        (s) => s.statusID == statusId,
+        orElse: () => const TradeStatusModel(statusID: 0, statusTitle: 'Bilinmiyor'),
+      );
+      return status.statusTitle;
+    }
+    
+    // Fallback olarak sabit değerler
     switch (statusId) {
       case 1:
         return 'Beklemede';
@@ -45,21 +57,21 @@ class TradeCard extends StatelessWidget {
 
   Color _getStatusColor(int statusId) {
     switch (statusId) {
-      case 1:
+      case 1: // Beklemede / Pending
         return Colors.orange;
-      case 2:
+      case 2: // Onaylandı / Approved
         return Colors.green;
-      case 3:
+      case 3: // İptal Edildi / Cancelled
         return Colors.red;
-      case 4:
-        return Colors.blue;
-      case 5:
+      case 4: // Tamamlandı / Completed
+        return Color(0xFF10B981);
+      case 5: // Reddedildi / Rejected
+        return Colors.red;
+      case 6: // Beklemede / Pending (alternatif)
         return Colors.grey;
-      case 6:
-        return Colors.orange;
-      case 7:
-        return Colors.grey;
-      case 8:
+      case 7: // Engellendi / Blocked
+        return Colors.red;
+      case 8: // İptal / Cancel (alternatif)
         return Colors.red;
       default:
         return Colors.grey;
@@ -68,21 +80,21 @@ class TradeCard extends StatelessWidget {
 
   IconData _getStatusIcon(int statusId) {
     switch (statusId) {
-      case 1:
+      case 1: // Beklemede / Pending
         return Icons.pending;
-      case 2:
+      case 2: // Onaylandı / Approved
         return Icons.check_circle;
-      case 3:
+      case 3: // İptal Edildi / Cancelled
         return Icons.cancel;
-      case 4:
+      case 4: // Tamamlandı / Completed
         return Icons.done_all;
-      case 5:
+      case 5: // Reddedildi / Rejected
         return Icons.block;
-      case 6:
-        return Icons.pending;
-      case 7:
+      case 6: // Beklemede / Pending (alternatif)
+        return Icons.pause;
+      case 7: // Engellendi / Blocked
         return Icons.block;
-      case 8:
+      case 8: // İptal / Cancel (alternatif)
         return Icons.cancel;
       default:
         return Icons.help;
@@ -119,169 +131,176 @@ class TradeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final isSender = trade.myProduct?.userID.toString() == currentUserId;
+    
+    Logger.debug('🔄 TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeCard');
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Üst kısım - Ürün bilgileri
-              Row(
-                children: [
-                  // Benim ürünüm
-                  Expanded(
-                    child: _buildProductInfo(
-                      context,
-                      trade.myProduct,
-                      'Benim Ürünüm',
-                      Colors.blue,
-                    ),
-                  ),
-                  // Takas ikonu
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Icon(
-                      Icons.swap_horiz,
-                      color: AppTheme.primary,
-                      size: 20,
-                    ),
-                  ),
-                  // Karşı tarafın ürünü
-                  Expanded(
-                    child: _buildProductInfo(
-                      context,
-                      trade.theirProduct,
-                      'Karşı Taraf',
-                      Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              // Orta kısım - Takas durumu
-              Row(
-                children: [
-                  Icon(
-                    _getStatusIcon(trade.statusID),
-                    color: _getStatusColor(trade.statusID),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _getStatusText(trade.statusID),
-                    style: textTheme.bodySmall?.copyWith(
-                      color: _getStatusColor(trade.statusID),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    '#${trade.offerID}',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              
-              // Alt kısım - Aksiyon butonları
-              FutureBuilder<bool>(
-                future: _isUserSender(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Center(
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  
-                  final isSender = snapshot.data ?? false;
-                  
-                  // Bekleyen takaslar için onay/red butonları
-                  if (trade.statusID == 1 && isSender) {
-                    return _buildActionButtons(context);
-                  } 
-                  // Bekleyen takaslar için alıcı mesajı
-                  else if (trade.statusID == 1 && !isSender) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.orange.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.pending_actions,
-                              color: Colors.orange,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Karşı tarafın teklifini bekliyorsunuz',
-                                style: TextStyle(
-                                  color: Colors.orange[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                  // Teslim edildi durumu için yorum butonu
-                  else if (trade.statusID == 4) {
-                    return _buildReviewButton(context);
-                  }
-                  // Diğer durumlar için durum değiştirme butonu
-                  else if (trade.statusID != 5 && trade.statusID != 7 && trade.statusID != 8) {
-                    return _buildStatusChangeButton(context);
-                  }
-                  
-                  return SizedBox.shrink();
-                },
+    return Consumer<TradeViewModel>(
+      builder: (context, tradeViewModel, child) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: Offset(0, 2),
               ),
             ],
           ),
-        ),
-      ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Üst kısım - Ürün bilgileri
+                  Row(
+                    children: [
+                      // Benim ürünüm
+                      Expanded(
+                        child: _buildProductInfo(
+                          context,
+                          trade.myProduct,
+                          'Benim Ürünüm',
+                          Colors.blue,
+                        ),
+                      ),
+                      // Takas ikonu
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Icon(
+                          Icons.swap_horiz,
+                          color: AppTheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                      // Karşı tarafın ürünü
+                      Expanded(
+                        child: _buildProductInfo(
+                          context,
+                          trade.theirProduct,
+                          'Karşı Taraf',
+                          Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Orta kısım - Takas durumu
+                  Row(
+                    children: [
+                      Icon(
+                        _getStatusIcon(trade.statusID),
+                        color: _getStatusColor(trade.statusID),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _getStatusText(trade.statusID, tradeViewModel: tradeViewModel),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: _getStatusColor(trade.statusID),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '#${trade.offerID}',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // Alt kısım - Aksiyon butonları
+                  FutureBuilder<bool>(
+                    future: _isUserSender(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      final isSender = snapshot.data ?? false;
+                      
+                      // Bekleyen takaslar için onay/red butonları
+                      if (trade.statusID == 1 && !isSender) {
+                        return _buildActionButtons(context);
+                      } 
+                      // Bekleyen takaslar için alıcı mesajı
+                      else if (trade.statusID == 1 && isSender) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: Colors.orange.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.pending_actions,
+                                  color: Colors.orange,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Karşı tarafın teklifini bekliyorsunuz',
+                                    style: TextStyle(
+                                      color: Colors.orange[700],
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      // Teslim edildi durumu için yorum butonu
+                      else if (trade.statusID == 4) {
+                        return _buildReviewButton(context);
+                      }
+                      // Diğer durumlar için durum değiştirme butonu
+                      else if (trade.statusID != 5 && trade.statusID != 7 && trade.statusID != 8) {
+                        return _buildStatusChangeButton(context);
+                      }
+                      
+                      return SizedBox.shrink();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -621,7 +640,8 @@ class TradeCard extends StatelessWidget {
     if (onStatusChange != null) {
       // TradeView'daki _showStatusChangeDialog metodunu çağırmak için
       // onStatusChange callback'ini kullanarak TradeView'a sinyal gönder
-      onStatusChange!(trade.statusID); // Mevcut durumu gönder, TradeView dropdown'ı açacak
+      // Mevcut durumu gönder, TradeView dropdown'ı açacak
+      onStatusChange!(trade.statusID);
     }
   }
 
