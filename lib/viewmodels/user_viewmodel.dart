@@ -277,7 +277,7 @@ class UserViewModel extends ChangeNotifier {
     }
   }
 
-  /// Kullanıcı hesabını siler
+  /// Kullanıcı hesabını siler (eski endpoint)
   Future<bool> deleteUserAccount({
     required String password,
   }) async {
@@ -297,6 +297,39 @@ class UserViewModel extends ChangeNotifier {
       );
       
       if (response.isSuccess) {
+        // Hesap silindikten sonra tüm local data'yı temizle
+        await logout();
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Kullanıcı hesabını siler (yeni endpoint)
+  Future<bool> deleteUserAccountNew() async {
+    final token = await _userService.getUserToken();
+    if (token == null) {
+      _setError(ErrorMessages.sessionExpired);
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _userService.deleteUserAccountNew(
+        userToken: token,
+      );
+      
+      if (response.isSuccess && response.data == true) {
         // Hesap silindikten sonra tüm local data'yı temizle
         await logout();
         _setLoading(false);

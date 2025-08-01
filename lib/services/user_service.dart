@@ -985,6 +985,56 @@ class UserService {
     }
   }
 
+  /// Kullanıcı hesabını siler (yeni endpoint)
+  /// DELETE /service/user/account/delete
+  Future<ApiResponse<bool>> deleteUserAccountNew({
+    required String userToken,
+  }) async {
+    try {
+      print('🗑️ DELETE USER ACCOUNT (NEW ENDPOINT)');
+      print('📤 User Token: ${userToken.substring(0, 20)}...');
+
+      final response = await _httpClient.deleteWithBasicAuth<bool>(
+        '/service/user/account/delete',
+        body: {
+          'userToken': userToken,
+        },
+        fromJson: (json) {
+          print('🔍 Delete Account fromJson - Raw data: $json');
+          
+          // API'den gelen response'u kontrol et
+          if (json is Map<String, dynamic>) {
+            // Başarı durumunu kontrol et
+            if (json.containsKey('success') && json['success'] == true) {
+              return true;
+            }
+            // Error durumunu kontrol et
+            if (json.containsKey('error') && json['error'] == true) {
+              throw Exception(json['message'] ?? 'Hesap silme işlemi başarısız');
+            }
+          }
+          
+          // Direkt bool değer gelirse
+          if (json is bool) {
+            return json;
+          }
+          
+          // Varsayılan olarak başarılı kabul et
+          return true;
+        },
+      );
+
+      print('✅ Delete Account Response: ${response.isSuccess}');
+      print('🔍 Response Data: ${response.data}');
+      print('🔍 Response Error: ${response.error}');
+
+      return response;
+    } catch (e) {
+      print('❌ Delete Account Error: $e');
+      return ApiResponse<bool>.error('Hesap silme işlemi sırasında hata oluştu: $e');
+    }
+  }
+
   /// Token'ı arka planda günceller (async olarak)
   void _updateTokenInBackground(String newToken) {
     // Arka planda token güncelleme işlemini başlat

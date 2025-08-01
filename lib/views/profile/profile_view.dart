@@ -9,6 +9,7 @@ import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:takasly/widgets/product_card.dart';
 import 'edit_profile_view.dart';
+import 'settings_view.dart';
 import '../product/edit_product_view.dart';
 
 class ProfileView extends StatefulWidget {
@@ -98,7 +99,12 @@ class _ProfileViewState extends State<ProfileView>
       actions: [
         IconButton(
           onPressed: () {
-            // TODO: Ayarlar sayfasına yönlendir
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SettingsView(),
+              ),
+            );
           },
           icon: const Icon(Icons.settings_outlined, size: 24),
           tooltip: 'Ayarlar',
