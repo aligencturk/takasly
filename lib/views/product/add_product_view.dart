@@ -20,6 +20,7 @@ class _AddProductViewState extends State<AddProductView> {
 
   String? _selectedCategoryId;
   String? _selectedSubCategoryId;
+  String? _selectedSubSubCategoryId;
   String? _selectedConditionId;
   String? _selectedCityId;
   String? _selectedDistrictId;
@@ -561,6 +562,8 @@ class _AddProductViewState extends State<AddProductView> {
           const SizedBox(height: 24),
           _buildSubCategoryDropdown(),
           const SizedBox(height: 24),
+          _buildSubSubCategoryDropdown(),
+          const SizedBox(height: 24),
           _buildConditionDropdown(),
         ],
       ),
@@ -781,10 +784,48 @@ class _AddProductViewState extends State<AddProductView> {
               .toList(),
           onChanged: _selectedCategoryId == null || vm.subCategories.isEmpty
               ? null
-              : (value) => setState(() => _selectedSubCategoryId = value),
+              : (value) {
+                  setState(() {
+                    _selectedSubCategoryId = value;
+                    _selectedSubSubCategoryId = null;
+                  });
+                  if (value != null) {
+                    vm.loadSubSubCategories(value);
+                  } else {
+                    vm.clearSubSubCategories();
+                  }
+                },
           validator: (v) {
             if (_selectedCategoryId != null && vm.subCategories.isNotEmpty && v == null) {
               return 'Alt kategori seçimi zorunludur';
+            }
+            return null;
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSubSubCategoryDropdown() {
+    return Consumer<ProductViewModel>(
+      builder: (context, vm, child) {
+        return DropdownButtonFormField<String>(
+          value: _selectedSubSubCategoryId,
+          decoration: InputDecoration(
+            labelText: 'Ürün Kategorisi',
+            enabled: _selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty,
+          ),
+          items: vm.subSubCategories
+              .map(
+                (cat) => DropdownMenuItem(value: cat.id, child: Text(cat.name)),
+              )
+              .toList(),
+          onChanged: _selectedSubCategoryId == null || vm.subSubCategories.isEmpty
+              ? null
+              : (value) => setState(() => _selectedSubSubCategoryId = value),
+          validator: (v) {
+            if (_selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty && v == null) {
+              return 'Alt alt kategori seçimi zorunludur';
             }
             return null;
           },

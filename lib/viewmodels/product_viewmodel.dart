@@ -21,7 +21,9 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Product> _myProducts = [];
   List<product_model.Category> _categories = [];
   List<product_model.Category> _subCategories = [];
+  List<product_model.Category> _subSubCategories = [];
   String? _selectedParentCategoryId;
+  String? _selectedSubCategoryId;
   List<City> _cities = [];
   List<District> _districts = [];
   List<Condition> _conditions = [];
@@ -54,7 +56,9 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Product> get userProducts => _myProducts;
   List<product_model.Category> get categories => _categories;
   List<product_model.Category> get subCategories => _subCategories;
+  List<product_model.Category> get subSubCategories => _subSubCategories;
   String? get selectedParentCategoryId => _selectedParentCategoryId;
+  String? get selectedSubCategoryId => _selectedSubCategoryId;
   List<City> get cities => _cities;
   List<District> get districts => _districts;
   List<Condition> get conditions => _conditions;
@@ -469,7 +473,43 @@ class ProductViewModel extends ChangeNotifier {
 
   void clearSubCategories() {
     _subCategories.clear();
+    _subSubCategories.clear();
     _selectedParentCategoryId = null;
+    _selectedSubCategoryId = null;
+    notifyListeners();
+  }
+
+  Future<void> loadSubSubCategories(String parentSubCategoryId) async {
+    print('🏷️ Loading sub-sub-categories for parent $parentSubCategoryId...');
+    try {
+      final response = await _productService.getSubSubCategories(parentSubCategoryId);
+      print(
+        '🏷️ Sub-sub-categories response: success=${response.isSuccess}, error=${response.error}',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _subSubCategories = response.data ?? [];
+        _selectedSubCategoryId = parentSubCategoryId;
+        print('🏷️ Sub-sub-categories loaded: ${_subSubCategories.length} items');
+        _subSubCategories.forEach((cat) => print('  - ${cat.name} (${cat.id})'));
+        notifyListeners();
+      } else {
+        print('🏷️ Sub-sub-categories failed: ${response.error}');
+        _subSubCategories.clear();
+        _selectedSubCategoryId = null;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('💥 Sub-sub-categories error: $e');
+      _subSubCategories.clear();
+      _selectedSubCategoryId = null;
+      notifyListeners();
+    }
+  }
+
+  void clearSubSubCategories() {
+    _subSubCategories.clear();
+    _selectedSubCategoryId = null;
     notifyListeners();
   }
 

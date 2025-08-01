@@ -29,6 +29,7 @@ class _EditProductViewState extends State<EditProductView> {
 
   String? _selectedCategoryId;
   String? _selectedSubCategoryId;
+  String? _selectedSubSubCategoryId;
   String? _selectedConditionId;
   String? _selectedCityId;
   String? _selectedDistrictId;
@@ -155,6 +156,8 @@ class _EditProductViewState extends State<EditProductView> {
                   _buildCategoryDropdown(),
                   const SizedBox(height: 16),
                   _buildSubCategoryDropdown(),
+                  const SizedBox(height: 16),
+                  _buildSubSubCategoryDropdown(),
                   const SizedBox(height: 16),
                   _buildConditionDropdown(),
                   const SizedBox(height: 24),
@@ -294,7 +297,17 @@ class _EditProductViewState extends State<EditProductView> {
                 .toList(),
             onChanged: _selectedCategoryId == null
                 ? null
-                : (value) => setState(() => _selectedSubCategoryId = value),
+                : (value) {
+                    setState(() {
+                      _selectedSubCategoryId = value;
+                      _selectedSubSubCategoryId = null;
+                    });
+                    if (value != null) {
+                      vm.loadSubSubCategories(value);
+                    } else {
+                      vm.clearSubSubCategories();
+                    }
+                  },
             validator: (v) => v == null ? 'Alt kategori seçimi zorunludur' : null,
           );
         } catch (e) {
@@ -303,6 +316,53 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Alt Kategori',
               enabled: _selectedCategoryId != null,
+            ),
+            items: const [],
+            onChanged: (value) {},
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildSubSubCategoryDropdown() {
+    return Consumer<ProductViewModel>(
+      builder: (context, vm, child) {
+        try {
+          // Seçili değer geçerli mi kontrol et
+          String? validValue = _selectedSubSubCategoryId;
+          if (validValue != null) {
+            final hasValidValue = vm.subSubCategories.any((c) => c.id == validValue);
+            if (!hasValidValue) {
+              validValue = null;
+            }
+          }
+
+          return DropdownButtonFormField<String>(
+            value: validValue,
+            decoration: InputDecoration(
+              labelText: 'Ürün Kategorisi',
+              enabled: _selectedSubCategoryId != null,
+            ),
+            items: vm.subSubCategories
+                .map(
+                  (cat) => DropdownMenuItem(
+                    value: cat.id,
+                    child: Text(cat.name),
+                  ),
+                )
+                .toList(),
+            onChanged: _selectedSubCategoryId == null
+                ? null
+                : (value) => setState(() => _selectedSubSubCategoryId = value),
+            validator: (v) => v == null ? 'Alt alt kategori seçimi zorunludur' : null,
+          );
+        } catch (e) {
+          print('Error building sub sub category dropdown: $e');
+          return DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              labelText: 'Ürün Kategorisi',
+              enabled: _selectedSubCategoryId != null,
             ),
             items: const [],
             onChanged: (value) {},

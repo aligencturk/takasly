@@ -6,6 +6,7 @@ import '../../core/constants.dart';
 import '../../services/user_service.dart';
 import '../../utils/logger.dart';
 import '../../viewmodels/user_viewmodel.dart';
+import '../auth/reset_password_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -95,10 +96,10 @@ class _SettingsViewState extends State<SettingsView> {
             title: 'Şifre Değiştir',
             subtitle: 'Hesap güvenliğinizi artırın',
             onTap: () {
-              // TODO: Şifre değiştirme sayfasına yönlendir
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Şifre değiştirme özelliği yakında eklenecek'),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ResetPasswordView(),
                 ),
               );
             },
@@ -184,7 +185,7 @@ class _SettingsViewState extends State<SettingsView> {
           Padding(
             padding: const EdgeInsets.all(20),
             child: Text(
-              'Tehlikeli İşlemler',
+              'Hesabımı Sil',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

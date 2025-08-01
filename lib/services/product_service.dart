@@ -1314,6 +1314,34 @@ class ProductService {
     }
   }
 
+  Future<ApiResponse<List<Category>>> getSubSubCategories(String parentSubCategoryId) async {
+    print(
+      '🏷️ ProductService: Getting sub-sub-categories for parent $parentSubCategoryId from service/general/general/categories/$parentSubCategoryId',
+    );
+    try {
+      final response = await _httpClient.getWithBasicAuth(
+        'service/general/general/categories/$parentSubCategoryId',
+        fromJson: (json) => (json['data']['categories'] as List)
+            .map(
+              (item) => Category(
+                id: item['catID'].toString(),
+                name: item['catName'],
+                icon: item['catImage'] ?? '',
+                parentId: parentSubCategoryId,
+                children: null,
+                isActive: true,
+                order: 0,
+              ),
+            )
+            .toList(),
+      );
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
   Future<ApiResponse<List<City>>> getCities() async {
     print(
       '🏙️ ProductService: Getting cities from service/general/general/cities/all',
