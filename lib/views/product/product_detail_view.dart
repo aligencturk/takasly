@@ -169,9 +169,11 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   }
 
   void _onScroll() {
-    setState(() {
-      _scrollOffset = _scrollController.offset;
-    });
+    if (mounted) {
+      setState(() {
+        _scrollOffset = _scrollController.offset;
+      });
+    }
   }
 
   void _shareProduct(BuildContext context, Product product) {
@@ -507,6 +509,7 @@ class _ProductInfoState extends State<_ProductInfo> {
   Future<void> _loadUserProfile() async {
     if (_isLoadingProfile) return;
     
+    if (!mounted) return;
     setState(() {
       _isLoadingProfile = true;
     });
@@ -518,32 +521,34 @@ class _ProductInfoState extends State<_ProductInfo> {
       if (userToken != null && userToken.isNotEmpty) {
         try {
           final userId = int.parse(widget.product.ownerId);
-          print('🔍 Product Detail - Loading user profile for ID: $userId');
+          Logger.debug('🔍 Product Detail - Loading user profile for ID: $userId');
           
           final response = await _userService.getUserProfileDetail(
             userToken: userToken,
             userId: userId,
           );
           
-          if (response.isSuccess && response.data != null) {
+          if (mounted && response.isSuccess && response.data != null) {
             setState(() {
               _averageRating = response.data!.averageRating.toDouble();
               _totalReviews = response.data!.totalReviews;
             });
-            print('✅ Product Detail - Profile loaded: Rating: $_averageRating, Reviews: $_totalReviews');
+            Logger.debug('✅ Product Detail - Profile loaded: Rating: $_averageRating, Reviews: $_totalReviews');
           } else {
-            print('❌ Product Detail - Profile load failed: ${response.error}');
+            Logger.error('❌ Product Detail - Profile load failed: ${response.error}');
           }
         } catch (e) {
-          print('❌ Product Detail - Profile load error: $e');
+          Logger.error('❌ Product Detail - Profile load error: $e');
         }
       }
     } catch (e) {
-      print('❌ Product Detail - SharedPreferences error: $e');
+      Logger.error('❌ Product Detail - SharedPreferences error: $e');
     } finally {
-      setState(() {
-        _isLoadingProfile = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+      }
     }
   }
 

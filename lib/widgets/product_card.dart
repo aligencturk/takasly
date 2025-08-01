@@ -53,10 +53,8 @@ class ProductCard extends StatelessWidget {
         );
       },
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[200]!),
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,10 +81,6 @@ class ProductCard extends StatelessWidget {
                           return Container(
                             decoration: BoxDecoration(
                               color: Colors.grey[50],
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(8),
-                                topRight: Radius.circular(8),
-                              ),
                             ),
                             child: Center(
                               child: Column(
@@ -129,10 +123,6 @@ class ProductCard extends StatelessWidget {
                               return Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(8),
-                                    topRight: Radius.circular(8),
-                                  ),
                                 ),
                                 child: Center(
                                   child: Column(
@@ -217,18 +207,7 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Kategori
-                  
-                    // Başlık
-                    Text(
-                      product.title,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                      Container(
+                    Container(
                       constraints: const BoxConstraints(
                         minHeight: 16, // iOS için minimum yükseklik
                       ),
@@ -243,6 +222,16 @@ class ProductCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                    ),
+                    // Başlık
+                    Text(
+                      product.title,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     // Konum
                     Row(

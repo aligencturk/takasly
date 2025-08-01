@@ -6,6 +6,7 @@ import 'package:takasly/models/product.dart';
 import 'package:takasly/viewmodels/auth_viewmodel.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/viewmodels/user_viewmodel.dart';
+import 'package:takasly/viewmodels/user_profile_detail_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:takasly/widgets/product_card.dart';
 import 'edit_profile_view.dart';
@@ -26,7 +27,8 @@ class _ProfileViewState extends State<ProfileView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 1, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
+    
     // Sayfa ilk açıldığında verileri yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userViewModel = Provider.of<UserViewModel>(context, listen: false);
@@ -44,8 +46,25 @@ class _ProfileViewState extends State<ProfileView>
         productViewModel.loadUserProducts(userId);
         // Favori ürünleri de yükle
         productViewModel.loadFavoriteProducts();
+        
+        // Kullanıcının profil detaylarını yükle (değerlendirmeler için)
+        _loadUserProfileDetail(int.parse(userId));
       }
     });
+  }
+
+  Future<void> _loadUserProfileDetail(int userId) async {
+    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+    final profileDetailViewModel = Provider.of<UserProfileDetailViewModel>(context, listen: false);
+    final userToken = userViewModel.currentUser?.token;
+    
+    if (userToken != null) {
+      profileDetailViewModel.setUserToken(userToken);
+      await profileDetailViewModel.loadProfileDetail(
+        userToken: userToken,
+        userId: userId,
+      );
+    }
   }
 
   @override
@@ -68,17 +87,502 @@ class _ProfileViewState extends State<ProfileView>
           final user = userVm.currentUser!;
           final productCount = productVm.myProducts.length;
           final favoriteCount = productVm.favoriteProducts.length;
-          return SingleChildScrollView(
+          
+          return Column(
+            children: [
+              _buildProfileHeader(context, user, productCount, favoriteCount),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                color: Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: AppTheme.primary,
+                  unselectedLabelColor: Colors.grey[600],
+                  indicatorColor: AppTheme.primary,
+                  indicatorWeight: 2,
+                  tabs: const [
+                    Tab(
+                      icon: Icon(Icons.inventory_2_outlined, size: 20),
+                      text: 'İlanlarım',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.rate_review_outlined, size: 20),
+                      text: 'Yorumlar',
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildProductsTab(user),
+                    _buildReviewsTab(),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      color: Colors.white,
+      child: TabBar(
+        controller: _tabController,
+        labelColor: AppTheme.primary,
+        unselectedLabelColor: Colors.grey[600],
+        indicatorColor: AppTheme.primary,
+        indicatorWeight: 2,
+        tabs: const [
+          Tab(
+            icon: Icon(Icons.inventory_2_outlined, size: 20),
+            text: 'İlanlarım',
+          ),
+          Tab(
+            icon: Icon(Icons.rate_review_outlined, size: 20),
+            text: 'Yorumlar',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductsTab(User user) {
+    return Consumer<ProductViewModel>(
+      builder: (context, productViewModel, child) {
+        if (productViewModel.isLoading) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(40.0),
+            color: Colors.white,
+            child: const Center(child: LoadingWidget()),
+          );
+        }
+
+        if (productViewModel.myProducts.isEmpty) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(40.0),
+            color: Colors.white,
+            child: _buildEmptyTab(
+              icon: Icons.inventory_2_outlined,
+              title: 'Henüz Ürün Eklenmemiş',
+              subtitle: 'İlk ürününüzü ekleyerek satışa başlayabilirsiniz.',
+              actionButton: Container(
+                height: 40,
+                color: AppTheme.primary,
+                child: TextButton(
+                  onPressed: () {
+                    // TODO: Ürün ekleme sayfasına yönlendir
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.zero,
+                    shape: const RoundedRectangleBorder(),
+                  ),
+                  child: const Text(
+                    'Ürün Ekle',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(20),
+          color: Colors.white,
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: productViewModel.myProducts.length,
+            itemBuilder: (context, index) {
+              final product = productViewModel.myProducts[index];
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Stack(
+                  children: [
+                    ProductCard(
+                      product: product,
+                      heroTag: 'profile_my_product_${product.id}_$index',
+                      hideFavoriteIcon: true, // Kullanıcının kendi ilanlarında favori ikonunu gizle
+                      onTap: () {
+                        // TODO: Ürün detay sayfasına yönlendir
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${product.title} ürününe tıklandı'),
+                          ),
+                        );
+                      },
+                    ),
+                    // İlanı Güncelle butonu (sol üst)
+                    Positioned(
+                      top: 7,
+                      left: 7,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _editProduct(product),
+                            borderRadius: BorderRadius.circular(16),
+                            child: const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.edit_outlined,
+                                color: Colors.orange,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // İlanı Sil butonu (sağ üst)
+                    Positioned(
+                      top: 7,
+                      right: 7,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showDeleteConfirmDialog(product),
+                            borderRadius: BorderRadius.circular(16),
+                            child: const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReviewsTab() {
+    return Consumer<UserProfileDetailViewModel>(
+      builder: (context, profileDetailVm, child) {
+        if (profileDetailVm.isLoading) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(40.0),
+            color: Colors.white,
+            child: const Center(child: LoadingWidget()),
+          );
+        }
+
+        if (profileDetailVm.hasError) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(40.0),
+            color: Colors.white,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildProfileHeader(context, user, productCount, favoriteCount),
-                _buildSectionHeader(productCount),
-                _buildProductsSection(user),
-                const SizedBox(height: 20),
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Değerlendirmeler yüklenemedi',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                    final userId = userViewModel.currentUser?.id;
+                    if (userId != null) {
+                      _loadUserProfileDetail(int.parse(userId));
+                    }
+                  },
+                  child: const Text('Tekrar Dene'),
+                ),
               ],
             ),
           );
-        },
+        }
+
+        if (!profileDetailVm.hasData || profileDetailVm.profileDetail == null) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(40.0),
+            color: Colors.white,
+            child: _buildEmptyTab(
+              icon: Icons.rate_review_outlined,
+              title: 'Henüz Değerlendirme Yok',
+              subtitle: 'Henüz hiç değerlendirme almamışsınız.',
+            ),
+          );
+        }
+
+        final profile = profileDetailVm.profileDetail!;
+        
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              // Ortalama puan ve toplam yorum sayısı
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(20),
+                color: Colors.white,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildReviewStatItem(
+                      icon: Icons.star,
+                      value: profile.averageRating.toStringAsFixed(1),
+                      label: 'Ortalama Puan',
+                      color: Colors.amber,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.grey[300],
+                    ),
+                    _buildReviewStatItem(
+                      icon: Icons.rate_review,
+                      value: profile.totalReviews.toString(),
+                      label: 'Toplam Yorum',
+                      color: AppTheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Yorumlar listesi
+              if (profile.reviews.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  color: Colors.white,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: profile.reviews.length,
+                    itemBuilder: (context, index) {
+                      final review = profile.reviews[index];
+                      return _buildReviewItem(review);
+                    },
+                  ),
+                )
+              else
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(40.0),
+                  color: Colors.white,
+                  child: _buildEmptyTab(
+                    icon: Icons.rate_review_outlined,
+                    title: 'Henüz Yorum Yok',
+                    subtitle: 'Henüz hiç yorum almamışsınız.',
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReviewStatItem({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: 26,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewItem(dynamic review) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Yorum yapan kişinin fotoğrafı
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: review.reviewerImage != null && review.reviewerImage!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          review.reviewerImage!,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.grey,
+                                size: 20,
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              
+              // Yorum yapan kişinin adı ve tarih
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review.reviewerName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      review.reviewDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Yıldızlar
+              Row(
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < review.rating ? Icons.star : Icons.star_border,
+                    size: 18,
+                    color: index < review.rating ? Colors.amber : Colors.grey,
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Yorum metni
+          if (review.comment.isNotEmpty)
+            Text(
+              review.comment,
+              style: const TextStyle(
+                fontSize: 15,
+                color: Colors.black87,
+                fontWeight: FontWeight.w400,
+                height: 1.4,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -312,36 +816,6 @@ class _ProfileViewState extends State<ProfileView>
     );
   }
 
-  Widget _buildStatItem(
-    BuildContext context, {
-    required IconData icon,
-    required String count,
-    required String label,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, size: 24, color: Colors.grey[700]),
-        const SizedBox(height: 8),
-        Text(
-          count,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildKurumsalStatItem({
     required String count,
     required String label,
@@ -366,171 +840,6 @@ class _ProfileViewState extends State<ProfileView>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSectionHeader(int productCount) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      color: Colors.white,
-      child: Row(
-        children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            color: AppTheme.primary,
-            size: 22,
-          ),
-          const SizedBox(width: 10),
-          const Text(
-            'İlanlarım',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            color: Colors.grey[100],
-            child: Text(
-              '$productCount ürün',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductsSection(User user) {
-    return Consumer<ProductViewModel>(
-      builder: (context, productViewModel, child) {
-        if (productViewModel.isLoading) {
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(40.0),
-            color: Colors.white,
-            child: const Center(child: LoadingWidget()),
-          );
-        }
-
-        if (productViewModel.myProducts.isEmpty) {
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(40.0),
-            color: Colors.white,
-            child: _buildEmptyTab(
-              icon: Icons.inventory_2_outlined,
-              title: 'Henüz Ürün Eklenmemiş',
-              subtitle: 'İlk ürününüzü ekleyerek satışa başlayabilirsiniz.',
-              actionButton: Container(
-                height: 40,
-                color: AppTheme.primary,
-                child: TextButton(
-                  onPressed: () {
-                    // TODO: Ürün ekleme sayfasına yönlendir
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.zero,
-                    shape: const RoundedRectangleBorder(),
-                  ),
-                  child: const Text(
-                    'Ürün Ekle',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(20),
-          color: Colors.white,
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: productViewModel.myProducts.length,
-            itemBuilder: (context, index) {
-              final product = productViewModel.myProducts[index];
-              return Stack(
-                children: [
-                  ProductCard(
-                    product: product,
-                    heroTag: 'profile_my_product_${product.id}_$index',
-                    hideFavoriteIcon: true, // Kullanıcının kendi ilanlarında favori ikonunu gizle
-                    onTap: () {
-                      // TODO: Ürün detay sayfasına yönlendir
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${product.title} ürününe tıklandı'),
-                        ),
-                      );
-                    },
-                  ),
-                  // İlanı Güncelle butonu (sol üst)
-                  Positioned(
-                    top: 7,
-                    left: 7,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _editProduct(product),
-                        borderRadius: BorderRadius.circular(16),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(
-                            Icons.edit_outlined,
-                            color: Colors.orange,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // İlanı Sil butonu (sağ üst)
-                  Positioned(
-                    top: 7,
-                    right: 7,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _showDeleteConfirmDialog(product),
-                        borderRadius: BorderRadius.circular(16),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
     );
   }
 
