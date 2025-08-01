@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/chat_viewmodel.dart';
@@ -11,9 +12,13 @@ import '../../viewmodels/trade_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
+import '../../core/constants.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../chat/chat_detail_view.dart';
+import '../profile/user_profile_detail_view.dart';
+import '../../viewmodels/user_profile_detail_viewmodel.dart';
+import '../../services/user_service.dart';
 import '../../utils/logger.dart';
 
 // Tam ekran görsel görüntüleme sayfası
@@ -478,10 +483,69 @@ class _ImageCarousel extends StatelessWidget {
   }
 }
 
-class _ProductInfo extends StatelessWidget {
+class _ProductInfo extends StatefulWidget {
   final Product product;
 
   const _ProductInfo({required this.product});
+
+  @override
+  State<_ProductInfo> createState() => _ProductInfoState();
+}
+
+class _ProductInfoState extends State<_ProductInfo> {
+  double? _averageRating;
+  int? _totalReviews;
+  bool _isLoadingProfile = false;
+  final UserService _userService = UserService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    if (_isLoadingProfile) return;
+    
+    setState(() {
+      _isLoadingProfile = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString(AppConstants.userTokenKey);
+      
+      if (userToken != null && userToken.isNotEmpty) {
+        try {
+          final userId = int.parse(widget.product.ownerId);
+          print('🔍 Product Detail - Loading user profile for ID: $userId');
+          
+          final response = await _userService.getUserProfileDetail(
+            userToken: userToken,
+            userId: userId,
+          );
+          
+          if (response.isSuccess && response.data != null) {
+            setState(() {
+              _averageRating = response.data!.averageRating.toDouble();
+              _totalReviews = response.data!.totalReviews;
+            });
+            print('✅ Product Detail - Profile loaded: Rating: $_averageRating, Reviews: $_totalReviews');
+          } else {
+            print('❌ Product Detail - Profile load failed: ${response.error}');
+          }
+        } catch (e) {
+          print('❌ Product Detail - Profile load error: $e');
+        }
+      }
+    } catch (e) {
+      print('❌ Product Detail - SharedPreferences error: $e');
+    } finally {
+      setState(() {
+        _isLoadingProfile = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -496,7 +560,7 @@ class _ProductInfo extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                product.title,
+                widget.product.title,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -514,7 +578,7 @@ class _ProductInfo extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '${product.cityTitle} / ${product.districtTitle}',
+                    '${widget.product.cityTitle} / ${widget.product.districtTitle}',
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.textSecondary,
@@ -546,12 +610,12 @@ class _ProductInfo extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              _InfoRow('Kategori :', _getCategoryDisplayName(product)),
-              _InfoRow('Durum :', product.condition ?? 'Belirtilmemiş'),
+              _InfoRow('Kategori :', _getCategoryDisplayName(widget.product)),
+              _InfoRow('Durum :', widget.product.condition ?? 'Belirtilmemiş'),
               _InfoRow('İlan Tarihi :', 
-                "${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}"),
-              _InfoRow('İlan No :', product.id),
-              _InfoRow('Satıcı :', product.owner?.name ?? 'Belirtilmemiş'),
+                "${widget.product.createdAt.day.toString().padLeft(2, '0')}.${widget.product.createdAt.month.toString().padLeft(2, '0')}.${widget.product.createdAt.year}"),
+              _InfoRow('İlan No :', widget.product.id),
+              _InfoRow('Satıcı :', widget.product.owner?.name ?? 'Belirtilmemiş'),
               
             ],
           ),
@@ -560,7 +624,7 @@ class _ProductInfo extends StatelessWidget {
         const SizedBox(height: 8),
         
         // Açıklama
-        if (product.description != null && product.description.isNotEmpty)
+        if (widget.product.description != null && widget.product.description.isNotEmpty)
                   Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -578,7 +642,7 @@ class _ProductInfo extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                product.description,
+                widget.product.description,
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppTheme.textPrimary,
@@ -618,7 +682,7 @@ class _ProductInfo extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    '${product.cityTitle} / ${product.districtTitle}',
+                    '${widget.product.cityTitle} / ${widget.product.districtTitle}',
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.textPrimary,
@@ -627,6 +691,30 @@ class _ProductInfo extends StatelessWidget {
                   ),
                 ],
               ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 8),
+        
+        // Kullanıcı Özeti
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          color: AppTheme.surface,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Satıcı Bilgileri',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildUserSummary(context, widget.product),
             ],
           ),
         ),
@@ -682,6 +770,254 @@ class _ProductInfo extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUserSummary(BuildContext context, Product product) {
+    final owner = product.owner;
+    if (owner == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(
+                Icons.person_outline,
+                color: Colors.grey,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Bilinmeyen Kullanıcı',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Kullanıcı bilgileri bulunamadı',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Gerçek verileri kullan
+    final averageRating = _averageRating ?? 0.0;
+    final totalReviews = _totalReviews ?? 0;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          print('🔍 Product Detail - Kullanıcı özetine tıklandı');
+          print('🔍 Product Detail - owner: ${owner.id} - ${owner.name}');
+          
+          // Token'ı SharedPreferences'dan al
+          final prefs = await SharedPreferences.getInstance();
+          final userToken = prefs.getString(AppConstants.userTokenKey);
+          print('🔍 Product Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...');
+          
+          if (userToken != null && userToken.isNotEmpty) {
+            try {
+              final userId = int.parse(owner.id);
+              print('🔍 Product Detail - userId parsed: $userId');
+              print('🔍 Product Detail - Navigating to UserProfileDetailView...');
+              
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfileDetailView(
+                    userId: userId,
+                    userToken: userToken,
+                  ),
+                ),
+              );
+              print('🔍 Product Detail - Navigation completed');
+            } catch (e) {
+              print('❌ Product Detail - ID parse error: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Kullanıcı profili açılamadı'),
+                  backgroundColor: AppTheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          } else {
+            print('❌ Product Detail - Token not available');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Kullanıcı profili açılamadı'),
+                backgroundColor: AppTheme.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Row(
+            children: [
+              // Kullanıcı Avatar
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: owner.avatar != null && owner.avatar!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: CachedNetworkImage(
+                          imageUrl: owner.avatar!,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey[100],
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.grey,
+                              size: 24,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey[100],
+                            child: Text(
+                              owner.name.isNotEmpty
+                                  ? owner.name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Text(
+                        owner.name.isNotEmpty
+                            ? owner.name[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              // Kullanıcı Bilgileri
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      owner.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        // Puan
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.star,
+                              size: 16,
+                              color: Colors.amber,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              averageRating.toStringAsFixed(1),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        // Yorum sayısı
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.rate_review,
+                              size: 16,
+                              color: AppTheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$totalReviews yorum',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Tıklama göstergesi
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppTheme.primary,
+                  size: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
