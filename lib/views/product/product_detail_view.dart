@@ -17,6 +17,7 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../chat/chat_detail_view.dart';
 import '../profile/user_profile_detail_view.dart';
+import 'edit_product_view.dart';
 import '../../viewmodels/user_profile_detail_viewmodel.dart';
 import '../../services/user_service.dart';
 import '../../utils/logger.dart';
@@ -1204,7 +1205,12 @@ class _ActionBar extends StatelessWidget {
           height: 50,
           child: OutlinedButton.icon(
             onPressed: () {
-              Navigator.pushNamed(context, '/profile');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditProductView(product: product),
+                ),
+              );
             },
             icon: const Icon(Icons.edit, size: 14),
             label: const Text(

@@ -12,6 +12,7 @@ import 'package:takasly/widgets/product_card.dart';
 import 'edit_profile_view.dart';
 import 'settings_view.dart';
 import '../product/edit_product_view.dart';
+import '../product/product_detail_view.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -217,7 +218,6 @@ class _ProfileViewState extends State<ProfileView>
               return Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Stack(
@@ -227,10 +227,10 @@ class _ProfileViewState extends State<ProfileView>
                       heroTag: 'profile_my_product_${product.id}_$index',
                       hideFavoriteIcon: true, // Kullanıcının kendi ilanlarında favori ikonunu gizle
                       onTap: () {
-                        // TODO: Ürün detay sayfasına yönlendir
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${product.title} ürününe tıklandı'),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductDetailView(productId: product.id),
                           ),
                         );
                       },

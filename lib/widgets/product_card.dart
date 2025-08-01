@@ -106,10 +106,7 @@ class ProductCard extends StatelessWidget {
                         }
                         
                         return ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            topRight: Radius.circular(8),
-                          ),
+                          borderRadius: BorderRadius.zero,
                           child: CachedNetworkImage(
                             imageUrl: imageUrl,
                             fit: BoxFit.contain,

@@ -8,6 +8,7 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../models/user_profile_detail.dart';
 import '../../widgets/report_dialog.dart';
+import '../../views/product/product_detail_view.dart';
 
 class UserProfileDetailView extends StatefulWidget {
   final int userId;
@@ -336,110 +337,104 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
   }
 
   Widget _buildProductCard(ProfileProduct product) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Ürün resmi
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailView(productId: product.productID.toString()),
+          ),
+        );
+      },
+                           child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Ürün resmi
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
                 ),
-              ),
-              child: product.mainImage != null && product.mainImage!.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                        topRight: Radius.circular(8),
-                      ),
-                      child: Image.network(
-                        product.mainImage!,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(8),
-                                topRight: Radius.circular(8),
+                child: product.mainImage != null && product.mainImage!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.zero,
+                        child: Image.network(
+                          product.mainImage!,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
                               ),
-                            ),
-                            child: const Icon(
-                              Icons.image_not_supported,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                        ),
+                        child: const Icon(
+                          Icons.inventory_2,
+                          color: Colors.grey,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.inventory_2,
-                        color: Colors.grey,
-                      ),
-                    ),
-            ),
-          ),
-          
-          // Ürün bilgileri
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'ID: ${product.productID}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  if (product.isFavorite) ...[
-                    const SizedBox(height: 4),
-                    const Icon(
-                      Icons.favorite,
-                      color: Colors.red,
-                      size: 16,
-                    ),
-                  ],
-                ],
               ),
             ),
-          ),
-        ],
+            
+            // Ürün bilgileri
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'ID: ${product.productID}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    if (product.isFavorite) ...[
+                      const SizedBox(height: 4),
+                      const Icon(
+                        Icons.favorite,
+                        color: Colors.red,
+                        size: 16,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
