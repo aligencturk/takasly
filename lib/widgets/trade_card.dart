@@ -12,6 +12,7 @@ class TradeCard extends StatelessWidget {
   final String? currentUserId;
   final VoidCallback? onTap;
   final Function(int)? onStatusChange;
+  final bool? showButtons; // API'den gelen showButtons değeri
 
   const TradeCard({
     super.key,
@@ -19,6 +20,7 @@ class TradeCard extends StatelessWidget {
     required this.currentUserId,
     this.onTap,
     this.onStatusChange,
+    this.showButtons, // API'den gelen showButtons değeri
   });
 
   String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
@@ -112,10 +114,27 @@ class TradeCard extends StatelessWidget {
     final isSender = trade.isConfirm == 1;
     final isReceiver = trade.isConfirm == 0;
     
-    Logger.debug('🔄 TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, isSender=$isSender, isReceiver=$isReceiver, currentUserId=$currentUserId, myProduct.userID=${trade.myProduct?.userID}, theirProduct.userID=${trade.theirProduct?.userID}, isConfirm=${trade.isConfirm}', tag: 'TradeCard');
+    Logger.debug('🔄 TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, isSender=$isSender, isReceiver=$isReceiver, currentUserId=$currentUserId, myProduct.userID=${trade.myProduct?.userID}, theirProduct.userID=${trade.theirProduct?.userID}, isConfirm=${trade.isConfirm}, showButtons=$showButtons', tag: 'TradeCard');
     
     // Debug için ek kontroller
     Logger.debug('🔍 isConfirm kontrolleri: isConfirm=${trade.isConfirm} (${trade.isConfirm.runtimeType}), isSender=$isSender, isReceiver=$isReceiver', tag: 'TradeCard');
+    Logger.debug('🔍 showButtons kontrolu: showButtons=$showButtons', tag: 'TradeCard');
+    
+    // Buton gösterme mantığını log'la
+    if (showButtons == true) {
+      Logger.info('✅ Trade #${trade.offerID} icin butonlar gosteriliyor (showButtons=true, isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
+    } else if (showButtons == false) {
+      Logger.info('❌ Trade #${trade.offerID} icin butonlar gizleniyor (showButtons=false, isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
+    } else {
+      Logger.info('⚠️ Trade #${trade.offerID} icin showButtons null, eski mantik kullaniliyor (isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
+    }
+    
+    // Durum değiştirme butonu kontrolü
+    if (trade.statusID == 2) {
+      Logger.info('🔄 Trade #${trade.offerID} icin durum degistirme butonu gosterilecek (statusID=2: Onaylandi, showButtons: $showButtons)', tag: 'TradeCard');
+    } else if (trade.statusID == 1) {
+      Logger.info('🔄 Trade #${trade.offerID} icin onay/red butonlari kontrol ediliyor (statusID=1: Bekliyor, showButtons: $showButtons, isReceiver: $isReceiver, isSender: $isSender)', tag: 'TradeCard');
+    }
 
     return Consumer<TradeViewModel>(
       builder: (context, tradeViewModel, child) {
@@ -204,52 +223,60 @@ class TradeCard extends StatelessWidget {
                   ),
                   
                   // Alt kısım - Aksiyon butonları
-                  // Senkron kontrol kullanıyoruz
+                  // API'den gelen showButtons değerine göre butonları göster
                   
-                                    // Bekleyen takaslar için onay/red butonları (sadece teklifi alan kullanıcıda)
-                  if (trade.statusID == 1 && isReceiver)
-                    _buildActionButtons(context)
-                  // Bekleyen takaslar için teklifi gönderen kullanıcıda mesaj
-                  else if (trade.statusID == 1 && isSender)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.orange.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.pending_actions,
-                              color: Colors.orange,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Karşı tarafın teklifini bekliyorsunuz',
-                                style: TextStyle(
-                                  color: Colors.orange[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  // Teslim edildi durumu için yorum butonu
+                  // Onaylanmış takaslar için durum değiştirme butonu (statusID=2)
+                  if (trade.statusID == 2)
+                    _buildStatusChangeButton(context)
+                  // Teslim edildi durumu için yorum butonu (statusID=4)
                   else if (trade.statusID == 4)
                     _buildReviewButton(context)
-                  // Diğer durumlar için durum değiştirme butonu
-                  else if (trade.statusID != 5 && trade.statusID != 7 && trade.statusID != 8)
-                    _buildStatusChangeButton(context),
+                  // Bekleyen takaslar için onay/red butonları (statusID=1)
+                  else if (trade.statusID == 1)
+                    // API'den showButtons değeri gelmişse, sadece true olduğunda butonları göster
+                    if (showButtons == true)
+                      _buildActionButtons(context)
+                    // API'den showButtons false gelmişse, hiçbir buton gösterme
+                    else if (showButtons == false)
+                      Container() // Boş container, hiçbir şey gösterme
+                    // API'den showButtons değeri gelmemişse (null), eski mantığı kullan
+                    else if (showButtons == null && isReceiver)
+                      _buildActionButtons(context)
+                    // API'den showButtons null gelmişse ve gönderen ise, mesaj göster
+                    else if (showButtons == null && isSender)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.pending_actions,
+                                color: Colors.orange,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Karşı tarafın teklifini bekliyorsunuz',
+                                  style: TextStyle(
+                                    color: Colors.orange[700],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                 ],
               ),
             ),

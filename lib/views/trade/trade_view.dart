@@ -25,6 +25,8 @@ class _TradeViewState extends State<TradeView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AuthService _authService = AuthService();
+  // Her trade için showButtons değerini saklayacak Map
+  final Map<int, bool> _tradeShowButtonsMap = {};
 
   @override
   void initState() {
@@ -39,6 +41,9 @@ class _TradeViewState extends State<TradeView>
 
   Future<void> _loadData() async {
     print('🔄 TradeView _loadData started');
+
+    // showButtons Map'ini temizle
+    _tradeShowButtonsMap.clear();
 
     // Önce kullanıcının login olup olmadığını kontrol et
     final isLoggedIn = await _authService.isLoggedIn();
@@ -461,11 +466,18 @@ class _TradeViewState extends State<TradeView>
                     final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID) ?? trade;
                     Logger.debug('🔄 TradeView ListView.builder - updated trade #${updatedTrade.offerID}: statusID=${updatedTrade.statusID}', tag: 'TradeView');
                     
+                    // showButtons değerini log'la
+                    final showButtonsValue = _tradeShowButtonsMap[updatedTrade.offerID];
+                    Logger.debug('🔍 TradeView ListView.builder - Trade #${updatedTrade.offerID} icin showButtons: $showButtonsValue', tag: 'TradeView');
+                    
                     return Container(
                       margin: EdgeInsets.only(bottom: 12),
                       child: TradeCard(
                         trade: updatedTrade,
                         currentUserId: tradeViewModel.currentUserId,
+                        showButtons: _tradeShowButtonsMap[updatedTrade.offerID], // API'den gelen showButtons değeri
+                        // Debug: showButtons değerini log'la
+                        // showButtons: _tradeShowButtonsMap[updatedTrade.offerID],
                         onTap: () {
                           // Takas detayına git
                           Logger.info('Takas detayına gidiliyor: ${updatedTrade.offerID}', tag: 'TradeView');
@@ -1608,6 +1620,8 @@ class _TradeViewState extends State<TradeView>
     int? selectedStatusId;
     final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
     
+    Logger.info('🔄 Durum değiştirme dialog\'u açılıyor - Trade #${trade.offerID}, Mevcut Durum: ${trade.statusID} (${trade.statusTitle})', tag: 'TradeView');
+    
     // API'den gelen durumları kontrol et
     if (tradeViewModel.tradeStatuses.isEmpty) {
       // Durumlar yüklenmemişse önce yükle
@@ -1683,9 +1697,22 @@ class _TradeViewState extends State<TradeView>
                     hintText: 'Durum seçin...',
                     hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
                   ),
-                  items: tradeViewModel.tradeStatuses
-                      .where((status) => status.statusID != trade.statusID) // Mevcut durumu hariç tut
-                      .map((status) => DropdownMenuItem<int>(
+                  items: () {
+                    final allStatuses = tradeViewModel.tradeStatuses;
+                    final filteredStatuses = allStatuses.where((status) => 
+                      // Mevcut durumu hariç tut
+                      status.statusID != trade.statusID &&
+                      // Kullanıcının manuel seçmemesi gereken durumları hariç tut
+                      status.statusID != 1 && // Bekleyen/Onay bekliyor
+                      status.statusID != 3 && // İptal edildi (varsayılan)
+                      status.statusID != 6 && // Süresi doldu (varsayılan)
+                      status.statusID != 0    // Bilinmeyen durum
+                    ).toList();
+                    
+                    Logger.info('🔄 Durum filtreleme - Toplam: ${allStatuses.length}, Filtrelenmiş: ${filteredStatuses.length}', tag: 'TradeView');
+                    Logger.info('🔄 Filtrelenen durumlar: ${filteredStatuses.map((s) => '${s.statusID}(${s.statusTitle})').join(', ')}', tag: 'TradeView');
+                    
+                    return filteredStatuses.map((status) => DropdownMenuItem<int>(
                         value: status.statusID,
                         child: Row(
                           children: [
@@ -1702,7 +1729,8 @@ class _TradeViewState extends State<TradeView>
                           ],
                         ),
                       ))
-                      .toList(),
+                      .toList();
+                  }(),
                   onChanged: (value) {
                     selectedStatusId = value;
                   },
@@ -1995,37 +2023,68 @@ class _TradeViewState extends State<TradeView>
         return;
       }
 
-      // Sadece bekleyen takaslari filtrele
-      final pendingTrades = tradeViewModel.userTrades.where((trade) => trade.statusID == 1).toList();
+      // Bekleyen ve onaylanmış takasları filtrele (API kontrolü için)
+      final tradesToCheck = tradeViewModel.userTrades.where((trade) => 
+        trade.statusID == 1 || trade.statusID == 2 // Bekleyen veya onaylanmış takaslar
+      ).toList();
       
-      if (pendingTrades.isEmpty) {
-        Logger.info('Bekleyen takas bulunamadi, kontrol yapilmiyor', tag: 'TradeView');
+      if (tradesToCheck.isEmpty) {
+        Logger.info('Kontrol edilecek takas bulunamadi, kontrol yapilmiyor', tag: 'TradeView');
         return;
       }
 
-      Logger.info('${pendingTrades.length} adet bekleyen takas icin kontrol yapiliyor', tag: 'TradeView');
+      Logger.info('${tradesToCheck.length} adet takas icin kontrol yapiliyor (Bekleyen: ${tradesToCheck.where((t) => t.statusID == 1).length}, Onaylanmis: ${tradesToCheck.where((t) => t.statusID == 2).length})', tag: 'TradeView');
 
       // Her trade icin takas kontrolu yap (sira ile, UI'yi bloklamamak icin)
-      for (var i = 0; i < pendingTrades.length; i++) {
-        final trade = pendingTrades[i];
+      for (var i = 0; i < tradesToCheck.length; i++) {
+        final trade = tradesToCheck[i];
         
         // UI'nin responsive kalması için kısa bir gecikme ekle
         if (i > 0) {
           await Future.delayed(Duration(milliseconds: 100));
         }
         
-        Logger.info('Takas kontrolu yapiliyor: Trade #${trade.offerID} (${i + 1}/${pendingTrades.length})', tag: 'TradeView');
+        Logger.info('Takas kontrolu yapiliyor: Trade #${trade.offerID} (${i + 1}/${tradesToCheck.length}) - StatusID: ${trade.statusID}', tag: 'TradeView');
         
         try {
+          // Product ID'leri kontrol et
+          final senderProductID = trade.myProduct?.productID ?? 0;
+          final receiverProductID = trade.theirProduct?.productID ?? 0;
+          
+          // Eğer product ID'ler geçersizse API çağrısı yapma
+          if (senderProductID == 0 || receiverProductID == 0) {
+            Logger.warning('Trade #${trade.offerID} icin gecersiz product ID\'ler: senderProductID=$senderProductID, receiverProductID=$receiverProductID', tag: 'TradeView');
+            continue;
+          }
+          
+          Logger.info('Trade #${trade.offerID} icin API cagrisi yapiliyor: senderProductID=$senderProductID, receiverProductID=$receiverProductID', tag: 'TradeView');
+          
           final checkResult = await tradeViewModel.checkTradeStatus(
             userToken: userToken,
-            senderProductID: trade.myProduct?.productID ?? 0,
-            receiverProductID: trade.theirProduct?.productID ?? 0,
+            senderProductID: senderProductID,
+            receiverProductID: receiverProductID,
           );
           
           if (checkResult != null && checkResult.data != null) {
             final data = checkResult.data!;
             Logger.info('Takas kontrolu sonucu: success=${data.success}, isSender=${data.isSender}, isReceiver=${data.isReceiver}, showButtons=${data.showButtons}, message=${data.message}', tag: 'TradeView');
+            
+            // showButtons değerini sakla
+            _tradeShowButtonsMap[trade.offerID] = data.showButtons;
+            Logger.info('Trade #${trade.offerID} icin showButtons değeri saklandi: ${data.showButtons}', tag: 'TradeView');
+            
+            // Buton gösterme durumunu log'la
+            if (data.showButtons) {
+              Logger.info('✅ Trade #${trade.offerID} icin butonlar gosterilecek (API: showButtons=true, StatusID: ${trade.statusID})', tag: 'TradeView');
+            } else {
+              // Eğer alıcı ise ve bekleyen takas ise butonlar gösterilecek
+              final isReceiver = trade.isConfirm == 0;
+              if (trade.statusID == 1 && isReceiver) {
+                Logger.info('✅ Trade #${trade.offerID} icin butonlar gosterilecek (API: showButtons=false ama alici ve bekleyen takas, StatusID: ${trade.statusID})', tag: 'TradeView');
+              } else {
+                Logger.info('❌ Trade #${trade.offerID} icin butonlar gizlenecek (API: showButtons=false, StatusID: ${trade.statusID})', tag: 'TradeView');
+              }
+            }
             
             // API'den gelen bilgilere gore trade durumunu guncelle
             if (data.success) {
