@@ -182,9 +182,22 @@ class _RegisterFormState extends State<_RegisterForm> {
     if (mounted) {
       if (success) {
         // Kayıt başarılıysa email doğrulama ekranına yönlendir
+        // API'den gelen codeToken'ı al veya geçici değer kullan
+        String codeToken = 'temp_code_token';
+        
+        // AuthViewModel'den user bilgilerini al
+        final user = authViewModel.currentUser;
+        if (user != null && user.token != null && user.token!.isNotEmpty) {
+          // Token varsa codeToken olarak kullan
+          codeToken = user.token!;
+        }
+        
         Navigator.of(context).pushReplacementNamed(
           '/email-verification',
-          arguments: _emailController.text.trim(),
+          arguments: {
+            'email': _emailController.text.trim(),
+            'codeToken': codeToken,
+          },
         );
       } else {
         _showErrorSnackBar(

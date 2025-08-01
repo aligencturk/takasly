@@ -537,6 +537,7 @@ class UserService {
               'gender':
                   userDataToTransform['userGender'] ??
                   userDataToTransform['gender'],
+              'token': userToken, // Token'ı User modeline ekle
             };
 
             print('🔍 Get Profile - Transformed data: $transformedData');

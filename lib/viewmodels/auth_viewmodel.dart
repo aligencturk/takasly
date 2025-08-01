@@ -305,15 +305,18 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> resendEmailVerificationCode({required String email}) async {
+  Future<Map<String, dynamic>?> resendEmailVerificationCode({required String email}) async {
+    // Email validation
     if (email.trim().isEmpty) {
-      _setError(ErrorMessages.fieldRequired);
-      return false;
+      _setError('E-posta adresi boş olamaz');
+      return null;
     }
 
-    if (!_isValidEmail(email)) {
-      _setError(ErrorMessages.invalidEmail);
-      return false;
+    // Email format validation
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    if (!emailRegex.hasMatch(email)) {
+      _setError('Geçersiz e-posta formatı');
+      return null;
     }
 
     _setLoading(true);
@@ -321,21 +324,53 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       final response = await _authService.resendEmailVerificationCode(
-        email: email,
+        email: email.trim(),
       );
 
       if (response.isSuccess) {
         _setLoading(false);
-        return true;
+        return response.data;
       } else {
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
-        return false;
+        return null;
       }
     } catch (e) {
+      Logger.error('💥 ResendEmailVerificationCode exception: $e', error: e);
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
-      return false;
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> resendEmailVerificationCodeWithToken({required String userToken}) async {
+    // Token validation
+    if (userToken.trim().isEmpty) {
+      _setError('Kullanıcı token\'ı boş olamaz');
+      return null;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.resendEmailVerificationCodeWithToken(
+        userToken: userToken.trim(),
+      );
+
+      if (response.isSuccess) {
+        _setLoading(false);
+        return response.data;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return null;
+      }
+    } catch (e) {
+      Logger.error('💥 ResendEmailVerificationCodeWithToken exception: $e', error: e);
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return null;
     }
   }
 

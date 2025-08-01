@@ -351,20 +351,58 @@ class AuthService {
     }
   }
 
-  Future<ApiResponse<void>> resendEmailVerificationCode({
+  Future<ApiResponse<Map<String, dynamic>?>> resendEmailVerificationCode({
     required String email,
   }) async {
     try {
       Logger.info('🔄 RESEND EMAIL CODE ATTEMPT: $email');
-      Logger.debug('📤 Resend Code Request Body: {"userEmail": "$email"}');
+      
+      // Email validation
+      if (email.trim().isEmpty) {
+        Logger.error('❌ Email is empty');
+        return ApiResponse.error('E-posta adresi boş olamaz');
+      }
+      
+      // Email format validation
+      final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+      if (!emailRegex.hasMatch(email)) {
+        Logger.error('❌ Invalid email format: $email');
+        return ApiResponse.error('Geçersiz e-posta formatı');
+      }
+      
+      final requestBody = {
+        'userEmail': email.trim(),
+      };
+      Logger.debug('📤 Resend Code Request Body: ${json.encode(requestBody)}');
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.againSendCode,
-        body: {'userEmail': email},
+        body: requestBody,
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 ResendCode fromJson - Raw data: $json');
-          return null; // Resend code genelde sadece success/error döner
+          
+          // API response'unda codeToken var mı kontrol et
+          if (json is Map<String, dynamic>) {
+            final result = <String, dynamic>{};
+            
+            // codeToken varsa al
+            if (json.containsKey('codeToken') && json['codeToken'] != null) {
+              result['codeToken'] = json['codeToken'].toString();
+              Logger.debug('🔑 CodeToken found in response: ${result['codeToken']}');
+            }
+            
+            // Diğer response verilerini de al
+            json.forEach((key, value) {
+              if (key != 'codeToken') {
+                result[key] = value;
+              }
+            });
+            
+            return result.isNotEmpty ? result : null;
+          }
+          
+          return null;
         },
       );
 
@@ -374,13 +412,78 @@ class AuthService {
 
       if (response.isSuccess) {
         Logger.info('✅ Resend email code successful');
-        return ApiResponse.success(null);
+        return ApiResponse.success(response.data);
       }
 
       Logger.error('❌ Resend email code failed: ${response.error}');
       return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
     } catch (e) {
       Logger.error('💥 Resend email code exception: $e', error: e);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>?>> resendEmailVerificationCodeWithToken({
+    required String userToken,
+  }) async {
+    try {
+      Logger.info('📧 RESEND EMAIL VERIFICATION CODE WITH TOKEN ATTEMPT');
+      
+      // Token validation
+      if (userToken.trim().isEmpty) {
+        Logger.error('❌ User token is empty');
+        return ApiResponse.error('Kullanıcı token\'ı boş olamaz');
+      }
+      
+      final requestBody = {
+        'userToken': userToken.trim(),
+      };
+      Logger.debug('📤 Resend Code with Token Request Body: ${json.encode(requestBody)}');
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.againSendCode,
+        body: requestBody,
+        useBasicAuth: true,
+        fromJson: (json) {
+          Logger.debug('🔍 ResendCode with Token fromJson - Raw data: $json');
+          
+          // API response'unda codeToken var mı kontrol et
+          if (json is Map<String, dynamic>) {
+            final result = <String, dynamic>{};
+            
+            // codeToken varsa al
+            if (json.containsKey('codeToken') && json['codeToken'] != null) {
+              result['codeToken'] = json['codeToken'].toString();
+              Logger.debug('🔑 CodeToken found in response: ${result['codeToken']}');
+            }
+            
+            // Diğer response verilerini de al
+            json.forEach((key, value) {
+              if (key != 'codeToken') {
+                result[key] = value;
+              }
+            });
+            
+            return result.isNotEmpty ? result : null;
+          }
+          
+          return null;
+        },
+      );
+
+      Logger.debug('📥 ResendCode with Token Response isSuccess: ${response.isSuccess}');
+      Logger.debug('📥 ResendCode with Token Response data: ${response.data}');
+      Logger.debug('📥 ResendCode with Token Response error: ${response.error}');
+
+      if (response.isSuccess) {
+        Logger.info('✅ Resend email code with token successful');
+        return ApiResponse.success(response.data);
+      }
+
+      Logger.error('❌ Resend email code with token failed: ${response.error}');
+      return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
+    } catch (e) {
+      Logger.error('💥 Resend email code with token exception: $e', error: e);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

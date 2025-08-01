@@ -357,12 +357,26 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
     
     authViewModel.clearError();
     
-    final success = await authViewModel.resendEmailVerificationCode(
-      email: widget.email,
+    // User token'ı al
+    final userToken = authViewModel.currentUser?.token;
+    if (userToken == null || userToken.isEmpty) {
+      Logger.error('User token bulunamadı', tag: 'EmailVerificationView');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    
+    final response = await authViewModel.resendEmailVerificationCodeWithToken(
+      userToken: userToken,
     );
     
     if (mounted) {
-      if (success) {
+      if (response != null) {
         Logger.debug('Doğrulama kodu tekrar gönderildi', tag: 'EmailVerificationView');
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -372,14 +386,33 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
             behavior: SnackBarBehavior.floating,
           ),
         );
+        
+        // Yeni codeToken varsa güncelle
+        if (response.containsKey('codeToken') && response['codeToken'] != null) {
+          // Widget'ın codeToken'ını güncellemek için setState kullan
+          setState(() {
+            // Bu durumda widget'ın codeToken'ını güncelleyemeyiz çünkü final
+            // Bu yüzden sadece log yazıyoruz
+            Logger.debug('Yeni codeToken alındı: ${response['codeToken']}', tag: 'EmailVerificationView');
+          });
+        }
       } else {
         Logger.error('Doğrulama kodu gönderilemedi: ${authViewModel.errorMessage}', tag: 'EmailVerificationView');
         
+        // 417 hatası veya diğer hatalar için kullanıcıya bilgi ver
+        String errorMessage = authViewModel.errorMessage ?? 'Kod gönderilemedi';
+        
+        // 417 hatası için özel mesaj
+        if (errorMessage.contains('Zorunlu değerler boş gönderilemez')) {
+          errorMessage = 'E-posta adresi geçersiz. Lütfen profil sayfanızdan e-posta adresinizi kontrol edin.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authViewModel.errorMessage ?? 'Kod gönderilemedi'),
-            backgroundColor: Colors.red,
+            content: Text(errorMessage),
+            backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

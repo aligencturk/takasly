@@ -9,6 +9,8 @@ import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/viewmodels/user_profile_detail_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:takasly/widgets/product_card.dart';
+import 'package:takasly/utils/logger.dart';
+import 'package:takasly/services/user_service.dart';
 import 'edit_profile_view.dart';
 import 'settings_view.dart';
 import '../product/edit_product_view.dart';
@@ -173,7 +175,7 @@ class _ProfileViewState extends State<ProfileView>
             child: _buildEmptyTab(
               icon: Icons.inventory_2_outlined,
               title: 'Henüz Ürün Eklenmemiş',
-              subtitle: 'İlk ürününüzü ekleyerek satışa başlayabilirsiniz.',
+              subtitle: 'İlk ürününüzü ekleyerek takasa başlayabilirsiniz.',
               actionButton: Container(
                 height: 40,
                 color: AppTheme.primary,
@@ -695,7 +697,7 @@ class _ProfileViewState extends State<ProfileView>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Kullanıcı Adı
+              // Kullanıcı Adı ve Doğrulama Durumu
               Row(
                 children: [
                   Text(
@@ -712,6 +714,38 @@ class _ProfileViewState extends State<ProfileView>
                       Icons.verified,
                       size: 18,
                       color: AppTheme.primary,
+                    ),
+                  ] else ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _navigateToEmailVerification(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_outlined,
+                              size: 14,
+                              color: Colors.orange.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'E-posta Doğrulanmamış',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.orange.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -1043,6 +1077,341 @@ class _ProfileViewState extends State<ProfileView>
               borderRadius: BorderRadius.circular(12),
             ),
           ),
+        );
+      }
+    }
+  }
+
+
+
+  void _navigateToEmailVerification() async {
+    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    
+    // Önce UserViewModel'den user'ı al
+    User? user = userViewModel.currentUser;
+    
+    // Eğer UserViewModel'de user yoksa AuthViewModel'den al
+    if (user == null) {
+      Logger.warning('⚠️ ProfileView: User not found in UserViewModel, trying AuthViewModel...');
+      user = authViewModel.currentUser;
+    }
+    
+    if (user == null) {
+      Logger.error('❌ ProfileView: User is null in both ViewModels, cannot proceed with email verification');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    
+    Logger.info('📧 ProfileView: Starting email verification for user: ${user.email}');
+    Logger.debug('📧 ProfileView: User details - ID: ${user.id}, Name: ${user.name}, Email: ${user.email}');
+    Logger.debug('📧 ProfileView: User token: ${user.token?.substring(0, 10)}...');
+    Logger.debug('📧 ProfileView: User token length: ${user.token?.length}');
+    Logger.debug('📧 ProfileView: User token is null: ${user.token == null}');
+    Logger.debug('📧 ProfileView: User token is empty: ${user.token?.isEmpty}');
+    
+    // Token validation
+    if (user.token == null || user.token!.trim().isEmpty) {
+      Logger.error('❌ ProfileView: User token is empty');
+      
+      // Token'ı UserService'den almaya çalış
+      final userService = UserService();
+      final tokenFromService = await userService.getUserToken();
+      Logger.debug('📧 ProfileView: Token from UserService: ${tokenFromService?.substring(0, 10)}...');
+      
+      if (tokenFromService != null && tokenFromService.isNotEmpty) {
+        Logger.info('📧 ProfileView: Using token from UserService');
+        // UserService'den alınan token ile devam et
+        await _sendEmailVerificationWithToken(tokenFromService);
+        return;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Loading dialog göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (loadingContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            const Text('E-posta gönderiliyor...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      print('📧 ProfileView: Sending email verification code with token');
+      
+      // Önce e-posta doğrulama kodunu gönder (userToken ile)
+      final response = await authViewModel.resendEmailVerificationCodeWithToken(
+        userToken: user.token ?? '',
+      );
+      
+      Logger.debug('📧 ProfileView: Email verification response received');
+      Logger.debug('📧 ProfileView: Response is null: ${response == null}');
+      if (response != null) {
+        Logger.debug('📧 ProfileView: Response keys: ${response.keys.toList()}');
+        Logger.debug('📧 ProfileView: Response contains codeToken: ${response.containsKey('codeToken')}');
+      }
+
+      // Loading dialog'u kapat
+      if (mounted) Navigator.pop(context);
+
+      if (response != null) {
+        // Başarılı mesajı göster
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Doğrulama kodu e-posta adresinize gönderildi'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+
+        // API'den gelen codeToken'ı al veya geçici değer kullan
+        String codeToken = 'temp_code_token';
+        if (response.containsKey('codeToken') && response['codeToken'] != null) {
+          codeToken = response['codeToken'].toString();
+        }
+
+        // E-posta doğrulama sayfasına yönlendir
+        if (mounted) {
+          Navigator.pushNamed(
+            context,
+            '/email-verification',
+            arguments: {
+              'email': user.email,
+              'codeToken': codeToken,
+            },
+          );
+        }
+      } else {
+        // Token hatası varsa login sayfasına yönlendir
+        if (authViewModel.errorMessage?.contains('oturum') == true || 
+            authViewModel.errorMessage?.contains('token') == true ||
+            authViewModel.errorMessage?.contains('giriş') == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            
+            // Login sayfasına yönlendir
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+            );
+          }
+        } else {
+          // Diğer hatalar için e-posta doğrulama sayfasına yönlendir
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(authViewModel.errorMessage ?? 'E-posta gönderilemedi'),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            
+            // E-posta doğrulama sayfasına yönlendir (hata olsa bile)
+            Navigator.pushNamed(
+              context,
+              '/email-verification',
+              arguments: {
+                'email': user.email,
+                'codeToken': 'temp_code_token',
+              },
+            );
+          }
+        }
+      }
+    } catch (e) {
+      // Loading dialog'u kapat
+      if (mounted) Navigator.pop(context);
+
+      // Hata mesajı göster ve e-posta doğrulama sayfasına yönlendir
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('E-posta gönderilirken hata oluştu: $e'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        
+        // E-posta doğrulama sayfasına yönlendir
+        Navigator.pushNamed(
+          context,
+          '/email-verification',
+          arguments: {
+            'email': user.email,
+            'codeToken': 'temp_code_token',
+          },
+        );
+      }
+    }
+  }
+
+  Future<void> _sendEmailVerificationWithToken(String userToken) async {
+    // Loading dialog göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (loadingContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            const Text('E-posta gönderiliyor...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      Logger.debug('📧 ProfileView: Sending email verification code with token');
+      
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      
+      // E-posta doğrulama kodunu gönder (userToken ile)
+      final response = await authViewModel.resendEmailVerificationCodeWithToken(
+        userToken: userToken,
+      );
+      
+      Logger.debug('📧 ProfileView: Email verification response received');
+      Logger.debug('📧 ProfileView: Response is null: ${response == null}');
+      if (response != null) {
+        Logger.debug('📧 ProfileView: Response keys: ${response.keys.toList()}');
+        Logger.debug('📧 ProfileView: Response contains codeToken: ${response.containsKey('codeToken')}');
+      }
+
+      // Loading dialog'u kapat
+      if (mounted) Navigator.pop(context);
+
+      if (response != null) {
+        // Başarılı mesajı göster
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Doğrulama kodu e-posta adresinize gönderildi'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+
+        // API'den gelen codeToken'ı al veya geçici değer kullan
+        String codeToken = 'temp_code_token';
+        if (response.containsKey('codeToken') && response['codeToken'] != null) {
+          codeToken = response['codeToken'].toString();
+        }
+
+        // E-posta doğrulama sayfasına yönlendir
+        if (mounted) {
+          Navigator.pushNamed(
+            context,
+            '/email-verification',
+            arguments: {
+              'email': authViewModel.currentUser?.email ?? '',
+              'codeToken': codeToken,
+            },
+          );
+        }
+      } else {
+        // Token hatası varsa login sayfasına yönlendir
+        if (authViewModel.errorMessage?.contains('oturum') == true || 
+            authViewModel.errorMessage?.contains('token') == true ||
+            authViewModel.errorMessage?.contains('giriş') == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            
+            // Login sayfasına yönlendir
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+            );
+          }
+        } else {
+          // Diğer hatalar için e-posta doğrulama sayfasına yönlendir
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(authViewModel.errorMessage ?? 'E-posta gönderilemedi'),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            
+            // E-posta doğrulama sayfasına yönlendir (hata olsa bile)
+            Navigator.pushNamed(
+              context,
+              '/email-verification',
+              arguments: {
+                'email': authViewModel.currentUser?.email ?? '',
+                'codeToken': 'temp_code_token',
+              },
+            );
+          }
+        }
+      }
+    } catch (e) {
+      // Loading dialog'u kapat
+      if (mounted) Navigator.pop(context);
+
+      // Hata mesajı göster ve e-posta doğrulama sayfasına yönlendir
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('E-posta gönderilirken hata oluştu: $e'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        
+        // E-posta doğrulama sayfasına yönlendir
+        Navigator.pushNamed(
+          context,
+          '/email-verification',
+          arguments: {
+            'email': Provider.of<AuthViewModel>(context, listen: false).currentUser?.email ?? '',
+            'codeToken': 'temp_code_token',
+          },
         );
       }
     }

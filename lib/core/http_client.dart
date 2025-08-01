@@ -170,7 +170,9 @@ class HttpClient {
     try {
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       final uri = Uri.parse(fullUrl);
-      final headers = _getBasicAuthHeaders();
+      
+      // useBasicAuth parametresine göre header seç
+      final headers = useBasicAuth ? _getBasicAuthHeaders() : await _getHeaders();
       final bodyString = body != null ? json.encode(body) : null;
 
       print('🌐 Full URL: $fullUrl');
@@ -186,7 +188,7 @@ class HttpClient {
       print('📥 Response Headers: ${response.headers}');
       print('📥 Response Body: ${response.body}');
 
-      return await _handleResponse<T>(response, fromJson, isBasicAuth: true);
+      return await _handleResponse<T>(response, fromJson, isBasicAuth: useBasicAuth);
     } on SocketException catch (e) {
       print('🚫 Socket Exception: $e');
       return ApiResponse<T>.error(ErrorMessages.networkError);
