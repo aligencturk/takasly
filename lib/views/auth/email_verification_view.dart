@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
-import '../../core/constants.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 
 class EmailVerificationView extends StatefulWidget {
   final String email;
+  final String codeToken;
   
   const EmailVerificationView({
     super.key,
     required this.email,
+    required this.codeToken,
   });
 
   @override
@@ -325,8 +326,8 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
     authViewModel.clearError();
     
     final success = await authViewModel.checkEmailVerificationCode(
-      email: widget.email,
       code: _codeController.text.trim(),
+      codeToken: widget.codeToken,
     );
     
     if (mounted) {

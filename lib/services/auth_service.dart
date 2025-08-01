@@ -315,18 +315,18 @@ class AuthService {
   }
 
   Future<ApiResponse<void>> checkEmailVerificationCode({
-    required String email,
     required String code,
+    required String codeToken,
   }) async {
     try {
-      Logger.info('✅ CHECK EMAIL CODE ATTEMPT: $email');
+      Logger.info('✅ CHECK EMAIL CODE ATTEMPT: $codeToken');
       Logger.debug(
-        '📤 Check Code Request Body: {"code": "$code", "codeToken": "$email"}',
+        '📤 Check Code Request Body: {"code": "$code", "codeToken": "$codeToken"}',
       );
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.checkCode,
-        body: {'code': code, 'codeToken': email},
+        body: {'code': code, 'codeToken': codeToken},
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 CheckCode fromJson - Raw data: $json');
@@ -334,7 +334,7 @@ class AuthService {
         },
       );
 
-      Logger.debug('📥 CheckCode Response isSuccess: ${response.isSuccess}');
+      Logger.debug('📥 CheckCode Response isSuccess:  {response.isSuccess}');
       Logger.debug('📥 CheckCode Response data: ${response.data}');
       Logger.debug('📥 CheckCode Response error: ${response.error}');
 

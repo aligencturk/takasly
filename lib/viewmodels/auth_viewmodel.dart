@@ -268,21 +268,16 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<bool> checkEmailVerificationCode({
-    required String email,
     required String code,
+    required String codeToken,
   }) async {
-    if (email.trim().isEmpty || code.trim().isEmpty) {
+    if (code.trim().isEmpty || codeToken.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return false;
     }
 
-    if (!_isValidEmail(email)) {
-      _setError(ErrorMessages.invalidEmail);
-      return false;
-    }
-
-    if (code.length < 4) {
-      _setError('Doğrulama kodu en az 4 karakter olmalıdır');
+    if (code.length < 6) {
+      _setError('Doğrulama kodu 6 haneli olmalıdır');
       return false;
     }
 
@@ -291,8 +286,8 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       final response = await _authService.checkEmailVerificationCode(
-        email: email,
         code: code,
+        codeToken: codeToken,
       );
 
       if (response.isSuccess) {

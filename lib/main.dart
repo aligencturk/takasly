@@ -82,9 +82,14 @@ class TakaslyApp extends StatelessWidget {
           Logger.info('🛣️ Generating route for: ${settings.name}');
           switch (settings.name) {
             case '/email-verification':
-              final email = settings.arguments as String;
+              final args = settings.arguments as Map<String, String>;
+              final email = args['email'] ?? '';
+              final codeToken = args['codeToken'] ?? '';
               return MaterialPageRoute(
-                builder: (context) => EmailVerificationView(email: email),
+                builder: (context) => EmailVerificationView(
+                  email: email,
+                  codeToken: codeToken,
+                ),
               );
             default:
               Logger.warning('⚠️ Unknown route: ${settings.name}, redirecting to home');
