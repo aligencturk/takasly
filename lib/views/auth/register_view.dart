@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
@@ -198,6 +200,50 @@ class _RegisterFormState extends State<_RegisterForm> {
         content: Text(message),
         backgroundColor: Theme.of(context).colorScheme.error,
       ),
+    );
+  }
+
+  void _showKvkkDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('KVKK Aydınlatma Metni'),
+          content: const SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Bu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("Kanun") kapsamında, Rivorya Yazılım\'nın veri sorumlusu sıfatıyla hareket ettiği hallerde, Kanun\'un 10.maddesine uygun olarak, gerçek kişilere ("Veri Sahibi"), kişisel verilerinin toplanma, işlenme, saklanma, korunma ve imha süreç, şekil ve amaçları ile Kanun uyarınca haklarına ve haklarını kullanma yöntemlerine ilişkin bilgi verilmesi amacıyla hazırlanmıştır.',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Detaylı bilgi için aşağıdaki linke tıklayabilirsiniz:',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Kapat'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final Uri url = Uri.parse('https://www.todobus.tr/kvkk-aydinlatma-metni');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: const Text('Detaylı Görüntüle'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -408,10 +454,26 @@ class _RegisterFormState extends State<_RegisterForm> {
                 _acceptKvkk = value ?? false;
               });
             },
-            title: Text(
-              'KVKK Aydınlatma Metnini okudum ve kabul ediyorum',
-              style: const TextStyle(fontSize: 12),
-            ),
+                         title: RichText(
+               text: TextSpan(
+                 style: const TextStyle(fontSize: 12, color: Colors.black87),
+                 children: [
+                   TextSpan(
+                     text: 'KVKK Aydınlatma Metnini',
+                     style: TextStyle(
+                       fontSize: 12,
+                       color: colorScheme.primary,
+                       decoration: TextDecoration.underline,
+                     ),
+                     recognizer: TapGestureRecognizer()
+                       ..onTap = () {
+                         _showKvkkDialog(context);
+                       },
+                   ),
+                   const TextSpan(text: ' okudum ve kabul ediyorum'),
+                 ],
+               ),
+             ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             activeColor: colorScheme.primary,
