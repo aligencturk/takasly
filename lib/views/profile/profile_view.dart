@@ -115,64 +115,61 @@ class _ProfileViewState extends State<ProfileView>
   Widget _buildProfileHeader(BuildContext context, User user, int productCount, int favoriteCount) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Üst kısım - Avatar ve İstatistikler
           Row(
             children: [
-              // Avatar
+              // Avatar - Köşeli tasarım
               Container(
-                width: 80,
-                height: 80,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey[300]!, width: 1),
+                  color: Colors.grey[100],
                 ),
-                child: ClipOval(
-                  child: user.avatar != null
-                      ? Image.network(
-                          user.avatar!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[100],
-                              child: const Icon(
-                                Icons.person,
-                                size: 40,
-                                color: Colors.grey,
-                              ),
-                            );
-                          },
-                        )
-                      : Container(
-                          color: Colors.grey[100],
-                          child: const Icon(
-                            Icons.person,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
+                child: user.avatar != null
+                    ? Image.network(
+                        user.avatar!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[100],
+                            child: const Icon(
+                              Icons.person,
+                              size: 36,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        color: Colors.grey[100],
+                        child: const Icon(
+                          Icons.person,
+                          size: 36,
+                          color: Colors.grey,
                         ),
-                ),
+                      ),
               ),
               
-              const SizedBox(width: 24),
+              const SizedBox(width: 32),
               
-              // İstatistikler
+              // İstatistikler - Kurumsal tasarım
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildInstagramStatItem(
+                    _buildKurumsalStatItem(
                       count: productCount.toString(),
                       label: 'İlan',
                     ),
-                    _buildInstagramStatItem(
+                    _buildKurumsalStatItem(
                       count: favoriteCount.toString(),
                       label: 'Favori',
                     ),
-                    _buildInstagramStatItem(
+                    _buildKurumsalStatItem(
                       count: '0',
                       label: 'Puan',
                     ),
@@ -182,7 +179,7 @@ class _ProfileViewState extends State<ProfileView>
             ],
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           
           // Kullanıcı Bilgileri
           Column(
@@ -194,7 +191,7 @@ class _ProfileViewState extends State<ProfileView>
                   Text(
                     user.name,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
@@ -203,21 +200,22 @@ class _ProfileViewState extends State<ProfileView>
                     const SizedBox(width: 8),
                     Icon(
                       Icons.verified,
-                      size: 16,
-                      color: Colors.blue[600],
+                      size: 18,
+                      color: AppTheme.primary,
                     ),
                   ],
                 ],
               ),
               
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               
               // Email
               Text(
                 user.email,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
+                  fontSize: 15,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               
@@ -227,73 +225,76 @@ class _ProfileViewState extends State<ProfileView>
                 Text(
                   user.phone!,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                    fontSize: 15,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
             ],
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           
-          // Butonlar
+          // Butonlar - Kurumsal tasarım
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () async {
-                    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-                    
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfileView(),
-                      ),
-                    );
-                    
-                    if (result == true && mounted) {
-                      userViewModel.forceRefreshUser();
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black87,
-                    side: BorderSide(color: Colors.grey[300]!),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+                child: Container(
+                  height: 40,
+                  color: Colors.grey[100],
+                  child: TextButton(
+                    onPressed: () async {
+                      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                      
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EditProfileView(),
+                        ),
+                      );
+                      
+                      if (result == true && mounted) {
+                        userViewModel.forceRefreshUser();
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      padding: EdgeInsets.zero,
+                      shape: const RoundedRectangleBorder(),
                     ),
-                  ),
-                  child: const Text(
-                    'Profili Düzenle',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                    child: const Text(
+                      'Profili Düzenle',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
               ),
               
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    // TODO: Ürün ekleme sayfasına yönlendir
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black87,
-                    side: BorderSide(color: Colors.grey[300]!),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+                child: Container(
+                  height: 40,
+                  color: AppTheme.primary,
+                  child: TextButton(
+                    onPressed: () {
+                      // TODO: Ürün ekleme sayfasına yönlendir
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: const RoundedRectangleBorder(),
                     ),
-                  ),
-                  child: const Text(
-                    'Ürün Ekle',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                    child: const Text(
+                      'Ürün Ekle',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
@@ -335,7 +336,7 @@ class _ProfileViewState extends State<ProfileView>
     );
   }
 
-  Widget _buildInstagramStatItem({
+  Widget _buildKurumsalStatItem({
     required String count,
     required String label,
   }) {
@@ -344,17 +345,18 @@ class _ProfileViewState extends State<ProfileView>
         Text(
           count,
           style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
+            fontSize: 13,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -363,43 +365,33 @@ class _ProfileViewState extends State<ProfileView>
 
   Widget _buildSectionHeader(int productCount) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
-        ),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      color: Colors.white,
       child: Row(
         children: [
           Icon(
             Icons.inventory_2_outlined,
             color: AppTheme.primary,
-            size: 20,
+            size: 22,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           const Text(
             'İlanlarım',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.w600,
               color: Colors.black87,
             ),
           ),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            color: Colors.grey[100],
             child: Text(
               '$productCount ürün',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w500,
               ),
@@ -415,65 +407,51 @@ class _ProfileViewState extends State<ProfileView>
       builder: (context, productViewModel, child) {
         if (productViewModel.isLoading) {
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(40.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
+            color: Colors.white,
             child: const Center(child: LoadingWidget()),
           );
         }
 
         if (productViewModel.myProducts.isEmpty) {
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(40.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
+            color: Colors.white,
             child: _buildEmptyTab(
               icon: Icons.inventory_2_outlined,
               title: 'Henüz Ürün Eklenmemiş',
               subtitle: 'İlk ürününüzü ekleyerek satışa başlayabilirsiniz.',
-              actionButton: ElevatedButton(
-                onPressed: () {
-                  // TODO: Ürün ekleme sayfasına yönlendir
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              actionButton: Container(
+                height: 40,
+                color: AppTheme.primary,
+                child: TextButton(
+                  onPressed: () {
+                    // TODO: Ürün ekleme sayfasına yönlendir
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.zero,
+                    shape: const RoundedRectangleBorder(),
+                  ),
+                  child: const Text(
+                    'Ürün Ekle',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                child: const Text('Ürün Ekle'),
               ),
             ),
           );
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(12),
-              bottomRight: Radius.circular(12),
-            ),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(20),
+          color: Colors.white,
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),

@@ -98,39 +98,47 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
   Widget _buildProfileHeader(UserProfileDetail profile) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.primary,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
+      padding: const EdgeInsets.all(20),
+      color: AppTheme.primary,
       child: Column(
         children: [
-          // Profil Fotoğrafı
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.white,
-            backgroundImage: profile.userImage != null && profile.userImage!.isNotEmpty
-                ? NetworkImage(profile.userImage!)
-                : null,
-            child: profile.userImage == null || profile.userImage!.isEmpty
-                ? const Icon(
-                    Icons.person,
-                    size: 50,
-                    color: Colors.grey,
+          // Profil Fotoğrafı - Köşeli tasarım
+          Container(
+            width: 80,
+            height: 80,
+            color: Colors.white,
+            child: profile.userImage != null && profile.userImage!.isNotEmpty
+                ? Image.network(
+                    profile.userImage!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[100],
+                        child: const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
                   )
-                : null,
+                : Container(
+                    color: Colors.grey[100],
+                    child: const Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+                  ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           
           // Kullanıcı Adı
           Text(
             profile.userFullname,
             style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
             textAlign: TextAlign.center,
@@ -142,8 +150,9 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
             Text(
               'Üye olalı: ${profile.memberSince}',
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 15,
                 color: Colors.white70,
+                fontWeight: FontWeight.w400,
               ),
             ),
         ],
@@ -153,20 +162,9 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
 
   Widget _buildStatsSection(UserProfileDetail profile) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      color: Colors.white,
       child: Row(
         children: [
           Expanded(
@@ -180,20 +178,20 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
           Container(
             width: 1,
             height: 40,
-            color: Colors.grey.withOpacity(0.3),
+            color: Colors.grey[300],
           ),
           Expanded(
             child: _buildStatItem(
               icon: Icons.rate_review,
               value: profile.totalReviews.toString(),
               label: 'Toplam Yorum',
-              color: Colors.blue,
+              color: AppTheme.primary,
             ),
           ),
           Container(
             width: 1,
             height: 40,
-            color: Colors.grey.withOpacity(0.3),
+            color: Colors.grey[300],
           ),
           Expanded(
             child: _buildStatItem(
@@ -219,23 +217,24 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
         Icon(
           icon,
           color: color,
-          size: 24,
+          size: 26,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
+            fontSize: 13,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
           ),
           textAlign: TextAlign.center,
         ),
@@ -246,20 +245,9 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
   Widget _buildProductsSection(UserProfileDetail profile) {
     if (profile.products.isEmpty) {
       return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(32),
+        color: Colors.white,
         child: const Column(
           children: [
             Icon(
@@ -273,6 +261,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -281,43 +270,36 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Row(
               children: [
                 const Icon(
                   Icons.inventory,
                   color: AppTheme.primary,
+                  size: 22,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Text(
                   'Ürünler (${profile.products.length})',
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          Container(
+            height: 1,
+            color: Colors.grey[200],
+          ),
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -333,76 +315,89 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
   }
 
   Widget _buildProductItem(ProfileProduct product) {
-    return ListTile(
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: product.mainImage != null && product.mainImage!.isNotEmpty
-            ? Image.network(
-                product.mainImage!,
-                width: 50,
-                height: 50,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 50,
-                    height: 50,
-                    color: Colors.grey[300],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          // Ürün resmi - Köşeli tasarım
+          Container(
+            width: 60,
+            height: 60,
+            color: Colors.grey[100],
+            child: product.mainImage != null && product.mainImage!.isNotEmpty
+                ? Image.network(
+                    product.mainImage!,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[100],
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 60,
+                    height: 60,
+                    color: Colors.grey[100],
                     child: const Icon(
-                      Icons.image_not_supported,
+                      Icons.inventory_2,
                       color: Colors.grey,
                     ),
-                  );
-                },
-              )
-            : Container(
-                width: 50,
-                height: 50,
-                color: Colors.grey[300],
-                child: const Icon(
-                  Icons.inventory_2,
-                  color: Colors.grey,
+                  ),
+          ),
+          const SizedBox(width: 16),
+          
+          // Ürün bilgileri
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
-      ),
-      title: Text(
-        product.title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing: product.isFavorite
-          ? const Icon(
+                const SizedBox(height: 4),
+                Text(
+                  'Ürün ID: ${product.productID}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Favori ikonu
+          if (product.isFavorite)
+            const Icon(
               Icons.favorite,
               color: Colors.red,
               size: 20,
-            )
-          : null,
-      onTap: () {
-        // Ürün detayına git
-        // Navigator.push(context, MaterialPageRoute(
-        //   builder: (context) => ProductDetailView(productId: product.productID),
-        // ));
-      },
+            ),
+        ],
+      ),
     );
   }
 
   Widget _buildReviewsSection(UserProfileDetail profile) {
     if (profile.reviews.isEmpty) {
       return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(32),
+        color: Colors.white,
         child: const Column(
           children: [
             Icon(
@@ -416,6 +411,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -424,43 +420,36 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Row(
               children: [
                 const Icon(
                   Icons.rate_review,
                   color: AppTheme.primary,
+                  size: 22,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Text(
                   'Yorumlar (${profile.reviews.length})',
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          Container(
+            height: 1,
+            color: Colors.grey[200],
+          ),
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -476,26 +465,47 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
   }
 
   Widget _buildReviewItem(ProfileReview review) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    return Container(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              // Yorum yapan kişinin fotoğrafı
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: review.reviewerImage != null && review.reviewerImage!.isNotEmpty
-                    ? NetworkImage(review.reviewerImage!)
-                    : null,
-                child: review.reviewerImage == null || review.reviewerImage!.isEmpty
-                    ? const Icon(
-                        Icons.person,
-                        color: Colors.grey,
+              // Yorum yapan kişinin fotoğrafı - Köşeli tasarım
+              Container(
+                width: 40,
+                height: 40,
+                color: Colors.grey[100],
+                child: review.reviewerImage != null && review.reviewerImage!.isNotEmpty
+                    ? Image.network(
+                        review.reviewerImage!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 40,
+                            height: 40,
+                            color: Colors.grey[100],
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.grey,
+                              size: 20,
+                            ),
+                          );
+                        },
                       )
-                    : null,
+                    : Container(
+                        width: 40,
+                        height: 40,
+                        color: Colors.grey[100],
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               
@@ -508,14 +518,16 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
                       review.reviewerName,
                       style: const TextStyle(
                         fontWeight: FontWeight.w500,
-                        fontSize: 14,
+                        fontSize: 15,
+                        color: Colors.black87,
                       ),
                     ),
                     Text(
                       review.reviewDate,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         color: Colors.grey[600],
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
@@ -527,22 +539,24 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView> {
                 children: List.generate(5, (index) {
                   return Icon(
                     index < review.rating ? Icons.star : Icons.star_border,
-                    size: 16,
+                    size: 18,
                     color: index < review.rating ? Colors.amber : Colors.grey,
                   );
                 }),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           
           // Yorum metni
           if (review.comment.isNotEmpty)
             Text(
               review.comment,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 15,
                 color: Colors.black87,
+                fontWeight: FontWeight.w400,
+                height: 1.4,
               ),
             ),
         ],
