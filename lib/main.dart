@@ -8,6 +8,7 @@ import 'viewmodels/product_viewmodel.dart';
 import 'viewmodels/trade_viewmodel.dart';
 import 'viewmodels/chat_viewmodel.dart';
 import 'viewmodels/user_profile_detail_viewmodel.dart';
+import 'viewmodels/report_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/auth/login_view.dart';
 import 'views/auth/register_view.dart';
@@ -59,6 +60,7 @@ class TakaslyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => TradeViewModel()),
         ChangeNotifierProvider(create: (context) => ChatViewModel()),
         ChangeNotifierProvider(create: (context) => UserProfileDetailViewModel()),
+        ChangeNotifierProvider(create: (context) => ReportViewModel()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,

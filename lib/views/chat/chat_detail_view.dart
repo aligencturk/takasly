@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
+import '../../viewmodels/report_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
@@ -12,6 +13,7 @@ import '../../views/product/product_detail_view.dart';
 import '../../views/trade/start_trade_view.dart';
 import '../../views/profile/user_profile_detail_view.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/report_dialog.dart';
 
 class ChatDetailView extends StatefulWidget {
   final Chat chat;
@@ -887,6 +889,59 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     }
   }
 
+  void _showReportDialog() {
+    final authViewModel = context.read<AuthViewModel>();
+    final otherParticipant = widget.chat.participants
+        .where((user) => user.id != authViewModel.currentUser?.id)
+        .firstOrNull;
+
+    if (otherParticipant == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kullanıcı bilgisi bulunamadı'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Kullanıcı kendini şikayet etmeye çalışıyorsa uyarı göster
+    if (authViewModel.currentUser?.id == otherParticipant.id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kendinizi şikayet edemezsiniz'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final userId = int.parse(otherParticipant.id);
+      final productId = _chatProduct?.id != null ? int.tryParse(_chatProduct!.id) : null;
+      
+      showDialog(
+        context: context,
+        builder: (context) => ReportDialog(
+          reportedUserID: userId,
+          reportedUserName: otherParticipant.name,
+          productID: productId,
+        ),
+      );
+    } catch (e) {
+      print('ChatDetailView: _showReportDialog hatası: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Şikayet dialog açılamadı'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _startTrade(BuildContext context, Product product) {
     final authViewModel = context.read<AuthViewModel>();
     
@@ -963,6 +1018,12 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 ),
               ),
             ),
+          // Şikayet butonu
+          IconButton(
+            icon: const Icon(Icons.report_problem_outlined),
+            onPressed: () => _showReportDialog(),
+            tooltip: 'Kullanıcıyı Şikayet Et',
+          ),
           IconButton(
             icon: const Icon(Icons.more_vert),
             onPressed: () {

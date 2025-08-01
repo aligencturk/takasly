@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/user_profile_detail_viewmodel.dart';
+import '../../viewmodels/report_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../models/user_profile_detail.dart';
+import '../../widgets/report_dialog.dart';
 
 class UserProfileDetailView extends StatefulWidget {
   final int userId;
@@ -41,6 +44,30 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     );
   }
 
+  void _showReportDialog() {
+    final authViewModel = context.read<AuthViewModel>();
+    
+    // Kullanıcı kendini şikayet etmeye çalışıyorsa uyarı göster
+    if (authViewModel.currentUser?.id == widget.userId.toString()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kendinizi şikayet edemezsiniz'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => ReportDialog(
+        reportedUserID: widget.userId,
+        reportedUserName: _viewModel.profileDetail?.userFullname ?? 'Bilinmeyen Kullanıcı',
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _tabController?.dispose();
@@ -66,6 +93,14 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
               color: Colors.black87,
             ),
           ),
+          actions: [
+            // Şikayet butonu
+            IconButton(
+              icon: const Icon(Icons.report_problem_outlined),
+              onPressed: () => _showReportDialog(),
+              tooltip: 'Kullanıcıyı Şikayet Et',
+            ),
+          ],
         ),
         body: Consumer<UserProfileDetailViewModel>(
           builder: (context, viewModel, child) {
@@ -220,10 +255,10 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
               
               const SizedBox(height: 6),
               
-              // Üyelik Süresi
+              // Üyelik Tarihi
               if (profile.memberSince.isNotEmpty)
                 Text(
-                  'Üye olalı: ${profile.memberSince}',
+                  profile.memberSince,
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.grey[700],
