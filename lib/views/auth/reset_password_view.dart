@@ -568,56 +568,82 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           
           const SizedBox(height: 32),
           
-          // Form fields
-          TextFormField(
-            controller: _newPasswordController,
-            decoration: InputDecoration(
-              labelText: 'Yeni Şifre',
-              hintText: 'Yeni şifrenizi belirleyin',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _isNewPasswordObscure ? Icons.visibility_off : Icons.visibility,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isNewPasswordObscure = !_isNewPasswordObscure;
-                  });
-                },
-              ),
-            ),
-            obscureText: _isNewPasswordObscure,
-            validator: _validateNewPassword,
-            onChanged: (value) {
-              setState(() {}); // Trigger rebuild for button state
-            },
-          ),
+                     // Form fields
+           TextFormField(
+             controller: _newPasswordController,
+             decoration: InputDecoration(
+               labelText: 'Yeni Şifre',
+               hintText: 'Yeni şifrenizi belirleyin',
+               border: OutlineInputBorder(
+                 borderRadius: BorderRadius.circular(8),
+                 borderSide: BorderSide(color: Colors.grey.shade300),
+               ),
+               enabledBorder: OutlineInputBorder(
+                 borderRadius: BorderRadius.circular(8),
+                 borderSide: BorderSide(color: Colors.grey.shade300),
+               ),
+               focusedBorder: OutlineInputBorder(
+                 borderRadius: BorderRadius.circular(8),
+                 borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
+               ),
+               suffixIcon: IconButton(
+                 icon: Icon(
+                   _isNewPasswordObscure ? Icons.visibility_off : Icons.visibility,
+                   color: Colors.grey.shade600,
+                 ),
+                 onPressed: () {
+                   setState(() {
+                     _isNewPasswordObscure = !_isNewPasswordObscure;
+                   });
+                 },
+               ),
+               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+             ),
+             obscureText: _isNewPasswordObscure,
+             validator: _validateNewPassword,
+             onChanged: (value) {
+               setState(() {}); // Trigger rebuild for button state
+             },
+           ),
           
           const SizedBox(height: 24),
           
-          TextFormField(
-            controller: _confirmPasswordController,
-            decoration: InputDecoration(
-              labelText: 'Şifre Tekrar',
-              hintText: 'Şifrenizi tekrar girin',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _isConfirmPasswordObscure ? Icons.visibility_off : Icons.visibility,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isConfirmPasswordObscure = !_isConfirmPasswordObscure;
-                  });
-                },
-              ),
-            ),
-            obscureText: _isConfirmPasswordObscure,
-            validator: _validateConfirmPassword,
-            onChanged: (value) {
-              setState(() {}); // Trigger rebuild for button state
-            },
-          ),
+                     TextFormField(
+             controller: _confirmPasswordController,
+             decoration: InputDecoration(
+               labelText: 'Şifre Tekrar',
+               hintText: 'Şifrenizi tekrar girin',
+               border: OutlineInputBorder(
+                 borderRadius: BorderRadius.circular(8),
+                 borderSide: BorderSide(color: Colors.grey.shade300),
+               ),
+               enabledBorder: OutlineInputBorder(
+                 borderRadius: BorderRadius.circular(8),
+                 borderSide: BorderSide(color: Colors.grey.shade300),
+               ),
+               focusedBorder: OutlineInputBorder(
+                 borderRadius: BorderRadius.circular(8),
+                 borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
+               ),
+               suffixIcon: IconButton(
+                 icon: Icon(
+                   _isConfirmPasswordObscure ? Icons.visibility_off : Icons.visibility,
+                   color: Colors.grey.shade600,
+                 ),
+                 onPressed: () {
+                   setState(() {
+                     _isConfirmPasswordObscure = !_isConfirmPasswordObscure;
+                   });
+                 },
+               ),
+               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+             ),
+             obscureText: _isConfirmPasswordObscure,
+             validator: _validateConfirmPassword,
+             onChanged: (value) {
+               setState(() {}); // Trigger rebuild for button state
+             },
+           ),
           
           const SizedBox(height: 24),
           

@@ -7,6 +7,7 @@ import '../../services/user_service.dart';
 import '../../utils/logger.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../auth/reset_password_view.dart';
+import 'edit_profile_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -83,10 +84,10 @@ class _SettingsViewState extends State<SettingsView> {
             title: 'Profili Düzenle',
             subtitle: 'Kişisel bilgilerinizi güncelleyin',
             onTap: () {
-              // TODO: Profil düzenleme sayfasına yönlendir
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Profil düzenleme özelliği yakında eklenecek'),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileView(),
                 ),
               );
             },
