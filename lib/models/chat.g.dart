@@ -26,6 +26,10 @@ Chat _$ChatFromJson(Map<String, dynamic> json) => Chat(
     (k, e) => MapEntry(k, DateTime.parse(e as String)),
   ),
   isActive: json['isActive'] as bool,
+  isPinned: json['isPinned'] as bool? ?? false,
+  deletedBy:
+      (json['deletedBy'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$ChatToJson(Chat instance) => <String, dynamic>{
@@ -42,6 +46,8 @@ Map<String, dynamic> _$ChatToJson(Chat instance) => <String, dynamic>{
     (k, e) => MapEntry(k, e.toIso8601String()),
   ),
   'isActive': instance.isActive,
+  'isPinned': instance.isPinned,
+  'deletedBy': instance.deletedBy,
 };
 
 Message _$MessageFromJson(Map<String, dynamic> json) => Message(

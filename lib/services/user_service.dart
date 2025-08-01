@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/user.dart';
+import '../models/user_profile_detail.dart';
 
 class UserService {
   final HttpClient _httpClient = HttpClient();
@@ -784,6 +785,63 @@ class UserService {
       return ApiResponse<Map<String, dynamic>>.error(
         ErrorMessages.unknownError,
       );
+    }
+  }
+
+  /// Kullanıcı profil detaylarını alır
+  /// GET /service/user/account/{userId}/profileDetail
+  Future<ApiResponse<UserProfileDetail>> getUserProfileDetail({
+    required String userToken,
+    required int userId,
+  }) async {
+    try {
+      print('🔍 GET USER PROFILE DETAIL');
+      print('📤 User ID: $userId, User Token: ${userToken.substring(0, 20)}...');
+
+      final response = await _httpClient.getWithBasicAuth(
+        '${ApiConstants.userProfileDetail}/$userId/profileDetail?userToken=$userToken',
+        fromJson: (json) {
+          print('🔍 Get Profile Detail fromJson - Raw data: $json');
+
+          // Response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            // Eğer data field'ı içinde profil detayları varsa
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              print('🔍 Get Profile Detail - Data field format detected');
+              final dataField = json['data'] as Map<String, dynamic>;
+              
+              // Token güncelleme kontrolü
+              if (dataField.containsKey('token') && dataField['token'] != null && dataField['token'].toString().isNotEmpty) {
+                final newToken = dataField['token'].toString();
+                print('🔄 Profile Detail - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                _updateTokenInBackground(newToken);
+              }
+              
+              return UserProfileDetail.fromJson(dataField);
+            }
+            // Eğer direkt profil detayları gelirse
+            else if (json.containsKey('userID') || json.containsKey('userFullname')) {
+              print('🔍 Get Profile Detail - Direct profile data format detected');
+              return UserProfileDetail.fromJson(json);
+            } else {
+              print('⚠️ Get Profile Detail - Unexpected response format');
+              print('⚠️ Get Profile Detail - Available keys: ${json.keys.toList()}');
+              throw Exception('API returned unexpected format. Response: $json');
+            }
+          }
+
+          throw Exception('Invalid response format');
+        },
+      );
+
+      print('✅ Get Profile Detail Response: ${response.isSuccess}');
+      print('🔍 Response Data: ${response.data}');
+      print('🔍 Response Error: ${response.error}');
+
+      return response;
+    } catch (e) {
+      print('❌ Get Profile Detail Error: $e');
+      return ApiResponse<UserProfileDetail>.error(ErrorMessages.userNotFound);
     }
   }
 

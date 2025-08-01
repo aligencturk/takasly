@@ -87,3 +87,276 @@ Map<String, dynamic> _$TradeOfferToJson(TradeOffer instance) =>
       'message': instance.message,
       'createdAt': instance.createdAt.toIso8601String(),
     };
+
+StartTradeRequest _$StartTradeRequestFromJson(Map<String, dynamic> json) =>
+    StartTradeRequest(
+      userToken: json['userToken'] as String,
+      senderProductID: (json['senderProductID'] as num).toInt(),
+      receiverProductID: (json['receiverProductID'] as num).toInt(),
+      deliveryTypeID: (json['deliveryTypeID'] as num).toInt(),
+      meetingLocation: json['meetingLocation'] as String?,
+    );
+
+Map<String, dynamic> _$StartTradeRequestToJson(StartTradeRequest instance) =>
+    <String, dynamic>{
+      'userToken': instance.userToken,
+      'senderProductID': instance.senderProductID,
+      'receiverProductID': instance.receiverProductID,
+      'deliveryTypeID': instance.deliveryTypeID,
+      'meetingLocation': instance.meetingLocation,
+    };
+
+StartTradeResponse _$StartTradeResponseFromJson(Map<String, dynamic> json) =>
+    StartTradeResponse(
+      error: json['error'] as bool,
+      success: json['success'] as bool,
+      data: json['data'] == null
+          ? null
+          : StartTradeData.fromJson(json['data'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$StartTradeResponseToJson(StartTradeResponse instance) =>
+    <String, dynamic>{
+      'error': instance.error,
+      'success': instance.success,
+      'data': instance.data,
+    };
+
+StartTradeData _$StartTradeDataFromJson(Map<String, dynamic> json) =>
+    StartTradeData(message: json['message'] as String);
+
+Map<String, dynamic> _$StartTradeDataToJson(StartTradeData instance) =>
+    <String, dynamic>{'message': instance.message};
+
+TradeStatusModel _$TradeStatusModelFromJson(Map<String, dynamic> json) =>
+    TradeStatusModel(
+      statusID: (json['statusID'] as num).toInt(),
+      statusTitle: json['statusTitle'] as String,
+    );
+
+Map<String, dynamic> _$TradeStatusModelToJson(TradeStatusModel instance) =>
+    <String, dynamic>{
+      'statusID': instance.statusID,
+      'statusTitle': instance.statusTitle,
+    };
+
+TradeStatusesResponse _$TradeStatusesResponseFromJson(
+  Map<String, dynamic> json,
+) => TradeStatusesResponse(
+  error: json['error'] as bool,
+  success: json['success'] as bool,
+  data: json['data'] == null
+      ? null
+      : TradeStatusesData.fromJson(json['data'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$TradeStatusesResponseToJson(
+  TradeStatusesResponse instance,
+) => <String, dynamic>{
+  'error': instance.error,
+  'success': instance.success,
+  'data': instance.data,
+};
+
+TradeStatusesData _$TradeStatusesDataFromJson(Map<String, dynamic> json) =>
+    TradeStatusesData(
+      statuses: (json['statuses'] as List<dynamic>?)
+          ?.map((e) => TradeStatusModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$TradeStatusesDataToJson(TradeStatusesData instance) =>
+    <String, dynamic>{'statuses': instance.statuses};
+
+DeliveryType _$DeliveryTypeFromJson(Map<String, dynamic> json) => DeliveryType(
+  deliveryID: (json['deliveryID'] as num).toInt(),
+  deliveryTitle: json['deliveryTitle'] as String,
+);
+
+Map<String, dynamic> _$DeliveryTypeToJson(DeliveryType instance) =>
+    <String, dynamic>{
+      'deliveryID': instance.deliveryID,
+      'deliveryTitle': instance.deliveryTitle,
+    };
+
+DeliveryTypesResponse _$DeliveryTypesResponseFromJson(
+  Map<String, dynamic> json,
+) => DeliveryTypesResponse(
+  error: json['error'] as bool,
+  success: json['success'] as bool,
+  data: json['data'] == null
+      ? null
+      : DeliveryTypesData.fromJson(json['data'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$DeliveryTypesResponseToJson(
+  DeliveryTypesResponse instance,
+) => <String, dynamic>{
+  'error': instance.error,
+  'success': instance.success,
+  'data': instance.data,
+};
+
+DeliveryTypesData _$DeliveryTypesDataFromJson(Map<String, dynamic> json) =>
+    DeliveryTypesData(
+      deliveryTypes: (json['deliveryTypes'] as List<dynamic>?)
+          ?.map((e) => DeliveryType.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$DeliveryTypesDataToJson(DeliveryTypesData instance) =>
+    <String, dynamic>{'deliveryTypes': instance.deliveryTypes};
+
+TradeReview _$TradeReviewFromJson(Map<String, dynamic> json) => TradeReview(
+  toUserID: (json['toUserID'] as num).toInt(),
+  rating: (json['rating'] as num).toInt(),
+  comment: json['comment'] as String,
+);
+
+Map<String, dynamic> _$TradeReviewToJson(TradeReview instance) =>
+    <String, dynamic>{
+      'toUserID': instance.toUserID,
+      'rating': instance.rating,
+      'comment': instance.comment,
+    };
+
+TradeCompleteRequest _$TradeCompleteRequestFromJson(
+  Map<String, dynamic> json,
+) => TradeCompleteRequest(
+  userToken: json['userToken'] as String,
+  offerID: (json['offerID'] as num).toInt(),
+  statusID: (json['statusID'] as num).toInt(),
+  meetingLocation: json['meetingLocation'] as String?,
+  review: json['review'] == null
+      ? null
+      : TradeReview.fromJson(json['review'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$TradeCompleteRequestToJson(
+  TradeCompleteRequest instance,
+) => <String, dynamic>{
+  'userToken': instance.userToken,
+  'offerID': instance.offerID,
+  'statusID': instance.statusID,
+  'meetingLocation': instance.meetingLocation,
+  'review': instance.review,
+};
+
+TradeCompleteResponse _$TradeCompleteResponseFromJson(
+  Map<String, dynamic> json,
+) => TradeCompleteResponse(
+  error: json['error'] as bool,
+  success: json['success'] as bool,
+  data: json['data'] == null
+      ? null
+      : TradeCompleteData.fromJson(json['data'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$TradeCompleteResponseToJson(
+  TradeCompleteResponse instance,
+) => <String, dynamic>{
+  'error': instance.error,
+  'success': instance.success,
+  'data': instance.data,
+};
+
+TradeCompleteData _$TradeCompleteDataFromJson(Map<String, dynamic> json) =>
+    TradeCompleteData(message: json['message'] as String);
+
+Map<String, dynamic> _$TradeCompleteDataToJson(TradeCompleteData instance) =>
+    <String, dynamic>{'message': instance.message};
+
+UserTrade _$UserTradeFromJson(Map<String, dynamic> json) => UserTrade(
+  offerID: (json['offerID'] as num).toInt(),
+  statusID: (json['statusID'] as num).toInt(),
+  statusTitle: json['statusTitle'] as String,
+  deliveryType: json['deliveryType'] as String,
+  meetingLocation: json['meetingLocation'] as String?,
+  createdAt: json['createdAt'] as String,
+  completedAt: json['completedAt'] as String?,
+  isConfirm: (json['isConfirm'] as num?)?.toInt(),
+  myProduct: json['myProduct'] == null
+      ? null
+      : TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>),
+  theirProduct: json['theirProduct'] == null
+      ? null
+      : TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$UserTradeToJson(UserTrade instance) => <String, dynamic>{
+  'offerID': instance.offerID,
+  'statusID': instance.statusID,
+  'statusTitle': instance.statusTitle,
+  'deliveryType': instance.deliveryType,
+  'meetingLocation': instance.meetingLocation,
+  'createdAt': instance.createdAt,
+  'completedAt': instance.completedAt,
+  'isConfirm': instance.isConfirm,
+  'myProduct': instance.myProduct,
+  'theirProduct': instance.theirProduct,
+};
+
+TradeProduct _$TradeProductFromJson(Map<String, dynamic> json) => TradeProduct(
+  productID: (json['productID'] as num).toInt(),
+  productTitle: json['productTitle'] as String,
+  productDesc: json['productDesc'] as String,
+  productImage: json['productImage'] as String,
+  productCondition: json['productCondition'] as String,
+  tradeFor: json['tradeFor'] as String,
+  categoryTitle: json['categoryTitle'] as String,
+  userID: (json['userID'] as num).toInt(),
+  categoryID: (json['categoryID'] as num).toInt(),
+  conditionID: (json['conditionID'] as num).toInt(),
+  cityID: (json['cityID'] as num).toInt(),
+  districtID: (json['districtID'] as num).toInt(),
+  cityTitle: json['cityTitle'] as String,
+  districtTitle: json['districtTitle'] as String?,
+  createdAt: json['createdAt'] as String,
+  isFavorite: json['isFavorite'] as bool,
+);
+
+Map<String, dynamic> _$TradeProductToJson(TradeProduct instance) =>
+    <String, dynamic>{
+      'productID': instance.productID,
+      'productTitle': instance.productTitle,
+      'productDesc': instance.productDesc,
+      'productImage': instance.productImage,
+      'productCondition': instance.productCondition,
+      'tradeFor': instance.tradeFor,
+      'categoryTitle': instance.categoryTitle,
+      'userID': instance.userID,
+      'categoryID': instance.categoryID,
+      'conditionID': instance.conditionID,
+      'cityID': instance.cityID,
+      'districtID': instance.districtID,
+      'cityTitle': instance.cityTitle,
+      'districtTitle': instance.districtTitle,
+      'createdAt': instance.createdAt,
+      'isFavorite': instance.isFavorite,
+    };
+
+UserTradesResponse _$UserTradesResponseFromJson(Map<String, dynamic> json) =>
+    UserTradesResponse(
+      error: json['error'] as bool,
+      success: json['success'] as bool,
+      data: json['data'] == null
+          ? null
+          : UserTradesData.fromJson(json['data'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$UserTradesResponseToJson(UserTradesResponse instance) =>
+    <String, dynamic>{
+      'error': instance.error,
+      'success': instance.success,
+      'data': instance.data,
+    };
+
+UserTradesData _$UserTradesDataFromJson(Map<String, dynamic> json) =>
+    UserTradesData(
+      trades: (json['trades'] as List<dynamic>?)
+          ?.map((e) => UserTrade.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$UserTradesDataToJson(UserTradesData instance) =>
+    <String, dynamic>{'trades': instance.trades};

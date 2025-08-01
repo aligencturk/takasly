@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
+import '../../core/constants.dart';
 import '../../views/product/product_detail_view.dart';
 import '../../views/trade/start_trade_view.dart';
+import '../../views/profile/user_profile_detail_view.dart';
 import '../../widgets/product_card.dart';
 
 class ChatDetailView extends StatefulWidget {
@@ -1253,38 +1256,98 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
     return Row(
       children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: Colors.white,
-          child: otherParticipant?.avatar != null
-              ? ClipOval(
-                  child: Image.network(
-                    otherParticipant!.avatar!,
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Text(
-                        otherParticipant.name.isNotEmpty
-                            ? otherParticipant.name[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    },
-                  ),
-                )
-              : Text(
-                  otherParticipant?.name.isNotEmpty == true
-                      ? otherParticipant!.name[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    color: AppTheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () async {
+              print('🔍 Chat Detail - Kullanıcı resmine tıklandı');
+              print('🔍 Chat Detail - otherParticipant: ${otherParticipant?.id} - ${otherParticipant?.name}');
+              print('🔍 Chat Detail - currentUser: ${authViewModel.currentUser?.id}');
+              
+              // Token'ı SharedPreferences'dan al
+              final prefs = await SharedPreferences.getInstance();
+              final userToken = prefs.getString(AppConstants.userTokenKey);
+              print('🔍 Chat Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...');
+              
+              // Basit test - sadece snackbar göster
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Tıklandı! ID: ${otherParticipant?.id}'),
+                  backgroundColor: AppTheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
                 ),
+              );
+              
+              if (otherParticipant != null && authViewModel.currentUser != null && userToken != null && userToken.isNotEmpty) {
+                try {
+                  final userId = int.parse(otherParticipant.id);
+                  print('🔍 Chat Detail - userId parsed: $userId');
+                  print('🔍 Chat Detail - Navigating to UserProfileDetailView...');
+                  
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserProfileDetailView(
+                        userId: userId,
+                        userToken: userToken,
+                      ),
+                    ),
+                  );
+                  print('🔍 Chat Detail - Navigation completed');
+                } catch (e) {
+                  print('❌ Chat Detail - ID parse error: $e');
+                  // ID parse edilemezse hata göster
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Kullanıcı profili açılamadı'),
+                      backgroundColor: AppTheme.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } else {
+                print('❌ Chat Detail - Navigation conditions not met');
+                print('❌ Chat Detail - otherParticipant: ${otherParticipant != null}');
+                print('❌ Chat Detail - currentUser: ${authViewModel.currentUser != null}');
+                print('❌ Chat Detail - token: ${authViewModel.currentUser?.token != null}');
+              }
+            },
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.white,
+              child: otherParticipant?.avatar != null
+                  ? ClipOval(
+                      child: Image.network(
+                        otherParticipant!.avatar!,
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Text(
+                            otherParticipant.name.isNotEmpty
+                                ? otherParticipant.name[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Text(
+                      otherParticipant?.name.isNotEmpty == true
+                          ? otherParticipant!.name[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(

@@ -652,7 +652,7 @@ class UserTrade {
           myProduct = TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>);
         }
       } catch (e) {
-        print('⚠️ UserTrade.fromJson - myProduct parse error: $e');
+        // Logger.debug('⚠️ UserTrade.fromJson - myProduct parse error: $e', tag: 'Trade');
         myProduct = null;
       }
       

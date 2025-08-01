@@ -25,6 +25,7 @@ class ApiConstants {
 
   // User Service Endpoints
   static const String userProfile = '/service/user/id';
+  static const String userProfileDetail = '/service/user/account'; // {userId}/profileDetail
   static const String updateAccount = '/service/user/update/account';
   static const String updateUserPassword = '/service/user/update/password';
   static const String deleteUser = '/service/user/delete';
