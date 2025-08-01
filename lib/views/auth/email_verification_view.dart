@@ -21,6 +21,13 @@ class EmailVerificationView extends StatefulWidget {
 class _EmailVerificationViewState extends State<EmailVerificationView> {
   final _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
+  late String _currentCodeToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCodeToken = widget.codeToken;
+  }
 
   @override
   void dispose() {
@@ -327,7 +334,7 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
     
     final success = await authViewModel.checkEmailVerificationCode(
       code: _codeController.text.trim(),
-      codeToken: widget.codeToken,
+      codeToken: _currentCodeToken,
     );
     
     if (mounted) {
@@ -389,12 +396,11 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
         
         // Yeni codeToken varsa güncelle
         if (response.containsKey('codeToken') && response['codeToken'] != null) {
-          // Widget'ın codeToken'ını güncellemek için setState kullan
+          final newCodeToken = response['codeToken'].toString();
           setState(() {
-            // Bu durumda widget'ın codeToken'ını güncelleyemeyiz çünkü final
-            // Bu yüzden sadece log yazıyoruz
-            Logger.debug('Yeni codeToken alındı: ${response['codeToken']}', tag: 'EmailVerificationView');
+            _currentCodeToken = newCodeToken;
           });
+          Logger.debug('Yeni codeToken alındı ve güncellendi: ${newCodeToken.substring(0, 10)}...', tag: 'EmailVerificationView');
         }
       } else {
         Logger.error('Doğrulama kodu gönderilemedi: ${authViewModel.errorMessage}', tag: 'EmailVerificationView');

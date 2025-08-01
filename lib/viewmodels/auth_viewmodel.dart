@@ -291,6 +291,25 @@ class AuthViewModel extends ChangeNotifier {
       );
 
       if (response.isSuccess) {
+        // Kullanıcının isVerified durumunu güncelle
+        if (_currentUser != null) {
+          _currentUser = User(
+            id: _currentUser!.id,
+            name: _currentUser!.name,
+            firstName: _currentUser!.firstName,
+            lastName: _currentUser!.lastName,
+            email: _currentUser!.email,
+            phone: _currentUser!.phone,
+            isVerified: true, // E-posta doğrulandı
+            isOnline: _currentUser!.isOnline,
+            createdAt: _currentUser!.createdAt,
+            updatedAt: DateTime.now(),
+            token: _currentUser!.token,
+          );
+          notifyListeners();
+          Logger.info('✅ User verification status updated in ViewModel');
+        }
+        
         _setLoading(false);
         return true;
       } else {
@@ -327,6 +346,10 @@ class AuthViewModel extends ChangeNotifier {
         email: email.trim(),
       );
 
+      Logger.debug('📥 ResendEmailVerificationCode response: ${response.isSuccess}', tag: 'AuthViewModel');
+      Logger.debug('📥 ResendEmailVerificationCode data: ${response.data}', tag: 'AuthViewModel');
+      Logger.debug('📥 ResendEmailVerificationCode error: ${response.error}', tag: 'AuthViewModel');
+
       if (response.isSuccess) {
         _setLoading(false);
         return response.data;
@@ -357,6 +380,10 @@ class AuthViewModel extends ChangeNotifier {
       final response = await _authService.resendEmailVerificationCodeWithToken(
         userToken: userToken.trim(),
       );
+
+      Logger.debug('📥 ResendEmailVerificationCodeWithToken response: ${response.isSuccess}', tag: 'AuthViewModel');
+      Logger.debug('📥 ResendEmailVerificationCodeWithToken data: ${response.data}', tag: 'AuthViewModel');
+      Logger.debug('📥 ResendEmailVerificationCodeWithToken error: ${response.error}', tag: 'AuthViewModel');
 
       if (response.isSuccess) {
         _setLoading(false);

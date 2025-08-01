@@ -239,6 +239,7 @@ class AuthService {
 
         // Token ve kullanıcı bilgilerini kaydet
         await _saveUserData(user, token);
+        Logger.debug('🔑 Token saved after register: ${token.substring(0, 10)}...');
 
         // Register sonrasında tam kullanıcı bilgilerini çek (token varsa)
         if (token.isNotEmpty) {
@@ -340,6 +341,32 @@ class AuthService {
 
       if (response.isSuccess) {
         Logger.info('✅ Email verification successful');
+        
+        // Kullanıcının isVerified durumunu güncelle
+        try {
+          final currentUser = await getCurrentUser();
+          if (currentUser != null) {
+            final updatedUser = User(
+              id: currentUser.id,
+              name: currentUser.name,
+              firstName: currentUser.firstName,
+              lastName: currentUser.lastName,
+              email: currentUser.email,
+              phone: currentUser.phone,
+              isVerified: true, // E-posta doğrulandı
+              isOnline: currentUser.isOnline,
+              createdAt: currentUser.createdAt,
+              updatedAt: DateTime.now(),
+              token: currentUser.token,
+            );
+            
+            await _saveUserDataOnly(updatedUser);
+            Logger.info('✅ User verification status updated to true');
+          }
+        } catch (e) {
+          Logger.warning('⚠️ Failed to update user verification status: $e');
+        }
+        
         return ApiResponse.success(null);
       }
 
@@ -386,10 +413,26 @@ class AuthService {
           if (json is Map<String, dynamic>) {
             final result = <String, dynamic>{};
             
-            // codeToken varsa al
+            // Tüm response verilerini logla
+            Logger.debug('🔍 ResendCode response keys: ${json.keys.toList()}');
+            
+            // codeToken varsa al (direkt response'ta veya data objesi içinde)
+            String? codeToken;
             if (json.containsKey('codeToken') && json['codeToken'] != null) {
-              result['codeToken'] = json['codeToken'].toString();
-              Logger.debug('🔑 CodeToken found in response: ${result['codeToken']}');
+              codeToken = json['codeToken'].toString();
+              Logger.debug('🔑 CodeToken found in response root: $codeToken');
+            } else if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('codeToken') && data['codeToken'] != null) {
+                codeToken = data['codeToken'].toString();
+                Logger.debug('🔑 CodeToken found in data object: $codeToken');
+              }
+            }
+            
+            if (codeToken != null) {
+              result['codeToken'] = codeToken;
+            } else {
+              Logger.warning('⚠️ CodeToken not found in response or data object');
             }
             
             // Diğer response verilerini de al
@@ -399,9 +442,11 @@ class AuthService {
               }
             });
             
+            Logger.debug('🔍 Final result: $result');
             return result.isNotEmpty ? result : null;
           }
           
+          Logger.warning('⚠️ Response is not a Map: ${json.runtimeType}');
           return null;
         },
       );
@@ -451,10 +496,26 @@ class AuthService {
           if (json is Map<String, dynamic>) {
             final result = <String, dynamic>{};
             
-            // codeToken varsa al
+            // Tüm response verilerini logla
+            Logger.debug('🔍 ResendCode with Token response keys: ${json.keys.toList()}');
+            
+            // codeToken varsa al (direkt response'ta veya data objesi içinde)
+            String? codeToken;
             if (json.containsKey('codeToken') && json['codeToken'] != null) {
-              result['codeToken'] = json['codeToken'].toString();
-              Logger.debug('🔑 CodeToken found in response: ${result['codeToken']}');
+              codeToken = json['codeToken'].toString();
+              Logger.debug('🔑 CodeToken found in response root: $codeToken');
+            } else if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('codeToken') && data['codeToken'] != null) {
+                codeToken = data['codeToken'].toString();
+                Logger.debug('🔑 CodeToken found in data object: $codeToken');
+              }
+            }
+            
+            if (codeToken != null) {
+              result['codeToken'] = codeToken;
+            } else {
+              Logger.warning('⚠️ CodeToken not found in response or data object');
             }
             
             // Diğer response verilerini de al
@@ -464,9 +525,11 @@ class AuthService {
               }
             });
             
+            Logger.debug('🔍 Final result with token: $result');
             return result.isNotEmpty ? result : null;
           }
           
+          Logger.warning('⚠️ Response with token is not a Map: ${json.runtimeType}');
           return null;
         },
       );

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
+import '../../utils/logger.dart';
 
 class RegisterView extends StatelessWidget {
   const RegisterView({super.key});
@@ -181,15 +182,43 @@ class _RegisterFormState extends State<_RegisterForm> {
 
     if (mounted) {
       if (success) {
-        // Kayıt başarılıysa email doğrulama ekranına yönlendir
-        // API'den gelen codeToken'ı al veya geçici değer kullan
+        // Kayıt başarılıysa önce doğrulama kodu gönder ve codeToken al
+        Logger.debug('Kayıt başarılı, doğrulama kodu gönderiliyor...', tag: 'RegisterView');
+        
+        // Önce email ile deneyelim
+        var resendResponse = await authViewModel.resendEmailVerificationCode(
+          email: _emailController.text.trim(),
+        );
+        
+        // Eğer başarısız olursa, token ile deneyelim
+        if (resendResponse == null) {
+          Logger.debug('Email ile resend başarısız, token ile deneyelim...', tag: 'RegisterView');
+          
+          final user = authViewModel.currentUser;
+          Logger.debug('Current user: ${user?.name}', tag: 'RegisterView');
+          Logger.debug('User token: ${user?.token?.substring(0, 10)}...', tag: 'RegisterView');
+          
+          if (user != null && user.token != null && user.token!.isNotEmpty) {
+            resendResponse = await authViewModel.resendEmailVerificationCodeWithToken(
+              userToken: user.token!,
+            );
+            Logger.debug('Token ile resend response: $resendResponse', tag: 'RegisterView');
+          } else {
+            Logger.warning('User token bulunamadı', tag: 'RegisterView');
+          }
+        }
+        
+        Logger.debug('Resend response: $resendResponse', tag: 'RegisterView');
+        Logger.debug('AuthViewModel error: ${authViewModel.errorMessage}', tag: 'RegisterView');
+        
         String codeToken = 'temp_code_token';
         
-        // AuthViewModel'den user bilgilerini al
-        final user = authViewModel.currentUser;
-        if (user != null && user.token != null && user.token!.isNotEmpty) {
-          // Token varsa codeToken olarak kullan
-          codeToken = user.token!;
+        if (resendResponse != null && resendResponse.containsKey('codeToken')) {
+          codeToken = resendResponse['codeToken'].toString();
+          Logger.debug('Gerçek codeToken alındı: ${codeToken.substring(0, 10)}...', tag: 'RegisterView');
+        } else {
+          Logger.warning('codeToken alınamadı, geçici değer kullanılıyor', tag: 'RegisterView');
+          Logger.debug('ResendResponse keys: ${resendResponse?.keys.toList()}', tag: 'RegisterView');
         }
         
         Navigator.of(context).pushReplacementNamed(

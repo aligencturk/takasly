@@ -511,10 +511,7 @@ class UserService {
                   userDataToTransform['profilePhoto'] ??
                   userDataToTransform['avatar'],
               
-              'isVerified':
-                  userDataToTransform['userVerified'] ??
-                  userDataToTransform['isVerified'] ??
-                  false,
+              'isVerified': _determineVerificationStatus(userDataToTransform),
               'isOnline':
                   userDataToTransform['userOnline'] ??
                   userDataToTransform['isOnline'] ??
@@ -1101,5 +1098,42 @@ class UserService {
       return value.toIso8601String();
     }
     return DateTime.now().toIso8601String();
+  }
+
+  /// Kullanıcının doğrulama durumunu belirler
+  bool _determineVerificationStatus(Map<String, dynamic> userData) {
+    // isApproved alanı varsa onu öncelikli olarak kullan
+    if (userData.containsKey('isApproved')) {
+      final isApproved = userData['isApproved'];
+      print('🔍 Verification Status - isApproved: $isApproved (type: ${isApproved.runtimeType})');
+      return isApproved == true;
+    }
+    
+    // userVerified alanı varsa onu kullan
+    if (userData.containsKey('userVerified')) {
+      final userVerified = userData['userVerified'];
+      print('🔍 Verification Status - userVerified: $userVerified (type: ${userVerified.runtimeType})');
+      return userVerified == true;
+    }
+    
+    // userStatus alanı varsa onu kontrol et
+    if (userData.containsKey('userStatus')) {
+      final status = userData['userStatus'].toString().toLowerCase();
+      print('🔍 Verification Status - userStatus: $status');
+      
+      // Aktif durumlar
+      if (status == 'activated' || status == 'active' || status == 'verified') {
+        return true;
+      }
+      
+      // Aktif olmayan durumlar
+      if (status == 'not_activated' || status == 'inactive' || status == 'pending') {
+        return false;
+      }
+    }
+    
+    // Varsayılan olarak doğrulanmamış kabul et
+    print('🔍 Verification Status - Default: false (no verification fields found)');
+    return false;
   }
 }

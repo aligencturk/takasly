@@ -728,22 +728,30 @@ class _ProfileViewState extends State<ProfileView>
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.warning_amber_outlined,
-                              size: 14,
-                              color: Colors.orange.shade700,
+                                                  children: [
+                          Icon(
+                            user.isVerified 
+                              ? Icons.verified_outlined
+                              : Icons.warning_amber_outlined,
+                            size: 14,
+                            color: user.isVerified 
+                              ? Colors.green.shade700
+                              : Colors.orange.shade700,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            user.isVerified 
+                              ? 'E-posta Doğrulandı'
+                              : 'E-posta Doğrulanmamış',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: user.isVerified 
+                                ? Colors.green.shade700
+                                : Colors.orange.shade700,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'E-posta Doğrulanmamış',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.orange.shade700,
-                              ),
-                            ),
-                          ],
+                          ),
+                        ],
                         ),
                       ),
                     ),
