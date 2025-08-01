@@ -613,6 +613,7 @@ class UserTrade {
   final String? meetingLocation;
   final String createdAt;
   final String? completedAt;
+  final int? isConfirm; // 1: Mevcut kullanıcı teklifi gönderen, 0: Mevcut kullanıcı teklifi alan, null: Belirsiz
   final TradeProduct? myProduct;
   final TradeProduct? theirProduct;
 
@@ -624,6 +625,7 @@ class UserTrade {
     this.meetingLocation,
     required this.createdAt,
     this.completedAt,
+    this.isConfirm,
     this.myProduct,
     this.theirProduct,
   });
@@ -640,6 +642,8 @@ class UserTrade {
       final meetingLocation = json['meetingLocation'] as String?;
       final createdAt = json['createdAt'] as String? ?? '';
       final completedAt = json['completedAt'] as String?;
+      // isConfirm alanını güvenli şekilde parse et
+      final isConfirm = _parseIsConfirm(json['isConfirm']);
       
       // myProduct güvenli parse
       TradeProduct? myProduct;
@@ -671,6 +675,7 @@ class UserTrade {
         meetingLocation: meetingLocation,
         createdAt: createdAt,
         completedAt: completedAt,
+        isConfirm: isConfirm,
         myProduct: myProduct,
         theirProduct: theirProduct,
       );
@@ -689,6 +694,7 @@ class UserTrade {
         meetingLocation: json['meetingLocation'] as String?,
         createdAt: json['createdAt'] as String? ?? '',
         completedAt: json['completedAt'] as String?,
+        isConfirm: _parseIsConfirm(json['isConfirm']),
         myProduct: null,
         theirProduct: null,
       );
@@ -703,6 +709,7 @@ class UserTrade {
     if (meetingLocation != null) 'meetingLocation': meetingLocation,
     'createdAt': createdAt,
     if (completedAt != null) 'completedAt': completedAt,
+    if (isConfirm != null) 'isConfirm': isConfirm,
     if (myProduct != null) 'myProduct': myProduct!.toJson(),
     if (theirProduct != null) 'theirProduct': theirProduct!.toJson(),
   };
@@ -719,6 +726,19 @@ class UserTrade {
   @override
   String toString() {
     return 'UserTrade(offerID: $offerID, statusTitle: $statusTitle, deliveryType: $deliveryType)';
+  }
+
+  // isConfirm alanını güvenli şekilde parse eden yardımcı metod
+  static int? _parseIsConfirm(dynamic value) {
+    if (value == null) {
+      return null; // null ise null döndür
+    } else if (value is bool) {
+      return value ? 1 : 0;
+    } else if (value is int) {
+      return value;
+    } else {
+      return null; // Diğer durumlar için null döndür
+    }
   }
 }
 

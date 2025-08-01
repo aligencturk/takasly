@@ -5,7 +5,6 @@ import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/trade.dart';
 import 'package:takasly/viewmodels/trade_viewmodel.dart';
 import 'package:takasly/services/user_service.dart';
-import 'package:takasly/services/auth_service.dart';
 import 'package:takasly/utils/logger.dart';
 
 class TradeCard extends StatelessWidget {
@@ -101,39 +100,22 @@ class TradeCard extends StatelessWidget {
     }
   }
 
-  /// Kullanıcının takas teklifini gönderen taraf olup olmadığını kontrol eder
-  Future<bool> _isUserSender() async {
-    try {
-      final authService = AuthService();
-      final currentUserId = await authService.getCurrentUserId();
-      
-      if (currentUserId == null || currentUserId.isEmpty) {
-        Logger.warning('⚠️ TradeCard - Current user ID is null or empty');
-        return false;
-      }
 
-      // myProduct varsa ve userID'si mevcut kullanıcının ID'si ile eşleşiyorsa
-      // kullanıcı takas teklifini gönderen taraftır
-      if (trade.myProduct != null) {
-        final isSender = trade.myProduct!.userID.toString() == currentUserId;
-        Logger.debug('🔍 TradeCard - User is sender: $isSender (myProduct.userID: ${trade.myProduct!.userID}, currentUserId: $currentUserId)');
-        return isSender;
-      }
-      
-      Logger.debug('🔍 TradeCard - No myProduct found, assuming user is receiver');
-      return false;
-    } catch (e) {
-      Logger.error('❌ TradeCard - Error checking if user is sender: $e', error: e);
-      return false;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final isSender = trade.myProduct?.userID.toString() == currentUserId;
     
-    Logger.debug('🔄 TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeCard');
+    // isConfirm alanına göre gönderen/alıcı belirleme
+    // isConfirm: 1 -> Gönderen (sender)
+    // isConfirm: 0 -> Alıcı (receiver)
+    final isSender = trade.isConfirm == 1;
+    final isReceiver = trade.isConfirm == 0;
+    
+    Logger.debug('🔄 TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, isSender=$isSender, isReceiver=$isReceiver, currentUserId=$currentUserId, myProduct.userID=${trade.myProduct?.userID}, theirProduct.userID=${trade.theirProduct?.userID}, isConfirm=${trade.isConfirm}', tag: 'TradeCard');
+    
+    // Debug için ek kontroller
+    Logger.debug('🔍 isConfirm kontrolleri: isConfirm=${trade.isConfirm} (${trade.isConfirm.runtimeType}), isSender=$isSender, isReceiver=$isReceiver', tag: 'TradeCard');
 
     return Consumer<TradeViewModel>(
       builder: (context, tradeViewModel, child) {
@@ -222,79 +204,52 @@ class TradeCard extends StatelessWidget {
                   ),
                   
                   // Alt kısım - Aksiyon butonları
-                  FutureBuilder<bool>(
-                    future: _isUserSender(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Center(
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppTheme.primary,
+                  // Senkron kontrol kullanıyoruz
+                  
+                                    // Bekleyen takaslar için onay/red butonları (sadece teklifi alan kullanıcıda)
+                  if (trade.statusID == 1 && isReceiver)
+                    _buildActionButtons(context)
+                  // Bekleyen takaslar için teklifi gönderen kullanıcıda mesaj
+                  else if (trade.statusID == 1 && isSender)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.pending_actions,
+                              color: Colors.orange,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Karşı tarafın teklifini bekliyorsunuz',
+                                style: TextStyle(
+                                  color: Colors.orange[700],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      }
-                      
-                      final isSender = snapshot.data ?? false;
-                      
-                      // Bekleyen takaslar için onay/red butonları
-                      if (trade.statusID == 1 && !isSender) {
-                        return _buildActionButtons(context);
-                      } 
-                      // Bekleyen takaslar için alıcı mesajı
-                      else if (trade.statusID == 1 && isSender) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: Colors.orange.withOpacity(0.3),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.pending_actions,
-                                  color: Colors.orange,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    'Karşı tarafın teklifini bekliyorsunuz',
-                                    style: TextStyle(
-                                      color: Colors.orange[700],
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-                      // Teslim edildi durumu için yorum butonu
-                      else if (trade.statusID == 4) {
-                        return _buildReviewButton(context);
-                      }
-                      // Diğer durumlar için durum değiştirme butonu
-                      else if (trade.statusID != 5 && trade.statusID != 7 && trade.statusID != 8) {
-                        return _buildStatusChangeButton(context);
-                      }
-                      
-                      return SizedBox.shrink();
-                    },
-                  ),
+                          ],
+                        ),
+                      ),
+                    )
+                  // Teslim edildi durumu için yorum butonu
+                  else if (trade.statusID == 4)
+                    _buildReviewButton(context)
+                  // Diğer durumlar için durum değiştirme butonu
+                  else if (trade.statusID != 5 && trade.statusID != 7 && trade.statusID != 8)
+                    _buildStatusChangeButton(context),
                 ],
               ),
             ),
