@@ -28,6 +28,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   // Password Visibility States
   bool _isNewPasswordObscure = true;
   bool _isConfirmPasswordObscure = true;
+  
+  // Token storage
+  String? _codeToken;
+  String? _passToken;
 
   // Step management
   int _currentStep = 0;
@@ -214,16 +218,20 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             ),
           ),
           const SizedBox(width: 16),
-          Expanded(
+                    Expanded(
             child: ElevatedButton(
               onPressed: () {
-                if (_currentStep == _totalSteps - 1) {
-                  if (_canGoToNextStep()) {
-                    _handleResetPassword();
-                  }
-                } else {
-                  if (_canGoToNextStep()) {
-                    _nextStep();
+                if (_canGoToNextStep()) {
+                  switch (_currentStep) {
+                    case 0: // E-posta adımı
+                      _handleResetPassword();
+                      break;
+                    case 1: // Kod doğrulama adımı
+                      _handleCodeVerification();
+                      break;
+                    case 2: // Şifre güncelleme adımı
+                      _handlePasswordUpdate();
+                      break;
                   }
                 }
               },
@@ -232,9 +240,9 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text(_currentStep == _totalSteps - 1 ? 'Şifreyi Güncelle' : 'İleri'),
+              child: Text(_getButtonText()),
             ),
-                      ),
+          ),
                     ],
                   ),
     );
@@ -772,6 +780,19 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
     _confirmPasswordController.dispose();
   }
 
+  String _getButtonText() {
+    switch (_currentStep) {
+      case 0:
+        return 'Kod Gönder';
+      case 1:
+        return 'Kodu Doğrula';
+      case 2:
+        return 'Şifreyi Güncelle';
+      default:
+        return 'İleri';
+    }
+  }
+
   // MARK: - Business Logic
   void _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
@@ -781,11 +802,88 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     authViewModel.clearError();
     
-    final success = await authViewModel.updatePassword(
+    // E-posta ile şifre sıfırlama isteği gönder
+    final forgotPasswordSuccess = await authViewModel.forgotPassword(
+      _emailController.text.trim(),
+    );
+    
+    if (!forgotPasswordSuccess) {
+      Logger.error('Şifre sıfırlama isteği başarısız: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
+      return;
+    }
+    
+    Logger.debug('Şifre sıfırlama isteği başarılı, kod gönderildi', tag: 'ResetPasswordView');
+    
+    // Kullanıcıya kod gönderildiğini bildir
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Şifre sıfırlama kodu e-posta adresinize gönderildi'),
+          backgroundColor: AppTheme.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTheme.borderRadius,
+          ),
+        ),
+      );
+      
+      // Bir sonraki adıma geç
+      _nextStep();
+    }
+  }
+
+  void _handleCodeVerification() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    Logger.debug('Kod doğrulama işlemi başlatılıyor...', tag: 'ResetPasswordView');
+    
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    authViewModel.clearError();
+    
+    // Şifre sıfırlama kodunu doğrula ve passToken al
+    final response = await authViewModel.checkPasswordResetCode(
+      code: _codeController.text.trim(),
       email: _emailController.text.trim(),
-      verificationCode: _codeController.text.trim(),
-      newPassword: _newPasswordController.text.trim(),
-      confirmPassword: _confirmPasswordController.text.trim(),
+    );
+    
+    if (response == null) {
+      Logger.error('Kod doğrulama hatası: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
+      return;
+    }
+    
+    // PassToken'ı sakla
+    if (response.containsKey('passToken')) {
+      _passToken = response['passToken'];
+      Logger.debug('PassToken alındı: ${_passToken!.substring(0, 10)}...', tag: 'ResetPasswordView');
+    } else {
+      Logger.error('PassToken bulunamadı', tag: 'ResetPasswordView');
+      authViewModel.setError('Doğrulama token\'ı bulunamadı. Lütfen tekrar deneyin.');
+      return;
+    }
+    
+    Logger.debug('Kod doğrulama başarılı', tag: 'ResetPasswordView');
+    _nextStep();
+  }
+
+  void _handlePasswordUpdate() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    Logger.debug('Şifre güncelleme işlemi başlatılıyor...', tag: 'ResetPasswordView');
+    
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    authViewModel.clearError();
+    
+    // Saklanan passToken'ı kullan
+    if (_passToken == null || _passToken!.isEmpty) {
+      Logger.error('PassToken bulunamadı', tag: 'ResetPasswordView');
+      authViewModel.setError('Doğrulama token\'ı bulunamadı. Lütfen tekrar deneyin.');
+      return;
+    }
+    
+    final success = await authViewModel.updatePassword(
+      passToken: _passToken!,
+      password: _newPasswordController.text.trim(),
+      passwordAgain: _confirmPasswordController.text.trim(),
     );
     
     if (success) {

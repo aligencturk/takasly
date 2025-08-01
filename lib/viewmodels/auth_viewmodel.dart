@@ -366,6 +366,55 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> checkPasswordResetCode({
+    required String code,
+    required String email,
+  }) async {
+    Logger.info('🔑 AuthViewModel.checkPasswordResetCode called');
+    
+    if (code.trim().isEmpty || email.trim().isEmpty) {
+      _setError(ErrorMessages.fieldRequired);
+      return null;
+    }
+
+    if (code.length < 4) {
+      _setError('Doğrulama kodu en az 4 karakter olmalıdır');
+      return null;
+    }
+
+    if (!_isValidEmail(email)) {
+      _setError(ErrorMessages.invalidEmail);
+      return null;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      Logger.debug('📤 AuthViewModel - Calling authService.checkPasswordResetCode');
+      final response = await _authService.checkPasswordResetCode(
+        code: code,
+        email: email,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('✅ AuthViewModel - Password reset code verification successful');
+        _setLoading(false);
+        return response.data;
+      } else {
+        Logger.error('❌ AuthViewModel - Password reset code verification failed: ${response.error}');
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return null;
+      }
+    } catch (e) {
+      Logger.error('💥 AuthViewModel - Password reset code verification exception: $e', error: e);
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> resendEmailVerificationCodeWithToken({required String userToken}) async {
     // Token validation
     if (userToken.trim().isEmpty) {
@@ -402,31 +451,26 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<bool> updatePassword({
-    required String email,
-    required String verificationCode,
-    required String newPassword,
-    required String confirmPassword,
+    required String passToken,
+    required String password,
+    required String passwordAgain,
   }) async {
-    if (email.trim().isEmpty ||
-        verificationCode.trim().isEmpty ||
-        newPassword.trim().isEmpty ||
-        confirmPassword.trim().isEmpty) {
+    Logger.info('🔒 AuthViewModel.updatePassword called with passToken');
+    
+    if (passToken.trim().isEmpty ||
+        password.trim().isEmpty ||
+        passwordAgain.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return false;
     }
 
-    if (!_isValidEmail(email)) {
-      _setError(ErrorMessages.invalidEmail);
-      return false;
-    }
-
-    if (newPassword != confirmPassword) {
+    if (password != passwordAgain) {
       _setError('Şifreler eşleşmiyor');
       return false;
     }
 
-    if (verificationCode.length < 4) {
-      _setError('Doğrulama kodu en az 4 karakter olmalıdır');
+    if (password.length < AppConstants.minPasswordLength) {
+      _setError(ErrorMessages.weakPassword);
       return false;
     }
 
@@ -434,26 +478,32 @@ class AuthViewModel extends ChangeNotifier {
     _clearError();
 
     try {
+      Logger.debug('📤 AuthViewModel - Calling authService.updatePassword');
       final response = await _authService.updatePassword(
-        email: email,
-        verificationCode: verificationCode,
-        newPassword: newPassword,
+        passToken: passToken,
+        password: password,
+        passwordAgain: passwordAgain,
       );
 
       if (response.isSuccess) {
+        Logger.info('✅ AuthViewModel - Password update successful');
         _setLoading(false);
         return true;
       } else {
+        Logger.error('❌ AuthViewModel - Password update failed: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
+      Logger.error('💥 AuthViewModel - Password update exception: $e', error: e);
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
     }
   }
+
+
 
   Future<bool> updateProfile({
     String? name,
@@ -554,6 +604,10 @@ class AuthViewModel extends ChangeNotifier {
 
   void clearError() {
     _clearError();
+  }
+
+  void setError(String error) {
+    _setError(error);
   }
 
   bool _isValidEmail(String email) {

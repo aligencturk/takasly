@@ -378,6 +378,82 @@ class AuthService {
     }
   }
 
+  Future<ApiResponse<Map<String, dynamic>?>> checkPasswordResetCode({
+    required String code,
+    required String email,
+  }) async {
+    try {
+      Logger.info('🔑 CHECK PASSWORD RESET CODE ATTEMPT: $email');
+      Logger.debug(
+        '📤 Check Password Reset Code Request Body: {"code": "$code", "userEmail": "$email"}',
+      );
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.checkCode,
+        body: {'code': code, 'userEmail': email},
+        useBasicAuth: true,
+        fromJson: (json) {
+          Logger.debug('🔍 CheckPasswordResetCode fromJson - Raw data: $json');
+          
+          // API response'unda passToken var mı kontrol et
+          if (json is Map<String, dynamic>) {
+            final result = <String, dynamic>{};
+            
+            // Tüm response verilerini logla
+            Logger.debug('🔍 CheckPasswordResetCode response keys: ${json.keys.toList()}');
+            
+            // passToken varsa al (direkt response'ta veya data objesi içinde)
+            String? passToken;
+            if (json.containsKey('passToken') && json['passToken'] != null) {
+              passToken = json['passToken'].toString();
+              Logger.debug('🔑 PassToken found in response root: $passToken');
+            } else if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('passToken') && data['passToken'] != null) {
+                passToken = data['passToken'].toString();
+                Logger.debug('🔑 PassToken found in data object: $passToken');
+              }
+            }
+            
+            if (passToken != null) {
+              result['passToken'] = passToken;
+            } else {
+              Logger.warning('⚠️ PassToken not found in response or data object');
+            }
+            
+            // Diğer response verilerini de al
+            json.forEach((key, value) {
+              if (key != 'passToken') {
+                result[key] = value;
+              }
+            });
+            
+            Logger.debug('🔍 Final result: $result');
+            return result.isNotEmpty ? result : null;
+          }
+          
+          Logger.warning('⚠️ Response is not a Map: ${json.runtimeType}');
+          return null;
+        },
+      );
+
+      Logger.debug('📥 CheckPasswordResetCode Response isSuccess: ${response.isSuccess}');
+      Logger.debug('📥 CheckPasswordResetCode Response data: ${response.data}');
+      Logger.debug('📥 CheckPasswordResetCode Response error: ${response.error}');
+
+      if (response.isSuccess) {
+        Logger.info('✅ Password reset code verification successful');
+        return ApiResponse.success(response.data);
+      }
+
+      Logger.error('❌ Password reset code verification failed: ${response.error}');
+      return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
+    } catch (e) {
+      Logger.error('💥 Check password reset code exception: $e', error: e);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
   Future<ApiResponse<Map<String, dynamic>?>> resendEmailVerificationCode({
     required String email,
   }) async {
@@ -552,22 +628,22 @@ class AuthService {
   }
 
   Future<ApiResponse<void>> updatePassword({
-    required String email,
-    required String verificationCode,
-    required String newPassword,
+    required String passToken,
+    required String password,
+    required String passwordAgain,
   }) async {
     try {
-      Logger.info('🔒 UPDATE PASSWORD ATTEMPT: $email');
+      Logger.info('🔒 UPDATE PASSWORD ATTEMPT with passToken');
       Logger.debug(
-        '📤 Update Password Request Body: {"userEmail": "$email", "code": "$verificationCode", "newPassword": "$newPassword"}',
+        '📤 Update Password Request Body: {"passToken": "$passToken", "password": "$password", "passwordAgain": "$passwordAgain"}',
       );
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.updatePassword,
         body: {
-          'userEmail': email,
-          'code': verificationCode,
-          'newPassword': newPassword,
+          'passToken': passToken,
+          'password': password,
+          'passwordAgain': passwordAgain,
         },
         useBasicAuth: true,
         fromJson: (json) {
