@@ -88,13 +88,13 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: AppTheme.background,
-      elevation: 0,
-      leading: IconButton(
+        elevation: 0,
+        leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, size: 20),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       title: Text(
-        'Şifre Sıfırla',
+          'Şifre Sıfırla',
         style: Theme.of(context).textTheme.titleLarge,
       ),
       centerTitle: true,
@@ -105,16 +105,16 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   Widget _buildStepProgressHeader() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
             color: Colors.grey.shade200,
             blurRadius: 4,
             offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+                      ),
+                    ],
+                  ),
       child: Column(
         children: [
           // Step indicator
@@ -191,10 +191,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   Widget _buildNavigationButtons() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
             color: Colors.grey.shade200,
             blurRadius: 4,
             offset: const Offset(0, -2),
@@ -234,9 +234,9 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
               ),
               child: Text(_currentStep == _totalSteps - 1 ? 'Şifreyi Güncelle' : 'İleri'),
             ),
-          ),
-        ],
-      ),
+                      ),
+                    ],
+                  ),
     );
   }
 
@@ -336,9 +336,9 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                      children: [
                     Text(
                       'E-posta Doğrulama',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -361,8 +361,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           const SizedBox(height: 32),
           
                      // Form field
-           TextFormField(
-             controller: _emailController,
+                        TextFormField(
+                          controller: _emailController,
              decoration: InputDecoration(
                labelText: 'E-posta Adresi',
                hintText: 'E-posta adresinizi girin',
@@ -379,8 +379,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                  borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
                ),
                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-             ),
-             keyboardType: TextInputType.emailAddress,
+                          ),
+                          keyboardType: TextInputType.emailAddress,
              validator: _validateEmail,
              onChanged: (value) {
                setState(() {}); // Trigger rebuild for button state
@@ -465,10 +465,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           const SizedBox(height: 32),
           
                      // Form field
-           TextFormField(
-             controller: _codeController,
+                        TextFormField(
+                          controller: _codeController,
              decoration: InputDecoration(
-               labelText: 'Doğrulama Kodu',
+                            labelText: 'Doğrulama Kodu',
                hintText: 'E-postanıza gelen 6 haneli kod',
                border: OutlineInputBorder(
                  borderRadius: BorderRadius.circular(8),
@@ -483,8 +483,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                  borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
                ),
                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-             ),
-             keyboardType: TextInputType.text,
+                          ),
+                          keyboardType: TextInputType.text,
              validator: _validateVerificationCode,
              onChanged: (value) {
                setState(() {}); // Trigger rebuild for button state
@@ -569,10 +569,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           const SizedBox(height: 32),
           
                      // Form fields
-           TextFormField(
-             controller: _newPasswordController,
-             decoration: InputDecoration(
-               labelText: 'Yeni Şifre',
+                        TextFormField(
+                          controller: _newPasswordController,
+                          decoration: InputDecoration(
+                            labelText: 'Yeni Şifre',
                hintText: 'Yeni şifrenizi belirleyin',
                border: OutlineInputBorder(
                  borderRadius: BorderRadius.circular(8),
@@ -586,20 +586,20 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                  borderRadius: BorderRadius.circular(8),
                  borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
                ),
-               suffixIcon: IconButton(
-                 icon: Icon(
-                   _isNewPasswordObscure ? Icons.visibility_off : Icons.visibility,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isNewPasswordObscure ? Icons.visibility_off : Icons.visibility,
                    color: Colors.grey.shade600,
-                 ),
-                 onPressed: () {
-                   setState(() {
-                     _isNewPasswordObscure = !_isNewPasswordObscure;
-                   });
-                 },
-               ),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isNewPasswordObscure = !_isNewPasswordObscure;
+                                });
+                              },
+                            ),
                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-             ),
-             obscureText: _isNewPasswordObscure,
+                          ),
+                          obscureText: _isNewPasswordObscure,
              validator: _validateNewPassword,
              onChanged: (value) {
                setState(() {}); // Trigger rebuild for button state
@@ -608,11 +608,11 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           
           const SizedBox(height: 24),
           
-                     TextFormField(
-             controller: _confirmPasswordController,
-             decoration: InputDecoration(
-               labelText: 'Şifre Tekrar',
-               hintText: 'Şifrenizi tekrar girin',
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          decoration: InputDecoration(
+                            labelText: 'Şifre Tekrar',
+                            hintText: 'Şifrenizi tekrar girin',
                border: OutlineInputBorder(
                  borderRadius: BorderRadius.circular(8),
                  borderSide: BorderSide(color: Colors.grey.shade300),
@@ -625,62 +625,62 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                  borderRadius: BorderRadius.circular(8),
                  borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
                ),
-               suffixIcon: IconButton(
-                 icon: Icon(
-                   _isConfirmPasswordObscure ? Icons.visibility_off : Icons.visibility,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isConfirmPasswordObscure ? Icons.visibility_off : Icons.visibility,
                    color: Colors.grey.shade600,
-                 ),
-                 onPressed: () {
-                   setState(() {
-                     _isConfirmPasswordObscure = !_isConfirmPasswordObscure;
-                   });
-                 },
-               ),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isConfirmPasswordObscure = !_isConfirmPasswordObscure;
+                                });
+                              },
+                            ),
                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-             ),
-             obscureText: _isConfirmPasswordObscure,
+                          ),
+                          obscureText: _isConfirmPasswordObscure,
              validator: _validateConfirmPassword,
              onChanged: (value) {
                setState(() {}); // Trigger rebuild for button state
-             },
-           ),
-          
-          const SizedBox(height: 24),
-          
+                          },
+                        ),
+                        
+                        const SizedBox(height: 24),
+                        
           // Error Message
-          Consumer<AuthViewModel>(
-            builder: (context, authViewModel, child) {
+                        Consumer<AuthViewModel>(
+                          builder: (context, authViewModel, child) {
               if (authViewModel.hasError) {
                 return Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
+                                    decoration: BoxDecoration(
                     color: AppTheme.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+                                      border: Border.all(
                       color: AppTheme.error.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
                         Icons.error_outline_rounded,
                         color: AppTheme.error,
-                        size: 20,
-                      ),
+                                          size: 20,
+                                        ),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          authViewModel.errorMessage!,
-                          style: TextStyle(
+                                        Expanded(
+                                          child: Text(
+                                            authViewModel.errorMessage!,
+                                            style: TextStyle(
                             color: AppTheme.error,
-                            fontSize: 14,
+                                              fontSize: 14,
                             fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                 );
               }
               return const SizedBox.shrink();
