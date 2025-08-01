@@ -177,6 +177,20 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     }
   }
 
+  String _getCategoryDisplayNameForShare(Product product) {
+    // Önce categoryName'i kontrol et (API'den direkt gelen)
+    if (product.categoryName.isNotEmpty) {
+      return product.categoryName;
+    }
+    
+    // Sonra category objesini kontrol et
+    if (product.category != null && product.category.name.isNotEmpty) {
+      return product.category.name;
+    }
+    
+    return 'Kategori belirtilmemiş';
+  }
+
   void _shareProduct(BuildContext context, Product product) {
     // Ürün detay sayfası için link oluştur
     final productUrl = 'https://takasly.com/product/${product.id}';
@@ -187,7 +201,7 @@ ${product.title}
 ${product.description ?? 'Açıklama bulunmuyor'}
 
 📍 ${product.cityTitle} / ${product.districtTitle}
-🏷️ ${product.category?.name ?? 'Kategori belirtilmemiş'}
+🏷️ ${_getCategoryDisplayNameForShare(product)}
 📅 ${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}
 
 🔗 Ürün linki: $productUrl
@@ -731,13 +745,22 @@ class _ProductInfoState extends State<_ProductInfo> {
   }
 
   String _getCategoryDisplayName(Product product) {
-    if (product.category == null) return 'Belirtilmemiş';
+    // Önce categoryName'i kontrol et (API'den direkt gelen)
+    if (product.categoryName.isNotEmpty) {
+      return product.categoryName;
+    }
     
-    if (product.category.parentId != null) {
+    // Sonra category objesini kontrol et
+    if (product.category != null && product.category.name.isNotEmpty) {
       return product.category.name;
     }
     
-    return product.category.name;
+    // Son olarak categoryId'yi kontrol et
+    if (product.categoryId.isNotEmpty) {
+      return 'Kategori ID: ${product.categoryId}';
+    }
+    
+    return 'Belirtilmemiş';
   }
 
   Widget _InfoRow(String label, String value) {

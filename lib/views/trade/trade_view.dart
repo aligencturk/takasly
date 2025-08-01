@@ -101,6 +101,13 @@ class _TradeViewState extends State<TradeView>
       // Favorilerin yüklendiğini kontrol et
       print('🔍 TradeView - Checking if favorites loaded successfully');
       print('🔍 TradeView - favoriteProducts.length: ${productViewModel.favoriteProducts.length}');
+      
+      // Takas kontrolu API'sini cagir (UI'nin yuklenmesini bekle)
+      Future.delayed(Duration(milliseconds: 500), () {
+        if (mounted) {
+          _checkTradeStatusesForAllTrades(tradeViewModel);
+        }
+      });
     } else {
       print(
         '❌ TradeView - User ID is null or empty, user might not be logged in',
@@ -1892,7 +1899,51 @@ class _TradeViewState extends State<TradeView>
       
       if (userToken == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kullanıcı token\'ı bulunamadı')),
+          SnackBar(content: Text('Kullanici token\'i bulunamadi')),
+        );
+        return false;
+      }
+
+      // Önce takas kontrolü yap
+      Logger.info('Durum guncelleme oncesi takas kontrolu yapiliyor...', tag: 'TradeView');
+      final checkResult = await tradeViewModel.checkTradeStatus(
+        userToken: userToken,
+        senderProductID: trade.myProduct?.productID ?? 0,
+        receiverProductID: trade.theirProduct?.productID ?? 0,
+      );
+
+      if (checkResult != null && checkResult.data != null) {
+        final data = checkResult.data!;
+        Logger.info('Takas kontrolu sonucu: success=${data.success}, isSender=${data.isSender}, isReceiver=${data.isReceiver}, showButtons=${data.showButtons}, message=${data.message}', tag: 'TradeView');
+        
+        // API'den gelen bilgilere gore islem yap
+        if (!data.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data.message),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return false;
+        }
+        
+        // Butonlarin gosterilip gosterilmeyecegini kontrol et
+        if (!data.showButtons) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data.message),
+              backgroundColor: Colors.blue,
+            ),
+          );
+          return false;
+        }
+      } else {
+        Logger.warning('Takas kontrolu basarisiz', tag: 'TradeView');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Takas durumu kontrol edilemedi. Lutfen tekrar deneyin.'),
+            backgroundColor: Colors.red,
+          ),
         );
         return false;
       }
@@ -1906,7 +1957,7 @@ class _TradeViewState extends State<TradeView>
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Takas durumu başarıyla güncellendi'),
+            content: Text('Takas durumu basariyla guncellendi'),
             backgroundColor: Colors.green,
           ),
         );
@@ -1914,7 +1965,7 @@ class _TradeViewState extends State<TradeView>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(tradeViewModel.errorMessage ?? 'Durum güncellenirken hata oluştu'),
+            content: Text(tradeViewModel.errorMessage ?? 'Durum guncellenirken hata olustu'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1923,11 +1974,76 @@ class _TradeViewState extends State<TradeView>
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Durum güncellenirken hata oluştu: $e'),
+          content: Text('Durum guncellenirken hata olustu: $e'),
           backgroundColor: Colors.red,
         ),
       );
       return false;
+    }
+  }
+
+  /// Tum takaslar icin takas kontrolu API'sini cagir
+  Future<void> _checkTradeStatusesForAllTrades(TradeViewModel tradeViewModel) async {
+    try {
+      Logger.info('Takas kontrolu baslatiliyor...', tag: 'TradeView');
+      
+      final userService = UserService();
+      final userToken = await userService.getUserToken();
+      
+      if (userToken == null || userToken.isEmpty) {
+        Logger.warning('Kullanici token\'i bulunamadi, takas kontrolu yapilamiyor', tag: 'TradeView');
+        return;
+      }
+
+      // Sadece bekleyen takaslari filtrele
+      final pendingTrades = tradeViewModel.userTrades.where((trade) => trade.statusID == 1).toList();
+      
+      if (pendingTrades.isEmpty) {
+        Logger.info('Bekleyen takas bulunamadi, kontrol yapilmiyor', tag: 'TradeView');
+        return;
+      }
+
+      Logger.info('${pendingTrades.length} adet bekleyen takas icin kontrol yapiliyor', tag: 'TradeView');
+
+      // Her trade icin takas kontrolu yap (sira ile, UI'yi bloklamamak icin)
+      for (var i = 0; i < pendingTrades.length; i++) {
+        final trade = pendingTrades[i];
+        
+        // UI'nin responsive kalması için kısa bir gecikme ekle
+        if (i > 0) {
+          await Future.delayed(Duration(milliseconds: 100));
+        }
+        
+        Logger.info('Takas kontrolu yapiliyor: Trade #${trade.offerID} (${i + 1}/${pendingTrades.length})', tag: 'TradeView');
+        
+        try {
+          final checkResult = await tradeViewModel.checkTradeStatus(
+            userToken: userToken,
+            senderProductID: trade.myProduct?.productID ?? 0,
+            receiverProductID: trade.theirProduct?.productID ?? 0,
+          );
+          
+          if (checkResult != null && checkResult.data != null) {
+            final data = checkResult.data!;
+            Logger.info('Takas kontrolu sonucu: success=${data.success}, isSender=${data.isSender}, isReceiver=${data.isReceiver}, showButtons=${data.showButtons}, message=${data.message}', tag: 'TradeView');
+            
+            // API'den gelen bilgilere gore trade durumunu guncelle
+            if (data.success) {
+              Logger.info('Takas kontrolu basarili, guncel durum: ${data.message}', tag: 'TradeView');
+            }
+          } else {
+            Logger.warning('Takas kontrolu basarisiz: Trade #${trade.offerID}', tag: 'TradeView');
+          }
+        } catch (e) {
+          Logger.error('Takas kontrolu sirasinda hata (Trade #${trade.offerID}): $e', tag: 'TradeView');
+          // Hata durumunda devam et, diğer takasları kontrol et
+          continue;
+        }
+      }
+      
+      Logger.info('Takas kontrolu tamamlandi', tag: 'TradeView');
+    } catch (e) {
+      Logger.error('Takas kontrolu sirasinda genel hata: $e', tag: 'TradeView');
     }
   }
 
@@ -1940,15 +2056,59 @@ class _TradeViewState extends State<TradeView>
       
       if (userToken == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kullanıcı token\'ı bulunamadı')),
+          SnackBar(content: Text('Kullanici token\'i bulunamadi')),
         );
         return false;
       }
 
-      // Karşı tarafın kullanıcı ID'sini bul
+      // Önce takas kontrolü yap
+      Logger.info('Takas tamamlama oncesi takas kontrolu yapiliyor...', tag: 'TradeView');
+      final checkResult = await tradeViewModel.checkTradeStatus(
+        userToken: userToken,
+        senderProductID: trade.myProduct?.productID ?? 0,
+        receiverProductID: trade.theirProduct?.productID ?? 0,
+      );
+
+      if (checkResult != null && checkResult.data != null) {
+        final data = checkResult.data!;
+        Logger.info('Takas kontrolu sonucu: success=${data.success}, isSender=${data.isSender}, isReceiver=${data.isReceiver}, showButtons=${data.showButtons}, message=${data.message}', tag: 'TradeView');
+        
+        // API'den gelen bilgilere gore islem yap
+        if (!data.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data.message),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return false;
+        }
+        
+        // Butonlarin gosterilip gosterilmeyecegini kontrol et
+        if (!data.showButtons) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data.message),
+              backgroundColor: Colors.blue,
+            ),
+          );
+          return false;
+        }
+      } else {
+        Logger.warning('Takas kontrolu basarisiz', tag: 'TradeView');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Takas durumu kontrol edilemedi. Lutfen tekrar deneyin.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+
+      // Karsi tarafin kullanici ID'sini bul
       int? toUserID;
       if (trade.myProduct != null && trade.theirProduct != null) {
-        // Eğer benim ürünüm varsa, karşı tarafın ürününün sahibi
+        // Eger benim urunum varsa, karsi tarafin urununun sahibi
         toUserID = trade.theirProduct!.userID;
       } else if (trade.theirProduct != null) {
         toUserID = trade.theirProduct!.userID;
@@ -1956,7 +2116,7 @@ class _TradeViewState extends State<TradeView>
 
       if (toUserID == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Karşı taraf bilgisi bulunamadı')),
+          SnackBar(content: Text('Karsi taraf bilgisi bulunamadi')),
         );
         return false;
       }
@@ -1977,7 +2137,7 @@ class _TradeViewState extends State<TradeView>
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 8),
-                Text('Takas başarıyla tamamlandı ve yorum gönderildi'),
+                Text('Takas basariyla tamamlandi ve yorum gonderildi'),
               ],
             ),
             backgroundColor: Colors.green,
@@ -1988,7 +2148,7 @@ class _TradeViewState extends State<TradeView>
           ),
         );
         
-        // Takasları yeniden yükle
+        // Takaslari yeniden yukle
         final userId = await _authService.getCurrentUserId();
         if (userId != null) {
           await tradeViewModel.loadUserTrades(int.parse(userId));
@@ -1997,16 +2157,16 @@ class _TradeViewState extends State<TradeView>
           // Yenilenen trade'i kontrol et
           final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID);
           if (updatedTrade != null) {
-            Logger.info('✅ Güncellenmiş trade bulundu (completeTradeWithReview): #${updatedTrade.offerID}, statusID=${updatedTrade.statusID}', tag: 'TradeView');
+            Logger.info('✅ Guncellenmis trade bulundu (completeTradeWithReview): #${updatedTrade.offerID}, statusID=${updatedTrade.statusID}', tag: 'TradeView');
           } else {
-            Logger.warning('⚠️ Güncellenmiş trade bulunamadı (completeTradeWithReview): #${trade.offerID}', tag: 'TradeView');
+            Logger.warning('⚠️ Guncellenmis trade bulunamadi (completeTradeWithReview): #${trade.offerID}', tag: 'TradeView');
           }
         }
         return true;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanırken hata oluştu'),
+            content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanirken hata olustu'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2015,7 +2175,7 @@ class _TradeViewState extends State<TradeView>
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Takas tamamlanırken hata oluştu: $e'),
+          content: Text('Takas tamamlanirken hata olustu: $e'),
           backgroundColor: Colors.red,
         ),
       );

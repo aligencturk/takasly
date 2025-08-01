@@ -507,4 +507,42 @@ class TradeService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  /// Takas kontrolü endpoint'i
+  Future<ApiResponse<CheckTradeStatusResponse>> checkTradeStatus({
+    required String userToken,
+    required int senderProductID,
+    required int receiverProductID,
+  }) async {
+    try {
+      Logger.info('Takas kontrolü isteği gönderiliyor... SenderProductID: $senderProductID, ReceiverProductID: $receiverProductID', tag: _tag);
+      
+      final request = CheckTradeStatusRequest(
+        userToken: userToken,
+        senderProductID: senderProductID,
+        receiverProductID: receiverProductID,
+      );
+
+      Logger.debug('Takas kontrolü request: ${request.toJson()}', tag: _tag);
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.checkTradeStatus,
+        body: request.toJson(),
+        fromJson: (json) => CheckTradeStatusResponse.fromJson(json),
+        useBasicAuth: true,
+      );
+
+      if (response.isSuccess) {
+        final data = response.data?.data;
+        Logger.info('Takas kontrolü başarılı: success=${data?.success}, isSender=${data?.isSender}, isReceiver=${data?.isReceiver}, showButtons=${data?.showButtons}, message=${data?.message}', tag: _tag);
+      } else {
+        Logger.error('Takas kontrolü hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas kontrolü exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 } 

@@ -24,6 +24,7 @@ class TradeViewModel extends ChangeNotifier {
   bool _isLoadingMore = false;
   bool _hasMore = true;
   String? _errorMessage;
+  bool _isCheckingTradeStatus = false;
 
   int _currentPage = 1;
   TradeStatus? _currentStatus;
@@ -848,6 +849,51 @@ class TradeViewModel extends ChangeNotifier {
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
+    }
+  }
+
+  /// Takas kontrolü metodu
+  Future<CheckTradeStatusResponse?> checkTradeStatus({
+    required String userToken,
+    required int senderProductID,
+    required int receiverProductID,
+  }) async {
+    Logger.info('Takas kontrolü işlemi başlatılıyor... SenderProductID: $senderProductID, ReceiverProductID: $receiverProductID', tag: 'TradeViewModel');
+
+    // Eğer zaten kontrol yapılıyorsa, bekle
+    if (_isCheckingTradeStatus) {
+      Logger.info('Takas kontrolü zaten devam ediyor, bekleniyor...', tag: 'TradeViewModel');
+      return null;
+    }
+
+    _isCheckingTradeStatus = true;
+    _clearError();
+
+    try {
+      final response = await _tradeService.checkTradeStatus(
+        userToken: userToken,
+        senderProductID: senderProductID,
+        receiverProductID: receiverProductID,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final data = response.data!.data;
+        Logger.info('Takas kontrolü başarılı: success=${data?.success}, isSender=${data?.isSender}, isReceiver=${data?.isReceiver}, showButtons=${data?.showButtons}, message=${data?.message}', tag: 'TradeViewModel');
+        
+        _isCheckingTradeStatus = false;
+        return response.data;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas kontrolü hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+        _isCheckingTradeStatus = false;
+        return null;
+      }
+    } catch (e) {
+      Logger.error('Takas kontrolü exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+      _isCheckingTradeStatus = false;
+      return null;
     }
   }
 

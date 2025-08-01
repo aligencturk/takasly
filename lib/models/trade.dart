@@ -1061,4 +1061,88 @@ class ConfirmTradeData {
       message: json['message'] ?? '',
     );
   }
+}
+
+/// Takas kontrolü request modeli
+class CheckTradeStatusRequest {
+  final String userToken;
+  final int senderProductID;
+  final int receiverProductID;
+
+  const CheckTradeStatusRequest({
+    required this.userToken,
+    required this.senderProductID,
+    required this.receiverProductID,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'userToken': userToken,
+    'senderProductID': senderProductID,
+    'receiverProductID': receiverProductID,
+  };
+
+  @override
+  String toString() {
+    return 'CheckTradeStatusRequest(senderProductID: $senderProductID, receiverProductID: $receiverProductID)';
+  }
+}
+
+/// Takas kontrolü response modeli
+class CheckTradeStatusResponse {
+  final bool error;
+  final CheckTradeStatusData? data;
+  final String? status410;
+
+  const CheckTradeStatusResponse({
+    required this.error,
+    this.data,
+    this.status410,
+  });
+
+  factory CheckTradeStatusResponse.fromJson(Map<String, dynamic> json) {
+    return CheckTradeStatusResponse(
+      error: json['error'] as bool? ?? false,
+      data: json['data'] != null 
+          ? CheckTradeStatusData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+      status410: json['410'] as String?,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'CheckTradeStatusResponse(error: $error, success: ${data?.success}, message: ${data?.message})';
+  }
+}
+
+/// Takas kontrolü data modeli
+class CheckTradeStatusData {
+  final bool success;
+  final bool isSender;
+  final bool isReceiver;
+  final bool showButtons;
+  final String message;
+
+  const CheckTradeStatusData({
+    required this.success,
+    required this.isSender,
+    required this.isReceiver,
+    required this.showButtons,
+    required this.message,
+  });
+
+  factory CheckTradeStatusData.fromJson(Map<String, dynamic> json) {
+    return CheckTradeStatusData(
+      success: json['success'] as bool? ?? false,
+      isSender: json['isSender'] as bool? ?? false,
+      isReceiver: json['isReceiver'] as bool? ?? false,
+      showButtons: json['showButtons'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+    );
+  }
+
+  @override
+  String toString() {
+    return 'CheckTradeStatusData(success: $success, isSender: $isSender, isReceiver: $isReceiver, showButtons: $showButtons, message: $message)';
+  }
 } 

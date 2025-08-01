@@ -372,14 +372,7 @@ class TradeCard extends StatelessWidget {
       tag: 'TradeCard',
     );
 
-    String? cancelDesc;
-    if (!isConfirm) {
-      // Reddetme durumunda açıklama iste
-      cancelDesc = await _showCancelDialog(context);
-      if (cancelDesc == null) return; // Kullanıcı iptal etti
-    }
-
-    // Kullanıcı token'ını al
+    // Önce takas kontrolü API'sini çağır
     final userService = UserService();
     final userToken = await userService.getUserToken();
     
@@ -387,12 +380,69 @@ class TradeCard extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Oturum bilgisi bulunamadı. Lütfen tekrar giriş yapın.'),
+            content: Text('Oturum bilgisi bulunamadi. Lutfen tekrar giris yapin.'),
             backgroundColor: Colors.red,
           ),
         );
       }
       return;
+    }
+
+    // Takas kontrolü yap
+    Logger.info('Takas kontrolu API\'si cagriliyor...', tag: 'TradeCard');
+    final checkResult = await tradeViewModel.checkTradeStatus(
+      userToken: userToken,
+      senderProductID: trade.myProduct?.productID ?? 0,
+      receiverProductID: trade.theirProduct?.productID ?? 0,
+    );
+
+    if (checkResult != null && checkResult.data != null) {
+      final data = checkResult.data!;
+      Logger.info('Takas kontrolu sonucu: success=${data.success}, isSender=${data.isSender}, isReceiver=${data.isReceiver}, showButtons=${data.showButtons}, message=${data.message}', tag: 'TradeCard');
+      
+      // API'den gelen bilgilere gore islem yap
+      if (!data.success) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data.message),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Butonlarin gosterilip gosterilmeyecegini kontrol et
+      if (!data.showButtons) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data.message),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
+        return;
+      }
+    } else {
+      Logger.warning('Takas kontrolu basarisiz', tag: 'TradeCard');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Takas durumu kontrol edilemedi. Lutfen tekrar deneyin.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    String? cancelDesc;
+    if (!isConfirm) {
+      // Reddetme durumunda açıklama iste
+      cancelDesc = await _showCancelDialog(context);
+      if (cancelDesc == null) return; // Kullanıcı iptal etti
     }
 
     final success = await tradeViewModel.confirmTrade(
@@ -414,7 +464,7 @@ class TradeCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 isConfirm 
-                    ? 'Takas başarıyla onaylandı' 
+                    ? 'Takas basariyla onaylandi' 
                     : 'Takas reddedildi',
               ),
             ],
@@ -434,7 +484,7 @@ class TradeCard extends StatelessWidget {
               const Icon(Icons.error_outline, color: Colors.white),
               const SizedBox(width: 8),
               Text(
-                tradeViewModel.errorMessage ?? 'İşlem başarısız oldu',
+                tradeViewModel.errorMessage ?? 'Islem basarisiz oldu',
               ),
             ],
           ),
