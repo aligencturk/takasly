@@ -68,6 +68,7 @@ class UserViewModel extends ChangeNotifier {
         print('✅ UserViewModel - User refreshed successfully');
         print('✅ UserViewModel - Current user: ${_currentUser?.name} (ID: ${_currentUser?.id})');
         print('✅ UserViewModel - User details: firstName=${_currentUser?.firstName}, lastName=${_currentUser?.lastName}');
+        print('✅ UserViewModel - User isVerified: ${_currentUser?.isVerified}');
       } else {
         print('❌ UserViewModel - Failed to refresh user');
       }

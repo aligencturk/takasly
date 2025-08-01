@@ -91,6 +91,11 @@ class _ProfileViewState extends State<ProfileView>
           final productCount = productVm.myProducts.length;
           final favoriteCount = productVm.favoriteProducts.length;
           
+          // Debug logları
+          Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
+          Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
+          Logger.debug('👤 ProfileView - User email: ${user.email}');
+          
           return Column(
             children: [
               _buildProfileHeader(context, user, productCount, favoriteCount),
@@ -603,6 +608,26 @@ class _ProfileViewState extends State<ProfileView>
         ),
       ),
       actions: [
+        IconButton(
+          onPressed: () async {
+            // Debug için kullanıcı verilerini yenile
+            Logger.info('🔄 ProfileView - Manually refreshing user data...');
+            final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+            await userViewModel.forceRefreshUser();
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Kullanıcı verileri yenilendi'),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+          icon: const Icon(Icons.refresh, size: 24),
+          tooltip: 'Verileri Yenile',
+        ),
         IconButton(
           onPressed: () {
             Navigator.push(

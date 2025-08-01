@@ -538,12 +538,14 @@ class UserService {
             };
 
             print('🔍 Get Profile - Transformed data: $transformedData');
+            print('🔍 Get Profile - isVerified in transformed data: ${transformedData['isVerified']}');
 
             try {
               final user = User.fromJson(transformedData);
               print(
                 '🔍 Get Profile - Created user: name=${user.name}, firstName=${user.firstName}, lastName=${user.lastName}',
               );
+              print('🔍 Get Profile - User isVerified: ${user.isVerified}');
               print('✅ Get Profile - User object created successfully');
               return user;
             } catch (e, stackTrace) {

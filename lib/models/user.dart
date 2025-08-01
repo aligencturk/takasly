@@ -68,21 +68,98 @@ class User {
       return defaultValue;
     }
 
+    // isVerified için farklı field isimlerini kontrol et
+    bool getIsVerified(Map<String, dynamic> json) {
+      // API'den gelebilecek farklı field isimleri
+      if (json.containsKey('isVerified')) return safeBool(json['isVerified']);
+      if (json.containsKey('userVerified')) return safeBool(json['userVerified']);
+      if (json.containsKey('isApproved')) return safeBool(json['isApproved']);
+      if (json.containsKey('verified')) return safeBool(json['verified']);
+      return false; // Varsayılan olarak doğrulanmamış
+    }
+
+    // isOnline için farklı field isimlerini kontrol et
+    bool getIsOnline(Map<String, dynamic> json) {
+      if (json.containsKey('isOnline')) return safeBool(json['isOnline']);
+      if (json.containsKey('userOnline')) return safeBool(json['userOnline']);
+      if (json.containsKey('userStatus')) {
+        final status = json['userStatus'];
+        if (status is String) return status.toLowerCase() == 'active';
+        return safeBool(status);
+      }
+      return true; // Varsayılan olarak online kabul et
+    }
+
+    // ID için farklı field isimlerini kontrol et
+    String getId(Map<String, dynamic> json) {
+      if (json.containsKey('id')) return safeString(json['id']);
+      if (json.containsKey('userID')) return safeString(json['userID']);
+      return '';
+    }
+
+    // Name için farklı field isimlerini kontrol et
+    String getName(Map<String, dynamic> json) {
+      if (json.containsKey('name')) return safeString(json['name']);
+      if (json.containsKey('userName')) return safeString(json['userName']);
+      if (json.containsKey('userFullname')) return safeString(json['userFullname']);
+      if (json.containsKey('username')) return safeString(json['username']);
+      
+      // firstName ve lastName'den name oluştur
+      final firstName = json['firstName'] ?? json['userFirstname'];
+      final lastName = json['lastName'] ?? json['userLastname'];
+      if (firstName != null && lastName != null) {
+        return '${safeString(firstName)} ${safeString(lastName)}';
+      } else if (firstName != null) {
+        return safeString(firstName);
+      } else if (lastName != null) {
+        return safeString(lastName);
+      }
+      
+      return 'Kullanıcı';
+    }
+
+    // Email için farklı field isimlerini kontrol et
+    String getEmail(Map<String, dynamic> json) {
+      if (json.containsKey('email')) return safeString(json['email']);
+      if (json.containsKey('userEmail')) return safeString(json['userEmail']);
+      return '';
+    }
+
+    // Phone için farklı field isimlerini kontrol et
+    String? getPhone(Map<String, dynamic> json) {
+      if (json.containsKey('phone')) return safeString(json['phone']);
+      if (json.containsKey('userPhone')) return safeString(json['userPhone']);
+      return null;
+    }
+
+    // Avatar için farklı field isimlerini kontrol et
+    String? getAvatar(Map<String, dynamic> json) {
+      if (json.containsKey('avatar')) return safeString(json['avatar']);
+      if (json.containsKey('userAvatar')) return safeString(json['userAvatar']);
+      if (json.containsKey('profilePhoto')) return safeString(json['profilePhoto']);
+      return null;
+    }
+
     return User(
-      id: safeString(json['id']),
-      name: safeString(json['name']),
-      firstName: json['firstName'] != null ? safeString(json['firstName']) : null,
-      lastName: json['lastName'] != null ? safeString(json['lastName']) : null,
-      email: safeString(json['email']),
-      phone: json['phone'] != null ? safeString(json['phone']) : null,
-      avatar: json['avatar'] != null ? safeString(json['avatar']) : null,
-      isVerified: safeBool(json['isVerified']),
-      isOnline: safeBool(json['isOnline']),
-      createdAt: parseDateTime(json['createdAt']),
-      updatedAt: parseDateTime(json['updatedAt']),
-      lastSeenAt: json['lastSeenAt'] != null ? parseDateTime(json['lastSeenAt']) : null,
-      birthday: json['birthday'] != null ? safeString(json['birthday']) : null,
-      gender: json['gender'] != null ? safeString(json['gender']) : null,
+      id: getId(json),
+      name: getName(json),
+      firstName: json['firstName'] != null ? safeString(json['firstName']) : 
+                 json['userFirstname'] != null ? safeString(json['userFirstname']) : null,
+      lastName: json['lastName'] != null ? safeString(json['lastName']) : 
+                json['userLastname'] != null ? safeString(json['userLastname']) : null,
+      email: getEmail(json),
+      phone: getPhone(json),
+      avatar: getAvatar(json),
+      isVerified: getIsVerified(json),
+      isOnline: getIsOnline(json),
+      createdAt: parseDateTime(json['createdAt'] ?? json['userCreatedAt']),
+      updatedAt: parseDateTime(json['updatedAt'] ?? json['userUpdatedAt']),
+      lastSeenAt: json['lastSeenAt'] != null ? parseDateTime(json['lastSeenAt']) : 
+                  json['userLastSeenAt'] != null ? parseDateTime(json['userLastSeenAt']) : null,
+      birthday: json['birthday'] != null ? safeString(json['birthday']) : 
+                json['userBirthday'] != null ? safeString(json['userBirthday']) : null,
+      gender: json['gender'] != null ? safeString(json['gender']) : 
+              json['userGender'] != null ? safeString(json['userGender']) : null,
       token: json['token'] != null ? safeString(json['token']) : null,
     );
   }
