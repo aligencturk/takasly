@@ -1,6 +1,7 @@
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/trade.dart';
+import '../models/trade_detail.dart';
 import '../utils/logger.dart';
 
 class TradeService {
@@ -542,6 +543,50 @@ class TradeService {
       return response;
     } catch (e) {
       Logger.error('Takas kontrolü exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Takas detayı getir
+  Future<ApiResponse<TradeDetail>> getTradeDetail({
+    required String userToken,
+    required int offerID,
+  }) async {
+    try {
+      Logger.info('Takas detayı getirme isteği gönderiliyor... OfferID: $offerID', tag: _tag);
+      
+      final endpoint = '${ApiConstants.tradeDetail}/$offerID/tradeDetail';
+      final queryParams = {'userToken': userToken};
+      
+      Logger.debug('Takas detayı endpoint: $endpoint', tag: _tag);
+      Logger.debug('Takas detayı query params: $queryParams', tag: _tag);
+
+      final response = await _httpClient.getWithBasicAuth(
+        endpoint,
+        queryParams: queryParams,
+        fromJson: (json) {
+          Logger.debug('Takas detayı response: $json', tag: _tag);
+          // API response'unda data field'ı var, onu parse et
+          if (json is Map<String, dynamic> && json.containsKey('data')) {
+            Logger.debug('Takas detayı data field bulundu: ${json['data']}', tag: _tag);
+            return TradeDetail.fromJson(json['data']);
+          } else {
+            Logger.debug('Takas detayı direkt json parse ediliyor', tag: _tag);
+            return TradeDetail.fromJson(json);
+          }
+        },
+      );
+
+      if (response.isSuccess) {
+        final data = response.data;
+        Logger.info('Takas detayı başarılı: OfferID=${data?.offerID}, Status=${data?.statusTitle}, Sender=${data?.sender.userName}, Receiver=${data?.receiver.userName}', tag: _tag);
+      } else {
+        Logger.error('Takas detayı hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas detayı exception: $e', tag: _tag);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

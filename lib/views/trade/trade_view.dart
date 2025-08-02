@@ -16,6 +16,7 @@ import '../../widgets/skeletons/trade_grid_skeleton.dart';
 import '../../widgets/skeletons/favorite_grid_skeleton.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
+import 'trade_detail_view.dart';
 
 class TradeView extends StatefulWidget {
   const TradeView({super.key});
@@ -409,6 +410,15 @@ class _TradeViewState extends State<TradeView>
                         onTap: () {
                           // Takas detayına git
                           Logger.info('Takas detayına gidiliyor: ${updatedTrade.offerID}', tag: 'TradeView');
+                        },
+                        onDetailTap: () {
+                          // Takas detay sayfasına git
+                          Logger.info('Takas detay sayfasına gidiliyor: ${updatedTrade.offerID}', tag: 'TradeView');
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => TradeDetailView(offerID: updatedTrade.offerID),
+                            ),
+                          );
                         },
                         onStatusChange: (newStatusId) {
                           // TradeCard'dan gelen newStatusId aslında mevcut durum

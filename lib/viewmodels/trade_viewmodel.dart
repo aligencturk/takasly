@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/trade.dart';
+import '../models/trade_detail.dart';
 import '../services/trade_service.dart';
 import '../services/auth_service.dart';
 import '../core/constants.dart';
@@ -19,6 +20,11 @@ class TradeViewModel extends ChangeNotifier {
   List<UserTrade> _userTrades = [];
   String? _currentUserId;
   String? get currentUserId => _currentUserId;
+
+  // Trade Detail state
+  TradeDetail? _selectedTradeDetail;
+  bool _isLoadingTradeDetail = false;
+  String? _tradeDetailErrorMessage;
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -42,6 +48,12 @@ class TradeViewModel extends ChangeNotifier {
   List<TradeStatusModel> get tradeStatuses => _tradeStatuses;
   List<DeliveryType> get deliveryTypes => _deliveryTypes;
   List<UserTrade> get userTrades => _userTrades;
+
+  // Trade Detail getters
+  TradeDetail? get selectedTradeDetail => _selectedTradeDetail;
+  bool get isLoadingTradeDetail => _isLoadingTradeDetail;
+  String? get tradeDetailErrorMessage => _tradeDetailErrorMessage;
+  bool get hasTradeDetailError => _tradeDetailErrorMessage != null;
 
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
@@ -910,6 +922,66 @@ class TradeViewModel extends ChangeNotifier {
       _isCheckingTradeStatus = false;
       return null;
     }
+  }
+
+  /// Takas detayını getir
+  Future<bool> getTradeDetail({
+    required String userToken,
+    required int offerID,
+  }) async {
+    Logger.info('Takas detayı getirme işlemi başlatılıyor... OfferID: $offerID', tag: 'TradeViewModel');
+
+    _setLoadingTradeDetail(true);
+    _clearTradeDetailError();
+
+    try {
+      final response = await _tradeService.getTradeDetail(
+        userToken: userToken,
+        offerID: offerID,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _selectedTradeDetail = response.data;
+        Logger.info('Takas detayı başarıyla getirildi: OfferID=${response.data!.offerID}, Status=${response.data!.statusTitle}', tag: 'TradeViewModel');
+        
+        _setLoadingTradeDetail(false);
+        return true;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas detayı getirme hatası: $errorMsg', tag: 'TradeViewModel');
+        _setTradeDetailError(errorMsg);
+        _setLoadingTradeDetail(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Takas detayı getirme exception: $e', tag: 'TradeViewModel');
+      _setTradeDetailError(ErrorMessages.unknownError);
+      _setLoadingTradeDetail(false);
+      return false;
+    }
+  }
+
+  /// Takas detayını temizle
+  void clearTradeDetail() {
+    _selectedTradeDetail = null;
+    _clearTradeDetailError();
+    notifyListeners();
+  }
+
+  // Private methods for trade detail state management
+  void _setLoadingTradeDetail(bool loading) {
+    _isLoadingTradeDetail = loading;
+    notifyListeners();
+  }
+
+  void _setTradeDetailError(String error) {
+    _tradeDetailErrorMessage = error;
+    notifyListeners();
+  }
+
+  void _clearTradeDetailError() {
+    _tradeDetailErrorMessage = null;
+    notifyListeners();
   }
 
   @override

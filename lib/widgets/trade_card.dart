@@ -13,6 +13,7 @@ class TradeCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Function(int)? onStatusChange;
   final bool? showButtons; // API'den gelen showButtons değeri
+  final VoidCallback? onDetailTap; // Takas detayı için callback
 
   const TradeCard({
     super.key,
@@ -21,6 +22,7 @@ class TradeCard extends StatelessWidget {
     this.onTap,
     this.onStatusChange,
     this.showButtons, // API'den gelen showButtons değeri
+    this.onDetailTap, // Takas detayı için callback
   });
 
   String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
@@ -109,10 +111,10 @@ class TradeCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     
     // isConfirm alanına göre gönderen/alıcı belirleme
-    // isConfirm: 1 -> Gönderen (sender)
-    // isConfirm: 0 -> Alıcı (receiver)
-    final isSender = trade.isConfirm == 1;
-    final isReceiver = trade.isConfirm == 0;
+    // isConfirm: true -> Gönderen (sender)
+    // isConfirm: false -> Alıcı (receiver)
+    final isSender = trade.isConfirm == true;
+    final isReceiver = trade.isConfirm == false;
     
     Logger.debug('🔄 TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, isSender=$isSender, isReceiver=$isReceiver, currentUserId=$currentUserId, myProduct.userID=${trade.myProduct?.userID}, theirProduct.userID=${trade.theirProduct?.userID}, isConfirm=${trade.isConfirm}, showButtons=$showButtons', tag: 'TradeCard');
     
@@ -152,46 +154,49 @@ class TradeCard extends StatelessWidget {
               ),
             ],
           ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Üst kısım - Ürün bilgileri
-                  Row(
+          child: Stack(
+            children: [
+              // Ana içerik
+              InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Benim ürünüm
-                      Expanded(
-                        child: _buildProductInfo(
-                          context,
-                          trade.myProduct,
-                          'Benim Ürünüm',
-                          Colors.blue,
-                        ),
+                      // Üst kısım - Ürün bilgileri
+                      Row(
+                        children: [
+                          // Benim ürünüm
+                          Expanded(
+                            child: _buildProductInfo(
+                              context,
+                              trade.myProduct,
+                              'Benim Ürünüm',
+                              Colors.blue,
+                            ),
+                          ),
+                          // Takas ikonu
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Icon(
+                              Icons.swap_horiz,
+                              color: AppTheme.primary,
+                              size: 20,
+                            ),
+                          ),
+                          // Karşı tarafın ürünü
+                          Expanded(
+                            child: _buildProductInfo(
+                              context,
+                              trade.theirProduct,
+                              'Karşı Taraf',
+                              Colors.green,
+                            ),
+                          ),
+                        ],
                       ),
-                      // Takas ikonu
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Icon(
-                          Icons.swap_horiz,
-                          color: AppTheme.primary,
-                          size: 20,
-                        ),
-                      ),
-                      // Karşı tarafın ürünü
-                      Expanded(
-                        child: _buildProductInfo(
-                          context,
-                          trade.theirProduct,
-                          'Karşı Taraf',
-                          Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 12),
                   
                   // Orta kısım - Takas durumu
@@ -277,9 +282,45 @@ class TradeCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
+              
+              // Üst köşe detay butonu
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onDetailTap,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
