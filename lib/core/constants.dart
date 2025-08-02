@@ -17,8 +17,7 @@ class ApiConstants {
   static const String login = '/service/auth/login';
   static const String register = '/service/auth/register';
   static const String forgotPassword = '/service/auth/forgotPassword';
-  static const String updatePassword =
-      '/service/auth/forgotPassword/updatePass';
+  static const String changePassword = '/service/auth/forgotPassword/updatePass';
   static const String checkCode = '/service/auth/code/checkCode';
   static const String againSendCode = '/service/auth/code/againSendCode';
   static const String profile = '/auth/profile';
@@ -27,7 +26,6 @@ class ApiConstants {
   static const String userProfile = '/service/user/id';
   static const String userProfileDetail = '/service/user/account'; // {userId}/profileDetail
   static const String updateAccount = '/service/user/update/account';
-  static const String updateUserPassword = '/service/user/update/password';
   static const String deleteUser = '/service/user/delete';
   static const String addProduct =
       '/service/user/product'; // {userId}/addProduct eklenecek

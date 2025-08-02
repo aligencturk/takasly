@@ -7,6 +7,7 @@ import '../../services/user_service.dart';
 import '../../utils/logger.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../auth/reset_password_view.dart';
+import 'change_password_view.dart';
 import 'edit_profile_view.dart';
 
 class SettingsView extends StatefulWidget {
@@ -100,7 +101,7 @@ class _SettingsViewState extends State<SettingsView> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const ResetPasswordView(),
+                  builder: (context) => const ChangePasswordView(),
                 ),
               );
             },

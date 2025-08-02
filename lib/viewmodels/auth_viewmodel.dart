@@ -25,14 +25,17 @@ class AuthViewModel extends ChangeNotifier {
   // Getters
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
-  bool get isLoggedIn => _isLoggedIn;
+  bool get isLoggedIn => _isLoggedIn && _isInitialized;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
   bool get isInitialized => _isInitialized;
 
   AuthViewModel() {
     Logger.info('🚀 AuthViewModel constructor called');
-    _initializeAuth();
+    // Constructor'da hiç otomatik giriş yapma
+    // Sadece manuel olarak çağrıldığında giriş yap
+    _isLoggedIn = false;
+    _isInitialized = false;
   }
 
   Future<void> _initializeAuth() async {
@@ -41,7 +44,7 @@ class AuthViewModel extends ChangeNotifier {
       return;
     }
 
-    Logger.info('🔐 AuthViewModel initializing authentication...');
+    Logger.info('🔐 AuthViewModel initializing authentication for hot reload...');
     _setLoading(true);
     
     try {
@@ -72,7 +75,7 @@ class AuthViewModel extends ChangeNotifier {
       }
       
       _isInitialized = true;
-      Logger.info('✅ AuthViewModel initialization completed');
+      Logger.info('✅ AuthViewModel initialization completed for hot reload');
     } catch (e) {
       Logger.error('❌ AuthViewModel initialization error: $e', error: e);
       _setError(ErrorMessages.unknownError);
@@ -459,6 +462,21 @@ class AuthViewModel extends ChangeNotifier {
   }) async {
     Logger.info('🔒 AuthViewModel.updatePassword called with passToken');
     
+    // updatePassword metodunu changePassword metoduna yönlendir
+    return await changePassword(
+      passToken: passToken,
+      password: password,
+      passwordAgain: passwordAgain,
+    );
+  }
+
+  Future<bool> changePassword({
+    required String passToken,
+    required String password,
+    required String passwordAgain,
+  }) async {
+    Logger.info('🔒 AuthViewModel.changePassword called with passToken');
+    
     if (passToken.trim().isEmpty ||
         password.trim().isEmpty ||
         passwordAgain.trim().isEmpty) {
@@ -480,25 +498,84 @@ class AuthViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      Logger.debug('📤 AuthViewModel - Calling authService.updatePassword');
-      final response = await _authService.updatePassword(
+      Logger.debug('📤 AuthViewModel - Calling authService.changePassword');
+      final response = await _authService.changePassword(
         passToken: passToken,
         password: password,
         passwordAgain: passwordAgain,
       );
 
       if (response.isSuccess) {
-        Logger.info('✅ AuthViewModel - Password update successful');
+        Logger.info('✅ AuthViewModel - Password change successful');
         _setLoading(false);
         return true;
       } else {
-        Logger.error('❌ AuthViewModel - Password update failed: ${response.error}');
+        Logger.error('❌ AuthViewModel - Password change failed: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
-      Logger.error('💥 AuthViewModel - Password update exception: $e', error: e);
+      Logger.error('💥 AuthViewModel - Password change exception: $e', error: e);
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Direkt şifre değiştirme (e-posta doğrulaması olmadan)
+  Future<bool> updateUserPassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordAgain,
+  }) async {
+    Logger.info('🔒 AuthViewModel.updateUserPassword called (direct)');
+    
+    if (currentPassword.trim().isEmpty ||
+        newPassword.trim().isEmpty ||
+        newPasswordAgain.trim().isEmpty) {
+      _setError(ErrorMessages.fieldRequired);
+      return false;
+    }
+
+    if (newPassword != newPasswordAgain) {
+      _setError('Şifreler eşleşmiyor');
+      return false;
+    }
+
+    if (newPassword.length < AppConstants.minPasswordLength) {
+      _setError(ErrorMessages.weakPassword);
+      return false;
+    }
+
+    if (currentPassword == newPassword) {
+      _setError('Yeni şifre mevcut şifre ile aynı olamaz');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      Logger.debug('📤 AuthViewModel - Calling authService.updateUserPassword');
+      final response = await _authService.updateUserPassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        newPasswordAgain: newPasswordAgain,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('✅ AuthViewModel - User password update successful');
+        _setLoading(false);
+        return true;
+      } else {
+        Logger.error('❌ AuthViewModel - User password update failed: ${response.error}');
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('💥 AuthViewModel - User password update exception: $e', error: e);
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;

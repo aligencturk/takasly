@@ -681,14 +681,29 @@ class AuthService {
     required String password,
     required String passwordAgain,
   }) async {
+    Logger.info('🔒 UPDATE PASSWORD ATTEMPT with passToken');
+    
+    // updatePassword metodunu changePassword metoduna yönlendir
+    return await changePassword(
+      passToken: passToken,
+      password: password,
+      passwordAgain: passwordAgain,
+    );
+  }
+
+  Future<ApiResponse<void>> changePassword({
+    required String passToken,
+    required String password,
+    required String passwordAgain,
+  }) async {
     try {
-      Logger.info('🔒 UPDATE PASSWORD ATTEMPT with passToken');
+      Logger.info('🔒 CHANGE PASSWORD ATTEMPT with passToken');
       Logger.debug(
-        '📤 Update Password Request Body: {"passToken": "$passToken", "password": "$password", "passwordAgain": "$passwordAgain"}',
+        '📤 Change Password Request Body: {"passToken": "$passToken", "password": "$password", "passwordAgain": "$passwordAgain"}',
       );
 
       final response = await _httpClient.postWithBasicAuth(
-        ApiConstants.updatePassword,
+        ApiConstants.changePassword,
         body: {
           'passToken': passToken,
           'password': password,
@@ -696,24 +711,75 @@ class AuthService {
         },
         useBasicAuth: true,
         fromJson: (json) {
-          Logger.debug('🔍 UpdatePassword fromJson - Raw data: $json');
+          Logger.debug('🔍 ChangePassword fromJson - Raw data: $json');
+          return null; // Change password genelde sadece success/error döner
+        },
+      );
+
+      Logger.debug('📥 ChangePassword Response isSuccess: ${response.isSuccess}');
+      Logger.debug('📥 ChangePassword Response data: ${response.data}');
+      Logger.debug('📥 ChangePassword Response error: ${response.error}');
+
+      if (response.isSuccess) {
+        Logger.info('✅ Password change successful');
+        return ApiResponse.success(null);
+      }
+
+      Logger.error('❌ Password change failed: ${response.error}');
+      return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
+    } catch (e) {
+      Logger.error('💥 Change password exception: $e', error: e);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  // Direkt şifre değiştirme (e-posta doğrulaması olmadan)
+  Future<ApiResponse<void>> updateUserPassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordAgain,
+  }) async {
+    try {
+      Logger.info('🔒 UPDATE USER PASSWORD ATTEMPT (direct)');
+      
+      // Mevcut kullanıcının token'ını al
+      final userToken = await getCurrentUserToken();
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('❌ User token not found');
+        return ApiResponse.error('Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.');
+      }
+      
+      Logger.debug(
+        '📤 Update User Password Request Body: {"passToken": "${userToken.substring(0, 10)}...", "password": "${newPassword.length} chars", "passwordAgain": "${newPasswordAgain.length} chars"}',
+      );
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.changePassword,
+        body: {
+          'passToken': userToken, // Mevcut kullanıcının token'ını kullan
+          'password': newPassword,
+          'passwordAgain': newPasswordAgain,
+        },
+        useBasicAuth: true,
+        fromJson: (json) {
+          Logger.debug('🔍 UpdateUserPassword fromJson - Raw data: $json');
           return null; // Update password genelde sadece success/error döner
         },
       );
 
-      Logger.debug('📥 UpdatePassword Response isSuccess: ${response.isSuccess}');
-      Logger.debug('📥 UpdatePassword Response data: ${response.data}');
-      Logger.debug('📥 UpdatePassword Response error: ${response.error}');
+      Logger.debug('📥 UpdateUserPassword Response isSuccess: ${response.isSuccess}');
+      Logger.debug('📥 UpdateUserPassword Response data: ${response.data}');
+      Logger.debug('📥 UpdateUserPassword Response error: ${response.error}');
 
       if (response.isSuccess) {
-        Logger.info('✅ Password update successful');
+        Logger.info('✅ User password update successful');
         return ApiResponse.success(null);
       }
 
-      Logger.error('❌ Password update failed: ${response.error}');
+      Logger.error('❌ User password update failed: ${response.error}');
       return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
     } catch (e) {
-      Logger.error('💥 Update password exception: $e', error: e);
+      Logger.error('💥 Update user password exception: $e', error: e);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -1033,6 +1099,22 @@ class AuthService {
     } catch (e) {
       Logger.error('❌ AuthService.isLoggedIn - Exception: $e', error: e);
       return false;
+    }
+  }
+
+  // Mevcut kullanıcının token'ını al
+  Future<String?> getCurrentUserToken() async {
+    try {
+      Logger.debug('🔍 AuthService.getCurrentUserToken called');
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(AppConstants.userTokenKey);
+      
+      Logger.debug('🔍 AuthService.getCurrentUserToken - token=[${token?.substring(0, token.length > 10 ? 10 : token.length)}...]');
+      
+      return token;
+    } catch (e) {
+      Logger.error('❌ AuthService.getCurrentUserToken - Exception: $e', error: e);
+      return null;
     }
   }
 }

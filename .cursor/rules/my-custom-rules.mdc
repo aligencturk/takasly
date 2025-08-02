@@ -21,7 +21,7 @@ http paketi kullanılmalı.
 
 Eğer statusCode == 410 ise başarılı say, herhangi bir hata gösterme.
 
-statusCode == 417 ise kullanıcıya görünür şekilde errorMessage ver.
+statusCode == 417 ise kullanıcıya görünür şekilde errorMessage ver. ÖNEMLİ
 
 JSON verileri güvenli parse edilmeli (try-catch yapısı, null kontrolleri vs.)
 

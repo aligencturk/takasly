@@ -678,16 +678,17 @@ class UserService {
       print('🔄 UPDATE USER PASSWORD');
 
       final body = {
-        'userToken': userToken,
-        'oldPassword': oldPassword,
-        'newPassword': newPassword,
+        'passToken': userToken,
+        'password': newPassword,
+        'passwordAgain': newPassword,
       };
 
       print('📤 Request Body: $body');
 
-      final response = await _httpClient.putWithBasicAuth(
-        ApiConstants.updateUserPassword,
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.changePassword,
         body: body,
+        useBasicAuth: true,
         fromJson: (json) {
           print('🔍 Update Password fromJson - Raw data: $json');
 

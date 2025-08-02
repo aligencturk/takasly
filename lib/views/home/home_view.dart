@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
@@ -14,6 +16,7 @@ import '../chat/chat_list_view.dart';
 import '../home/search_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
+import '../../utils/logger.dart';
 
 
 class HomeView extends StatefulWidget {
@@ -32,7 +35,14 @@ class _HomeViewState extends State<HomeView> {
     super.initState();
     _scrollController.addListener(_onScroll);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Hot reload kontrolü - sadece debug modda
+      if (kDebugMode) {
+        Logger.info('🔧 HomeView - Debug mode detected, checking hot reload state...');
+        final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+        await authViewModel.checkHotReloadState();
+      }
+      
       final productViewModel = Provider.of<ProductViewModel>(
         context,
         listen: false,
