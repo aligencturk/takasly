@@ -179,7 +179,7 @@ class _CategoryListState extends State<CategoryList> {
     required bool isSmallScreen,
   }) {
     final color = isSelected ? AppTheme.surface : AppTheme.primary;
-    final bgColor = isSelected ? AppTheme.primary : AppTheme.surface;
+    final bgColor = isSelected ? AppTheme.primary : Colors.transparent;
     
     // Responsive boyutlar
     final iconSize = isSmallScreen ? 20.0 : 24.0;
