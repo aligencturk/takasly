@@ -710,12 +710,15 @@ class _ProfileViewState extends State<ProfileView>
                     // Kullanıcı Adı ve Doğrulama Durumu
                     Row(
                       children: [
-                        Text(
-                          user.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                        Flexible(
+                          child: Text(
+                            user.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (user.isVerified) ...[
@@ -730,7 +733,7 @@ class _ProfileViewState extends State<ProfileView>
                           GestureDetector(
                             onTap: () => _navigateToEmailVerification(),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.orange.shade50,
                                 borderRadius: BorderRadius.circular(12),
@@ -751,10 +754,10 @@ class _ProfileViewState extends State<ProfileView>
                                   const SizedBox(width: 4),
                                   Text(
                                     user.isVerified 
-                                      ? 'E-posta Doğrulandı'
-                                      : 'E-posta Doğrulanmamış',
+                                      ? 'Doğrulandı'
+                                      : 'Doğrulanmamış',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w500,
                                       color: user.isVerified 
                                         ? Colors.green.shade700
