@@ -20,10 +20,15 @@ class _ChatListViewState extends State<ChatListView> {
   @override
   void initState() {
     super.initState();
+    // Sayfa açıldığında hemen loading başlat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadChats();
     });
   }
+
+
+
+
 
   void _loadChats() {
     final authViewModel = context.read<AuthViewModel>();
@@ -33,6 +38,8 @@ class _ChatListViewState extends State<ChatListView> {
       Logger.info('ChatListView: Loading chats for user ${authViewModel.currentUser!.id}');
       chatViewModel.loadChats(authViewModel.currentUser!.id);
       chatViewModel.loadUnreadCount(authViewModel.currentUser!.id);
+    } else {
+      Logger.warning('ChatListView: No current user found');
     }
   }
 
@@ -47,9 +54,25 @@ class _ChatListViewState extends State<ChatListView> {
       ),
       body: Consumer2<ChatViewModel, AuthViewModel>(
         builder: (context, chatViewModel, authViewModel, child) {
-          if (chatViewModel.isLoading && chatViewModel.chats.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(),
+          // Sadece loading true olduğunda loading göster
+          if (chatViewModel.isLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Mesajlar yükleniyor...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 

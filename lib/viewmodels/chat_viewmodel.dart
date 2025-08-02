@@ -34,6 +34,12 @@ class ChatViewModel extends ChangeNotifier {
 
   // Chat'leri yükle
   void loadChats(String userId) {
+    // Eğer zaten yükleniyorsa tekrar yükleme
+    if (_isLoading) {
+      Logger.info('ChatViewModel: Zaten yükleniyor, tekrar yükleme yapılmıyor', tag: _tag);
+      return;
+    }
+    
     _currentUserId = userId;
     _isLoading = true;
     _error = null;
@@ -41,6 +47,9 @@ class ChatViewModel extends ChangeNotifier {
 
     try {
       Logger.info('ChatViewModel: Chat\'ler yükleniyor... userId= [1m$userId [0m', tag: _tag);
+      
+      // Minimum loading süresi için timer
+      final loadingStartTime = DateTime.now();
       
       _chatService.getChatsStream(userId).listen(
         (chats) {
@@ -51,10 +60,22 @@ class ChatViewModel extends ChangeNotifier {
           // Kullanıcı tarafından silinenleri filtrele
           final filteredChats = chats.where((chat) => !chat.deletedBy.contains(userId)).toList();
           _chats = filteredChats;
-          _isLoading = false;
-          // Her chat için unread count hesapla
-          _calculateChatUnreadCounts();
-          notifyListeners();
+          
+          // Minimum 500ms loading göster
+          final loadingDuration = DateTime.now().difference(loadingStartTime);
+          if (loadingDuration.inMilliseconds < 500) {
+            Future.delayed(Duration(milliseconds: 500 - loadingDuration.inMilliseconds), () {
+              _isLoading = false;
+              // Her chat için unread count hesapla
+              _calculateChatUnreadCounts();
+              notifyListeners();
+            });
+          } else {
+            _isLoading = false;
+            // Her chat için unread count hesapla
+            _calculateChatUnreadCounts();
+            notifyListeners();
+          }
         },
         onError: (error) {
           _error = error.toString();

@@ -89,12 +89,28 @@ class _HomeViewState extends State<HomeView> {
       
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
-        onTap: (index) {
+        onTap: (index) async {
           if (index == 2) {
-            Navigator.push(
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const AddProductView()),
             );
+            
+            // Ürün ekleme sayfasından dönüldüğünde ürün listesini yenile
+            if (result == true) {
+              final productViewModel = Provider.of<ProductViewModel>(
+                context,
+                listen: false,
+              );
+              await productViewModel.refreshProducts();
+              
+              // UI'ın yenilenmesini garanti altına al
+              if (mounted) {
+                setState(() {
+                  // State'i yenilemek için boş bir setState çağrısı
+                });
+              }
+            }
           } else {
             setState(() {
               _currentIndex = index;

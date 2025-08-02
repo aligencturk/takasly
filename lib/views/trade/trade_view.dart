@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../viewmodels/trade_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
@@ -11,6 +12,8 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/trade_card.dart';
+import '../../widgets/skeletons/trade_grid_skeleton.dart';
+import '../../widgets/skeletons/favorite_grid_skeleton.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 
@@ -31,26 +34,20 @@ class _TradeViewState extends State<TradeView>
   @override
   void initState() {
     super.initState();
-    print('🔄 TradeView initState called');
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🔄 TradeView postFrameCallback - calling _loadData');
       _loadData();
     });
   }
 
   Future<void> _loadData() async {
-    print('🔄 TradeView _loadData started');
-
     // showButtons Map'ini temizle
     _tradeShowButtonsMap.clear();
 
     // Önce kullanıcının login olup olmadığını kontrol et
     final isLoggedIn = await _authService.isLoggedIn();
-    print('🔍 TradeView - Is user logged in: $isLoggedIn');
 
     if (!isLoggedIn) {
-      print('❌ TradeView - User not logged in, showing error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -76,50 +73,30 @@ class _TradeViewState extends State<TradeView>
       listen: false,
     );
 
-    print('🔄 TradeView - calling tradeViewModel.fetchMyTrades()');
-    tradeViewModel.fetchMyTrades();
-
-    // Takas durumlarını yükle
-    print('🔄 TradeView - calling tradeViewModel.loadTradeStatuses()');
-    await tradeViewModel.loadTradeStatuses();
-
     // Dinamik kullanıcı ID'sini al
-    print('🔄 TradeView - getting current user ID');
     final userId = await _authService.getCurrentUserId();
-    print('🔍 TradeView - User ID: $userId');
 
     if (userId != null && userId.isNotEmpty) {
-      print(
-        '🔄 TradeView - calling productViewModel.loadFavoriteProducts()',
-      );
-      await productViewModel.loadFavoriteProducts();
-      
-      // Kullanıcı takaslarını yükle
-      print('🔄 TradeView - calling tradeViewModel.loadUserTrades($userId)');
+      // Paralel olarak tüm verileri yükle - performans optimizasyonu
       try {
-        await tradeViewModel.loadUserTrades(int.parse(userId));
+        await Future.wait([
+          // Takas durumlarını yükle
+          tradeViewModel.loadTradeStatuses(),
+          // Kullanıcı takaslarını yükle
+          tradeViewModel.loadUserTrades(int.parse(userId)),
+          // Favorileri yükle (eğer yüklenmemişse)
+          productViewModel.favoriteProducts.isEmpty 
+              ? productViewModel.loadFavoriteProducts() 
+              : Future.value(),
+        ]);
+        
+        // Takas kontrolü API'sini arka planda çalıştır (UI'ı bloklamasın)
+        _checkTradeStatusesInBackground(tradeViewModel);
+        
       } catch (e) {
-        print('⚠️ TradeView - loadUserTrades exception: $e');
-        // Exception durumunda hata gösterme, sadece log'la
+        // Hata durumunda sadece log'la, UI'ı bloklama
       }
-      
-      // Favorilerin yüklendiğini kontrol et
-      print('🔍 TradeView - Checking if favorites loaded successfully');
-      print('🔍 TradeView - favoriteProducts.length: ${productViewModel.favoriteProducts.length}');
-      
-      // Takas kontrolu API'sini cagir (UI'nin yuklenmesini bekle)
-      Future.delayed(Duration(milliseconds: 500), () {
-        if (mounted) {
-          _checkTradeStatusesForAllTrades(tradeViewModel);
-        }
-      });
     } else {
-      print(
-        '❌ TradeView - User ID is null or empty, user might not be logged in',
-      );
-      print('❌ TradeView - Redirecting to login or showing error');
-
-      // Kullanıcı login olmamışsa hata göster
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -137,7 +114,6 @@ class _TradeViewState extends State<TradeView>
         );
       }
     }
-    print('🔄 TradeView _loadData completed');
   }
 
   @override
@@ -200,16 +176,7 @@ class _TradeViewState extends State<TradeView>
       ),
       body: Consumer<ProductViewModel>(
         builder: (context, productViewModel, child) {
-          print('🎨 TradeView Consumer builder called - ${DateTime.now()}');
-          print(
-            '🎨 TradeView - productViewModel.isLoading: ${productViewModel.isLoading}',
-          );
-          print(
-            '🎨 TradeView - productViewModel.hasError: ${productViewModel.hasError}',
-          );
-
           if (productViewModel.isLoading) {
-            print('🎨 TradeView - Showing loading widget');
             return Container(
               color: AppTheme.background,
               child: Center(
@@ -249,14 +216,12 @@ class _TradeViewState extends State<TradeView>
           }
 
           if (productViewModel.hasError) {
-            print('🎨 TradeView - Showing error widget (product error)');
             return CustomErrorWidget(
               message: productViewModel.errorMessage!,
               onRetry: _loadData,
             );
           }
 
-          print('🎨 TradeView - Building TabBarView');
           return TabBarView(
             controller: _tabController,
             children: [
@@ -275,35 +240,10 @@ class _TradeViewState extends State<TradeView>
   Widget _buildTradedItemsTab() {
     return Consumer<TradeViewModel>(
       builder: (context, tradeViewModel, child) {
-        Logger.debug('🔄 TradeView Consumer builder called - userTrades.length: ${tradeViewModel.userTrades.length}', tag: 'TradeView');
-        Logger.debug('🔄 TradeView Consumer builder called - isLoading: ${tradeViewModel.isLoading}', tag: 'TradeView');
-        Logger.debug('🔄 TradeView Consumer builder called - hasError: ${tradeViewModel.hasError}', tag: 'TradeView');
         
-        // TradeViewModel'deki her trade'in durumunu log'la
-        for (var trade in tradeViewModel.userTrades) {
-          Logger.debug('🔄 TradeView Consumer - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeView');
-        }
-        
-        if (tradeViewModel.isLoading) {
-          return Container(
-            color: Color(0xFFF8FAFF),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Color(0xFF10B981)),
-                  SizedBox(height: 12),
-                  Text(
-                    'Yükleniyor...',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF718096),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+        // Test için geçici olarak skeleton'ı göster
+        if (tradeViewModel.isLoading || tradeViewModel.userTrades.isEmpty) {
+          return const TradeGridSkeleton();
         }
 
         // Kompakt durum filtreleme butonu
@@ -390,12 +330,6 @@ class _TradeViewState extends State<TradeView>
         }
 
         final trades = tradeViewModel.userTrades;
-        Logger.debug('🔄 TradeView - trades.length: ${trades.length}', tag: 'TradeView');
-        
-        // Her trade'in durumunu log'la
-        for (var trade in trades) {
-          Logger.debug('🔄 TradeView - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeView');
-        }
         
         if (trades.isEmpty) {
           return Container(
@@ -460,15 +394,9 @@ class _TradeViewState extends State<TradeView>
                   itemCount: trades.length,
                   itemBuilder: (context, index) {
                     final trade = trades[index];
-                    Logger.debug('🔄 TradeView ListView.builder - index: $index, trade #${trade.offerID}: statusID=${trade.statusID}', tag: 'TradeView');
                     
                     // TradeViewModel'den güncel trade bilgisini al
                     final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID) ?? trade;
-                    Logger.debug('🔄 TradeView ListView.builder - updated trade #${updatedTrade.offerID}: statusID=${updatedTrade.statusID}', tag: 'TradeView');
-                    
-                    // showButtons değerini log'la
-                    final showButtonsValue = _tradeShowButtonsMap[updatedTrade.offerID];
-                    Logger.debug('🔍 TradeView ListView.builder - Trade #${updatedTrade.offerID} icin showButtons: $showButtonsValue', tag: 'TradeView');
                     
                     return Container(
                       margin: EdgeInsets.only(bottom: 12),
@@ -798,54 +726,12 @@ class _TradeViewState extends State<TradeView>
   Widget _buildFavoritesTab() {
     return Consumer<ProductViewModel>(
       builder: (context, productViewModel, child) {
-        print('🎨 TradeView._buildFavoritesTab called');
-        print('🎨 TradeView - favoriteProducts.length: ${productViewModel.favoriteProducts.length}');
-        print('🎨 TradeView - isLoadingFavorites: ${productViewModel.isLoadingFavorites}');
-        print('🎨 TradeView - hasErrorFavorites: ${productViewModel.hasErrorFavorites}');
-        print('🎨 TradeView - favoriteErrorMessage: ${productViewModel.favoriteErrorMessage}');
-
-        if (productViewModel.isLoadingFavorites) {
-          print('🎨 TradeView - Showing loading for favorites');
-          return Container(
-            color: Color(0xFFF8FAFF),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFF56565),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Favoriler yükleniyor...',
-                    style: TextStyle(
-                      color: Color(0xFFF56565),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+        // Test için geçici olarak skeleton'ı göster
+        if (productViewModel.isLoadingFavorites || productViewModel.favoriteProducts.isEmpty) {
+          return const FavoriteGridSkeleton();
         }
 
         if (productViewModel.hasErrorFavorites) {
-          print('🎨 TradeView - Showing error for favorites');
           return CustomErrorWidget(
             message: productViewModel.favoriteErrorMessage ?? 'Favoriler yüklenirken hata oluştu',
             onRetry: () async {
@@ -855,7 +741,6 @@ class _TradeViewState extends State<TradeView>
         }
 
         if (productViewModel.favoriteProducts.isEmpty) {
-          print('🎨 TradeView - No favorite products, showing empty state');
           return Container(
             color: Color(0xFFF8FAFF),
             child: Center(
@@ -915,7 +800,6 @@ class _TradeViewState extends State<TradeView>
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () async {
-                            print('🔄 TradeView - Manually refreshing favorites');
                             await productViewModel.loadFavoriteProducts();
                           },
                           borderRadius: BorderRadius.circular(16),
@@ -992,7 +876,6 @@ class _TradeViewState extends State<TradeView>
           );
         }
 
-        print('🎨 TradeView - Building favorites grid with ${productViewModel.favoriteProducts.length} products');
         return Container(
           color: Color(0xFFF8FAFF),
           child: RefreshIndicator(
@@ -1011,7 +894,6 @@ class _TradeViewState extends State<TradeView>
                 itemCount: productViewModel.favoriteProducts.length,
                 itemBuilder: (context, index) {
                   final product = productViewModel.favoriteProducts[index];
-                  print('🎨 Building FavoriteProductCard for index $index: ${product.title}');
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -1028,7 +910,6 @@ class _TradeViewState extends State<TradeView>
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
-                          print('🎨 FavoriteProductCard tapped: ${product.title}');
                           _showFavoriteProductDetails(product);
                         },
                         borderRadius: BorderRadius.circular(16),
@@ -1036,7 +917,6 @@ class _TradeViewState extends State<TradeView>
                           product: product,
                           heroTag: 'favorite_${product.id}_$index',
                           onTap: () {
-                            print('🎨 FavoriteProductCard tapped: ${product.title}');
                             _showFavoriteProductDetails(product);
                           },
                         ),
@@ -1428,8 +1308,6 @@ class _TradeViewState extends State<TradeView>
   }
 
   Future<void> _removeFromFavorites(String productId) async {
-    print('💔 TradeView - Removing product from favorites: $productId');
-
     try {
       final productViewModel = Provider.of<ProductViewModel>(
         context,
@@ -1438,14 +1316,10 @@ class _TradeViewState extends State<TradeView>
       final success = await productViewModel.toggleFavorite(productId);
 
       if (success) {
-        print('✅ TradeView - Product removed from favorites successfully');
-        print('✅ TradeView - Current favorite products count: ${productViewModel.favoriteProducts.length}');
-        print('✅ TradeView - Current favorite product IDs: ${productViewModel.favoriteProducts.map((p) => p.id).toList()}');
-        
         // UI'ı manuel olarak yeniden build et
         if (mounted) {
           setState(() {
-            print('🔄 TradeView - setState called to refresh UI');
+            // UI'ı yenile
           });
           
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1471,7 +1345,6 @@ class _TradeViewState extends State<TradeView>
           );
         }
       } else {
-        print('❌ TradeView - Failed to remove product from favorites');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1497,7 +1370,6 @@ class _TradeViewState extends State<TradeView>
         }
       }
     } catch (e) {
-      print('💥 TradeView - Remove from favorites exception: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2010,7 +1882,68 @@ class _TradeViewState extends State<TradeView>
     }
   }
 
-  /// Tum takaslar icin takas kontrolu API'sini cagir
+  /// Arka planda takas kontrolü yap (UI'ı bloklamasın)
+  void _checkTradeStatusesInBackground(TradeViewModel tradeViewModel) {
+    // Arka planda çalıştır, UI'ı bloklamasın
+    Future.microtask(() async {
+      try {
+        final userService = UserService();
+        final userToken = await userService.getUserToken();
+        
+        if (userToken == null || userToken.isEmpty) {
+          return;
+        }
+
+        // Sadece bekleyen takasları kontrol et (performans için)
+        final tradesToCheck = tradeViewModel.userTrades.where((trade) => 
+          trade.statusID == 1 // Sadece bekleyen takaslar
+        ).toList();
+        
+        if (tradesToCheck.isEmpty) {
+          return;
+        }
+
+        // Her trade için takas kontrolü yap (paralel olarak, daha hızlı)
+        final futures = tradesToCheck.map((trade) async {
+          try {
+            final senderProductID = trade.myProduct?.productID ?? 0;
+            final receiverProductID = trade.theirProduct?.productID ?? 0;
+            
+            if (senderProductID == 0 || receiverProductID == 0) {
+              return;
+            }
+            
+            final checkResult = await tradeViewModel.checkTradeStatus(
+              userToken: userToken,
+              senderProductID: senderProductID,
+              receiverProductID: receiverProductID,
+            );
+            
+            if (checkResult != null && checkResult.data != null) {
+              final data = checkResult.data!;
+              _tradeShowButtonsMap[trade.offerID] = data.showButtons;
+              
+              // UI'ı güncelle (mounted kontrolü ile)
+              if (mounted) {
+                setState(() {
+                  // UI'ı yenile
+                });
+              }
+            }
+          } catch (e) {
+            // Hata durumunda sessizce devam et
+          }
+        });
+
+        await Future.wait(futures);
+        
+      } catch (e) {
+        // Genel hata durumunda sessizce devam et
+      }
+    });
+  }
+
+  /// Tum takaslar icin takas kontrolu API'sini cagir (eski metod - geriye uyumluluk için)
   Future<void> _checkTradeStatusesForAllTrades(TradeViewModel tradeViewModel) async {
     try {
       Logger.info('Takas kontrolu baslatiliyor...', tag: 'TradeView');

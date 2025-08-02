@@ -490,6 +490,9 @@ class TradeViewModel extends ChangeNotifier {
 
   /// Takas durumlarını yükle
   Future<void> loadTradeStatuses() async {
+    _setLoading(true);
+    _clearError();
+    
     try {
       Logger.info('Takas durumları yükleniyor...', tag: 'TradeViewModel');
       
@@ -513,6 +516,8 @@ class TradeViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('Takas durumları exception: $e', tag: 'TradeViewModel');
       _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -536,6 +541,9 @@ class TradeViewModel extends ChangeNotifier {
 
   /// Teslimat türlerini yükle
   Future<void> loadDeliveryTypes() async {
+    _setLoading(true);
+    _clearError();
+    
     try {
       Logger.info('Teslimat türleri yükleniyor...', tag: 'TradeViewModel');
       
@@ -553,6 +561,8 @@ class TradeViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('Teslimat türleri exception: $e', tag: 'TradeViewModel');
       _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -617,6 +627,9 @@ class TradeViewModel extends ChangeNotifier {
 
   /// Kullanıcının takaslarını yükle
   Future<void> loadUserTrades(int userId) async {
+    _setLoading(true);
+    _clearError();
+    
     try {
       Logger.info('Kullanıcı takasları yükleniyor... UserID: $userId', tag: 'TradeViewModel');
       _currentUserId = userId.toString();
@@ -667,6 +680,8 @@ class TradeViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('Kullanıcı takasları exception: $e', tag: 'TradeViewModel');
       _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoading(false);
     }
   }
 

@@ -38,6 +38,7 @@ dependencies:
   
   # Local Storage
   shared_preferences: ^2.3.3
+  path_provider: ^2.1.4
   
   # Location Services
   geolocator: ^13.0.1
