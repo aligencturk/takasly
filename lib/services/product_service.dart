@@ -1493,23 +1493,48 @@ class ProductService {
     try {
       final response = await _httpClient.getWithBasicAuth(
         'service/general/general/categories/$parentSubCategoryId',
-        fromJson: (json) => (json['data']['categories'] as List)
-            .map(
-              (item) => Category(
-                id: item['catID'].toString(),
-                name: item['catName'],
-                icon: item['catImage'] ?? '',
-                parentId: parentSubCategoryId,
-                children: null,
-                isActive: true,
-                order: 0,
-              ),
-            )
-            .toList(),
+        fromJson: (json) {
+          print('🏷️ ProductService: Raw sub-sub-categories response: $json');
+          
+          if (json == null) {
+            print('❌ Sub-sub-categories API response is null');
+            return <Category>[];
+          }
+          
+          if (json['data'] == null) {
+            print('❌ Sub-sub-categories API response has no data field');
+            return <Category>[];
+          }
+          
+          if (json['data']['categories'] == null) {
+            print('❌ Sub-sub-categories API response has no categories field in data');
+            return <Category>[];
+          }
+          
+          final categoriesList = json['data']['categories'] as List;
+          print('🏷️ Sub-sub-categories API returned ${categoriesList.length} categories');
+          
+          final categories = categoriesList.map((item) => Category(
+            id: item['catID'].toString(),
+            name: item['catName'],
+            icon: item['catImage'] ?? '',
+            parentId: parentSubCategoryId,
+            children: null,
+            isActive: true,
+            order: 0,
+          )).toList();
+          
+          print('🏷️ Parsed ${categories.length} sub-sub-categories successfully');
+          categories.forEach((cat) => print('  - ${cat.name} (${cat.id})'));
+          
+          return categories;
+        },
       );
 
+      print('🏷️ ProductService: Sub-sub-categories API response: success=${response.isSuccess}, error=${response.error}');
       return response;
     } catch (e) {
+      print('❌ ProductService: Error getting sub-sub-categories: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

@@ -329,6 +329,11 @@ class _EditProductViewState extends State<EditProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         try {
+          print('🔍 EditProduct - SubSubCategory Dropdown Debug:');
+          print('  - Selected SubCategory ID: $_selectedSubCategoryId');
+          print('  - SubSubCategories count: ${vm.subSubCategories.length}');
+          print('  - SubSubCategories items: ${vm.subSubCategories.map((c) => '${c.name}(${c.id})').join(', ')}');
+          
           // Seçili değer geçerli mi kontrol et
           String? validValue = _selectedSubSubCategoryId;
           if (validValue != null) {
@@ -342,7 +347,7 @@ class _EditProductViewState extends State<EditProductView> {
             value: validValue,
             decoration: InputDecoration(
               labelText: 'Ürün Kategorisi',
-              enabled: _selectedSubCategoryId != null,
+              enabled: _selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty,
             ),
             items: vm.subSubCategories
                 .map(
@@ -352,9 +357,12 @@ class _EditProductViewState extends State<EditProductView> {
                   ),
                 )
                 .toList(),
-            onChanged: _selectedSubCategoryId == null
+            onChanged: _selectedSubCategoryId == null || vm.subSubCategories.isEmpty
                 ? null
-                : (value) => setState(() => _selectedSubSubCategoryId = value),
+                : (value) {
+                    print('🔍 EditProduct - SubSubCategory selected: $value');
+                    setState(() => _selectedSubSubCategoryId = value);
+                  },
             validator: (v) => v == null ? 'Alt alt kategori seçimi zorunludur' : null,
           );
         } catch (e) {

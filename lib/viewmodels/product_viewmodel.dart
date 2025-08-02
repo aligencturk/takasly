@@ -492,17 +492,20 @@ class ProductViewModel extends ChangeNotifier {
         _selectedSubCategoryId = parentSubCategoryId;
         print('🏷️ Sub-sub-categories loaded: ${_subSubCategories.length} items');
         _subSubCategories.forEach((cat) => print('  - ${cat.name} (${cat.id})'));
+        print('🏷️ Notifying listeners after loading sub-sub-categories');
         notifyListeners();
       } else {
         print('🏷️ Sub-sub-categories failed: ${response.error}');
         _subSubCategories.clear();
         _selectedSubCategoryId = null;
+        print('🏷️ Notifying listeners after clearing sub-sub-categories');
         notifyListeners();
       }
     } catch (e) {
       print('💥 Sub-sub-categories error: $e');
       _subSubCategories.clear();
       _selectedSubCategoryId = null;
+      print('🏷️ Notifying listeners after error in sub-sub-categories');
       notifyListeners();
     }
   }

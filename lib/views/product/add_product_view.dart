@@ -809,6 +809,11 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildSubSubCategoryDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        print('🔍 SubSubCategory Dropdown Debug:');
+        print('  - Selected SubCategory ID: $_selectedSubCategoryId');
+        print('  - SubSubCategories count: ${vm.subSubCategories.length}');
+        print('  - SubSubCategories items: ${vm.subSubCategories.map((c) => '${c.name}(${c.id})').join(', ')}');
+        
         return DropdownButtonFormField<String>(
           value: _selectedSubSubCategoryId,
           decoration: InputDecoration(
@@ -822,7 +827,10 @@ class _AddProductViewState extends State<AddProductView> {
               .toList(),
           onChanged: _selectedSubCategoryId == null || vm.subSubCategories.isEmpty
               ? null
-              : (value) => setState(() => _selectedSubSubCategoryId = value),
+              : (value) {
+                  print('🔍 SubSubCategory selected: $value');
+                  setState(() => _selectedSubSubCategoryId = value);
+                },
           validator: (v) {
             if (_selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty && v == null) {
               return 'Alt alt kategori seçimi zorunludur';
