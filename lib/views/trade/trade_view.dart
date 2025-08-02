@@ -17,6 +17,7 @@ import '../../widgets/skeletons/favorite_grid_skeleton.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 import 'trade_detail_view.dart';
+import '../product/product_detail_view.dart';
 
 class TradeView extends StatefulWidget {
   const TradeView({super.key});
@@ -736,8 +737,8 @@ class _TradeViewState extends State<TradeView>
   Widget _buildFavoritesTab() {
     return Consumer<ProductViewModel>(
       builder: (context, productViewModel, child) {
-        // Test için geçici olarak skeleton'ı göster
-        if (productViewModel.isLoadingFavorites || productViewModel.favoriteProducts.isEmpty) {
+        // Loading durumunda skeleton göster
+        if (productViewModel.isLoadingFavorites) {
           return const FavoriteGridSkeleton();
         }
 
@@ -780,7 +781,7 @@ class _TradeViewState extends State<TradeView>
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Henüz favori ilanın yok!',
+                      'Henüz favori ilanınız yok',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -920,14 +921,24 @@ class _TradeViewState extends State<TradeView>
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
-                          _showFavoriteProductDetails(product);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProductDetailView(productId: product.id),
+                            ),
+                          );
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: ProductCard(
                           product: product,
                           heroTag: 'favorite_${product.id}_$index',
                           onTap: () {
-                            _showFavoriteProductDetails(product);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductDetailView(productId: product.id),
+                              ),
+                            );
                           },
                         ),
                       ),
