@@ -11,6 +11,7 @@ import 'package:takasly/widgets/loading_widget.dart';
 import 'package:takasly/widgets/product_card.dart';
 import 'package:takasly/utils/logger.dart';
 import 'package:takasly/services/user_service.dart';
+import 'package:takasly/utils/phone_formatter.dart';
 import 'edit_profile_view.dart';
 import 'settings_view.dart';
 import '../product/edit_product_view.dart';
@@ -31,37 +32,9 @@ class _ProfileViewState extends State<ProfileView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
-    // Sayfa ilk açıldığında verileri yükle
+    // Widget build edildikten sonra veri yükleme işlemini yap
     WidgetsBinding.instance.addPostFrameCallback((_) {
-<<<<<<< HEAD
-      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-      final productViewModel = Provider.of<ProductViewModel>(
-        context,
-        listen: false,
-      );
-
-      // Kullanıcı verilerini yükle
-      userViewModel.forceRefreshUser();
-
-      // Şehir ve ilçe verilerini yükle (ilan kartlarında il/ilçe gösterimi için)
-      if (productViewModel.cities.isEmpty) {
-        productViewModel.loadCities();
-      }
-
-      // Kullanıcının ürünlerini yükle
-      final userId = userViewModel.currentUser?.id;
-      if (userId != null) {
-        productViewModel.loadUserProducts(userId);
-        // Favori ürünleri de yükle
-        productViewModel.loadFavoriteProducts();
-        
-        // Kullanıcının profil detaylarını yükle (değerlendirmeler için)
-        _loadUserProfileDetail(int.parse(userId));
-      }
-=======
       _loadProfileData();
->>>>>>> 4b55302d355d2eb7822cb413d11fd6ec06572643
     });
   }
 
@@ -816,7 +789,7 @@ class _ProfileViewState extends State<ProfileView>
                     if (user.phone != null && user.phone!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        user.phone!,
+                        PhoneFormatter.formatPhoneNumber(user.phone!),
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.grey[700],

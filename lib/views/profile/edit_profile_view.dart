@@ -5,6 +5,7 @@ import 'package:takasly/models/user.dart';
 import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:takasly/utils/phone_formatter.dart';
 import 'dart:io';
 import 'dart:convert';
 
@@ -80,7 +81,9 @@ class _EditProfileViewState extends State<EditProfileView> {
         _firstNameController.text = user.firstName ?? '';
         _lastNameController.text = user.lastName ?? '';
         _emailController.text = user.email;
-        _phoneController.text = user.phone ?? '';
+        _phoneController.text = user.phone != null && user.phone!.isNotEmpty 
+            ? PhoneFormatter.formatPhoneNumber(user.phone!) 
+            : '';
         _birthdayController.text = user.birthday ?? '';
         _selectedGender = user.gender?.toString();
       });
@@ -186,7 +189,7 @@ class _EditProfileViewState extends State<EditProfileView> {
         userFirstname: _firstNameController.text,
         userLastname: _lastNameController.text,
         userEmail: _emailController.text,
-        userPhone: _phoneController.text,
+        userPhone: PhoneFormatter.prepareForApi(_phoneController.text),
         userBirthday: _birthdayController.text,
         userGender: _selectedGender != null ? int.tryParse(_selectedGender!) : null,
         profilePhoto: profilePhotoBase64,
@@ -399,10 +402,17 @@ class _EditProfileViewState extends State<EditProfileView> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      validator: validator,
+      inputFormatters: label == 'Telefon' ? [PhoneFormatter.phoneMask] : null,
+      validator: validator ?? (label == 'Telefon' ? (value) {
+        if (value != null && value.isNotEmpty && !PhoneFormatter.isValidPhoneNumber(value)) {
+          return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
+        }
+        return null;
+      } : null),
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
+        hintText: label == 'Telefon' ? '0(5XX) XXX XX XX' : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
+import '../../utils/phone_formatter.dart';
 
 class RegisterView extends StatelessWidget {
   const RegisterView({super.key});
@@ -175,7 +176,7 @@ class _RegisterFormState extends State<_RegisterForm> {
       lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
-      phone: _phoneController.text.trim(),
+      phone: PhoneFormatter.prepareForApi(_phoneController.text.trim()),
       policy: _acceptPolicy,
       kvkk: _acceptKvkk,
     );
@@ -380,11 +381,12 @@ class _RegisterFormState extends State<_RegisterForm> {
           TextFormField(
             controller: _phoneController,
             keyboardType: TextInputType.phone,
+            inputFormatters: [PhoneFormatter.phoneMask],
             style: const TextStyle(fontSize: 14),
             decoration: const InputDecoration(
               labelText: 'Telefon',
               prefixIcon: Icon(Icons.phone_outlined, size: 20),
-              hintText: '05XX XXX XX XX',
+              hintText: '0(5XX) XXX XX XX',
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               isDense: true,
             ),
@@ -392,11 +394,8 @@ class _RegisterFormState extends State<_RegisterForm> {
               if (value == null || value.trim().isEmpty) {
                 return 'Telefon numarası gerekli';
               }
-              // Türkiye telefon numarası formatı kontrolü
-              final phoneRegex = RegExp(r'^(05)([0-9]{9})$');
-              final cleanPhone = value.replaceAll(RegExp(r'[^\d]'), '');
-              if (!phoneRegex.hasMatch(cleanPhone)) {
-                return 'Geçerli bir telefon numarası girin (05XXXXXXXXX)';
+              if (!PhoneFormatter.isValidPhoneNumber(value)) {
+                return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
               }
               return null;
             },
