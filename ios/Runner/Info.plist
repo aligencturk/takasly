@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -24,18 +26,20 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Bu uygulama ürün fotoğrafları çekmek için kameraya erişim istiyor.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Bu uygulama ürün fotoğrafları seçmek için foto galerisine erişim istiyor.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Bu uygulama ürün fotoğrafları çekmek için kameraya erişim istiyor.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Bu uygulama ürün fotoğrafları seçmek için foto galerisine erişim istiyor.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -49,9 +53,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
 </dict>
 </plist>
