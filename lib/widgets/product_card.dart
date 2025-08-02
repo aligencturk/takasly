@@ -111,8 +111,20 @@ class ProductCard extends StatelessWidget {
         );
       },
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.grey[200]!,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,6 +151,9 @@ class ProductCard extends StatelessWidget {
                           return Container(
                             decoration: BoxDecoration(
                               color: Colors.grey[50],
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(8),
+                              ),
                             ),
                             child: Center(
                               child: Column(
@@ -164,11 +179,13 @@ class ProductCard extends StatelessWidget {
                         }
                         
                         return ClipRRect(
-                          borderRadius: BorderRadius.zero,
-                          child: CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(8),
+                          ),
+                                                     child: CachedNetworkImage(
+                             imageUrl: imageUrl,
+                             fit: BoxFit.cover,
+                             width: double.infinity,
                             placeholder: (context, url) => Shimmer.fromColors(
                               baseColor: Colors.grey[200]!,
                               highlightColor: Colors.grey[100]!,
@@ -178,6 +195,9 @@ class ProductCard extends StatelessWidget {
                               return Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(8),
+                                  ),
                                 ),
                                 child: Center(
                                   child: Column(
