@@ -27,6 +27,12 @@ class _TradeDetailViewState extends State<TradeDetailView> {
     _loadTradeDetail();
   }
 
+  @override
+  void dispose() {
+    Logger.info('🔄 TradeDetailView.dispose() - Widget dispose ediliyor', tag: 'TradeDetailView');
+    super.dispose();
+  }
+
   Future<void> _loadTradeDetail() async {
     final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
     

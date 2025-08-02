@@ -31,6 +31,7 @@ class TradeViewModel extends ChangeNotifier {
   bool _hasMore = true;
   String? _errorMessage;
   bool _isCheckingTradeStatus = false;
+  bool _isDisposed = false;
 
   int _currentPage = 1;
   TradeStatus? _currentStatus;
@@ -940,52 +941,69 @@ class TradeViewModel extends ChangeNotifier {
         offerID: offerID,
       );
 
-      if (response.isSuccess && response.data != null) {
-        _selectedTradeDetail = response.data;
-        Logger.info('Takas detayı başarıyla getirildi: OfferID=${response.data!.offerID}, Status=${response.data!.statusTitle}', tag: 'TradeViewModel');
-        
-        _setLoadingTradeDetail(false);
-        return true;
+      // Widget dispose edilmişse işlemi durdur
+      if (!_isDisposed) {
+        if (response.isSuccess && response.data != null) {
+          _selectedTradeDetail = response.data;
+          Logger.info('Takas detayı başarıyla getirildi: OfferID=${response.data!.offerID}, Status=${response.data!.statusTitle}', tag: 'TradeViewModel');
+          
+          _setLoadingTradeDetail(false);
+          return true;
+        } else {
+          final errorMsg = response.error ?? ErrorMessages.unknownError;
+          Logger.error('Takas detayı getirme hatası: $errorMsg', tag: 'TradeViewModel');
+          _setTradeDetailError(errorMsg);
+          _setLoadingTradeDetail(false);
+          return false;
+        }
       } else {
-        final errorMsg = response.error ?? ErrorMessages.unknownError;
-        Logger.error('Takas detayı getirme hatası: $errorMsg', tag: 'TradeViewModel');
-        _setTradeDetailError(errorMsg);
-        _setLoadingTradeDetail(false);
+        Logger.warning('Widget dispose edildi, işlem iptal edildi', tag: 'TradeViewModel');
         return false;
       }
     } catch (e) {
       Logger.error('Takas detayı getirme exception: $e', tag: 'TradeViewModel');
-      _setTradeDetailError(ErrorMessages.unknownError);
-      _setLoadingTradeDetail(false);
+      if (!_isDisposed) {
+        _setTradeDetailError(ErrorMessages.unknownError);
+        _setLoadingTradeDetail(false);
+      }
       return false;
     }
   }
 
   /// Takas detayını temizle
   void clearTradeDetail() {
-    _selectedTradeDetail = null;
-    _clearTradeDetailError();
-    notifyListeners();
+    if (!_isDisposed) {
+      _selectedTradeDetail = null;
+      _clearTradeDetailError();
+      notifyListeners();
+    }
   }
 
   // Private methods for trade detail state management
   void _setLoadingTradeDetail(bool loading) {
-    _isLoadingTradeDetail = loading;
-    notifyListeners();
+    if (!_isDisposed) {
+      _isLoadingTradeDetail = loading;
+      notifyListeners();
+    }
   }
 
   void _setTradeDetailError(String error) {
-    _tradeDetailErrorMessage = error;
-    notifyListeners();
+    if (!_isDisposed) {
+      _tradeDetailErrorMessage = error;
+      notifyListeners();
+    }
   }
 
   void _clearTradeDetailError() {
-    _tradeDetailErrorMessage = null;
-    notifyListeners();
+    if (!_isDisposed) {
+      _tradeDetailErrorMessage = null;
+      notifyListeners();
+    }
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     super.dispose();
   }
 }
