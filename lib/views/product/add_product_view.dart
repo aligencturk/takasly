@@ -21,6 +21,7 @@ class _AddProductViewState extends State<AddProductView> {
   String? _selectedCategoryId;
   String? _selectedSubCategoryId;
   String? _selectedSubSubCategoryId;
+  String? _selectedSubSubSubCategoryId;
   String? _selectedConditionId;
   String? _selectedCityId;
   String? _selectedDistrictId;
@@ -144,7 +145,7 @@ class _AddProductViewState extends State<AddProductView> {
       print('  ${i + 1}. ${_selectedImages[i].path.split('/').last}');
     }
 
-    final categoryId = _selectedSubCategoryId ?? _selectedCategoryId;
+    final categoryId = _selectedSubSubSubCategoryId ?? _selectedSubSubCategoryId ?? _selectedSubCategoryId ?? _selectedCategoryId;
     
     final success = await Provider.of<ProductViewModel>(context, listen: false)
         .addProductWithEndpoint(
@@ -560,9 +561,48 @@ class _AddProductViewState extends State<AddProductView> {
           // Form fields
           _buildCategoryDropdown(),
           const SizedBox(height: 24),
-          _buildSubCategoryDropdown(),
-          const SizedBox(height: 24),
-          _buildSubSubCategoryDropdown(),
+          Consumer<ProductViewModel>(
+            builder: (context, vm, child) {
+              // Sadece alt kategorileri varsa 2. seviye dropdown'ı göster
+              if (vm.subCategories.isNotEmpty) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 24),
+                    _buildSubCategoryDropdown(),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          Consumer<ProductViewModel>(
+            builder: (context, vm, child) {
+              // Sadece alt kategorileri varsa 3. seviye dropdown'ı göster
+              if (vm.subSubCategories.isNotEmpty) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 24),
+                    _buildSubSubCategoryDropdown(),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          Consumer<ProductViewModel>(
+            builder: (context, vm, child) {
+              // Sadece alt kategorileri varsa 4. seviye dropdown'ı göster
+              if (vm.subSubSubCategories.isNotEmpty) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 24),
+                    _buildSubSubSubCategoryDropdown(),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           const SizedBox(height: 24),
           _buildConditionDropdown(),
         ],
@@ -809,15 +849,10 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildSubSubCategoryDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
-        print('🔍 SubSubCategory Dropdown Debug:');
-        print('  - Selected SubCategory ID: $_selectedSubCategoryId');
-        print('  - SubSubCategories count: ${vm.subSubCategories.length}');
-        print('  - SubSubCategories items: ${vm.subSubCategories.map((c) => '${c.name}(${c.id})').join(', ')}');
-        
         return DropdownButtonFormField<String>(
           value: _selectedSubSubCategoryId,
           decoration: InputDecoration(
-            labelText: 'Ürün Kategorisi',
+            labelText: 'Alt Alt Kategori',
             enabled: _selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty,
           ),
           items: vm.subSubCategories
@@ -827,13 +862,50 @@ class _AddProductViewState extends State<AddProductView> {
               .toList(),
           onChanged: _selectedSubCategoryId == null || vm.subSubCategories.isEmpty
               ? null
-              : (value) {
-                  print('🔍 SubSubCategory selected: $value');
-                  setState(() => _selectedSubSubCategoryId = value);
-                },
+                              : (value) {
+                    setState(() {
+                      _selectedSubSubCategoryId = value;
+                      _selectedSubSubSubCategoryId = null; // 4. seviye kategoriyi sıfırla
+                    });
+                    if (value != null) {
+                      vm.loadSubSubSubCategories(value);
+                    } else {
+                      vm.clearSubSubSubCategories();
+                    }
+                  },
           validator: (v) {
             if (_selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty && v == null) {
               return 'Alt alt kategori seçimi zorunludur';
+            }
+            return null;
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSubSubSubCategoryDropdown() {
+    return Consumer<ProductViewModel>(
+      builder: (context, vm, child) {
+        return DropdownButtonFormField<String>(
+          value: _selectedSubSubSubCategoryId,
+          decoration: InputDecoration(
+            labelText: 'Ürün Kategorisi',
+            enabled: _selectedSubSubCategoryId != null && vm.subSubSubCategories.isNotEmpty,
+          ),
+          items: vm.subSubSubCategories
+              .map(
+                (cat) => DropdownMenuItem(value: cat.id, child: Text(cat.name)),
+              )
+              .toList(),
+          onChanged: _selectedSubSubCategoryId == null || vm.subSubSubCategories.isEmpty
+              ? null
+                              : (value) {
+                    setState(() => _selectedSubSubSubCategoryId = value);
+                  },
+          validator: (v) {
+            if (_selectedSubSubCategoryId != null && vm.subSubSubCategories.isNotEmpty && v == null) {
+              return 'Alt alt alt kategori seçimi zorunludur';
             }
             return null;
           },

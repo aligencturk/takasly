@@ -1539,6 +1539,45 @@ class ProductService {
     }
   }
 
+  Future<ApiResponse<List<Category>>> getSubSubSubCategories(String parentSubSubCategoryId) async {
+    try {
+      final response = await _httpClient.getWithBasicAuth(
+        'service/general/general/categories/$parentSubSubCategoryId',
+        fromJson: (json) {
+          if (json == null) {
+            return <Category>[];
+          }
+          
+          if (json['data'] == null) {
+            return <Category>[];
+          }
+          
+          if (json['data']['categories'] == null) {
+            return <Category>[];
+          }
+          
+          final categoriesList = json['data']['categories'] as List;
+          
+          final categories = categoriesList.map((item) => Category(
+            id: item['catID'].toString(),
+            name: item['catName'],
+            icon: item['catImage'] ?? '',
+            parentId: parentSubSubCategoryId,
+            children: null,
+            isActive: true,
+            order: 0,
+          )).toList();
+          
+          return categories;
+        },
+      );
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
   Future<ApiResponse<List<City>>> getCities() async {
     print(
       '🏙️ ProductService: Getting cities from service/general/general/cities/all',

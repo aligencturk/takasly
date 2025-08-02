@@ -103,14 +103,14 @@ class _SplashViewState extends State<SplashView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2196F3),
+      backgroundColor: const Color(0xFF10B981), // AppTheme.primary ile uyumlu yeşil
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo
+            // Takasly Logo
             Container(
-              width: 120,
+              width: 200,
               height: 120,
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -123,35 +123,40 @@ class _SplashViewState extends State<SplashView> {
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.swap_horiz_rounded,
-                size: 60,
-                color: Color(0xFF2196F3),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/images/takasly splash image.png',
+                  fit: BoxFit.contain,
+                  width: 180,
+                  height: 100,
+                ),
               ),
             ),
             
             const SizedBox(height: 32),
             
-            // App Name
-            const Text(
-              AppConstants.appName,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            // App Name (artık gerekli değil çünkü logo'da var)
+            // const Text(
+            //   AppConstants.appName,
+            //   style: TextStyle(
+            //     fontSize: 32,
+            //     fontWeight: FontWeight.bold,
+            //     color: Colors.white,
+            //   ),
+            // ),
             
-            const SizedBox(height: 8),
+            // const SizedBox(height: 8),
             
             // Subtitle
             const Text(
               'Kullanmadığın Eşyaları Takaslayarak Yenile',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white70,
+                color: Colors.white,
                 fontWeight: FontWeight.w400,
               ),
+              textAlign: TextAlign.center,
             ),
             
             const SizedBox(height: 48),

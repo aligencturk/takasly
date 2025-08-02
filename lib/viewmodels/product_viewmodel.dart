@@ -22,8 +22,10 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Category> _categories = [];
   List<product_model.Category> _subCategories = [];
   List<product_model.Category> _subSubCategories = [];
+  List<product_model.Category> _subSubSubCategories = [];
   String? _selectedParentCategoryId;
   String? _selectedSubCategoryId;
+  String? _selectedSubSubCategoryId;
   List<City> _cities = [];
   List<District> _districts = [];
   List<Condition> _conditions = [];
@@ -57,8 +59,10 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Category> get categories => _categories;
   List<product_model.Category> get subCategories => _subCategories;
   List<product_model.Category> get subSubCategories => _subSubCategories;
+  List<product_model.Category> get subSubSubCategories => _subSubSubCategories;
   String? get selectedParentCategoryId => _selectedParentCategoryId;
   String? get selectedSubCategoryId => _selectedSubCategoryId;
+  String? get selectedSubSubCategoryId => _selectedSubSubCategoryId;
   List<City> get cities => _cities;
   List<District> get districts => _districts;
   List<Condition> get conditions => _conditions;
@@ -474,8 +478,10 @@ class ProductViewModel extends ChangeNotifier {
   void clearSubCategories() {
     _subCategories.clear();
     _subSubCategories.clear();
+    _subSubSubCategories.clear();
     _selectedParentCategoryId = null;
     _selectedSubCategoryId = null;
+    _selectedSubSubCategoryId = null;
     notifyListeners();
   }
 
@@ -512,7 +518,35 @@ class ProductViewModel extends ChangeNotifier {
 
   void clearSubSubCategories() {
     _subSubCategories.clear();
+    _subSubSubCategories.clear();
     _selectedSubCategoryId = null;
+    _selectedSubSubCategoryId = null;
+    notifyListeners();
+  }
+
+  Future<void> loadSubSubSubCategories(String parentSubSubCategoryId) async {
+    try {
+      final response = await _productService.getSubSubSubCategories(parentSubSubCategoryId);
+
+      if (response.isSuccess && response.data != null) {
+        _subSubSubCategories = response.data ?? [];
+        _selectedSubSubCategoryId = parentSubSubCategoryId;
+        notifyListeners();
+      } else {
+        _subSubSubCategories.clear();
+        _selectedSubSubCategoryId = null;
+        notifyListeners();
+      }
+    } catch (e) {
+      _subSubSubCategories.clear();
+      _selectedSubSubCategoryId = null;
+      notifyListeners();
+    }
+  }
+
+  void clearSubSubSubCategories() {
+    _subSubSubCategories.clear();
+    _selectedSubSubCategoryId = null;
     notifyListeners();
   }
 
