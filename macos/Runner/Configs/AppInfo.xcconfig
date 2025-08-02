@@ -8,7 +8,7 @@
 PRODUCT_NAME = takasly
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.takasly.takasly
+PRODUCT_BUNDLE_IDENTIFIER = com.rivorya.takasly
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2025 com.takasly. All rights reserved.

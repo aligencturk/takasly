@@ -489,7 +489,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                                                   borderRadius: BorderRadius.circular(8),
                                                 ),
                                                 child: Text(
-                                                  product.categoryName,
+                                                  product.catname,
                                                   style: TextStyle(
                                                     color: AppTheme.primary,
                                                     fontSize: 12,
@@ -1274,7 +1274,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   Row(
                     children: [
                       Text(
-                        product.categoryName,
+                          product.catname,
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 12,
@@ -1756,7 +1756,7 @@ class _MessageBubble extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            product.categoryName,
+                            product.catname,
                             style: TextStyle(
                               color: AppTheme.primary,
                               fontSize: 9,

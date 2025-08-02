@@ -339,12 +339,11 @@ class HomeAppBar extends StatelessWidget {
         children: [
          
           const SizedBox(width: 8),
-          Text(
-            'Takasly',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
+          Image.asset(
+            'assets/icons/icontext.png',
+            width: 30,
+            height: 30,
+            
           ),
         ],
       ),

@@ -42,7 +42,7 @@ class FirebaseChatService {
           'description': product.description,
           'images': product.images,
           'categoryId': product.categoryId,
-          'categoryName': product.categoryName,
+          'catname': product.catname,
           'condition': product.condition,
           'brand': product.brand,
           'model': product.model,

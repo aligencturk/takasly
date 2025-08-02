@@ -24,7 +24,7 @@ class ProductCard extends StatelessWidget {
 
   String _getCategoryDisplayName(Product product, BuildContext context) {
     Logger.debug('Product ${product.id} - 3-Layer Category Check:');
-    Logger.debug('  categoryName: "${product.categoryName}"');
+    Logger.debug('  categoryName: "${product.catname}"');
     Logger.debug('  category.name: "${product.category.name}"');
     Logger.debug('  categoryId: "${product.categoryId}"');
     Logger.debug('  mainCategoryName: "${product.mainCategoryName}"');
@@ -63,11 +63,11 @@ class ProductCard extends StatelessWidget {
     }
 
     // 4. Direkt categoryName alanı (categoryList'ten gelen en spesifik kategori)
-    if (product.categoryName.isNotEmpty &&
-        product.categoryName != 'null' &&
-        product.categoryName != 'Kategori') {
-      Logger.debug('Using categoryName: ${product.categoryName}');
-      return product.categoryName;
+    if (product.catname.isNotEmpty &&
+        product.catname != 'null' &&
+        product.catname != 'Kategori') {
+      Logger.debug('Using categoryName: ${product.catname}');
+      return product.catname;
     }
 
     // 5. Category nesnesinin name alanı

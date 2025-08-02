@@ -30,13 +30,13 @@ Bu rehber, Takasly uygulamasında Firebase Realtime Database ile mesajlaşma sis
 ### Android için:
 1. Sol menüden "Proje ayarları"nı seçin
 2. "Genel" sekmesinde "Android uygulaması ekle" butonuna tıklayın
-3. Android paket adını girin: `com.takasly.takasly`
+3. Android paket adını girin: `com.rivorya.takasly`
 4. `google-services.json` dosyasını indirin
 5. Bu dosyayı `android/app/` klasörüne yerleştirin
 
 ### iOS için:
 1. "iOS uygulaması ekle" butonuna tıklayın
-2. Bundle ID'yi girin: `com.takasly.takasly`
+2. Bundle ID'yi girin: `com.rivorya.takasly`
 3. `GoogleService-Info.plist` dosyasını indirin
 4. Bu dosyayı iOS projesine ekleyin
 

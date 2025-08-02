@@ -1,144 +1,134 @@
+import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:takasly/utils/logger.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
   factory LocationService() => _instance;
   LocationService._internal();
 
-  /// Konum izni kontrolü ve alma
-  Future<bool> requestLocationPermission() async {
-    print('📍 LocationService: Checking location permission...');
-
-    // Önce permission_handler ile kontrol et
-    PermissionStatus permission = await Permission.location.status;
-    print('📍 Current permission status: $permission');
-
-    if (permission.isDenied) {
-      print('📍 Permission denied, requesting...');
-      permission = await Permission.location.request();
-      print('📍 Permission request result: $permission');
-    }
-
-    if (permission.isPermanentlyDenied) {
-      print('❌ Permission permanently denied, opening settings...');
-      await openAppSettings();
+  /// Konum izinlerini kontrol eder
+  Future<bool> checkLocationPermission() async {
+    try {
+      // Önce geolocator ile kontrol et
+      LocationPermission permission = await Geolocator.checkPermission();
+      
+      if (permission == LocationPermission.denied) {
+        // İzin iste
+        permission = await Geolocator.requestPermission();
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        // Kullanıcı kalıcı olarak reddetti
+        Logger.warning('Konum izni kalıcı olarak reddedildi');
+        return false;
+      }
+      
+      // İzin verildi mi kontrol et
+      if (permission == LocationPermission.whileInUse || 
+          permission == LocationPermission.always) {
+        Logger.info('Konum izni verildi');
+        return true;
+      }
+      
+      Logger.warning('Konum izni verilmedi: $permission');
+      return false;
+    } catch (e) {
+      Logger.error('Konum izni kontrol edilirken hata: $e');
       return false;
     }
-
-    if (permission.isGranted) {
-      print('✅ Location permission granted');
-      return true;
-    }
-
-    print('❌ Location permission not granted');
-    return false;
   }
 
-  /// Konum servisinin aktif olup olmadığını kontrol et
+  /// GPS servislerinin açık olup olmadığını kontrol eder
   Future<bool> isLocationServiceEnabled() async {
-    print('📍 LocationService: Checking if location service is enabled...');
-    final bool isEnabled = await Geolocator.isLocationServiceEnabled();
-    print('📍 Location service enabled: $isEnabled');
-
-    if (!isEnabled) {
-      print('❌ Location service is disabled');
+    try {
+      return await Geolocator.isLocationServiceEnabled();
+    } catch (e) {
+      Logger.error('Konum servisi kontrol edilirken hata: $e');
       return false;
     }
-
-    return true;
   }
 
-  /// Mevcut konumu al
+  /// Mevcut konumu alır
   Future<Position?> getCurrentLocation() async {
     try {
-      print('📍 LocationService: Getting current location...');
-
-      // Konum servisi aktif mi kontrol et
-      if (!await isLocationServiceEnabled()) {
-        print('❌ Location service is not enabled');
+      // İzin kontrolü
+      final hasPermission = await checkLocationPermission();
+      if (!hasPermission) {
+        Logger.warning('Konum izni verilmedi');
         return null;
       }
 
-      // İzin var mı kontrol et
-      if (!await requestLocationPermission()) {
-        print('❌ Location permission not granted');
+      // GPS servisi kontrolü
+      final isEnabled = await isLocationServiceEnabled();
+      if (!isEnabled) {
+        Logger.warning('GPS servisi kapalı');
         return null;
       }
 
-      // Geolocator ile konum izni tekrar kontrol et
-      LocationPermission permission = await Geolocator.checkPermission();
-      print('📍 Geolocator permission status: $permission');
-
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        print('📍 Geolocator permission request result: $permission');
-
-        if (permission == LocationPermission.denied) {
-          print('❌ Geolocator permission denied');
-          return null;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        print('❌ Geolocator permission denied forever');
-        return null;
-      }
-
-      // Konum al
-      print('📍 Getting position...');
-      final Position position = await Geolocator.getCurrentPosition(
+      // Konum alma
+      final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
       );
 
-      print('✅ Location obtained: ${position.latitude}, ${position.longitude}');
-      print('📍 Accuracy: ${position.accuracy}m');
-      print('📍 Timestamp: ${position.timestamp}');
-
+      Logger.info('Konum alındı: ${position.latitude}, ${position.longitude}');
       return position;
     } catch (e) {
-      print('❌ Error getting location: $e');
+      Logger.error('Konum alınırken hata: $e');
       return null;
     }
   }
 
-  /// Konum bilgilerini string olarak al
+  /// Konum izinlerini açmaya yönlendirir
+  Future<void> openLocationSettings() async {
+    try {
+      await openAppSettings();
+    } catch (e) {
+      Logger.error('Ayarlar açılırken hata: $e');
+    }
+  }
+
+  /// GPS ayarlarını açmaya yönlendirir
+  Future<void> openGPSSettings() async {
+    try {
+      await Geolocator.openLocationSettings();
+    } catch (e) {
+      Logger.error('GPS ayarları açılırken hata: $e');
+    }
+  }
+
+  /// Mevcut konumu string formatında alır
   Future<Map<String, String>?> getCurrentLocationAsStrings() async {
-    final Position? position = await getCurrentLocation();
-
-    if (position == null) {
+    try {
+      final position = await getCurrentLocation();
+      if (position != null) {
+        return {
+          'latitude': position.latitude.toString(),
+          'longitude': position.longitude.toString(),
+        };
+      }
+      return null;
+    } catch (e) {
+      Logger.error('Konum string formatında alınırken hata: $e');
       return null;
     }
-
-    return {
-      'latitude': position.latitude.toString(),
-      'longitude': position.longitude.toString(),
-    };
   }
 
-  /// İki konum arasındaki mesafeyi hesapla (metre cinsinden)
-  double calculateDistance({
-    required double startLatitude,
-    required double startLongitude,
-    required double endLatitude,
-    required double endLongitude,
-  }) {
-    return Geolocator.distanceBetween(
-      startLatitude,
-      startLongitude,
-      endLatitude,
-      endLongitude,
-    );
-  }
-
-  /// Mesafeyi kullanıcı dostu formatta göster
-  String formatDistance(double distanceInMeters) {
-    if (distanceInMeters < 1000) {
-      return '${distanceInMeters.round()} m';
-    } else {
-      final distanceInKm = distanceInMeters / 1000;
-      return '${distanceInKm.toStringAsFixed(1)} km';
+  /// İki konum arasındaki mesafeyi hesaplar (km)
+  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    try {
+      return Geolocator.distanceBetween(lat1, lon1, lat2, lon2) / 1000;
+    } catch (e) {
+      Logger.error('Mesafe hesaplanırken hata: $e');
+      return 0.0;
     }
+  }
+
+  /// Konum kalitesini kontrol eder
+  bool isLocationAccurate(Position position) {
+    // Konum doğruluğu 100 metreden az ise kabul edilebilir
+    return position.accuracy <= 100;
   }
 }

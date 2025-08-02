@@ -313,10 +313,10 @@ class Message {
       description: safeString(productData['description']),
       images: safeStringList(productData['images']),
       categoryId: safeString(productData['categoryId']),
-      categoryName: safeString(productData['categoryName']),
+      catname: safeString(productData['catname']),
       category: Category(
         id: safeString(productData['categoryId']),
-        name: safeString(productData['categoryName']),
+        name: safeString(productData['catname']),
         icon: '',
         isActive: true,
         order: 0,

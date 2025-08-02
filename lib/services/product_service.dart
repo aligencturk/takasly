@@ -424,63 +424,15 @@ class ProductService {
         endpoint,
         queryParams: queryParams,
         fromJson: (json) {
+          print('🔍 Product Detail API Response: $json');
+          
           // 410: Gone -> başarı
           if (json is Map<String, dynamic> &&
               (json['410'] == 'Gone' || json['success'] == true)) {
             final productJson = json['data']?['product'];
             if (productJson != null) {
-              // Görsel alanlarını birleştir
-              final List<String> images = [];
-              if (productJson['productImage'] != null &&
-                  productJson['productImage'].toString().isNotEmpty &&
-                  productJson['productImage'] != 'null' &&
-                  productJson['productImage'] != 'undefined') {
-                images.add(productJson['productImage']);
-              }
-              if (productJson['productGallery'] != null &&
-                  productJson['productGallery'] is List) {
-                images.addAll(List<String>.from(productJson['productGallery']));
-              }
-              return Product(
-                id: productJson['productID'].toString(),
-                title: productJson['productTitle'] ?? '',
-                cityId: productJson['cityID']?.toString() ?? '',
-                cityTitle: productJson['cityTitle'] ?? '',
-                districtId: productJson['districtID']?.toString() ?? '',
-                districtTitle: productJson['districtTitle'] ?? '',
-                categoryName: productJson['categoryTitle'] ?? '',
-                description: productJson['productDesc'] ?? '',
-                images: images,
-                categoryId: productJson['categoryID']?.toString() ?? '',
-                category: Category(
-                  id: productJson['categoryID']?.toString() ?? '',
-                  name: productJson['categoryTitle'] ?? '',
-                  icon: '',
-                  isActive: true,
-                  order: 0,
-                ),
-                condition: productJson['productCondition'] ?? '',
-                brand: null,
-                model: null,
-                estimatedValue: null,
-                ownerId: productJson['userID']?.toString() ?? '',
-                owner: User(
-                  id: productJson['userID']?.toString() ?? '',
-                  name: productJson['userFullname'] ?? '',
-                  firstName: productJson['userFirstname'],
-                  lastName: productJson['userLastname'],
-                  email: '',
-                  isVerified: false,
-                  isOnline: true,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                ),
-                tradePreferences: [],
-                status: ProductStatus.active,
-                createdAt: _parseDate(productJson['createdAt']?.toString()),
-                updatedAt: DateTime.now(),
-                expiresAt: null,
-              );
+              // Yeni API yanıtını Product modeline dönüştür
+              return Product.fromJson(productJson);
             }
             throw Exception('Ürün detayı bulunamadı');
           }
@@ -494,6 +446,7 @@ class ProductService {
       );
       return response;
     } catch (e) {
+      print('❌ Product Detail Error: $e');
       return ApiResponse.error(e.toString());
     }
   }
@@ -769,7 +722,7 @@ class ProductService {
       description: apiProduct['productDesc']?.toString() ?? '',
       images: images,
       categoryId: apiProduct['categoryID']?.toString() ?? '',
-      categoryName: apiProduct['categoryTitle']?.toString() ?? '',
+      catname: apiProduct['catname']?.toString() ?? '',
       parentCategoryId: parentCategoryId,
       parentCategoryName: parentCategoryName,
       grandParentCategoryId: apiProduct['grandParentCategoryID']?.toString(),
@@ -904,7 +857,7 @@ class ProductService {
       description: apiProduct['productDesc'] ?? '',
       images: images,
       categoryId: categoryId,
-      categoryName: categoryName,
+      catname: categoryName,
         category: Category(
         id: categoryId,
         name: categoryName,

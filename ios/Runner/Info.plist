@@ -34,6 +34,14 @@
 	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Bu uygulama ürün fotoğrafları seçmek için foto galerisine erişim istiyor.</string>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
+	
+	<!-- Location Permissions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Bu uygulama ürününüzün konumunu belirlemek için konum izninize ihtiyaç duyar.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Bu uygulama ürününüzün konumunu belirlemek için konum izninize ihtiyaç duyar.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

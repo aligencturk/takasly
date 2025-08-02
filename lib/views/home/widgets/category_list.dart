@@ -29,7 +29,7 @@ class CategoryList extends StatelessWidget {
           
           return Container(
             height: isSmallScreen ? 90 : 100, // Yüksekliği artırdım çünkü metin 2 satıra çıkabilir
-            color: Colors.white, // Arka plan rengini beyaz yap
+            
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(

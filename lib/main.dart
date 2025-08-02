@@ -68,7 +68,7 @@ class TakaslyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         initialRoute: '/',
         routes: {
-          '/': (context) => const SplashView(),
+          '/': (context) => SplashVideoPage(),
           '/login': (context) => const LoginView(),
           '/register': (context) => const RegisterView(),
           '/home': (context) => const HomeView(),

@@ -10,7 +10,7 @@ class Product {
   final String description;
   final List<String> images;
   final String categoryId;
-  final String categoryName;
+  final String catname;
   final Category category;
   // 3 katmanlı kategori sistemi için ek alanlar
   final String? parentCategoryId;
@@ -36,6 +36,25 @@ class Product {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? expiresAt;
+  
+  // Yeni API alanları
+  final String? productImage;
+  final List<String>? productGallery;
+  final String? productCondition;
+  final String? tradeFor;
+  final List<Category>? categoryList;
+  final String? userFullname;
+  final String? userFirstname;
+  final String? userLastname;
+  final String? userPhone;
+  final String? proView;
+  final bool? isShowContact;
+  final bool? isFavorite;
+  final bool? isSponsor;
+  final bool? isTrade;
+  final String? productLat;
+  final String? productLong;
+  final String? productCode;
 
   const Product({
     required this.id,
@@ -43,7 +62,7 @@ class Product {
     required this.description,
     required this.images,
     required this.categoryId,
-    required this.categoryName,
+    required this.catname,
     required this.category,
     this.parentCategoryId,
     this.parentCategoryName,
@@ -68,6 +87,24 @@ class Product {
     required this.createdAt,
     required this.updatedAt,
     this.expiresAt,
+    // Yeni API alanları
+    this.productImage,
+    this.productGallery,
+    this.productCondition,
+    this.tradeFor,
+    this.categoryList,
+    this.userFullname,
+    this.userFirstname,
+    this.userLastname,
+    this.userPhone,
+    this.proView,
+    this.isShowContact,
+    this.isFavorite,
+    this.isSponsor,
+    this.isTrade,
+    this.productLat,
+    this.productLong,
+    this.productCode,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -76,6 +113,16 @@ class Product {
       if (value is DateTime) return value;
       if (value is String) {
         try {
+          // Türkçe tarih formatı için özel parsing (02.08.2025)
+          if (value.contains('.')) {
+            final parts = value.split('.');
+            if (parts.length == 3) {
+              final day = int.tryParse(parts[0]) ?? 1;
+              final month = int.tryParse(parts[1]) ?? 1;
+              final year = int.tryParse(parts[2]) ?? 2025;
+              return DateTime(year, month, day);
+            }
+          }
           return DateTime.parse(value);
         } catch (e) {
           return DateTime.now();
@@ -115,22 +162,109 @@ class Product {
       return null;
     }
 
+    // Güvenli Category listesi dönüşümü
+    List<Category> safeCategoryList(dynamic value) {
+      if (value is List) {
+        return value.map((e) {
+          if (e is Map<String, dynamic>) {
+            return Category.fromJson(e);
+          }
+          return Category(
+            id: safeString(e['catID'] ?? e['id']),
+            name: safeString(e['catName'] ?? e['name']),
+            icon: '',
+            isActive: true,
+            order: 0,
+          );
+        }).toList();
+      }
+      return [];
+    }
+
+    // Yeni API yanıtı için alan mapping
+    final productId = safeString(json['productID'] ?? json['id']);
+    final productTitle = safeString(json['productTitle'] ?? json['title']);
+    final productDesc = safeString(json['productDesc'] ?? json['description']);
+    final productImage = json['productImage'] != null ? safeString(json['productImage']) : null;
+    final productGallery = json['productGallery'] != null ? safeStringList(json['productGallery']) : null;
+    final productCondition = json['productCondition'] != null ? safeString(json['productCondition']) : null;
+    final tradeFor = json['tradeFor'] != null ? safeString(json['tradeFor']) : null;
+    final categoryList = json['categoryList'] != null ? safeCategoryList(json['categoryList']) : null;
+    final userId = safeString(json['userID'] ?? json['ownerId']);
+    final categoryId = safeString(json['categoryID'] ?? json['categoryId']);
+    final conditionId = safeString(json['conditionID'] ?? json['conditionId']);
+    final cityId = safeString(json['cityID'] ?? json['cityId']);
+    final districtId = safeString(json['districtID'] ?? json['districtId']);
+    final cityTitle = safeString(json['cityTitle']);
+    final districtTitle = safeString(json['districtTitle']);
+    final productLat = json['productLat'] != null ? safeString(json['productLat']) : null;
+    final productLong = json['productLong'] != null ? safeString(json['productLong']) : null;
+    final userFullname = json['userFullname'] != null ? safeString(json['userFullname']) : null;
+    final userFirstname = json['userFirstname'] != null ? safeString(json['userFirstname']) : null;
+    final userLastname = json['userLastname'] != null ? safeString(json['userLastname']) : null;
+    final userPhone = json['userPhone'] != null ? safeString(json['userPhone']) : null;
+    final createdAt = parseDateTime(json['createdAt']);
+    final proView = json['proView'] != null ? safeString(json['proView']) : null;
+    final isShowContact = json['isShowContact'] as bool?;
+    final isFavorite = json['isFavorite'] as bool?;
+    final isSponsor = json['isSponsor'] as bool?;
+    final isTrade = json['isTrade'] as bool?;
+    final productCode = json['productCode'] != null ? safeString(json['productCode']) : null;
+
+    // Ana resim ve galeri resimlerini birleştir
+    final allImages = <String>[];
+    if (productImage != null && productImage.isNotEmpty) {
+      allImages.add(productImage);
+    }
+    if (productGallery != null) {
+      allImages.addAll(productGallery);
+    }
+    if (allImages.isEmpty && json['images'] != null) {
+      allImages.addAll(safeStringList(json['images']));
+    }
+
+    // Kategori bilgisini oluştur
+    Category category;
+    if (categoryList != null && categoryList.isNotEmpty) {
+      category = categoryList.first;
+    } else if (safeMap(json['category']) != null) {
+      category = Category.fromJson(safeMap(json['category'])!);
+    } else {
+      category = Category(
+        id: categoryId,
+        name: safeString(json['catname'] ?? json['categoryName']),
+        icon: '',
+        isActive: true,
+        order: 0,
+      );
+    }
+
+    // Kullanıcı bilgisini oluştur
+    User owner;
+    if (safeMap(json['owner']) != null) {
+      owner = User.fromJson(safeMap(json['owner'])!);
+    } else {
+      owner = User(
+        id: userId,
+        name: userFullname ?? userFirstname ?? 'Kullanıcı',
+        firstName: userFirstname,
+        lastName: userLastname,
+        email: '',
+        isVerified: false,
+        isOnline: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
+
     return Product(
-      id: safeString(json['id']),
-      title: safeString(json['title']),
-      description: safeString(json['description']),
-      images: safeStringList(json['images']),
-      categoryId: safeString(json['categoryId']),
-      categoryName: safeString(json['categoryName']),
-      category: safeMap(json['category']) != null 
-          ? Category.fromJson(safeMap(json['category'])!)
-          : Category(
-              id: safeString(json['categoryId']),
-              name: safeString(json['categoryName']),
-              icon: '',
-              isActive: true,
-              order: 0,
-            ),
+      id: productId,
+      title: productTitle,
+      description: productDesc,
+      images: allImages,
+      categoryId: categoryId,
+      catname: category.name,
+      category: category,
       parentCategoryId: json['parentCategoryId'] != null ? safeString(json['parentCategoryId']) : null,
       parentCategoryName: json['parentCategoryName'] != null ? safeString(json['parentCategoryName']) : null,
       grandParentCategoryId: json['grandParentCategoryId'] != null ? safeString(json['grandParentCategoryId']) : null,
@@ -139,34 +273,42 @@ class Product {
       mainCategoryName: json['mainCategoryName'] != null ? safeString(json['mainCategoryName']) : null,
       subCategoryId: json['subCategoryId'] != null ? safeString(json['subCategoryId']) : null,
       subCategoryName: json['subCategoryName'] != null ? safeString(json['subCategoryName']) : null,
-      condition: safeString(json['condition']),
+      condition: productCondition ?? safeString(json['condition']),
       brand: json['brand'] != null ? safeString(json['brand']) : null,
       model: json['model'] != null ? safeString(json['model']) : null,
       estimatedValue: (json['estimatedValue'] as num?)?.toDouble(),
-      ownerId: safeString(json['ownerId']),
-      owner: safeMap(json['owner']) != null 
-          ? User.fromJson(safeMap(json['owner'])!)
-          : User(
-              id: safeString(json['ownerId']),
-              name: 'Kullanıcı',
-              email: '',
-              isVerified: false,
-              isOnline: false,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            ),
-      tradePreferences: safeStringList(json['tradePreferences']),
+      ownerId: userId,
+      owner: owner,
+      tradePreferences: tradeFor != null ? [tradeFor] : safeStringList(json['tradePreferences']),
       status: ProductStatus.values.firstWhere(
         (e) => e.name == safeString(json['status']),
         orElse: () => ProductStatus.active,
       ),
-      cityId: safeString(json['cityId']),
-      cityTitle: safeString(json['cityTitle']),
-      districtId: safeString(json['districtId']),
-      districtTitle: safeString(json['districtTitle']),
-      createdAt: parseDateTime(json['createdAt']),
+      cityId: cityId,
+      cityTitle: cityTitle,
+      districtId: districtId,
+      districtTitle: districtTitle,
+      createdAt: createdAt,
       updatedAt: parseDateTime(json['updatedAt']),
       expiresAt: json['expiresAt'] != null ? parseDateTime(json['expiresAt']) : null,
+      // Yeni API alanları
+      productImage: productImage,
+      productGallery: productGallery,
+      productCondition: productCondition,
+      tradeFor: tradeFor,
+      categoryList: categoryList,
+      userFullname: userFullname,
+      userFirstname: userFirstname,
+      userLastname: userLastname,
+      userPhone: userPhone,
+      proView: proView,
+      isShowContact: isShowContact,
+      isFavorite: isFavorite,
+      isSponsor: isSponsor,
+      isTrade: isTrade,
+      productLat: productLat,
+      productLong: productLong,
+      productCode: productCode,
     );
   }
   Map<String, dynamic> toJson() {
@@ -208,6 +350,24 @@ class Product {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? expiresAt,
+    // Yeni API alanları
+    String? productImage,
+    List<String>? productGallery,
+    String? productCondition,
+    String? tradeFor,
+    List<Category>? categoryList,
+    String? userFullname,
+    String? userFirstname,
+    String? userLastname,
+    String? userPhone,
+    String? proView,
+    bool? isShowContact,
+    bool? isFavorite,
+    bool? isSponsor,
+    bool? isTrade,
+    String? productLat,
+    String? productLong,
+    String? productCode,
   }) {
     return Product(
       id: id ?? this.id,
@@ -215,7 +375,7 @@ class Product {
       description: description ?? this.description,
       images: images ?? this.images,
       categoryId: categoryId ?? this.categoryId,
-      categoryName: categoryName ?? this.categoryName,
+      catname: catname ?? this.catname,
       category: category ?? this.category,
       parentCategoryId: parentCategoryId ?? this.parentCategoryId,
       parentCategoryName: parentCategoryName ?? this.parentCategoryName,
@@ -240,6 +400,24 @@ class Product {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       expiresAt: expiresAt ?? this.expiresAt,
+      // Yeni API alanları
+      productImage: productImage ?? this.productImage,
+      productGallery: productGallery ?? this.productGallery,
+      productCondition: productCondition ?? this.productCondition,
+      tradeFor: tradeFor ?? this.tradeFor,
+      categoryList: categoryList ?? this.categoryList,
+      userFullname: userFullname ?? this.userFullname,
+      userFirstname: userFirstname ?? this.userFirstname,
+      userLastname: userLastname ?? this.userLastname,
+      userPhone: userPhone ?? this.userPhone,
+      proView: proView ?? this.proView,
+      isShowContact: isShowContact ?? this.isShowContact,
+      isFavorite: isFavorite ?? this.isFavorite,
+      isSponsor: isSponsor ?? this.isSponsor,
+      isTrade: isTrade ?? this.isTrade,
+      productLat: productLat ?? this.productLat,
+      productLong: productLong ?? this.productLong,
+      productCode: productCode ?? this.productCode,
     );
   }
 
@@ -327,8 +505,8 @@ class Category {
     }
 
     return Category(
-      id: safeString(json['id']),
-      name: safeString(json['name']),
+      id: safeString(json['catID'] ?? json['id']),
+      name: safeString(json['catName'] ?? json['name']),
       icon: safeString(json['icon']),
       parentId: json['parentId'] != null ? safeString(json['parentId']) : null,
       parentName: json['parentName'] != null ? safeString(json['parentName']) : null,

@@ -12,7 +12,7 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   description: json['description'] as String,
   images: (json['images'] as List<dynamic>).map((e) => e as String).toList(),
   categoryId: json['categoryId'] as String,
-  categoryName: json['categoryName'] as String,
+  catname: json['catname'] as String,
   category: Category.fromJson(json['category'] as Map<String, dynamic>),
   parentCategoryId: json['parentCategoryId'] as String?,
   parentCategoryName: json['parentCategoryName'] as String?,
@@ -41,6 +41,27 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   expiresAt: json['expiresAt'] == null
       ? null
       : DateTime.parse(json['expiresAt'] as String),
+  productImage: json['productImage'] as String?,
+  productGallery: (json['productGallery'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  productCondition: json['productCondition'] as String?,
+  tradeFor: json['tradeFor'] as String?,
+  categoryList: (json['categoryList'] as List<dynamic>?)
+      ?.map((e) => Category.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  userFullname: json['userFullname'] as String?,
+  userFirstname: json['userFirstname'] as String?,
+  userLastname: json['userLastname'] as String?,
+  userPhone: json['userPhone'] as String?,
+  proView: json['proView'] as String?,
+  isShowContact: json['isShowContact'] as bool?,
+  isFavorite: json['isFavorite'] as bool?,
+  isSponsor: json['isSponsor'] as bool?,
+  isTrade: json['isTrade'] as bool?,
+  productLat: json['productLat'] as String?,
+  productLong: json['productLong'] as String?,
+  productCode: json['productCode'] as String?,
 );
 
 Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
@@ -49,7 +70,7 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'description': instance.description,
   'images': instance.images,
   'categoryId': instance.categoryId,
-  'categoryName': instance.categoryName,
+  'catname': instance.catname,
   'category': instance.category,
   'parentCategoryId': instance.parentCategoryId,
   'parentCategoryName': instance.parentCategoryName,
@@ -74,6 +95,23 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
   'expiresAt': instance.expiresAt?.toIso8601String(),
+  'productImage': instance.productImage,
+  'productGallery': instance.productGallery,
+  'productCondition': instance.productCondition,
+  'tradeFor': instance.tradeFor,
+  'categoryList': instance.categoryList,
+  'userFullname': instance.userFullname,
+  'userFirstname': instance.userFirstname,
+  'userLastname': instance.userLastname,
+  'userPhone': instance.userPhone,
+  'proView': instance.proView,
+  'isShowContact': instance.isShowContact,
+  'isFavorite': instance.isFavorite,
+  'isSponsor': instance.isSponsor,
+  'isTrade': instance.isTrade,
+  'productLat': instance.productLat,
+  'productLong': instance.productLong,
+  'productCode': instance.productCode,
 };
 
 const _$ProductStatusEnumMap = {

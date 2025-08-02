@@ -35,7 +35,7 @@ class _LocationTestViewState extends State<LocationTestView> {
       }
 
       // İzin kontrolü
-      final hasPermission = await locationService.requestLocationPermission();
+      final hasPermission = await locationService.checkLocationPermission();
       setState(() {
         _status = 'İzin durumu: ${hasPermission ? "Verildi" : "Reddedildi"}';
       });

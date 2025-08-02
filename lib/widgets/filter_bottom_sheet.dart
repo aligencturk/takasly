@@ -478,7 +478,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       final locationService = LocationService();
 
       // Konum izni iste
-      final hasPermission = await locationService.requestLocationPermission();
+      final hasPermission = await locationService.checkLocationPermission();
 
       // Loading dialog'u kapat
       if (mounted) Navigator.pop(context);
@@ -559,7 +559,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             onPressed: () async {
               Navigator.pop(context);
               final locationService = LocationService();
-              await locationService.requestLocationPermission();
+              await locationService.openLocationSettings();
             },
             child: const Text('Ayarlara Git'),
           ),

@@ -69,7 +69,7 @@ class DefaultFirebaseOptions {
     projectId: 'takasla-b2aa5',
     databaseURL: 'https://takasla-b2aa5-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'takasla-b2aa5.firebasestorage.app',
-    iosBundleId: 'com.takasly.takasly',
+    iosBundleId: 'com.rivorya.takasly',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -80,7 +80,7 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://your-project-id-default-rtdb.firebaseio.com',
     storageBucket: 'your-project-id.appspot.com',
     iosClientId: 'your-ios-client-id',
-    iosBundleId: 'com.takasly.takasly',
+    iosBundleId: 'com.rivorya.takasly',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

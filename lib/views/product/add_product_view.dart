@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
+import 'package:takasly/services/location_service.dart';
+import 'package:geolocator/geolocator.dart';
 
 class AddProductView extends StatefulWidget {
   const AddProductView({super.key});
@@ -28,6 +30,11 @@ class _AddProductViewState extends State<AddProductView> {
   List<File> _selectedImages = [];
   int _coverImageIndex = 0; // Kapak fotoğrafı indeksi
   final ImagePicker _imagePicker = ImagePicker();
+  
+  // Konum servisi
+  final LocationService _locationService = LocationService();
+  Position? _currentPosition;
+  bool _isGettingLocation = false;
 
   // Step management
   int _currentStep = 0;
@@ -86,6 +93,7 @@ class _AddProductViewState extends State<AddProductView> {
         canGo = _selectedCategoryId != null && _selectedConditionId != null;
         break;
       case 3: // Konum
+        // Sadece manuel seçim (il/ilçe) zorunlu
         canGo = _selectedCityId != null && _selectedDistrictId != null;
         break;
       case 4: // Takas Tercihleri
@@ -95,18 +103,88 @@ class _AddProductViewState extends State<AddProductView> {
         canGo = false;
     }
     
-    print('🔍 Step $_currentStep canGo: $canGo');
-    print('🔍 Trade text: "${_tradeForController.text.trim()}"');
+    // Debug için geçici print
+    print('🔍 Step $_currentStep validation:');
+    print('  - Images: ${_selectedImages.length}');
+    print('  - Title: "${_titleController.text.trim()}"');
+    print('  - Description: "${_descriptionController.text.trim()}"');
+    print('  - Category: $_selectedCategoryId');
+    print('  - Condition: $_selectedConditionId');
+    print('  - City: $_selectedCityId');
+    print('  - District: $_selectedDistrictId');
+    print('  - Trade: "${_tradeForController.text.trim()}"');
+    print('  - Can go: $canGo');
     
     return canGo;
   }
 
-  void _nextStep() {
-    if (_canGoToNextStep() && _currentStep < _totalSteps - 1) {
-      setState(() {
-        _currentStep++;
-      });
+
+
+  void _showValidationError() {
+    String errorMessage = '';
+    
+    switch (_currentStep) {
+      case 0: // Fotoğraflar
+        errorMessage = 'Lütfen en az bir fotoğraf seçin';
+        break;
+      case 1: // Ürün Detayları
+        if (_titleController.text.trim().isEmpty) {
+          errorMessage = 'Lütfen ürün başlığını girin';
+        } else if (_descriptionController.text.trim().isEmpty) {
+          errorMessage = 'Lütfen ürün açıklamasını girin';
+        }
+        break;
+      case 2: // Kategorizasyon
+        if (_selectedCategoryId == null) {
+          errorMessage = 'Lütfen bir kategori seçin';
+        } else if (_selectedConditionId == null) {
+          errorMessage = 'Lütfen ürün durumunu seçin';
+        }
+        break;
+      case 3: // Konum
+        if (_selectedCityId == null) {
+          errorMessage = 'Lütfen bir il seçin';
+        } else if (_selectedDistrictId == null) {
+          errorMessage = 'Lütfen bir ilçe seçin';
+        }
+        break;
+      case 4: // Takas Tercihleri
+        errorMessage = 'Lütfen takas tercihlerini girin';
+        break;
+      default:
+        errorMessage = 'Lütfen tüm gerekli alanları doldurun';
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                errorMessage,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Tamam',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
   }
 
   void _previousStep() {
@@ -120,23 +198,9 @@ class _AddProductViewState extends State<AddProductView> {
   Future<void> _submitProduct() async {
     if (!_formKey.currentState!.validate()) return;
     
-    if (_selectedImages.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('En az bir fotoğraf eklemelisiniz'),
-          backgroundColor: AppTheme.error,
-        ),
-      );
-      return;
-    }
-
-    if (_selectedCityId == null || _selectedDistrictId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lütfen şehir ve ilçe seçiniz'),
-          backgroundColor: AppTheme.error,
-        ),
-      );
+    // Son validasyon kontrolü
+    if (!_canGoToNextStep()) {
+      _showValidationError();
       return;
     }
 
@@ -332,20 +396,20 @@ class _AddProductViewState extends State<AddProductView> {
                   if (_canGoToNextStep()) {
                     _submitProduct();
                   } else {
-                    print('❌ Cannot submit - validation failed');
+                    _showValidationError();
                   }
                 } else {
                   if (_canGoToNextStep()) {
-                    _nextStep();
+                    setState(() {
+                      _currentStep++;
+                    });
                   } else {
-                    print('❌ Cannot go to next step - validation failed');
+                    _showValidationError();
                   }
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: _currentStep == _totalSteps - 1
-                    ? (_canGoToNextStep() ? AppTheme.primary : Colors.grey)
-                    : (_canGoToNextStep() ? AppTheme.primary : Colors.grey),
+                backgroundColor: _canGoToNextStep() ? AppTheme.primary : Colors.grey.shade400,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -657,6 +721,46 @@ class _AddProductViewState extends State<AddProductView> {
           
           const SizedBox(height: 32),
           
+          // Otomatik konum alma butonu
+          _buildAutoLocationButton(),
+          const SizedBox(height: 24),
+          
+          // Manuel seçim
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.location_city, color: Colors.grey.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Manuel Konum Seçimi',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'İl ve ilçe seçimi zorunludur',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          
           // Form fields
           _buildCityDropdown(),
           const SizedBox(height: 24),
@@ -667,21 +771,21 @@ class _AddProductViewState extends State<AddProductView> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.1),
+              color: Colors.blue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: AppTheme.primary),
+                Icon(Icons.info_outline, color: Colors.blue),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    'Konum bilgileriniz otomatik olarak alınacaktır (uygulama başlangıcında izin verdiyseniz)',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.primary,
-                    ),
+                  child:                 Text(
+                  'İl ve ilçe seçimi zorunludur. GPS konumu isteğe bağlıdır.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.blue.shade700,
                   ),
+                ),
                 ),
               ],
             ),
@@ -992,6 +1096,205 @@ class _AddProductViewState extends State<AddProductView> {
               : null,
         );
       },
+    );
+  }
+
+  // -- Konum Widget'ları --
+
+  Widget _buildAutoLocationButton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _currentPosition != null 
+            ? Colors.green.withOpacity(0.1)
+            : AppTheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _currentPosition != null 
+              ? Colors.green.withOpacity(0.3)
+              : AppTheme.primary.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _currentPosition != null ? Icons.location_on : Icons.my_location,
+                color: _currentPosition != null ? Colors.green : AppTheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _currentPosition != null ? 'GPS Konumu Alındı' : 'GPS Konumu Al (İsteğe Bağlı)',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: _currentPosition != null ? Colors.green : AppTheme.primary,
+                      ),
+                    ),
+                    if (_currentPosition != null)
+                      Text(
+                        '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (_isGettingLocation)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          
+          if (_currentPosition != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _getCurrentLocation(),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Yenile'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      side: BorderSide(color: AppTheme.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _clearLocation(),
+                    icon: const Icon(Icons.clear, size: 16),
+                    label: const Text('Temizle'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: BorderSide(color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isGettingLocation ? null : () => _getCurrentLocation(),
+                icon: const Icon(Icons.my_location),
+                label: const Text('GPS Konumu Al'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isGettingLocation = true;
+    });
+
+    try {
+      final position = await _locationService.getCurrentLocation();
+      
+      if (position != null) {
+        setState(() {
+          _currentPosition = position;
+        });
+        
+        // Kullanıcıya başarı mesajı göster
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  const Text('Konum başarıyla alındı'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // Hata durumunda kullanıcıya bilgi ver
+        if (mounted) {
+          _showLocationErrorDialog();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Konum alınırken hata oluştu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
+    }
+  }
+
+  void _clearLocation() {
+    setState(() {
+      _currentPosition = null;
+    });
+  }
+
+  void _showLocationErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konum Alınamadı'),
+        content: const Text(
+          'Konumunuz alınamadı. Lütfen konum izinlerini kontrol edin veya GPS\'in açık olduğundan emin olun.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _locationService.openLocationSettings();
+            },
+            child: const Text('Ayarlar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _locationService.openGPSSettings();
+            },
+            child: const Text('GPS Ayarları'),
+          ),
+        ],
+      ),
     );
   }
 

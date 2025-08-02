@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/chat_viewmodel.dart';
@@ -178,9 +181,14 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   }
 
   String _getCategoryDisplayNameForShare(Product product) {
-    // Önce categoryName'i kontrol et (API'den direkt gelen)
-    if (product.categoryName.isNotEmpty) {
-      return product.categoryName;
+    // Önce categoryList'i kontrol et (yeni API)
+    if (product.categoryList != null && product.categoryList!.isNotEmpty) {
+      return product.categoryList!.map((cat) => cat.name).join(' > ');
+    }
+    
+    // Sonra categoryName'i kontrol et (API'den direkt gelen)
+    if (product.catname.isNotEmpty) {
+      return product.catname;
     }
     
     // Sonra category objesini kontrol et
@@ -203,6 +211,7 @@ ${product.description ?? 'Açıklama bulunmuyor'}
 📍 ${product.cityTitle} / ${product.districtTitle}
 🏷️ ${_getCategoryDisplayNameForShare(product)}
 📅 ${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}
+${product.tradeFor != null && product.tradeFor!.isNotEmpty ? '🔄 Takas: ${product.tradeFor!}\n' : ''}
 
 🔗 Ürün linki: $productUrl
 
@@ -535,6 +544,7 @@ class _ProductInfoState extends State<_ProductInfo> {
       
       if (userToken != null && userToken.isNotEmpty) {
         try {
+          // Yeni API'den gelen userID'yi kullan
           final userId = int.parse(widget.product.ownerId);
           Logger.debug('🔍 Product Detail - Loading user profile for ID: $userId');
           
@@ -631,11 +641,15 @@ class _ProductInfoState extends State<_ProductInfo> {
               ),
               const SizedBox(height: 16),
               _InfoRow('Kategori :', _getCategoryDisplayName(widget.product)),
-              _InfoRow('Durum :', widget.product.condition ?? 'Belirtilmemiş'),
+              _InfoRow('Durum :', widget.product.productCondition ?? widget.product.condition ?? 'Belirtilmemiş'),
               _InfoRow('İlan Tarihi :', 
                 "${widget.product.createdAt.day.toString().padLeft(2, '0')}.${widget.product.createdAt.month.toString().padLeft(2, '0')}.${widget.product.createdAt.year}"),
               _InfoRow('İlan No :', widget.product.id),
-              _InfoRow('Satıcı :', widget.product.owner?.name ?? 'Belirtilmemiş'),
+              if (widget.product.productCode != null && widget.product.productCode!.isNotEmpty)
+                _InfoRow('İlan Kodu :', widget.product.productCode!),
+              _InfoRow('Satıcı :', widget.product.userFullname ?? widget.product.owner?.name ?? 'Belirtilmemiş'),
+              if (widget.product.proView != null && widget.product.proView!.isNotEmpty)
+                _InfoRow('Görüntülenme :', widget.product.proView!),
               
             ],
           ),
@@ -643,9 +657,61 @@ class _ProductInfoState extends State<_ProductInfo> {
         
         const SizedBox(height: 8),
         
+        // Takas Tercihi
+        if (widget.product.tradeFor != null && widget.product.tradeFor!.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: AppTheme.surface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Takas Tercihi',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.swap_horiz,
+                        color: AppTheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          widget.product.tradeFor!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
+        const SizedBox(height: 8),
+        
         // Açıklama
         if (widget.product.description != null && widget.product.description.isNotEmpty)
-                  Container(
+          Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           color: AppTheme.surface,
@@ -711,6 +777,20 @@ class _ProductInfoState extends State<_ProductInfo> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              // Harita
+              if (widget.product.productLat != null && 
+                  widget.product.productLong != null &&
+                  widget.product.productLat!.isNotEmpty &&
+                  widget.product.productLong!.isNotEmpty)
+                _buildLocationMap(widget.product),
+              const SizedBox(height: 12),
+              // Harita açma butonları
+              if (widget.product.productLat != null && 
+                  widget.product.productLong != null &&
+                  widget.product.productLat!.isNotEmpty &&
+                  widget.product.productLong!.isNotEmpty)
+                _buildMapButtons(widget.product),
             ],
           ),
         ),
@@ -745,9 +825,14 @@ class _ProductInfoState extends State<_ProductInfo> {
   }
 
   String _getCategoryDisplayName(Product product) {
-    // Önce categoryName'i kontrol et (API'den direkt gelen)
-    if (product.categoryName.isNotEmpty) {
-      return product.categoryName;
+    // Önce categoryList'i kontrol et (yeni API)
+    if (product.categoryList != null && product.categoryList!.isNotEmpty) {
+      return product.categoryList!.map((cat) => cat.name).join(' > ');
+    }
+    
+    // Sonra categoryName'i kontrol et (API'den direkt gelen)
+    if (product.catname.isNotEmpty) {
+      return product.catname;
     }
     
     // Sonra category objesini kontrol et
@@ -761,6 +846,299 @@ class _ProductInfoState extends State<_ProductInfo> {
     }
     
     return 'Belirtilmemiş';
+  }
+
+  Widget _buildLocationMap(Product product) {
+    try {
+      final lat = double.tryParse(product.productLat ?? '');
+      final lng = double.tryParse(product.productLong ?? '');
+      
+      if (lat == null || lng == null) {
+        return Container(
+          height: 200,
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              'Konum bilgisi bulunamadı',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+          ),
+        );
+      }
+
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: LatLng(lat, lng),
+              initialZoom: 15,
+              interactionOptions: const InteractionOptions(
+                enableMultiFingerGestureRace: false,
+              ),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.rivorya.takasly',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(lat, lng),
+                    width: 40,
+                    height: 40,
+                    child: Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Text(
+            'Harita yüklenirken hata oluştu',
+            style: TextStyle(color: AppTheme.textPrimary),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildMapButtons(Product product) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildMapButton(
+                title: Platform.isIOS ? 'Apple Maps' : 'Google Maps',
+                icon: Platform.isIOS ? Icons.location_on : Icons.map,
+                color: Platform.isIOS ? Colors.red : Colors.blue,
+                onTap: () => _openInMaps(product),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildMapButton(
+                title: 'Yol Tarifi Al',
+                icon: Icons.directions,
+                color: Colors.green,
+                onTap: () => _getDirections(product),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMapButton(
+                title: 'Konumu Paylaş',
+                icon: Icons.share_location,
+                color: Colors.orange,
+                onTap: () => _shareLocation(product),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildMapButton(
+                title: 'Haritada Aç',
+                icon: Icons.open_in_new,
+                color: Colors.purple,
+                onTap: () => _openInWebMaps(product),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapButton({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openInMaps(Product product) async {
+    try {
+      final lat = double.tryParse(product.productLat ?? '');
+      final lng = double.tryParse(product.productLong ?? '');
+      
+      if (lat == null || lng == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konum bilgisi bulunamadı'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+        return;
+      }
+
+      // Platform'a göre direkt URL aç
+      if (Platform.isIOS) {
+        // iOS için Apple Maps
+        final url = 'https://maps.apple.com/?q=${product.title}&ll=$lat,$lng';
+        await launchUrl(Uri.parse(url));
+      } else {
+        // Android için Google Maps
+        final url = 'https://maps.google.com/?q=$lat,$lng';
+        await launchUrl(Uri.parse(url));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Harita açılırken hata oluştu: $e'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
+  }
+
+  void _getDirections(Product product) async {
+    try {
+      final lat = double.tryParse(product.productLat ?? '');
+      final lng = double.tryParse(product.productLong ?? '');
+      
+      if (lat == null || lng == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konum bilgisi bulunamadı'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+        return;
+      }
+
+      // Platform'a göre yol tarifi URL'i
+      if (Platform.isIOS) {
+        // iOS için Apple Maps yol tarifi
+        final url = 'https://maps.apple.com/?daddr=$lat,$lng&dirflg=d';
+        await launchUrl(Uri.parse(url));
+      } else {
+        // Android için Google Maps yol tarifi
+        final url = 'https://maps.google.com/maps?daddr=$lat,$lng&dirflg=d';
+        await launchUrl(Uri.parse(url));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Yol tarifi açılırken hata oluştu: $e'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
+  }
+
+  void _shareLocation(Product product) {
+    try {
+      final lat = double.tryParse(product.productLat ?? '');
+      final lng = double.tryParse(product.productLong ?? '');
+      
+      if (lat == null || lng == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konum bilgisi bulunamadı'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+        return;
+      }
+
+      final locationText = '${product.title}\n'
+          '${product.cityTitle} / ${product.districtTitle}\n'
+          'Konum: https://maps.google.com/?q=$lat,$lng';
+
+      Share.share(locationText, subject: 'Takasly - ${product.title}');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Konum paylaşılırken hata oluştu: $e'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
+  }
+
+  void _openInWebMaps(Product product) async {
+    try {
+      final lat = double.tryParse(product.productLat ?? '');
+      final lng = double.tryParse(product.productLong ?? '');
+      
+      if (lat == null || lng == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konum bilgisi bulunamadı'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+        return;
+      }
+
+      // Web tarayıcısında Google Maps aç
+      final url = 'https://www.google.com/maps?q=$lat,$lng';
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Web haritası açılırken hata oluştu: $e'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
   }
 
   Widget _InfoRow(String label, String value) {
@@ -804,8 +1182,11 @@ class _ProductInfoState extends State<_ProductInfo> {
   }
 
   Widget _buildUserSummary(BuildContext context, Product product) {
+    // Yeni API'den gelen kullanıcı bilgilerini kullan
+    final userName = product.userFullname ?? product.owner?.name ?? 'Bilinmeyen Kullanıcı';
     final owner = product.owner;
-    if (owner == null) {
+    
+    if (owner == null && product.userFullname == null) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -875,31 +1256,32 @@ class _ProductInfoState extends State<_ProductInfo> {
           print('🔍 Product Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...');
           
           if (userToken != null && userToken.isNotEmpty) {
-            try {
-              final userId = int.parse(owner.id);
-              print('🔍 Product Detail - userId parsed: $userId');
-              print('🔍 Product Detail - Navigating to UserProfileDetailView...');
-              
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserProfileDetailView(
-                    userId: userId,
-                    userToken: userToken,
-                  ),
+                      try {
+            // Yeni API'den gelen userID'yi kullan
+            final userId = int.parse(product.ownerId);
+            print('🔍 Product Detail - userId parsed: $userId');
+            print('🔍 Product Detail - Navigating to UserProfileDetailView...');
+            
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserProfileDetailView(
+                  userId: userId,
+                  userToken: userToken,
                 ),
-              );
-              print('🔍 Product Detail - Navigation completed');
-            } catch (e) {
-              print('❌ Product Detail - ID parse error: $e');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Kullanıcı profili açılamadı'),
-                  backgroundColor: AppTheme.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
+              ),
+            );
+            print('🔍 Product Detail - Navigation completed');
+          } catch (e) {
+            print('❌ Product Detail - ID parse error: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Kullanıcı profili açılamadı'),
+                backgroundColor: AppTheme.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
           } else {
             print('❌ Product Detail - Token not available');
             ScaffoldMessenger.of(context).showSnackBar(
@@ -946,22 +1328,22 @@ class _ProductInfoState extends State<_ProductInfo> {
                           ),
                           errorWidget: (context, url, error) => Container(
                             color: Colors.grey[100],
-                            child: Text(
-                              owner.name.isNotEmpty
-                                  ? owner.name[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
+                                                    child: Text(
+                          userName.isNotEmpty
+                              ? userName[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
                           ),
                         ),
                       )
                     : Text(
-                        owner.name.isNotEmpty
-                            ? owner.name[0].toUpperCase()
+                        userName.isNotEmpty
+                            ? userName[0].toUpperCase()
                             : '?',
                         style: const TextStyle(
                           color: AppTheme.primary,
@@ -977,7 +1359,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      owner.name,
+                      userName,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
