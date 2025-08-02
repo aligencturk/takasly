@@ -1328,7 +1328,23 @@ class _ProductInfoState extends State<_ProductInfo> {
                           ),
                           errorWidget: (context, url, error) => Container(
                             color: Colors.grey[100],
-                                                    child: Text(
+                            child: Center(
+                              child: Text(
+                                userName.isNotEmpty
+                                    ? userName[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  color: AppTheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
                           userName.isNotEmpty
                               ? userName[0].toUpperCase()
                               : '?',
@@ -1337,18 +1353,6 @@ class _ProductInfoState extends State<_ProductInfo> {
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
-                        ),
-                          ),
-                        ),
-                      )
-                    : Text(
-                        userName.isNotEmpty
-                            ? userName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
                         ),
                       ),
               ),
