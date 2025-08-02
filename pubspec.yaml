@@ -130,18 +130,18 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo/logo.png"
+  image_path: "assets/logo/takasly image.png"
   min_sdk_android: 23 # android min sdk min:16, default 21
   remove_alpha_ios: false
   web:
     generate: true
-    image_path: "assets/logo/logo.png"
+    image_path: "assets/logo/takasly image.png"
     background_color: "transparent"
-    theme_color: "#000000"
+    theme_color: "#10B981"
   windows:
     generate: true
-    image_path: "assets/logo/logo.png"
+    image_path: "assets/logo/takasly image.png"
     icon_size: 48 # min:48, max:256, default: 48
   macos:
     generate: true
-    image_path: "assets/logo/logo.png"
+    image_path: "assets/logo/takasly image.png"
