@@ -2,14 +2,61 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
+import 'dart:typed_data';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
 import 'package:takasly/models/product_filter.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/utils/logger.dart';
+import 'package:takasly/services/cache_service.dart';
 
-class CategoryList extends StatelessWidget {
+// Global cache - widget yeniden oluşturulsa bile korunur
+class CategoryIconCache {
+  static final Map<String, Uint8List> _iconCache = {};
+  static final Map<String, bool> _loadingIcons = {};
+  
+  static bool hasIcon(String url) => _iconCache.containsKey(url);
+  static Uint8List? getIcon(String url) => _iconCache[url];
+  static bool isLoading(String url) => _loadingIcons[url] == true;
+  
+  static void setIcon(String url, Uint8List bytes) {
+    _iconCache[url] = bytes;
+    _loadingIcons[url] = false;
+  }
+  
+  static void setLoading(String url, bool loading) {
+    _loadingIcons[url] = loading;
+  }
+  
+  static void clear() {
+    _iconCache.clear();
+    _loadingIcons.clear();
+  }
+}
+
+class CategoryList extends StatefulWidget {
   const CategoryList({super.key});
+
+  @override
+  State<CategoryList> createState() => _CategoryListState();
+}
+
+class _CategoryListState extends State<CategoryList> {
+  @override
+  void initState() {
+    super.initState();
+    // Widget oluşturulduğunda mevcut kategorilerin ikonlarını kontrol et
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndPreloadIcons();
+    });
+  }
+
+  void _checkAndPreloadIcons() {
+    final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+    if (productViewModel.categories.isNotEmpty) {
+      _preloadCategoryIcons(productViewModel.categories);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +72,11 @@ class CategoryList extends StatelessWidget {
               height: isSmallScreen ? 90 : 100,
               child: const Center(child: CircularProgressIndicator()),
             );
+          }
+          
+          // Kategoriler yüklendiğinde ikonları önceden yükle
+          if (vm.categories.isNotEmpty) {
+            _preloadCategoryIcons(vm.categories);
           }
           
           return Container(
@@ -63,6 +115,52 @@ class CategoryList extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void _preloadCategoryIcons(List<Category> categories) {
+    for (final category in categories) {
+      if (category.icon != null && 
+          _isImageUrl(category.icon) && 
+          !CategoryIconCache.hasIcon(category.icon) &&
+          !CategoryIconCache.isLoading(category.icon)) {
+        _loadIconToCache(category.icon!);
+      }
+    }
+  }
+
+  void _loadIconToCache(String iconUrl) {
+    if (CategoryIconCache.isLoading(iconUrl)) return;
+    
+    CategoryIconCache.setLoading(iconUrl, true);
+    
+    CacheService().getCachedIcon(iconUrl).then((cachedIcon) {
+      if (cachedIcon != null) {
+        CategoryIconCache.setIcon(iconUrl, cachedIcon);
+        // UI'ı yenile
+        if (mounted) {
+          setState(() {});
+        }
+      } else {
+        // Cache'de yoksa indir
+        CacheService().downloadAndCacheIcon(iconUrl).then((downloadedIcon) {
+          if (downloadedIcon != null) {
+            CategoryIconCache.setIcon(iconUrl, downloadedIcon);
+            // UI'ı yenile
+            if (mounted) {
+              setState(() {});
+            }
+          } else {
+            CategoryIconCache.setLoading(iconUrl, false);
+          }
+        }).catchError((error) {
+          Logger.error('Icon yükleme hatası: $iconUrl', error: error);
+          CategoryIconCache.setLoading(iconUrl, false);
+        });
+      }
+    }).catchError((error) {
+      Logger.error('Cache kontrol hatası: $iconUrl', error: error);
+      CategoryIconCache.setLoading(iconUrl, false);
+    });
   }
 
   void _applyCategoryFilter(ProductViewModel vm, String? categoryId) {
@@ -145,55 +243,50 @@ class CategoryList extends StatelessWidget {
     return iconName.startsWith('http://') || iconName.startsWith('https://');
   }
 
-  Future<String> _loadSvgFromNetwork(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        return response.body;
-      } else {
-        throw Exception('SVG yüklenemedi: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('SVG yüklenirken hata: $e');
-    }
-  }
+
 
   Widget _buildNetworkIcon(String iconUrl, double iconSize, Color color, IconData fallbackIcon) {
-    // SVG dosyaları için özel işlem
-    if (iconUrl.toLowerCase().endsWith('.svg')) {
-      Logger.info('SVG yükleniyor: $iconUrl');
-      return FutureBuilder<String>(
-        future: _loadSvgFromNetwork(iconUrl),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Icon(fallbackIcon, color: color, size: iconSize);
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            Logger.error('SVG yüklenemedi: $iconUrl', error: snapshot.error);
-            return Icon(fallbackIcon, color: color, size: iconSize);
-          }
-          return SvgPicture.string(
-            snapshot.data!,
-            width: iconSize,
-            height: iconSize,
-          );
-        },
-      );
+    // Önce memory cache'den kontrol et
+    if (CategoryIconCache.hasIcon(iconUrl)) {
+      final bytes = CategoryIconCache.getIcon(iconUrl)!;
+      return _buildIconFromBytes(bytes, iconUrl, iconSize, color, fallbackIcon);
     }
     
-    // PNG, JPG gibi dosyalar için normal Image.network
-    return Image.network(
-      iconUrl,
+    // Memory cache'de yoksa loading göster ve arka planda yükle
+    if (CategoryIconCache.isLoading(iconUrl)) {
+      return Icon(fallbackIcon, color: color, size: iconSize);
+    }
+    
+    // İkonu yükle
+    _loadIconToCache(iconUrl);
+    return Icon(fallbackIcon, color: color, size: iconSize);
+  }
+
+  Widget _buildIconFromBytes(Uint8List bytes, String iconUrl, double iconSize, Color color, IconData fallbackIcon) {
+    // SVG dosyaları için özel işlem
+    if (iconUrl.toLowerCase().endsWith('.svg')) {
+      try {
+        final svgString = String.fromCharCodes(bytes);
+        return SvgPicture.string(
+          svgString,
+          width: iconSize,
+          height: iconSize,
+        );
+      } catch (e) {
+        Logger.error('SVG parse hatası: $iconUrl', error: e);
+        return Icon(fallbackIcon, color: color, size: iconSize);
+      }
+    }
+    
+    // PNG, JPG gibi dosyalar için MemoryImage kullan
+    return Image.memory(
+      bytes,
       width: iconSize,
       height: iconSize,
       fit: BoxFit.contain,
       color: color,
       errorBuilder: (context, error, stackTrace) {
-        Logger.error('Kategori icon yüklenemedi: $iconUrl', error: error);
-        return Icon(fallbackIcon, color: color, size: iconSize);
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
+        Logger.error('Memory image yüklenemedi: $iconUrl', error: error);
         return Icon(fallbackIcon, color: color, size: iconSize);
       },
     );

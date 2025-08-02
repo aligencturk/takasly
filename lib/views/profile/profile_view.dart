@@ -34,26 +34,41 @@ class _ProfileViewState extends State<ProfileView>
     
     // Sayfa ilk açıldığında verileri yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-      final productViewModel = Provider.of<ProductViewModel>(
-        context,
-        listen: false,
-      );
-
-      // Kullanıcı verilerini yükle
-      userViewModel.forceRefreshUser();
-
-      // Kullanıcının ürünlerini yükle
-      final userId = userViewModel.currentUser?.id;
-      if (userId != null) {
-        productViewModel.loadUserProducts(userId);
-        // Favori ürünleri de yükle
-        productViewModel.loadFavoriteProducts();
-        
-        // Kullanıcının profil detaylarını yükle (değerlendirmeler için)
-        _loadUserProfileDetail(int.parse(userId));
-      }
+      _loadProfileData();
     });
+  }
+
+  Future<void> _loadProfileData() async {
+    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+    final productViewModel = Provider.of<ProductViewModel>(
+      context,
+      listen: false,
+    );
+
+    // Eğer kullanıcı henüz yüklenmemişse, UserViewModel'in initialize olmasını bekle
+    if (userViewModel.currentUser == null && !userViewModel.isLoading) {
+      Logger.info('👤 ProfileView - User not loaded yet, waiting for initialization...');
+      // UserViewModel'in initialize olmasını bekle
+      await Future.delayed(Duration(milliseconds: 500));
+    }
+
+    // Önce kullanıcı verilerini yükle
+    await userViewModel.forceRefreshUser();
+
+    // Kullanıcı verileri yüklendikten sonra diğer verileri yükle
+    final userId = userViewModel.currentUser?.id;
+    if (userId != null) {
+      Logger.info('👤 ProfileView - Loading data for user ID: $userId');
+      
+      // Kullanıcının ürünlerini yükle
+      productViewModel.loadUserProducts(userId);
+      
+      // Kullanıcının profil detaylarını yükle (değerlendirmeler için)
+      await _loadUserProfileDetail(int.parse(userId));
+    } else {
+      Logger.warning('⚠️ ProfileView - User ID is null, cannot load profile data');
+      Logger.warning('⚠️ ProfileView - UserViewModel state: isLoading=${userViewModel.isLoading}, hasError=${userViewModel.hasError}');
+    }
   }
 
   Future<void> _loadUserProfileDetail(int userId) async {
@@ -89,7 +104,8 @@ class _ProfileViewState extends State<ProfileView>
 
           final user = userVm.currentUser!;
           final productCount = productVm.myProducts.length;
-          final favoriteCount = productVm.favoriteProducts.length;
+          // Profil sayfasında favori ürünler yüklenmediği için 0 göster
+          final favoriteCount = 0;
           
           // Debug logları
           Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
@@ -610,15 +626,14 @@ class _ProfileViewState extends State<ProfileView>
       actions: [
         IconButton(
           onPressed: () async {
-            // Debug için kullanıcı verilerini yenile
-            Logger.info('🔄 ProfileView - Manually refreshing user data...');
-            final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-            await userViewModel.forceRefreshUser();
+            // Tüm profil verilerini yenile
+            Logger.info('🔄 ProfileView - Manually refreshing all profile data...');
+            await _loadProfileData();
             
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Kullanıcı verileri yenilendi'),
+                  content: Text('Profil verileri yenilendi'),
                   backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -959,19 +974,9 @@ class _ProfileViewState extends State<ProfileView>
       ),
     );
 
-    // Eğer ürün güncellendiyse listeyi yenile
+    // Eğer ürün güncellendiyse tüm profil verilerini yenile
     if (result == true && mounted) {
-      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-      final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
-      
-      // Kullanıcı verilerini yenile
-      userViewModel.forceRefreshUser();
-      
-      // Kullanıcının ürünlerini yenile
-      final userId = userViewModel.currentUser?.id;
-      if (userId != null) {
-        productViewModel.loadUserProducts(userId);
-      }
+      await _loadProfileData();
     }
   }
 
@@ -1051,6 +1056,9 @@ class _ProfileViewState extends State<ProfileView>
       if (mounted) Navigator.pop(context);
 
       if (success) {
+        // Başarılı silme işleminden sonra profil verilerini yenile
+        await _loadProfileData();
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

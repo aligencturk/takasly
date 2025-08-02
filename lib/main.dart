@@ -22,6 +22,7 @@ import 'views/location_test_view.dart';
 import 'core/constants.dart';
 import 'core/app_theme.dart';
 import 'utils/logger.dart';
+import 'services/cache_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,14 @@ void main() async {
   );
   
   Logger.info('✅ Firebase initialized successfully');
+  
+  // Cache service'i initialize et
+  await CacheService().initialize();
+  Logger.info('✅ Cache service initialized successfully');
+  
+  // Cache stats'ı logla
+  await CacheService().logCacheStats();
+  
   runApp(const TakaslyApp());
 }
 
@@ -45,6 +54,8 @@ class TakaslyApp extends StatelessWidget {
     
     return MultiProvider(
       providers: [
+        // UserViewModel'i önce oluştur (diğer ViewModel'ler buna bağımlı olabilir)
+        ChangeNotifierProvider(create: (context) => UserViewModel()),
         ChangeNotifierProvider(create: (context) => ProductViewModel()),
         ChangeNotifierProvider(
           create: (context) {
@@ -56,7 +67,6 @@ class TakaslyApp extends StatelessWidget {
             return authViewModel;
           },
         ),
-        ChangeNotifierProvider(create: (context) => UserViewModel()),
         ChangeNotifierProvider(create: (context) => TradeViewModel()),
         ChangeNotifierProvider(create: (context) => ChatViewModel()),
         ChangeNotifierProvider(create: (context) => UserProfileDetailViewModel()),

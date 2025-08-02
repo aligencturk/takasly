@@ -9,8 +9,10 @@ import '../models/product_filter.dart';
 import '../models/location.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
+import '../services/cache_service.dart';
 import '../core/constants.dart';
 import '../core/sort_options.dart';
+import '../views/home/widgets/category_list.dart'; // CategoryIconCache için
 
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
@@ -419,6 +421,13 @@ class ProductViewModel extends ChangeNotifier {
 
   Future<void> loadCategories() async {
     print('🏷️ Loading categories...');
+    
+    // Eğer kategoriler zaten yüklüyse ve boş değilse, tekrar yükleme
+    if (_categories.isNotEmpty) {
+      print('🏷️ Categories already loaded: ${_categories.length} items');
+      return;
+    }
+    
     try {
       final response = await _productService.getCategories();
       print(
@@ -434,6 +443,11 @@ class ProductViewModel extends ChangeNotifier {
         for (int i = 0; i < _categories.length; i++) {
           final category = _categories[i];
           print('  ${i + 1}. ${category.name} (Icon: "${category.icon}")');
+          
+          // Kategori ikonlarını önceden cache'le
+          if (category.icon != null && category.icon!.isNotEmpty) {
+            _preloadCategoryIcon(category.icon!);
+          }
         }
         
         notifyListeners();
@@ -445,6 +459,24 @@ class ProductViewModel extends ChangeNotifier {
       print('💥 Categories error: $e');
       _setError('Kategoriler yüklenirken hata oluştu');
     }
+  }
+
+  void _preloadCategoryIcon(String iconUrl) {
+    // Eğer global cache'de zaten varsa yükleme
+    if (CategoryIconCache.hasIcon(iconUrl)) {
+      print('✅ Category icon already in global cache: $iconUrl');
+      return;
+    }
+    
+    // Arka planda ikonları cache'le
+    CacheService().downloadAndCacheIcon(iconUrl).then((downloadedIcon) {
+      if (downloadedIcon != null) {
+        CategoryIconCache.setIcon(iconUrl, downloadedIcon);
+        print('✅ Category icon preloaded to global cache: $iconUrl');
+      }
+    }).catchError((error) {
+      print('⚠️ Failed to preload category icon: $iconUrl, error: $error');
+    });
   }
 
   Future<void> loadSubCategories(String parentCategoryId) async {
