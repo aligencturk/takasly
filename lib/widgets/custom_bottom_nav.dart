@@ -47,28 +47,35 @@ class CustomBottomNav extends StatelessWidget {
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
     final isActive = currentIndex == index;
     
-    return GestureDetector(
-      onTap: () => onTap(index),
-      child: Container(
-        width: 60,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppTheme.primary : AppTheme.textSecondary,
-              size: 20,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onTap(index),
+        borderRadius: BorderRadius.circular(8),
+        splashColor: AppTheme.primary.withOpacity(0.1),
+        highlightColor: AppTheme.primary.withOpacity(0.05),
+        child: Container(
+          width: 60,
+          height: 66,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
                 color: isActive ? AppTheme.primary : AppTheme.textSecondary,
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? AppTheme.primary : AppTheme.textSecondary,
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -83,31 +90,37 @@ class CustomBottomNav extends StatelessWidget {
         // Butonun yarısı nav bar'ın dışında (üstte) olacak şekilde negatif margin ile yukarı taşıyoruz
         Transform.translate(
           offset: const Offset(0, -12), // Biraz daha az taşma
-          child: GestureDetector(
-            onTap: () => onTap(2),
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppTheme.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.3),
-                    spreadRadius: 0,
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onTap(2),
+              borderRadius: BorderRadius.circular(25),
+              splashColor: Colors.white.withOpacity(0.3),
+              highlightColor: Colors.white.withOpacity(0.1),
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primary.withOpacity(0.3),
+                      spreadRadius: 0,
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: AppTheme.surface,
+                    width: 3,
                   ),
-                ],
-                border: Border.all(
-                  color: AppTheme.surface,
-                  width: 3,
                 ),
-              ),
-              child: Icon(
-                FontAwesomeIcons.exchange,
-                color: AppTheme.surface,
-                size: 20,
+                child: Icon(
+                  FontAwesomeIcons.exchange,
+                  color: AppTheme.surface,
+                  size: 20,
+                ),
               ),
             ),
           ),
