@@ -227,7 +227,6 @@ class _ProfileViewState extends State<ProfileView>
           padding: const EdgeInsets.all(20),
           color: Colors.white,
           child: GridView.builder(
-            shrinkWrap: true,
             physics: const AlwaysScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -399,66 +398,63 @@ class _ProfileViewState extends State<ProfileView>
 
         final profile = profileDetailVm.profileDetail!;
         
-        return Column(
-          children: [
-            // Ortalama puan ve toplam yorum sayısı
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.all(20),
-              color: Colors.white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildReviewStatItem(
-                    icon: Icons.star,
-                    value: profile.averageRating.toStringAsFixed(1),
-                    label: 'Ortalama Puan',
-                    color: Colors.amber,
-                  ),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: Colors.grey[300],
-                  ),
-                  _buildReviewStatItem(
-                    icon: Icons.rate_review,
-                    value: profile.totalReviews.toString(),
-                    label: 'Toplam Yorum',
-                    color: AppTheme.primary,
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 8),
-            
-                                                     // Yorumlar listesi
-               if (profile.reviews.isNotEmpty)
-                 Container(
-                   margin: const EdgeInsets.symmetric(horizontal: 20),
-                   color: Colors.white,
-                   child: ListView.builder(
-                     shrinkWrap: true,
-                     physics: const AlwaysScrollableScrollPhysics(),
-                     itemCount: profile.reviews.length,
-                     itemBuilder: (context, index) {
-                       final review = profile.reviews[index];
-                       return _buildReviewItem(review);
-                     },
-                   ),
-                 )
-            else
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Ortalama puan ve toplam yorum sayısı
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(40.0),
+                padding: const EdgeInsets.all(20),
                 color: Colors.white,
-                child: _buildEmptyTab(
-                  icon: Icons.rate_review_outlined,
-                  title: 'Henüz Yorum Yok',
-                  subtitle: 'Henüz hiç yorum almamışsınız.',
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildReviewStatItem(
+                      icon: Icons.star,
+                      value: profile.averageRating.toStringAsFixed(1),
+                      label: 'Ortalama Puan',
+                      color: Colors.amber,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.grey[300],
+                    ),
+                    _buildReviewStatItem(
+                      icon: Icons.rate_review,
+                      value: profile.totalReviews.toString(),
+                      label: 'Toplam Yorum',
+                      color: AppTheme.primary,
+                    ),
+                  ],
                 ),
               ),
-          ],
+              
+              const SizedBox(height: 8),
+              
+              // Yorumlar listesi
+              if (profile.reviews.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  color: Colors.white,
+                  child: Column(
+                    children: profile.reviews.map((review) => _buildReviewItem(review)).toList(),
+                  ),
+                )
+              else
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(40.0),
+                  color: Colors.white,
+                  child: _buildEmptyTab(
+                    icon: Icons.rate_review_outlined,
+                    title: 'Henüz Yorum Yok',
+                    subtitle: 'Henüz hiç yorum almamışsınız.',
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
