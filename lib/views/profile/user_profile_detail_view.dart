@@ -308,8 +308,8 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
         color: Colors.white,
         child: _buildEmptyTab(
           icon: Icons.inventory_2_outlined,
-          title: 'Henüz Ürün Eklenmemiş',
-          subtitle: 'Bu kullanıcının henüz ürünü bulunmuyor.',
+          title: 'Henüz İlan Eklenmemiş',
+          subtitle: 'Bu kullanıcının henüz ilanı bulunmuyor.',
         ),
       );
     }

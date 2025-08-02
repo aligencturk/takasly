@@ -423,7 +423,7 @@ class _StartTradeViewState extends State<StartTradeView> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Takas yapabilmek için önce ürün eklemelisiniz',
+                      'Takas yapabilmek için önce ilan eklemelisiniz',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey.shade500,

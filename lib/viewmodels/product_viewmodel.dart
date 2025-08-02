@@ -827,7 +827,7 @@ class ProductViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> toggleFavorite(String productId) async {
+  Future<Map<String, dynamic>> toggleFavorite(String productId) async {
     print('🔄 ProductViewModel.toggleFavorite - Starting toggle for product: $productId');
     try {
       print('🔄 ProductViewModel.toggleFavorite - Toggling favorite for product: $productId');
@@ -854,14 +854,22 @@ class ProductViewModel extends ChangeNotifier {
           print('✅ ProductViewModel.toggleFavorite - Current favorite products count: ${_favoriteProducts.length}');
           print('✅ ProductViewModel.toggleFavorite - Current favorite product IDs: ${_favoriteProducts.map((p) => p.id).toList()}');
           notifyListeners();
-          return true;
+          return {
+            'success': true,
+            'wasFavorite': true,
+            'message': 'Ürün favorilerden çıkarıldı',
+          };
         } else {
           print('❌ ProductViewModel.toggleFavorite - Failed to remove from favorites: ${response.error}');
           // API başarısız olsa bile local list'ten çıkar (kullanıcı deneyimi için)
           print('⚠️ ProductViewModel.toggleFavorite - Removing from local list despite API failure');
           _favoriteProducts.removeWhere((p) => p.id == productId);
           notifyListeners();
-          return false;
+          return {
+            'success': false,
+            'wasFavorite': true,
+            'message': response.error ?? 'Ürün favorilerden çıkarılamadı',
+          };
         }
       } else {
         // Favorilere ekle
@@ -886,7 +894,11 @@ class ProductViewModel extends ChangeNotifier {
               // Hiçbir listede bulunamazsa favorileri yeniden yükle
               await loadFavoriteProducts();
               notifyListeners();
-              return true;
+              return {
+                'success': true,
+                'wasFavorite': false,
+                'message': 'Ürün favorilere eklendi',
+              };
             }
           }
           
@@ -894,16 +906,33 @@ class ProductViewModel extends ChangeNotifier {
             _favoriteProducts.add(productToAdd);
             print('✅ ProductViewModel.toggleFavorite - Successfully added to favorites');
             notifyListeners();
-            return true;
+            return {
+              'success': true,
+              'wasFavorite': false,
+              'message': 'Ürün favorilere eklendi',
+            };
           }
         } else {
           print('❌ ProductViewModel.toggleFavorite - Failed to add to favorites: ${response.error}');
+          return {
+            'success': false,
+            'wasFavorite': false,
+            'message': response.error ?? 'Ürün favorilere eklenemedi',
+          };
         }
       }
-      return false;
+      return {
+        'success': false,
+        'wasFavorite': isFavorite,
+        'message': 'İşlem başarısız',
+      };
     } catch (e) {
       print('💥 ProductViewModel.toggleFavorite - Exception: $e');
-      return false;
+      return {
+        'success': false,
+        'wasFavorite': _favoriteProducts.any((p) => p.id == productId),
+        'message': 'Bir hata oluştu',
+      };
     }
   }
 
@@ -1017,7 +1046,7 @@ class ProductViewModel extends ChangeNotifier {
       if (response.isSuccess && response.data != null) {
         final responseData = response.data!;
         final productId = responseData['productID']?.toString() ?? 'unknown';
-        final message = responseData['message']?.toString() ?? 'Ürün eklendi';
+        final message = responseData['message']?.toString() ?? 'İlan eklendi';
 
         print('✅ Product added successfully!');
         print('🆔 Product ID: $productId');
@@ -1029,7 +1058,7 @@ class ProductViewModel extends ChangeNotifier {
         return true;
       } else {
         print('❌ Product add failed: ${response.error}');
-        _setError(response.error ?? 'Ürün eklenemedi');
+        _setError(response.error ?? 'İlan eklenemedi');
         return false;
       }
     } catch (e) {
@@ -1404,7 +1433,7 @@ class ProductViewModel extends ChangeNotifier {
       if (response.isSuccess && response.data != null) {
         final responseData = response.data!;
         final productId = responseData['productID']?.toString() ?? 'unknown';
-        final message = responseData['message']?.toString() ?? 'Ürün eklendi';
+        final message = responseData['message']?.toString() ?? 'İlan eklendi';
 
         print('✅ Product added successfully!');
         print('🆔 Product ID: $productId');
@@ -1416,13 +1445,13 @@ class ProductViewModel extends ChangeNotifier {
         return true;
       } else {
         print('❌ Product add failed: ${response.error}');
-        _setError(response.error ?? 'Ürün eklenemedi');
+        _setError(response.error ?? 'İlan eklenemedi');
         return false;
       }
     } catch (e, stackTrace) {
       print('❌ Product add exception: $e');
       print('❌ Stack trace: $stackTrace');
-      _setError('Ürün eklenirken hata oluştu: $e');
+      _setError('İlan eklenirken hata oluştu: $e');
       return false;
     } finally {
       print('🏁 Loading state false yapılıyor...');

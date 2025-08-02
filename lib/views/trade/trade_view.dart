@@ -1334,22 +1334,21 @@ class _TradeViewState extends State<TradeView>
         context,
         listen: false,
       );
-      final success = await productViewModel.toggleFavorite(productId);
+      final result = await productViewModel.toggleFavorite(productId);
 
-      if (success) {
-        // UI'ı manuel olarak yeniden build et
-        if (mounted) {
-          setState(() {
-            // UI'ı yenile
-          });
-          
+      if (mounted) {
+        setState(() {
+          // UI'ı yenile
+        });
+        
+        if (result['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 children: [
                   Icon(Icons.favorite_border, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Ürün favorilerden çıkarıldı'),
+                  Text(result['message']),
                 ],
               ),
               backgroundColor: Color(0xFFF56565),
@@ -1364,19 +1363,18 @@ class _TradeViewState extends State<TradeView>
               ),
             ),
           );
-        }
-      } else {
-        if (mounted) {
+        } else {
+          // 417 hatası veya diğer hatalar için API'den gelen mesajı göster
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 children: [
                   Icon(Icons.error_outline, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Favorilerden çıkarılamadı'),
+                  Text(result['message']),
                 ],
               ),
-              backgroundColor: Color(0xFFF56565),
+              backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

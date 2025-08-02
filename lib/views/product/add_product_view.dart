@@ -241,7 +241,7 @@ class _AddProductViewState extends State<AddProductView> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Ürün ekleniyor...',
+                    'İlan ekleniyor...',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -344,7 +344,7 @@ class _AddProductViewState extends State<AddProductView> {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ürün Ekle'),
+        title: const Text('İlan Ekle'),
         centerTitle: true,
       ),
       body: Column(

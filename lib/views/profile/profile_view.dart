@@ -195,14 +195,14 @@ class _ProfileViewState extends State<ProfileView>
             color: Colors.white,
             child: _buildEmptyTab(
               icon: Icons.inventory_2_outlined,
-              title: 'Henüz Ürün Eklenmemiş',
-              subtitle: 'İlk ürününüzü ekleyerek takasa başlayabilirsiniz.',
+              title: 'Henüz İlan Eklenmemiş',
+              subtitle: 'İlk ilanınızı ekleyerek takasa başlayabilirsiniz.',
               actionButton: Container(
                 height: 40,
                 color: AppTheme.primary,
                 child: TextButton(
                   onPressed: () {
-                    // TODO: Ürün ekleme sayfasına yönlendir
+                    Navigator.pushNamed(context, '/add-product');
                   },
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
@@ -210,7 +210,7 @@ class _ProfileViewState extends State<ProfileView>
                     shape: const RoundedRectangleBorder(),
                   ),
                   child: const Text(
-                    'Ürün Ekle',
+                    'İlan Ekle',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -868,7 +868,7 @@ class _ProfileViewState extends State<ProfileView>
                   color: AppTheme.primary,
                   child: TextButton(
                     onPressed: () {
-                      // TODO: Ürün ekleme sayfasına yönlendir
+                      Navigator.pushNamed(context, '/add-product');
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
@@ -876,7 +876,7 @@ class _ProfileViewState extends State<ProfileView>
                       shape: const RoundedRectangleBorder(),
                     ),
                     child: const Text(
-                      'Ürün Ekle',
+                      'İlan Ekle',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,

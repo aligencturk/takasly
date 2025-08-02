@@ -221,17 +221,22 @@ class ProductCard extends StatelessWidget {
                         right: 8,
                         child: GestureDetector(
                           onTap: () async {
-                            final success = await productViewModel.toggleFavorite(product.id);
-                            if (success != null) {
+                            final result = await productViewModel.toggleFavorite(product.id);
+                            if (result['success'] == true) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                    success 
-                                      ? 'Ürün favorilere eklendi' 
-                                      : 'Ürün favorilerden çıkarıldı',
-                                  ),
-                                  duration: const Duration(seconds: 1),
-                                  backgroundColor: success ? Colors.green : Colors.orange,
+                                  content: Text(result['message']),
+                                  duration: const Duration(seconds: 2),
+                                  backgroundColor: result['wasFavorite'] ? Colors.orange : Colors.green,
+                                ),
+                              );
+                            } else {
+                              // 417 hatası veya diğer hatalar için API'den gelen mesajı göster
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(result['message']),
+                                  duration: const Duration(seconds: 3),
+                                  backgroundColor: Colors.red,
                                 ),
                               );
                             }

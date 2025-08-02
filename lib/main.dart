@@ -19,6 +19,7 @@ import 'views/trade/trade_view.dart';
 import 'views/profile/profile_view.dart';
 import 'views/chat/chat_list_view.dart';
 import 'views/location_test_view.dart';
+import 'views/product/add_product_view.dart';
 import 'core/constants.dart';
 import 'core/app_theme.dart';
 import 'utils/logger.dart';
@@ -87,6 +88,7 @@ class TakaslyApp extends StatelessWidget {
           '/reset-password': (context) => const ResetPasswordView(),
           '/chats': (context) => const ChatListView(),
           '/location-test': (context) => const LocationTestView(),
+          '/add-product': (context) => const AddProductView(),
         },
         onGenerateRoute: (settings) {
           Logger.info('🛣️ Generating route for: ${settings.name}');

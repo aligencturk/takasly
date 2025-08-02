@@ -647,7 +647,7 @@ class _ProductInfoState extends State<_ProductInfo> {
               _InfoRow('İlan No :', widget.product.id),
               if (widget.product.productCode != null && widget.product.productCode!.isNotEmpty)
                 _InfoRow('İlan Kodu :', widget.product.productCode!),
-              _InfoRow('Satıcı :', widget.product.userFullname ?? widget.product.owner?.name ?? 'Belirtilmemiş'),
+              _InfoRow('İlan Sahibi :', widget.product.userFullname ?? widget.product.owner?.name ?? 'Belirtilmemiş'),
               if (widget.product.proView != null && widget.product.proView!.isNotEmpty)
                 _InfoRow('Görüntülenme :', widget.product.proView!),
               
@@ -806,7 +806,7 @@ class _ProductInfoState extends State<_ProductInfo> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Satıcı Bilgileri',
+                'Kullanıcı Bilgileri',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
