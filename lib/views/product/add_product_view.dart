@@ -211,6 +211,56 @@ class _AddProductViewState extends State<AddProductView> {
 
     final categoryId = _selectedSubSubSubCategoryId ?? _selectedSubSubCategoryId ?? _selectedSubCategoryId ?? _selectedCategoryId;
     
+    // Yükleniyor durumunu göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Ürün ekleniyor...',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Lütfen bekleyin',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    
     final success = await Provider.of<ProductViewModel>(context, listen: false)
         .addProductWithEndpoint(
           productTitle: _titleController.text.trim(),
@@ -223,13 +273,38 @@ class _AddProductViewState extends State<AddProductView> {
           selectedDistrictId: _selectedDistrictId,
         );
 
+    // Yükleniyor dialog'unu kapat
+    if (mounted) {
+      Navigator.of(context).pop(); // Dialog'u kapat
+    }
+
     if (mounted) {
       if (success) {
-        Navigator.of(context).pop();
+        // Ana sayfaya dön ve başarı durumunu bildir
+        Navigator.of(context).pop(true);
+        
+        // Başarı mesajını göster
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ürün başarıyla eklendi!'),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Ürün başarıyla eklendi!',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: AppTheme.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
           ),
         );
       } else {
@@ -239,8 +314,25 @@ class _AddProductViewState extends State<AddProductView> {
         ).errorMessage;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata: ${error ?? 'Bilinmeyen bir hata oluştu'}'),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Hata: ${error ?? 'Bilinmeyen bir hata oluştu'}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
           ),
         );
       }

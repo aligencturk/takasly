@@ -183,6 +183,7 @@ class ProductViewModel extends ChangeNotifier {
       print(
         '🏁 ProductViewModel.loadAllProducts completed - final products count: ${_products.length}',
       );
+      notifyListeners(); // UI'ı güncelle
     }
   }
 
@@ -267,6 +268,7 @@ class ProductViewModel extends ChangeNotifier {
       await Future.wait([loadCategories(), loadAllProducts(refresh: true)]);
       print('✅ ProductViewModel.refreshProducts completed');
       print('✅ ProductViewModel - Final _products.length: ${_products.length}');
+      notifyListeners(); // UI'ı güncelle
     } catch (e) {
       print('❌ refreshProducts error: $e');
       _errorMessage = 'Veri yenilenirken hata oluştu: $e';
