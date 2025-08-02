@@ -341,8 +341,8 @@ class HomeAppBar extends StatelessWidget {
           const SizedBox(width: 8),
           Image.asset(
             'assets/icons/icontext.png',
-            width: 30,
-            height: 30,
+            width: 120,
+            height: 120,
             
           ),
         ],

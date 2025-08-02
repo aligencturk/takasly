@@ -43,6 +43,11 @@ class _ProfileViewState extends State<ProfileView>
       // Kullanıcı verilerini yükle
       userViewModel.forceRefreshUser();
 
+      // Şehir ve ilçe verilerini yükle (ilan kartlarında il/ilçe gösterimi için)
+      if (productViewModel.cities.isEmpty) {
+        productViewModel.loadCities();
+      }
+
       // Kullanıcının ürünlerini yükle
       final userId = userViewModel.currentUser?.id;
       if (userId != null) {
@@ -212,7 +217,7 @@ class _ProfileViewState extends State<ProfileView>
           color: Colors.white,
           child: GridView.builder(
             shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+            physics: const AlwaysScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 12,
@@ -383,68 +388,66 @@ class _ProfileViewState extends State<ProfileView>
 
         final profile = profileDetailVm.profileDetail!;
         
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              // Ortalama puan ve toplam yorum sayısı
+        return Column(
+          children: [
+            // Ortalama puan ve toplam yorum sayısı
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(20),
+              color: Colors.white,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildReviewStatItem(
+                    icon: Icons.star,
+                    value: profile.averageRating.toStringAsFixed(1),
+                    label: 'Ortalama Puan',
+                    color: Colors.amber,
+                  ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: Colors.grey[300],
+                  ),
+                  _buildReviewStatItem(
+                    icon: Icons.rate_review,
+                    value: profile.totalReviews.toString(),
+                    label: 'Toplam Yorum',
+                    color: AppTheme.primary,
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 8),
+            
+                                                     // Yorumlar listesi
+               if (profile.reviews.isNotEmpty)
+                 Container(
+                   margin: const EdgeInsets.symmetric(horizontal: 20),
+                   color: Colors.white,
+                   child: ListView.builder(
+                     shrinkWrap: true,
+                     physics: const AlwaysScrollableScrollPhysics(),
+                     itemCount: profile.reviews.length,
+                     itemBuilder: (context, index) {
+                       final review = profile.reviews[index];
+                       return _buildReviewItem(review);
+                     },
+                   ),
+                 )
+            else
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(40.0),
                 color: Colors.white,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildReviewStatItem(
-                      icon: Icons.star,
-                      value: profile.averageRating.toStringAsFixed(1),
-                      label: 'Ortalama Puan',
-                      color: Colors.amber,
-                    ),
-                    Container(
-                      width: 1,
-                      height: 40,
-                      color: Colors.grey[300],
-                    ),
-                    _buildReviewStatItem(
-                      icon: Icons.rate_review,
-                      value: profile.totalReviews.toString(),
-                      label: 'Toplam Yorum',
-                      color: AppTheme.primary,
-                    ),
-                  ],
+                child: _buildEmptyTab(
+                  icon: Icons.rate_review_outlined,
+                  title: 'Henüz Yorum Yok',
+                  subtitle: 'Henüz hiç yorum almamışsınız.',
                 ),
               ),
-              
-              const SizedBox(height: 8),
-              
-              // Yorumlar listesi
-              if (profile.reviews.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  color: Colors.white,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: profile.reviews.length,
-                    itemBuilder: (context, index) {
-                      final review = profile.reviews[index];
-                      return _buildReviewItem(review);
-                    },
-                  ),
-                )
-              else
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(40.0),
-                  color: Colors.white,
-                  child: _buildEmptyTab(
-                    icon: Icons.rate_review_outlined,
-                    title: 'Henüz Yorum Yok',
-                    subtitle: 'Henüz hiç yorum almamışsınız.',
-                  ),
-                ),
-            ],
-          ),
+          ],
         );
       },
     );
@@ -656,7 +659,7 @@ class _ProfileViewState extends State<ProfileView>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Üst kısım - Avatar ve İstatistikler
+          // Üst kısım - Avatar ve Kullanıcı Bilgileri
           Row(
             children: [
               // Avatar - Köşeli tasarım
@@ -693,23 +696,97 @@ class _ProfileViewState extends State<ProfileView>
               
               const SizedBox(width: 32),
               
-              // İstatistikler - Kurumsal tasarım
+              // Kullanıcı Bilgileri
               Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildKurumsalStatItem(
-                      count: productCount.toString(),
-                      label: 'İlan',
+                    // Kullanıcı Adı ve Doğrulama Durumu
+                    Row(
+                      children: [
+                        Text(
+                          user.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        if (user.isVerified) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.verified,
+                            size: 18,
+                            color: AppTheme.primary,
+                          ),
+                        ] else ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _navigateToEmailVerification(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.orange.shade200),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    user.isVerified 
+                                      ? Icons.verified_outlined
+                                      : Icons.warning_amber_outlined,
+                                    size: 14,
+                                    color: user.isVerified 
+                                      ? Colors.green.shade700
+                                      : Colors.orange.shade700,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    user.isVerified 
+                                      ? 'E-posta Doğrulandı'
+                                      : 'E-posta Doğrulanmamış',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: user.isVerified 
+                                        ? Colors.green.shade700
+                                        : Colors.orange.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    _buildKurumsalStatItem(
-                      count: favoriteCount.toString(),
-                      label: 'Favori',
+                    
+                    const SizedBox(height: 6),
+                    
+                    // Email
+                    Text(
+                      user.email,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                    _buildKurumsalStatItem(
-                      count: '0',
-                      label: 'Puan',
-                    ),
+                    
+                    // Telefon (varsa)
+                    if (user.phone != null && user.phone!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        user.phone!,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -718,96 +795,22 @@ class _ProfileViewState extends State<ProfileView>
           
           const SizedBox(height: 20),
           
-          // Kullanıcı Bilgileri
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // İstatistikler - Kurumsal tasarım
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Kullanıcı Adı ve Doğrulama Durumu
-              Row(
-                children: [
-                  Text(
-                    user.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  if (user.isVerified) ...[
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.verified,
-                      size: 18,
-                      color: AppTheme.primary,
-                    ),
-                  ] else ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => _navigateToEmailVerification(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.orange.shade200),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                          Icon(
-                            user.isVerified 
-                              ? Icons.verified_outlined
-                              : Icons.warning_amber_outlined,
-                            size: 14,
-                            color: user.isVerified 
-                              ? Colors.green.shade700
-                              : Colors.orange.shade700,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            user.isVerified 
-                              ? 'E-posta Doğrulandı'
-                              : 'E-posta Doğrulanmamış',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: user.isVerified 
-                                ? Colors.green.shade700
-                                : Colors.orange.shade700,
-                            ),
-                          ),
-                        ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+              _buildKurumsalStatItem(
+                count: productCount.toString(),
+                label: 'İlan',
               ),
-              
-              const SizedBox(height: 6),
-              
-              // Email
-              Text(
-                user.email,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w400,
-                ),
+              _buildKurumsalStatItem(
+                count: favoriteCount.toString(),
+                label: 'Favori',
               ),
-              
-              // Telefon (varsa)
-              if (user.phone != null && user.phone!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  user.phone!,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey[700],
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+              _buildKurumsalStatItem(
+                count: '0',
+                label: 'Puan',
+              ),
             ],
           ),
           

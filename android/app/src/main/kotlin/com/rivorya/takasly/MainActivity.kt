@@ -1,4 +1,4 @@
-package com.rivorya.takasly
+package com.rivorya.takaslyapp
 
 import io.flutter.embedding.android.FlutterActivity
 
