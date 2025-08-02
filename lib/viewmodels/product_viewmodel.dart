@@ -513,6 +513,60 @@ class ProductViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Kategori ID'sine göre kategori adını bul
+  String getCategoryNameById(String categoryId) {
+    if (categoryId.isEmpty) return 'Kategori Yok';
+    
+    print('🔍 getCategoryNameById - Looking for category ID: $categoryId');
+    print('🔍 Available categories count: ${_categories.length}');
+    
+    // Tüm kategorilerin ID'lerini yazdır
+    print('🔍 All available category IDs:');
+    for (int i = 0; i < _categories.length; i++) {
+      final category = _categories[i];
+      print('  ${i + 1}. ID: "${category.id}" -> Name: "${category.name}"');
+    }
+    
+    try {
+      final category = _categories.firstWhere(
+        (cat) => cat.id == categoryId,
+        orElse: () => const product_model.Category(id: '', name: 'Kategori Yok', icon: '', isActive: true, order: 0),
+      );
+      
+      print('🔍 Found category: ID="${category.id}", Name="${category.name}"');
+      
+      if (category.name.isNotEmpty && 
+          category.name != 'Kategori Yok' && 
+          category.name != 'Kategori' &&
+          category.name != 'null') {
+        print('✅ Returning valid category name: ${category.name}');
+        return category.name;
+      } else {
+        print('❌ Category name is invalid: "${category.name}"');
+      }
+    } catch (e) {
+      print('❌ Error finding category by ID: $e');
+    }
+    
+    print('❌ No valid category found, returning "Kategori Yok"');
+    return 'Kategori Yok';
+  }
+
+  // Kategori ID'sine göre kategori nesnesini bul
+  product_model.Category? getCategoryById(String categoryId) {
+    if (categoryId.isEmpty) return null;
+    
+    try {
+      return _categories.firstWhere(
+        (cat) => cat.id == categoryId,
+        orElse: () => const product_model.Category(id: '', name: 'Kategori Yok', icon: '', isActive: true, order: 0),
+      );
+    } catch (e) {
+      print('Error finding category by ID: $e');
+      return null;
+    }
+  }
+
   Future<void> loadCities() async {
     print('🏙️ Loading cities...');
     _isLoading = true;

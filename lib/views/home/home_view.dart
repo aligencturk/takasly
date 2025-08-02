@@ -39,6 +39,10 @@ class _HomeViewState extends State<HomeView> {
       );
       productViewModel.loadInitialData();
       productViewModel.loadFavoriteProducts();
+      // Kategorilerin yüklendiğinden emin ol
+      if (productViewModel.categories.isEmpty) {
+        productViewModel.loadCategories();
+      }
     });
   }
 

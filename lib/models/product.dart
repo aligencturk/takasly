@@ -12,6 +12,15 @@ class Product {
   final String categoryId;
   final String categoryName;
   final Category category;
+  // 3 katmanlı kategori sistemi için ek alanlar
+  final String? parentCategoryId;
+  final String? parentCategoryName;
+  final String? grandParentCategoryId;
+  final String? grandParentCategoryName;
+  final String? mainCategoryId;
+  final String? mainCategoryName;
+  final String? subCategoryId;
+  final String? subCategoryName;
   final String condition;
   final String? brand;
   final String? model;
@@ -36,6 +45,14 @@ class Product {
     required this.categoryId,
     required this.categoryName,
     required this.category,
+    this.parentCategoryId,
+    this.parentCategoryName,
+    this.grandParentCategoryId,
+    this.grandParentCategoryName,
+    this.mainCategoryId,
+    this.mainCategoryName,
+    this.subCategoryId,
+    this.subCategoryName,
     required this.condition,
     this.brand,
     this.model,
@@ -114,6 +131,14 @@ class Product {
               isActive: true,
               order: 0,
             ),
+      parentCategoryId: json['parentCategoryId'] != null ? safeString(json['parentCategoryId']) : null,
+      parentCategoryName: json['parentCategoryName'] != null ? safeString(json['parentCategoryName']) : null,
+      grandParentCategoryId: json['grandParentCategoryId'] != null ? safeString(json['grandParentCategoryId']) : null,
+      grandParentCategoryName: json['grandParentCategoryName'] != null ? safeString(json['grandParentCategoryName']) : null,
+      mainCategoryId: json['mainCategoryId'] != null ? safeString(json['mainCategoryId']) : null,
+      mainCategoryName: json['mainCategoryName'] != null ? safeString(json['mainCategoryName']) : null,
+      subCategoryId: json['subCategoryId'] != null ? safeString(json['subCategoryId']) : null,
+      subCategoryName: json['subCategoryName'] != null ? safeString(json['subCategoryName']) : null,
       condition: safeString(json['condition']),
       brand: json['brand'] != null ? safeString(json['brand']) : null,
       model: json['model'] != null ? safeString(json['model']) : null,
@@ -160,6 +185,14 @@ class Product {
     String? categoryId,
     String? categoryName,
     Category? category,
+    String? parentCategoryId,
+    String? parentCategoryName,
+    String? grandParentCategoryId,
+    String? grandParentCategoryName,
+    String? mainCategoryId,
+    String? mainCategoryName,
+    String? subCategoryId,
+    String? subCategoryName,
     String? condition,
     String? brand,
     String? model,
@@ -184,6 +217,14 @@ class Product {
       categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
       category: category ?? this.category,
+      parentCategoryId: parentCategoryId ?? this.parentCategoryId,
+      parentCategoryName: parentCategoryName ?? this.parentCategoryName,
+      grandParentCategoryId: grandParentCategoryId ?? this.grandParentCategoryId,
+      grandParentCategoryName: grandParentCategoryName ?? this.grandParentCategoryName,
+      mainCategoryId: mainCategoryId ?? this.mainCategoryId,
+      mainCategoryName: mainCategoryName ?? this.mainCategoryName,
+      subCategoryId: subCategoryId ?? this.subCategoryId,
+      subCategoryName: subCategoryName ?? this.subCategoryName,
       condition: condition ?? this.condition,
       brand: brand ?? this.brand,
       model: model ?? this.model,
@@ -223,18 +264,34 @@ class Category {
   final String name;
   final String icon;
   final String? parentId;
+  final String? parentName;
+  final String? grandParentId;
+  final String? grandParentName;
+  final String? mainCategoryId;
+  final String? mainCategoryName;
+  final String? subCategoryId;
+  final String? subCategoryName;
   final List<Category>? children;
   final bool isActive;
   final int order;
+  final int level; // 1: Ana kategori, 2: Alt kategori, 3: Alt-alt kategori
 
   const Category({
     required this.id,
     required this.name,
     required this.icon,
     this.parentId,
+    this.parentName,
+    this.grandParentId,
+    this.grandParentName,
+    this.mainCategoryId,
+    this.mainCategoryName,
+    this.subCategoryId,
+    this.subCategoryName,
     this.children,
     required this.isActive,
     required this.order,
+    this.level = 1,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -274,9 +331,17 @@ class Category {
       name: safeString(json['name']),
       icon: safeString(json['icon']),
       parentId: json['parentId'] != null ? safeString(json['parentId']) : null,
+      parentName: json['parentName'] != null ? safeString(json['parentName']) : null,
+      grandParentId: json['grandParentId'] != null ? safeString(json['grandParentId']) : null,
+      grandParentName: json['grandParentName'] != null ? safeString(json['grandParentName']) : null,
+      mainCategoryId: json['mainCategoryId'] != null ? safeString(json['mainCategoryId']) : null,
+      mainCategoryName: json['mainCategoryName'] != null ? safeString(json['mainCategoryName']) : null,
+      subCategoryId: json['subCategoryId'] != null ? safeString(json['subCategoryId']) : null,
+      subCategoryName: json['subCategoryName'] != null ? safeString(json['subCategoryName']) : null,
       children: safeCategoryList(json['children']),
       isActive: safeBool(json['isActive']),
       order: safeInt(json['order']),
+      level: safeInt(json['level'], defaultValue: 1),
     );
   }
   
@@ -295,18 +360,34 @@ class Category {
     String? name,
     String? icon,
     String? parentId,
+    String? parentName,
+    String? grandParentId,
+    String? grandParentName,
+    String? mainCategoryId,
+    String? mainCategoryName,
+    String? subCategoryId,
+    String? subCategoryName,
     List<Category>? children,
     bool? isActive,
     int? order,
+    int? level,
   }) {
     return Category(
       id: id ?? this.id,
       name: name ?? this.name,
       icon: icon ?? this.icon,
       parentId: parentId ?? this.parentId,
+      parentName: parentName ?? this.parentName,
+      grandParentId: grandParentId ?? this.grandParentId,
+      grandParentName: grandParentName ?? this.grandParentName,
+      mainCategoryId: mainCategoryId ?? this.mainCategoryId,
+      mainCategoryName: mainCategoryName ?? this.mainCategoryName,
+      subCategoryId: subCategoryId ?? this.subCategoryId,
+      subCategoryName: subCategoryName ?? this.subCategoryName,
       children: children ?? this.children,
       isActive: isActive ?? this.isActive,
       order: order ?? this.order,
+      level: level ?? this.level,
     );
   }
 

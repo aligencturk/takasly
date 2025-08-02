@@ -22,20 +22,78 @@ class ProductCard extends StatelessWidget {
     this.hideFavoriteIcon = false,
   });
 
-  String _getCategoryDisplayName(Product product) {
-    // Debug için kategori bilgilerini logla
-    Logger.debug('Product ${product.id} - categoryName: "${product.categoryName}", category.name: "${product.category.name}"');
-    
-    // Önce categoryName alanını kontrol et (API'den gelen)
-    if (product.categoryName.isNotEmpty && product.categoryName != 'null') {
+  String _getCategoryDisplayName(Product product, BuildContext context) {
+    Logger.debug('Product ${product.id} - 3-Layer Category Check:');
+    Logger.debug('  categoryName: "${product.categoryName}"');
+    Logger.debug('  category.name: "${product.category.name}"');
+    Logger.debug('  categoryId: "${product.categoryId}"');
+    Logger.debug('  mainCategoryName: "${product.mainCategoryName}"');
+    Logger.debug('  parentCategoryName: "${product.parentCategoryName}"');
+    Logger.debug('  subCategoryName: "${product.subCategoryName}"');
+
+    // 3 katmanlı kategori sisteminde öncelik sırası:
+    // 1. Ana kategori adı (mainCategoryName)
+    if (product.mainCategoryName != null &&
+        product.mainCategoryName!.isNotEmpty &&
+        product.mainCategoryName != 'null' &&
+        product.mainCategoryName != 'Kategori' &&
+        product.mainCategoryName != 'Kategori Yok') {
+      Logger.debug('Using mainCategoryName: ${product.mainCategoryName}');
+      return product.mainCategoryName!;
+    }
+
+    // 2. Üst kategori adı (parentCategoryName)
+    if (product.parentCategoryName != null &&
+        product.parentCategoryName!.isNotEmpty &&
+        product.parentCategoryName != 'null' &&
+        product.parentCategoryName != 'Kategori' &&
+        product.parentCategoryName != 'Kategori Yok') {
+      Logger.debug('Using parentCategoryName: ${product.parentCategoryName}');
+      return product.parentCategoryName!;
+    }
+
+    // 3. Alt kategori adı (subCategoryName)
+    if (product.subCategoryName != null &&
+        product.subCategoryName!.isNotEmpty &&
+        product.subCategoryName != 'null' &&
+        product.subCategoryName != 'Kategori' &&
+        product.subCategoryName != 'Kategori Yok') {
+      Logger.debug('Using subCategoryName: ${product.subCategoryName}');
+      return product.subCategoryName!;
+    }
+
+    // 4. Direkt categoryName alanı (categoryList'ten gelen en spesifik kategori)
+    if (product.categoryName.isNotEmpty &&
+        product.categoryName != 'null' &&
+        product.categoryName != 'Kategori') {
+      Logger.debug('Using categoryName: ${product.categoryName}');
       return product.categoryName;
     }
-    
-    // Eğer categoryName boşsa, category nesnesini kontrol et
-    if (product.category != null && product.category.name.isNotEmpty) {
+
+    // 5. Category nesnesinin name alanı
+    if (product.category != null &&
+        product.category.name.isNotEmpty &&
+        product.category.name != 'Kategori' &&
+        product.category.name != 'Kategori Yok') {
+      Logger.debug('Using category.name: ${product.category.name}');
       return product.category.name;
     }
-    
+
+    // 6. ProductViewModel'den kategori arama (sadece ana kategoriler için)
+    final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+    final categoryName = productViewModel.getCategoryNameById(product.categoryId);
+    if (categoryName != 'Kategori Yok') {
+      Logger.debug('Found category using getCategoryNameById: $categoryName');
+      return categoryName;
+    }
+
+    // 7. Kategori ID'sini göster
+    if (product.categoryId.isNotEmpty) {
+      Logger.debug('No category name found, showing category ID: ${product.categoryId}');
+      return 'Kategori ${product.categoryId}';
+    }
+
+    Logger.debug('No valid category found, returning "Kategori Yok"');
     return 'Kategori Yok';
   }
 
@@ -208,8 +266,8 @@ class ProductCard extends StatelessWidget {
                       constraints: const BoxConstraints(
                         minHeight: 16, // iOS için minimum yükseklik
                       ),
-                      child: Text(
-                        _getCategoryDisplayName(product),
+                      child:                       Text(
+                        _getCategoryDisplayName(product, context),
                         style: textTheme.bodySmall?.copyWith(
                           color: AppTheme.primary, // Debug için kırmızı renk
                           fontWeight: FontWeight.w600, // Daha kalın font

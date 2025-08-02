@@ -124,6 +124,18 @@ class ProductService {
               print(
                 '  ${i + 1}. ${product['productTitle']} (ID: ${product['productID']})',
               );
+              // Kategori bilgilerini detaylı logla
+              print('  🏷️ categoryID: ${product['categoryID']}');
+              print('  🏷️ categoryTitle: ${product['categoryTitle']}');
+              print('  🏷️ categoryList: ${product['categoryList']}');
+              if (product['categoryList'] != null) {
+                final categoryList = product['categoryList'] as List;
+                print('  🏷️ categoryList length: ${categoryList.length}');
+                for (int j = 0; j < categoryList.length; j++) {
+                  final category = categoryList[j];
+                  print('  🏷️ categoryList[$j]: $category');
+                }
+              }
             }
           }
 
@@ -566,6 +578,53 @@ class ProductService {
       '🔄 Transforming new API product: ${apiProduct['productTitle']} (ID: ${apiProduct['productID']})',
     );
 
+    // Kategori verilerini debug et
+    print('🏷️ Category debug for product ${apiProduct['productID']}:');
+    print('🏷️ categoryID: ${apiProduct['categoryID']}');
+    print('🏷️ categoryTitle: ${apiProduct['categoryTitle']}');
+    print('🏷️ categoryTitle type: ${apiProduct['categoryTitle']?.runtimeType}');
+    print('🏷️ categoryTitle isEmpty: ${apiProduct['categoryTitle']?.toString().isEmpty ?? true}');
+    print('🏷️ All category-related fields:');
+    apiProduct.forEach((key, value) {
+      if (key.toString().toLowerCase().contains('categor') || key.toString().toLowerCase().contains('cat')) {
+        print('🏷️ $key: $value');
+      }
+    });
+    
+    // 3 katmanlı kategori sistemi için tüm alanları kontrol et
+    print('🏷️ 3-Layer Category System Check:');
+    print('🏷️ categoryID: ${apiProduct['categoryID']}');
+    print('🏷️ categoryTitle: ${apiProduct['categoryTitle']}');
+    print('🏷️ parentCategoryID: ${apiProduct['parentCategoryID']}');
+    print('🏷️ parentCategoryTitle: ${apiProduct['parentCategoryTitle']}');
+    print('🏷️ grandParentCategoryID: ${apiProduct['grandParentCategoryID']}');
+    print('🏷️ grandParentCategoryTitle: ${apiProduct['grandParentCategoryTitle']}');
+    print('🏷️ mainCategoryID: ${apiProduct['mainCategoryID']}');
+    print('🏷️ mainCategoryTitle: ${apiProduct['mainCategoryTitle']}');
+    print('🏷️ subCategoryID: ${apiProduct['subCategoryID']}');
+    print('🏷️ subCategoryTitle: ${apiProduct['subCategoryTitle']}');
+    
+    // categoryList alanını kontrol et
+    print('🏷️ categoryList check:');
+    print('🏷️ Raw categoryList: ${apiProduct['categoryList']}');
+    print('🏷️ categoryList type: ${apiProduct['categoryList']?.runtimeType}');
+    
+    if (apiProduct['categoryList'] != null) {
+      final categoryList = apiProduct['categoryList'] as List;
+      print('🏷️ categoryList length: ${categoryList.length}');
+      for (int i = 0; i < categoryList.length; i++) {
+        final category = categoryList[i];
+        print('🏷️ categoryList[$i] raw: $category');
+        print('🏷️ categoryList[$i] type: ${category.runtimeType}');
+        if (category is Map) {
+          print('🏷️ categoryList[$i] keys: ${category.keys}');
+          print('🏷️ categoryList[$i]: catID=${category['catID']}, catName=${category['catName']}');
+        }
+      }
+    } else {
+      print('🏷️ categoryList is null');
+    }
+
     // Resim URL'ini debug et
     final imageUrl = apiProduct['productImage'];
     print('🖼️ Product image URL: $imageUrl');
@@ -620,6 +679,90 @@ class ProductService {
 
     print('🖼️ Final images array: $images');
 
+    // categoryList'ten kategori bilgilerini parse et
+    String? mainCategoryName;
+    String? parentCategoryName;
+    String? subCategoryName;
+    String? mainCategoryId;
+    String? parentCategoryId;
+    String? subCategoryId;
+    
+    if (apiProduct['categoryList'] != null) {
+      final categoryList = apiProduct['categoryList'] as List;
+      print('🏷️ Parsing categoryList with ${categoryList.length} items');
+      
+      if (categoryList.length >= 1) {
+        // İlk kategori ana kategori olarak kabul edilir
+        final mainCat = categoryList[0];
+        print('🏷️ Main cat raw: $mainCat');
+        if (mainCat is Map) {
+          mainCategoryId = mainCat['catID']?.toString();
+          mainCategoryName = mainCat['catName']?.toString();
+          print('🏷️ Main category: $mainCategoryName (ID: $mainCategoryId)');
+        }
+      }
+      
+      if (categoryList.length >= 2) {
+        // İkinci kategori üst kategori olarak kabul edilir
+        final parentCat = categoryList[1];
+        print('🏷️ Parent cat raw: $parentCat');
+        if (parentCat is Map) {
+          parentCategoryId = parentCat['catID']?.toString();
+          parentCategoryName = parentCat['catName']?.toString();
+          print('🏷️ Parent category: $parentCategoryName (ID: $parentCategoryId)');
+        }
+      }
+      
+      if (categoryList.length >= 3) {
+        // Üçüncü kategori alt kategori olarak kabul edilir
+        final subCat = categoryList[2];
+        print('🏷️ Sub cat raw: $subCat');
+        if (subCat is Map) {
+          subCategoryId = subCat['catID']?.toString();
+          subCategoryName = subCat['catName']?.toString();
+          print('🏷️ Sub category: $subCategoryName (ID: $subCategoryId)');
+        }
+      }
+      
+      // categoryId'yi categoryList'teki son kategorinin ID'si olarak ayarla
+      // Bu, en spesifik kategoriyi temsil eder
+      if (categoryList.isNotEmpty) {
+        final lastCategory = categoryList.last;
+        if (lastCategory is Map) {
+          final lastCategoryId = lastCategory['catID']?.toString();
+          final lastCategoryName = lastCategory['catName']?.toString();
+          print('🏷️ Setting categoryId to last category: $lastCategoryName (ID: $lastCategoryId)');
+          // categoryId'yi güncelle (Product modelinde bu alan var)
+          apiProduct['categoryID'] = lastCategoryId;
+          // categoryTitle'ı da güncelle
+          apiProduct['categoryTitle'] = lastCategoryName;
+        }
+      }
+    }
+    
+    // Eğer categoryList'ten kategori bilgileri alınamadıysa, diğer alanları kontrol et
+    if (mainCategoryName == null || mainCategoryName == 'null') {
+      mainCategoryName = apiProduct['mainCategoryTitle']?.toString();
+      mainCategoryId = apiProduct['mainCategoryID']?.toString();
+    }
+    
+    if (parentCategoryName == null || parentCategoryName == 'null') {
+      parentCategoryName = apiProduct['parentCategoryTitle']?.toString();
+      parentCategoryId = apiProduct['parentCategoryID']?.toString();
+    }
+    
+    if (subCategoryName == null || subCategoryName == 'null') {
+      subCategoryName = apiProduct['subCategoryTitle']?.toString();
+      subCategoryId = apiProduct['subCategoryID']?.toString();
+    }
+    
+    print('🏷️ Final parsed categories:');
+    print('🏷️ Main: $mainCategoryName (ID: $mainCategoryId)');
+    print('🏷️ Parent: $parentCategoryName (ID: $parentCategoryId)');
+    print('🏷️ Sub: $subCategoryName (ID: $subCategoryId)');
+    print('🏷️ Final categoryId: ${apiProduct['categoryID']}');
+    print('🏷️ Final categoryTitle: ${apiProduct['categoryTitle']}');
+
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle']?.toString() ?? '',
@@ -627,14 +770,33 @@ class ProductService {
       images: images,
       categoryId: apiProduct['categoryID']?.toString() ?? '',
       categoryName: apiProduct['categoryTitle']?.toString() ?? '',
+      parentCategoryId: parentCategoryId,
+      parentCategoryName: parentCategoryName,
+      grandParentCategoryId: apiProduct['grandParentCategoryID']?.toString(),
+      grandParentCategoryName: apiProduct['grandParentCategoryTitle']?.toString(),
+      mainCategoryId: mainCategoryId,
+      mainCategoryName: mainCategoryName,
+      subCategoryId: subCategoryId,
+      subCategoryName: subCategoryName,
       category: Category(
         id: apiProduct['categoryID']?.toString() ?? '',
-        name: apiProduct['categoryTitle']?.toString() ?? 'Kategori',
+        name: mainCategoryName ?? parentCategoryName ?? subCategoryName ?? 
+              (apiProduct['categoryTitle']?.toString().isNotEmpty == true 
+                  ? apiProduct['categoryTitle']?.toString() ?? 'Kategori'
+                  : 'Kategori Yok'),
         icon: '',
-        parentId: apiProduct['parentCategoryID']?.toString(), // Alt kategori bilgisi
+        parentId: parentCategoryId,
+        parentName: parentCategoryName,
+        grandParentId: apiProduct['grandParentCategoryID']?.toString(),
+        grandParentName: apiProduct['grandParentCategoryTitle']?.toString(),
+        mainCategoryId: mainCategoryId,
+        mainCategoryName: mainCategoryName,
+        subCategoryId: subCategoryId,
+        subCategoryName: subCategoryName,
         children: null,
         isActive: true,
         order: 0,
+        level: _determineCategoryLevel(apiProduct),
       ),
       condition: apiProduct['productCondition']?.toString() ?? '',
       ownerId: apiProduct['userID']?.toString() ?? '',
@@ -1258,12 +1420,14 @@ class ProductService {
           print('🏷️ Categories API returned ${categoriesList.length} categories');
           
           // Kategori verilerini detaylı logla
+          print('🏷️ Raw category data from API:');
           for (int i = 0; i < categoriesList.length; i++) {
             final category = categoriesList[i];
-            print('🏷️ Category $i: ${category['catName']} (Icon: ${category['catImage']})');
+            print('🏷️ Category $i raw data: $category');
+            print('🏷️ Category $i: catID="${category['catID']}" (type: ${category['catID'].runtimeType}), catName="${category['catName']}", catImage="${category['catImage']}"');
           }
           
-          return categoriesList
+          final parsedCategories = categoriesList
               .map(
                 (item) => Category(
                   id: item['catID'].toString(),
@@ -1276,6 +1440,14 @@ class ProductService {
                 ),
               )
               .toList();
+          
+          print('🏷️ Parsed categories:');
+          for (int i = 0; i < parsedCategories.length; i++) {
+            final category = parsedCategories[i];
+            print('🏷️ Parsed Category $i: ID="${category.id}" -> Name="${category.name}"');
+          }
+          
+          return parsedCategories;
         },
       );
 
@@ -2042,5 +2214,47 @@ class ProductService {
       print('💥 ProductService - Exception in getUserProducts: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
+  }
+
+  // 3 katmanlı kategori sisteminde kategori seviyesini belirler
+  int _determineCategoryLevel(Map<String, dynamic> apiProduct) {
+    // Önce categoryList alanını kontrol et
+    if (apiProduct['categoryList'] != null) {
+      final categoryList = apiProduct['categoryList'] as List;
+      if (categoryList.length >= 3) {
+        return 3; // Alt-alt kategori
+      } else if (categoryList.length >= 2) {
+        return 2; // Alt kategori
+      } else if (categoryList.length >= 1) {
+        return 1; // Ana kategori
+      }
+    }
+    
+    // Ana kategori varsa (mainCategoryID ve mainCategoryTitle)
+    if (apiProduct['mainCategoryID'] != null && 
+        apiProduct['mainCategoryID'].toString().isNotEmpty &&
+        apiProduct['mainCategoryTitle'] != null && 
+        apiProduct['mainCategoryTitle'].toString().isNotEmpty) {
+      return 1; // Ana kategori
+    }
+    
+    // Alt kategori varsa (parentCategoryID ve parentCategoryTitle)
+    if (apiProduct['parentCategoryID'] != null && 
+        apiProduct['parentCategoryID'].toString().isNotEmpty &&
+        apiProduct['parentCategoryTitle'] != null && 
+        apiProduct['parentCategoryTitle'].toString().isNotEmpty) {
+      return 2; // Alt kategori
+    }
+    
+    // Alt-alt kategori varsa (grandParentCategoryID ve grandParentCategoryTitle)
+    if (apiProduct['grandParentCategoryID'] != null && 
+        apiProduct['grandParentCategoryID'].toString().isNotEmpty &&
+        apiProduct['grandParentCategoryTitle'] != null && 
+        apiProduct['grandParentCategoryTitle'].toString().isNotEmpty) {
+      return 3; // Alt-alt kategori
+    }
+    
+    // Varsayılan olarak 1. seviye
+    return 1;
   }
 }
