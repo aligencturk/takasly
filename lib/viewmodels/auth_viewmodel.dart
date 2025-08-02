@@ -235,15 +235,15 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> forgotPassword(String email) async {
+  Future<Map<String, dynamic>?> forgotPassword(String email) async {
     if (email.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
-      return false;
+      return null;
     }
 
     if (!_isValidEmail(email)) {
       _setError(ErrorMessages.invalidEmail);
-      return false;
+      return null;
     }
 
     _setLoading(true);
@@ -254,16 +254,16 @@ class AuthViewModel extends ChangeNotifier {
 
       if (response.isSuccess) {
         _setLoading(false);
-        return true;
+        return response.data;
       } else {
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
-        return false;
+        return null;
       }
     } catch (e) {
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
-      return false;
+      return null;
     }
   }
 
@@ -369,10 +369,11 @@ class AuthViewModel extends ChangeNotifier {
   Future<Map<String, dynamic>?> checkPasswordResetCode({
     required String code,
     required String email,
+    required String codeToken,
   }) async {
     Logger.info('🔑 AuthViewModel.checkPasswordResetCode called');
     
-    if (code.trim().isEmpty || email.trim().isEmpty) {
+    if (code.trim().isEmpty || email.trim().isEmpty || codeToken.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return null;
     }
@@ -395,6 +396,7 @@ class AuthViewModel extends ChangeNotifier {
       final response = await _authService.checkPasswordResetCode(
         code: code,
         email: email,
+        codeToken: codeToken,
       );
 
       if (response.isSuccess) {

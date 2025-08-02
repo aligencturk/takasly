@@ -39,8 +39,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   // Step titles
   final List<String> _stepTitles = [
-    'E-posta Doğrulama',
-    'Kod Girişi',
+    'E-posta Girişi',
+    'Kod Doğrulama',
     'Yeni Şifre',
   ];
 
@@ -54,6 +54,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   @override
   void initState() {
     super.initState();
+    Logger.info('🚀 ResetPasswordView.initState() - Şifre sıfırlama ekranı başlatılıyor', tag: 'ResetPasswordView');
+    Logger.debug('📧 Widget email: ${widget.email}', tag: 'ResetPasswordView');
     _initializeEmailField();
   }
 
@@ -224,7 +226,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                 if (_canGoToNextStep()) {
                   switch (_currentStep) {
                     case 0: // E-posta adımı
-                      _handleResetPassword();
+                      _handleSendCode();
                       break;
                     case 1: // Kod doğrulama adımı
                       _handleCodeVerification();
@@ -252,11 +254,11 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   bool _canGoToNextStep() {
     bool canGo = false;
     switch (_currentStep) {
-      case 0: // E-posta Doğrulama
+      case 0: // E-posta Girişi
         canGo = _emailController.text.trim().isNotEmpty && 
                 RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text.trim());
         break;
-      case 1: // Kod Girişi
+      case 1: // Kod Doğrulama
         canGo = _codeController.text.trim().isNotEmpty && 
                 _codeController.text.trim().length >= 4;
         break;
@@ -344,11 +346,11 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                    child: Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                  children: [
                     Text(
-                      'E-posta Doğrulama',
+                      'E-posta Girişi',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -368,32 +370,32 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           
           const SizedBox(height: 32),
           
-                     // Form field
-                        TextFormField(
-                          controller: _emailController,
-             decoration: InputDecoration(
-               labelText: 'E-posta Adresi',
-               hintText: 'E-posta adresinizi girin',
-               border: OutlineInputBorder(
-                 borderRadius: BorderRadius.circular(8),
-                 borderSide: BorderSide(color: Colors.grey.shade300),
-               ),
-               enabledBorder: OutlineInputBorder(
-                 borderRadius: BorderRadius.circular(8),
-                 borderSide: BorderSide(color: Colors.grey.shade300),
-               ),
-               focusedBorder: OutlineInputBorder(
-                 borderRadius: BorderRadius.circular(8),
-                 borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
-               ),
-               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-             validator: _validateEmail,
-             onChanged: (value) {
-               setState(() {}); // Trigger rebuild for button state
-             },
-           ),
+          // E-posta alanı
+          TextFormField(
+            controller: _emailController,
+            decoration: InputDecoration(
+              labelText: 'E-posta Adresi',
+              hintText: 'E-posta adresinizi girin',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            validator: _validateEmail,
+            onChanged: (value) {
+              setState(() {}); // Trigger rebuild for button state
+            },
+          ),
           
           const SizedBox(height: 24),
           
@@ -452,7 +454,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Doğrulama Kodu',
+                      'Kod Doğrulama',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -472,32 +474,47 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           
           const SizedBox(height: 32),
           
-                     // Form field
-                        TextFormField(
-                          controller: _codeController,
-             decoration: InputDecoration(
-                            labelText: 'Doğrulama Kodu',
-               hintText: 'E-postanıza gelen 6 haneli kod',
-               border: OutlineInputBorder(
-                 borderRadius: BorderRadius.circular(8),
-                 borderSide: BorderSide(color: Colors.grey.shade300),
-               ),
-               enabledBorder: OutlineInputBorder(
-                 borderRadius: BorderRadius.circular(8),
-                 borderSide: BorderSide(color: Colors.grey.shade300),
-               ),
-               focusedBorder: OutlineInputBorder(
-                 borderRadius: BorderRadius.circular(8),
-                 borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
-               ),
-               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          ),
-                          keyboardType: TextInputType.text,
-             validator: _validateVerificationCode,
-             onChanged: (value) {
-               setState(() {}); // Trigger rebuild for button state
-             },
-           ),
+          // Kod alanı
+          TextFormField(
+            controller: _codeController,
+            decoration: InputDecoration(
+              labelText: 'Doğrulama Kodu',
+              hintText: 'E-postanıza gelen doğrulama kodunu girin',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            keyboardType: TextInputType.text,
+            validator: _validateVerificationCode,
+            onChanged: (value) {
+              setState(() {}); // Trigger rebuild for button state
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Tekrar Kod Gönder butonu
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _handleResendCode,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: BorderSide(color: AppTheme.primary),
+              ),
+              child: const Text('Tekrar Kod Gönder'),
+            ),
+          ),
           
           const SizedBox(height: 24),
           
@@ -770,6 +787,9 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   void _initializeEmailField() {
     if (widget.email != null) {
       _emailController.text = widget.email!;
+      Logger.info('📧 E-posta alanı widget\'tan dolduruldu: ${widget.email}', tag: 'ResetPasswordView');
+    } else {
+      Logger.debug('📧 Widget\'tan e-posta gelmedi, alan boş bırakıldı', tag: 'ResetPasswordView');
     }
   }
 
@@ -794,107 +814,355 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   }
 
   // MARK: - Business Logic
-  void _handleResetPassword() async {
-    if (!_formKey.currentState!.validate()) return;
+  void _handleSendCode() async {
+    Logger.info('🔄 ResetPasswordView._handleSendCode() başlatılıyor...', tag: 'ResetPasswordView');
     
-    Logger.debug('Şifre sıfırlama işlemi başlatılıyor...', tag: 'ResetPasswordView');
-    
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    authViewModel.clearError();
-    
-    // E-posta ile şifre sıfırlama isteği gönder
-    final forgotPasswordSuccess = await authViewModel.forgotPassword(
-      _emailController.text.trim(),
-    );
-    
-    if (!forgotPasswordSuccess) {
-      Logger.error('Şifre sıfırlama isteği başarısız: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
-      return;
-    }
-    
-    Logger.debug('Şifre sıfırlama isteği başarılı, kod gönderildi', tag: 'ResetPasswordView');
-    
-    // Kullanıcıya kod gönderildiğini bildir
-    if (mounted) {
+    // E-posta validation
+    if (_emailController.text.trim().isEmpty) {
+      Logger.warning('❌ E-posta adresi boş', tag: 'ResetPasswordView');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Şifre sıfırlama kodu e-posta adresinize gönderildi'),
-          backgroundColor: AppTheme.success,
+          content: const Text('Lütfen e-posta adresinizi girin'),
+          backgroundColor: AppTheme.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: AppTheme.borderRadius,
           ),
         ),
       );
+      return;
+    }
+    
+    final email = _emailController.text.trim();
+    Logger.debug('📧 E-posta adresi: $email', tag: 'ResetPasswordView');
+    
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+      Logger.warning('❌ Geçersiz e-posta formatı: $email', tag: 'ResetPasswordView');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Geçerli bir e-posta adresi girin'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTheme.borderRadius,
+          ),
+        ),
+      );
+      return;
+    }
+    
+    Logger.info('✅ E-posta validation başarılı, API çağrısı yapılıyor...', tag: 'ResetPasswordView');
+    
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    authViewModel.clearError();
+    
+    try {
+      // E-posta ile şifre sıfırlama isteği gönder
+      Logger.debug('📤 API çağrısı: forgotPassword($email)', tag: 'ResetPasswordView');
+      final response = await authViewModel.forgotPassword(email);
       
-      // Bir sonraki adıma geç
-      _nextStep();
+      if (response == null) {
+        Logger.error('❌ Kod gönderme isteği başarısız: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
+        
+        // Eğer "Zaten bir sıfırlama isteği gönderilmiş" hatası ise, direkt kod giriş adımına geç
+        if (authViewModel.errorMessage?.contains('Zaten bir sıfırlama isteği gönderilmiş') == true) {
+          Logger.info('🔄 Zaten kod gönderilmiş, direkt kod giriş adımına geçiliyor', tag: 'ResetPasswordView');
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Daha önce kod gönderilmiş. Lütfen e-posta adresinize gelen kodu girin.'),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppTheme.borderRadius,
+                ),
+              ),
+            );
+            
+            // Direkt kod giriş adımına geç
+            setState(() {
+              _currentStep = 1;
+            });
+          }
+        }
+        return;
+      }
+      
+      Logger.info('✅ API response alındı', tag: 'ResetPasswordView');
+      Logger.debug('📥 Response data: $response', tag: 'ResetPasswordView');
+      
+      // CodeToken'ı sakla (eğer varsa)
+      if (response.containsKey('codeToken')) {
+        _codeToken = response['codeToken'];
+        Logger.info('🔑 CodeToken alındı: ${_codeToken!.substring(0, 10)}...', tag: 'ResetPasswordView');
+      } else {
+        Logger.warning('⚠️ CodeToken response\'da bulunamadı', tag: 'ResetPasswordView');
+      }
+      
+      // Mail bilgilerini kontrol et
+      if (response.containsKey('mail')) {
+        final mailInfo = response['mail'] as Map<String, dynamic>;
+        final isMailSent = mailInfo['send'] == true;
+        final mailMessage = mailInfo['message'] ?? 'Bilinmeyen mesaj';
+        
+        Logger.info('📧 Mail durumu: send=$isMailSent, message=$mailMessage', tag: 'ResetPasswordView');
+        
+        if (isMailSent) {
+          Logger.info('✅ Mail başarıyla gönderildi', tag: 'ResetPasswordView');
+        } else {
+          Logger.warning('❌ Mail gönderimi başarısız: $mailMessage', tag: 'ResetPasswordView');
+        }
+      } else {
+        Logger.warning('⚠️ Mail bilgisi response\'da bulunamadı', tag: 'ResetPasswordView');
+      }
+      
+      Logger.info('✅ Kod gönderme işlemi tamamlandı, bir sonraki adıma geçiliyor', tag: 'ResetPasswordView');
+      
+      // Kullanıcıya kod gönderildiğini bildir
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Şifre sıfırlama kodu e-posta adresinize gönderildi'),
+            backgroundColor: AppTheme.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppTheme.borderRadius,
+            ),
+          ),
+        );
+        
+        // Bir sonraki adıma geç
+        _nextStep();
+      }
+      
+    } catch (e) {
+      Logger.error('💥 Kod gönderme işleminde exception: $e', tag: 'ResetPasswordView', error: e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kod gönderme işleminde bir hata oluştu'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTheme.borderRadius,
+          ),
+        ),
+      );
     }
   }
 
   void _handleCodeVerification() async {
-    if (!_formKey.currentState!.validate()) return;
+    Logger.info('🔄 ResetPasswordView._handleCodeVerification() başlatılıyor...', tag: 'ResetPasswordView');
     
-    Logger.debug('Kod doğrulama işlemi başlatılıyor...', tag: 'ResetPasswordView');
+    if (!_formKey.currentState!.validate()) {
+      Logger.warning('❌ Form validation başarısız', tag: 'ResetPasswordView');
+      return;
+    }
+    
+    final code = _codeController.text.trim();
+    final email = _emailController.text.trim();
+    
+    Logger.debug('🔍 Kod doğrulama parametreleri:', tag: 'ResetPasswordView');
+    Logger.debug('📧 E-posta: $email', tag: 'ResetPasswordView');
+    Logger.debug('🔑 Kod: $code', tag: 'ResetPasswordView');
+    Logger.debug('🔑 CodeToken: ${_codeToken?.substring(0, 10) ?? 'null'}...', tag: 'ResetPasswordView');
+    
+    // CodeToken kontrolü
+    if (_codeToken == null || _codeToken!.isEmpty) {
+      Logger.error('❌ CodeToken bulunamadı, önce kod gönderme işlemi yapılmalı', tag: 'ResetPasswordView');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Önce e-posta adresinize kod gönderin'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTheme.borderRadius,
+          ),
+        ),
+      );
+      return;
+    }
     
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     authViewModel.clearError();
     
-    // Şifre sıfırlama kodunu doğrula ve passToken al
-    final response = await authViewModel.checkPasswordResetCode(
-      code: _codeController.text.trim(),
-      email: _emailController.text.trim(),
-    );
-    
-    if (response == null) {
-      Logger.error('Kod doğrulama hatası: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
-      return;
+    try {
+      // Şifre sıfırlama kodunu doğrula ve passToken al
+      Logger.debug('📤 API çağrısı: checkPasswordResetCode(code=$code, email=$email, codeToken=${_codeToken!.substring(0, 10)}...)', tag: 'ResetPasswordView');
+      final response = await authViewModel.checkPasswordResetCode(
+        code: code,
+        email: email,
+        codeToken: _codeToken!,
+      );
+      
+      if (response == null) {
+        Logger.error('❌ Kod doğrulama hatası: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
+        return;
+      }
+      
+      Logger.info('✅ API response alındı', tag: 'ResetPasswordView');
+      Logger.debug('📥 Response data: $response', tag: 'ResetPasswordView');
+      
+      // PassToken'ı sakla
+      if (response.containsKey('passToken')) {
+        _passToken = response['passToken'];
+        Logger.info('🔑 PassToken alındı: ${_passToken!.substring(0, 10)}...', tag: 'ResetPasswordView');
+      } else {
+        Logger.error('❌ PassToken response\'da bulunamadı', tag: 'ResetPasswordView');
+        authViewModel.setError('Doğrulama token\'ı bulunamadı. Lütfen tekrar deneyin.');
+        return;
+      }
+      
+      Logger.info('✅ Kod doğrulama başarılı, bir sonraki adıma geçiliyor', tag: 'ResetPasswordView');
+      _nextStep();
+      
+    } catch (e) {
+      Logger.error('💥 Kod doğrulama işleminde exception: $e', tag: 'ResetPasswordView', error: e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kod doğrulama işleminde bir hata oluştu'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTheme.borderRadius,
+          ),
+        ),
+      );
     }
-    
-    // PassToken'ı sakla
-    if (response.containsKey('passToken')) {
-      _passToken = response['passToken'];
-      Logger.debug('PassToken alındı: ${_passToken!.substring(0, 10)}...', tag: 'ResetPasswordView');
-    } else {
-      Logger.error('PassToken bulunamadı', tag: 'ResetPasswordView');
-      authViewModel.setError('Doğrulama token\'ı bulunamadı. Lütfen tekrar deneyin.');
-      return;
-    }
-    
-    Logger.debug('Kod doğrulama başarılı', tag: 'ResetPasswordView');
-    _nextStep();
   }
 
   void _handlePasswordUpdate() async {
-    if (!_formKey.currentState!.validate()) return;
+    Logger.info('🔄 ResetPasswordView._handlePasswordUpdate() başlatılıyor...', tag: 'ResetPasswordView');
     
-    Logger.debug('Şifre güncelleme işlemi başlatılıyor...', tag: 'ResetPasswordView');
+    if (!_formKey.currentState!.validate()) {
+      Logger.warning('❌ Form validation başarısız', tag: 'ResetPasswordView');
+      return;
+    }
+    
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+    
+    Logger.debug('🔍 Şifre güncelleme parametreleri:', tag: 'ResetPasswordView');
+    Logger.debug('🔑 Yeni şifre: ${newPassword.length} karakter', tag: 'ResetPasswordView');
+    Logger.debug('🔑 Şifre tekrar: ${confirmPassword.length} karakter', tag: 'ResetPasswordView');
+    Logger.debug('🔑 PassToken: ${_passToken?.substring(0, 10) ?? 'null'}...', tag: 'ResetPasswordView');
     
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     authViewModel.clearError();
     
-    // Saklanan passToken'ı kullan
+    // Saklanan passToken'ı kontrol et
     if (_passToken == null || _passToken!.isEmpty) {
-      Logger.error('PassToken bulunamadı', tag: 'ResetPasswordView');
+      Logger.error('❌ PassToken bulunamadı', tag: 'ResetPasswordView');
       authViewModel.setError('Doğrulama token\'ı bulunamadı. Lütfen tekrar deneyin.');
       return;
     }
     
-    final success = await authViewModel.updatePassword(
-      passToken: _passToken!,
-      password: _newPasswordController.text.trim(),
-      passwordAgain: _confirmPasswordController.text.trim(),
-    );
+    try {
+      Logger.debug('📤 API çağrısı: updatePassword(passToken=${_passToken!.substring(0, 10)}..., password=${newPassword.length} karakter)', tag: 'ResetPasswordView');
+      
+      final success = await authViewModel.updatePassword(
+        passToken: _passToken!,
+        password: newPassword,
+        passwordAgain: confirmPassword,
+      );
+      
+      if (success) {
+        Logger.info('✅ Şifre başarıyla güncellendi', tag: 'ResetPasswordView');
+        _handleSuccess();
+      } else {
+        Logger.error('❌ Şifre güncelleme hatası: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
+      }
+      
+    } catch (e) {
+      Logger.error('💥 Şifre güncelleme işleminde exception: $e', tag: 'ResetPasswordView', error: e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Şifre güncelleme işleminde bir hata oluştu'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTheme.borderRadius,
+          ),
+        ),
+      );
+    }
+  }
+
+  void _handleResendCode() async {
+    Logger.info('🔄 ResetPasswordView._handleResendCode() başlatılıyor...', tag: 'ResetPasswordView');
     
-    if (success) {
-      Logger.debug('Şifre başarıyla güncellendi', tag: 'ResetPasswordView');
-      _handleSuccess();
-    } else {
-      Logger.error('Şifre güncelleme hatası: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
+    final email = _emailController.text.trim();
+    
+    if (email.isEmpty) {
+      Logger.warning('❌ E-posta adresi boş', tag: 'ResetPasswordView');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('E-posta adresi bulunamadı'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTheme.borderRadius,
+          ),
+        ),
+      );
+      return;
+    }
+    
+    Logger.debug('📧 Tekrar kod gönderme - E-posta: $email', tag: 'ResetPasswordView');
+    
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    authViewModel.clearError();
+    
+    try {
+      Logger.debug('📤 API çağrısı: forgotPassword($email) - Tekrar kod gönderme', tag: 'ResetPasswordView');
+      final response = await authViewModel.forgotPassword(email);
+      
+      if (response == null) {
+        Logger.error('❌ Tekrar kod gönderme başarısız: ${authViewModel.errorMessage}', tag: 'ResetPasswordView');
+        return;
+      }
+      
+      Logger.info('✅ Tekrar kod gönderme başarılı', tag: 'ResetPasswordView');
+      Logger.debug('📥 Response data: $response', tag: 'ResetPasswordView');
+      
+      // CodeToken'ı güncelle (eğer varsa)
+      if (response.containsKey('codeToken')) {
+        _codeToken = response['codeToken'];
+        Logger.info('🔑 Yeni CodeToken alındı: ${_codeToken!.substring(0, 10)}...', tag: 'ResetPasswordView');
+      }
+      
+      // Kullanıcıya bilgi ver
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Yeni kod e-posta adresinize gönderildi'),
+            backgroundColor: AppTheme.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppTheme.borderRadius,
+            ),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      Logger.error('💥 Tekrar kod gönderme işleminde exception: $e', tag: 'ResetPasswordView', error: e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Tekrar kod gönderme işleminde bir hata oluştu'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppTheme.borderRadius,
+          ),
+        ),
+      );
     }
   }
 
   void _handleSuccess() {
+    Logger.info('✅ ResetPasswordView._handleSuccess() - Şifre sıfırlama işlemi tamamlandı', tag: 'ResetPasswordView');
+    
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -906,6 +1174,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           ),
         ),
       );
+      
+      Logger.info('🔄 Login sayfasına yönlendiriliyor...', tag: 'ResetPasswordView');
       
       // Login sayfasına geri dön
       Navigator.of(context).popUntil((route) => route.isFirst);

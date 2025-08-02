@@ -283,7 +283,7 @@ class AuthService {
     }
   }
 
-  Future<ApiResponse<void>> forgotPassword(String email) async {
+  Future<ApiResponse<Map<String, dynamic>?>> forgotPassword(String email) async {
     try {
       Logger.info('🔑 FORGOT PASSWORD ATTEMPT: $email');
       Logger.debug('📤 Forgot Password Request Body: {"userEmail": "$email"}');
@@ -294,7 +294,55 @@ class AuthService {
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 ForgotPassword fromJson - Raw data: $json');
-          return null; // Forgot password genelde sadece success/error döner
+          
+          // API response'unda codeToken var mı kontrol et
+          if (json is Map<String, dynamic>) {
+            final result = <String, dynamic>{};
+            
+            // Tüm response verilerini logla
+            Logger.debug('🔍 ForgotPassword response keys: ${json.keys.toList()}');
+            
+            // codeToken varsa al (direkt response'ta veya data objesi içinde)
+            String? codeToken;
+            if (json.containsKey('codeToken') && json['codeToken'] != null) {
+              codeToken = json['codeToken'].toString();
+              Logger.debug('🔑 CodeToken found in response root: $codeToken');
+            } else if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('codeToken') && data['codeToken'] != null) {
+                codeToken = data['codeToken'].toString();
+                Logger.debug('🔑 CodeToken found in data object: $codeToken');
+              }
+            }
+            
+            if (codeToken != null) {
+              result['codeToken'] = codeToken;
+            } else {
+              Logger.warning('⚠️ CodeToken not found in response or data object');
+            }
+            
+            // Mail bilgilerini de al
+            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+              final data = json['data'] as Map<String, dynamic>;
+              if (data.containsKey('mail') && data['mail'] is Map<String, dynamic>) {
+                result['mail'] = data['mail'];
+                Logger.debug('📧 Mail info found: ${data['mail']}');
+              }
+            }
+            
+            // Diğer response verilerini de al
+            json.forEach((key, value) {
+              if (key != 'codeToken' && key != 'data') {
+                result[key] = value;
+              }
+            });
+            
+            Logger.debug('🔍 Final result: $result');
+            return result.isNotEmpty ? result : null;
+          }
+          
+          Logger.warning('⚠️ Response is not a Map: ${json.runtimeType}');
+          return null;
         },
       );
 
@@ -304,7 +352,7 @@ class AuthService {
 
       if (response.isSuccess) {
         Logger.info('✅ Forgot password request successful');
-        return ApiResponse.success(null);
+        return ApiResponse.success(response.data);
       }
 
       Logger.error('❌ Forgot password failed: ${response.error}');
@@ -381,16 +429,17 @@ class AuthService {
   Future<ApiResponse<Map<String, dynamic>?>> checkPasswordResetCode({
     required String code,
     required String email,
+    required String codeToken,
   }) async {
     try {
       Logger.info('🔑 CHECK PASSWORD RESET CODE ATTEMPT: $email');
       Logger.debug(
-        '📤 Check Password Reset Code Request Body: {"code": "$code", "userEmail": "$email"}',
+        '📤 Check Password Reset Code Request Body: {"code": "$code", "userEmail": "$email", "codeToken": "$codeToken"}',
       );
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.checkCode,
-        body: {'code': code, 'userEmail': email},
+        body: {'code': code, 'userEmail': email, 'codeToken': codeToken},
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 CheckPasswordResetCode fromJson - Raw data: $json');
