@@ -889,6 +889,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     }
   }
 
+
+
   void _showReportDialog() {
     final authViewModel = context.read<AuthViewModel>();
     final otherParticipant = widget.chat.participants
@@ -1018,17 +1020,36 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 ),
               ),
             ),
-          // Şikayet butonu
-          IconButton(
-            icon: const Icon(Icons.report_problem_outlined),
-            onPressed: () => _showReportDialog(),
-            tooltip: 'Kullanıcıyı Şikayet Et',
-          ),
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // Chat ayarları menüsü
+            onSelected: (value) {
+              if (value == 'report') {
+                _showReportDialog();
+              }
             },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'report',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.report_problem_outlined,
+                      size: 20,
+                      color: Colors.red[600],
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Kullanıcıyı Şikayet Et',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

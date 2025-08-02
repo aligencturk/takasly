@@ -103,7 +103,7 @@ class _ReportDialogState extends State<ReportDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Şikayetiniz başarıyla gönderildi'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppTheme.success,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -137,214 +137,283 @@ class _ReportDialogState extends State<ReportDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
       ),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 400),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+          boxShadow: AppTheme.cardShadow,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.report_problem_rounded,
-                    color: AppTheme.error,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Kullanıcı Şikayet Et',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Şikayet sebebini belirtin',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Kullanıcı bilgisi
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
+                color: AppTheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppConstants.defaultBorderRadius),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey[200]!,
+                    width: 1,
+                  ),
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.person_outline,
-                    color: Colors.grey[600],
-                    size: 20,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.error,
+                          AppTheme.error.withValues(alpha: 0.8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.error.withValues(alpha: 0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.report_problem_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      widget.reportedUserName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Kullanıcı Şikayet Et',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          widget.reportedUserName,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.grey, size: 18),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   ),
                 ],
               ),
             ),
             
-            const SizedBox(height: 20),
-            
-            // Şikayet sebebi seçimi
-            const Text(
-              'Şikayet Sebebi',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Önceden tanımlı sebepler
-            if (!_isCustomReason) ...[
-              ...List.generate(_predefinedReasons.length, (index) {
-                final reason = _predefinedReasons[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: RadioListTile<String>(
-                    value: reason,
-                    groupValue: _selectedReason,
-                    onChanged: _onReasonChanged,
-                    title: Text(
-                      reason,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    activeColor: AppTheme.primary,
-                  ),
-                );
-              }),
-            ] else ...[
-              // Özel sebep girişi
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: TextField(
-                  controller: _reasonController,
-                  maxLines: 3,
-                  maxLength: 200,
-                  decoration: const InputDecoration(
-                    hintText: 'Şikayet sebebinizi yazın...',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.all(16),
-                    counterText: '',
-                  ),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-            
-            const SizedBox(height: 24),
-            
-            // Butonlar
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      side: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    child: const Text(
-                      'İptal',
-                      style: TextStyle(
-                        fontSize: 16,
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Şikayet sebebi seçimi
+                    Text(
+                      'Şikayet Sebebi',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Consumer<ReportViewModel>(
-                    builder: (context, reportViewModel, child) {
-                      return ElevatedButton(
-                        onPressed: reportViewModel.isLoading ? null : _submitReport,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.error,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Önceden tanımlı sebepler - Grid layout
+                    if (!_isCustomReason) ...[
+                      Expanded(
+                        child: GridView.builder(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 3.5,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
                           ),
-                          elevation: 0,
-                        ),
-                        child: reportViewModel.isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          itemCount: _predefinedReasons.length,
+                          itemBuilder: (context, index) {
+                            final reason = _predefinedReasons[index];
+                            final isSelected = _selectedReason == reason;
+                            
+                            return GestureDetector(
+                              onTap: () => _onReasonChanged(reason),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isSelected 
+                                      ? AppTheme.primary.withValues(alpha: 0.1)
+                                      : Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelected 
+                                        ? AppTheme.primary
+                                        : Colors.grey[300]!,
+                                    width: isSelected ? 2 : 1,
+                                  ),
                                 ),
-                              )
-                            : const Text(
-                                'Şikayet Et',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                                child: Row(
+                                  children: [
+                                    Radio<String>(
+                                      value: reason,
+                                      groupValue: _selectedReason,
+                                      onChanged: _onReasonChanged,
+                                      activeColor: AppTheme.primary,
+                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        reason,
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          color: isSelected 
+                                              ? AppTheme.primary
+                                              : AppTheme.textPrimary,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                      );
-                    },
-                  ),
+                            );
+                          },
+                        ),
+                      ),
+                    ] else ...[
+                      // Özel sebep girişi
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppTheme.primary,
+                              width: 1,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _reasonController,
+                            maxLines: null,
+                            expands: true,
+                            maxLength: 200,
+                            decoration: InputDecoration(
+                              hintText: 'Şikayet sebebinizi yazın...',
+                              hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(12),
+                              counterText: '',
+                            ),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Butonlar
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              side: BorderSide(
+                                color: Colors.grey[300]!,
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              'İptal',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Consumer<ReportViewModel>(
+                            builder: (context, reportViewModel, child) {
+                              return ElevatedButton(
+                                onPressed: reportViewModel.isLoading ? null : _submitReport,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.error,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: reportViewModel.isLoading
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            Icons.report_problem_outlined,
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Şikayet Et',
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ],
         ),
