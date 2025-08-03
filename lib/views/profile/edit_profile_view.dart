@@ -76,6 +76,8 @@ class _EditProfileViewState extends State<EditProfileView> {
       print('🔄 EditProfile - firstName: ${user.firstName}');
       print('🔄 EditProfile - lastName: ${user.lastName}');
       print('🔄 EditProfile - email: ${user.email}');
+      print('🔄 EditProfile - gender (raw): ${user.gender}');
+      print('🔄 EditProfile - gender type: ${user.gender.runtimeType}');
       
       setState(() {
         _firstNameController.text = user.firstName ?? '';
@@ -85,7 +87,25 @@ class _EditProfileViewState extends State<EditProfileView> {
             ? PhoneFormatter.formatPhoneNumber(user.phone!) 
             : '';
         _birthdayController.text = user.birthday ?? '';
-        _selectedGender = user.gender?.toString();
+        
+        // Gender değerini API'ye uygun şekilde set et
+        final genderValue = user.gender?.toString();
+        print('🔄 EditProfile - genderValue: $genderValue');
+        
+        // String gender değerlerini int'e map et
+        if (genderValue == 'Erkek' || genderValue == '1') {
+          _selectedGender = '1';
+          print('🔄 EditProfile - _selectedGender set to: $_selectedGender (Erkek)');
+        } else if (genderValue == 'Kadın' || genderValue == '2') {
+          _selectedGender = '2';
+          print('🔄 EditProfile - _selectedGender set to: $_selectedGender (Kadın)');
+        } else if (genderValue == 'Belirtilmemiş' || genderValue == '3') {
+          _selectedGender = '3';
+          print('🔄 EditProfile - _selectedGender set to: $_selectedGender (Belirtilmemiş)');
+        } else {
+          _selectedGender = '3'; // default: Belirtilmemiş
+          print('🔄 EditProfile - _selectedGender set to default: $_selectedGender (Belirtilmemiş)');
+        }
       });
     } else {
       print('⚠️ EditProfile - No user data available, refreshing...');
@@ -465,15 +485,15 @@ class _EditProfileViewState extends State<EditProfileView> {
       ),
       items: const [
         DropdownMenuItem(
-          value: 'Erkek',
+          value: '1',
           child: Text('Erkek'),
         ),
         DropdownMenuItem(
-          value: 'Kadın',
+          value: '2',
           child: Text('Kadın'),
         ),
         DropdownMenuItem(
-          value: 'Belirtilmemiş',
+          value: '3',
           child: Text('Belirtilmemiş'),
         ),
       ],
