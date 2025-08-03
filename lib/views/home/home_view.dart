@@ -214,7 +214,22 @@ class _HomeViewState extends State<HomeView> {
               (context, index) {
                 final product = vm.products[index];
                 // Kullanıcının kendi ürünü olup olmadığını kontrol et
-                final isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
+                // Eğer myProducts henüz yüklenmemişse, product.ownerId ile kontrol et
+                bool isOwnProduct = false;
+                if (vm.myProducts.isNotEmpty) {
+                  isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
+                } else {
+                  // myProducts henüz yüklenmemişse, product.ownerId ile kontrol et
+                  final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+                  final currentUserId = authViewModel.currentUser?.id;
+                  isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
+                }
+                
+                // Debug log ekle
+                Logger.debug('HomeView - Product: ${product.title} (ID: ${product.id}), isOwnProduct: $isOwnProduct, myProducts count: ${vm.myProducts.length}, ownerId: ${product.ownerId}');
+                if (isOwnProduct) {
+                  Logger.debug('HomeView - This is user\'s own product, hiding favorite icon');
+                }
                 
                 return ProductCard(
                   product: product,

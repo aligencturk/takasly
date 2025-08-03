@@ -13,6 +13,7 @@ import '../services/cache_service.dart';
 import '../core/constants.dart';
 import '../core/sort_options.dart';
 import '../views/home/widgets/category_list.dart'; // CategoryIconCache için
+import '../utils/logger.dart';
 
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
@@ -91,7 +92,7 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadInitialData() async {
-    await Future.wait([loadAllProducts(), loadCategories(), loadConditions()]);
+    await Future.wait([loadAllProducts(), loadCategories(), loadConditions(), loadMyProducts()]);
   }
 
   Future<void> loadAllProducts({
@@ -331,21 +332,29 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadMyProducts() async {
+    Logger.debug('🔄 ProductViewModel.loadMyProducts - Starting to load my products');
     _setLoading(true);
     _clearError();
 
     try {
       final response = await _productService.getMyProducts();
+      Logger.debug('📡 ProductViewModel.loadMyProducts - Response received, isSuccess: ${response.isSuccess}');
 
       if (response.isSuccess && response.data != null) {
         _myProducts = response.data!;
+        Logger.debug('✅ ProductViewModel.loadMyProducts - Successfully loaded ${_myProducts.length} my products');
+        Logger.debug('📦 My products IDs: ${_myProducts.map((p) => p.id).toList()}');
       } else {
-        _setError(response.error ?? ErrorMessages.unknownError);
+        final errorMessage = response.error ?? ErrorMessages.unknownError;
+        Logger.debug('❌ ProductViewModel.loadMyProducts - API error: $errorMessage');
+        _setError(errorMessage);
       }
     } catch (e) {
+      Logger.debug('💥 ProductViewModel.loadMyProducts - Exception: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
+      Logger.debug('🏁 ProductViewModel.loadMyProducts - Completed');
     }
   }
 

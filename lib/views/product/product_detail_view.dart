@@ -309,14 +309,15 @@ Takasly uygulamasından paylaşıldı.
               ),
             ),
             actions: [
-              // Favori ikonu
-              IconButton(
-                icon: Icon(
-                  vm.isFavorite(product.id) ? Icons.favorite : Icons.favorite_border,
-                  color: vm.isFavorite(product.id) ? AppTheme.error : AppTheme.surface,
+              // Favori ikonu - sadece kendi ilanı değilse göster
+              if (Provider.of<AuthViewModel>(context, listen: false).currentUser?.id != product.ownerId)
+                IconButton(
+                  icon: Icon(
+                    vm.isFavorite(product.id) ? Icons.favorite : Icons.favorite_border,
+                    color: vm.isFavorite(product.id) ? AppTheme.error : AppTheme.surface,
+                  ),
+                  onPressed: () => vm.toggleFavorite(product.id),
                 ),
-                onPressed: () => vm.toggleFavorite(product.id),
-              ),
               IconButton(
                 icon: Icon(Icons.share, color: AppTheme.surface),
                 onPressed: () => _shareProduct(context, product),

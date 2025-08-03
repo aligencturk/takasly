@@ -99,6 +99,9 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Debug log ekle
+    Logger.debug('ProductCard - Building card for product: ${product.title} (ID: ${product.id}), hideFavoriteIcon: $hideFavoriteIcon');
+    
     final textTheme = Theme.of(context).textTheme;
 
     return GestureDetector(
@@ -227,53 +230,49 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
                   // Favori kalp ikonu - sadece hideFavoriteIcon false ise göster
-                  Consumer<ProductViewModel>(
-                    builder: (context, productViewModel, child) {
-                      // Eğer hideFavoriteIcon true ise favori ikonunu gösterme
-                      if (hideFavoriteIcon) {
-                        Logger.debug('ProductCard - Hiding favorite icon due to hideFavoriteIcon parameter for product: ${product.id}');
-                        return const SizedBox.shrink();
-                      }
-                      
-                      final isFavorite = productViewModel.isFavorite(product.id);
-                      return Positioned(
-                        top: 8,
-                        right: 8,
-                        child: GestureDetector(
-                          onTap: () async {
-                            final result = await productViewModel.toggleFavorite(product.id);
-                            if (result['success'] == true) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(result['message']),
-                                  duration: const Duration(seconds: 2),
-                                  backgroundColor: result['wasFavorite'] ? Colors.orange : Colors.green,
-                                ),
-                              );
-                            } else {
-                              // 417 hatası veya diğer hatalar için API'den gelen mesajı göster
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(result['message']),
-                                  duration: const Duration(seconds: 3),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          },
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Icon(
-                              isFavorite ? Icons.favorite : Icons.favorite_border,
-                              key: ValueKey('favorite_${product.id}'),
-                              color: isFavorite ? Colors.red : Colors.grey[600],
-                              size: 22,
+                  if (!hideFavoriteIcon)
+                    Consumer<ProductViewModel>(
+                      builder: (context, productViewModel, child) {
+                        Logger.debug('ProductCard - Rendering favorite icon for product: ${product.id}');
+                        final isFavorite = productViewModel.isFavorite(product.id);
+                        return Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: () async {
+                              final result = await productViewModel.toggleFavorite(product.id);
+                              if (result['success'] == true) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(result['message']),
+                                    duration: const Duration(seconds: 2),
+                                    backgroundColor: result['wasFavorite'] ? Colors.orange : Colors.green,
+                                  ),
+                                );
+                              } else {
+                                // 417 hatası veya diğer hatalar için API'den gelen mesajı göster
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(result['message']),
+                                    duration: const Duration(seconds: 3),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              child: Icon(
+                                isFavorite ? Icons.favorite : Icons.favorite_border,
+                                key: ValueKey('favorite_${product.id}'),
+                                color: isFavorite ? Colors.red : Colors.grey[600],
+                                size: 22,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
