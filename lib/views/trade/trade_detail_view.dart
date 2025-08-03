@@ -157,6 +157,13 @@ class _TradeDetailViewState extends State<TradeDetailView> {
   }
 
   Widget _buildTradeDetailContent(TradeDetail tradeDetail) {
+    // Null değerleri kontrol et ve güvenli değerler kullan
+    final safeOfferID = tradeDetail.offerID ?? 0;
+    final safeStatusID = tradeDetail.senderStatusID ?? 0;
+    final safeDeliveryTypeID = tradeDetail.deliveryTypeID ?? 0;
+    
+    Logger.info('🔍 TradeDetail güvenli değerler: offerID=$safeOfferID, statusID=$safeStatusID, deliveryTypeID=$safeDeliveryTypeID', tag: 'TradeDetailView');
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -166,8 +173,8 @@ class _TradeDetailViewState extends State<TradeDetailView> {
           _buildStatusCard(tradeDetail),
 
           // Reddetme sebebi gösterimi (statusID=3 veya 8 ve sebep varsa)
-          if ((tradeDetail.statusID == 3 || tradeDetail.statusID == 8) &&
-              tradeDetail.cancelDesc.isNotEmpty)
+          if ((safeStatusID == 3 || safeStatusID == 8) &&
+              tradeDetail.senderCancelDesc.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12, bottom: 4),
               child: Container(
@@ -197,7 +204,7 @@ class _TradeDetailViewState extends State<TradeDetailView> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            tradeDetail.cancelDesc,
+                            tradeDetail.senderCancelDesc,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.red[700],
                               fontSize: 13,
@@ -231,6 +238,9 @@ class _TradeDetailViewState extends State<TradeDetailView> {
   }
 
   Widget _buildStatusCard(TradeDetail tradeDetail) {
+    // Null değerleri güvenli hale getir
+    final safeStatusID = tradeDetail.senderStatusID ?? 0;
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -254,24 +264,22 @@ class _TradeDetailViewState extends State<TradeDetailView> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
+                  color: _getStatusColor(safeStatusID).withOpacity(0.1),
                   borderRadius: BorderRadius.zero,
                 ),
                 child: Icon(
-                  Icons.swap_horiz,
-                  color: AppTheme.primary,
+                  _getStatusIcon(safeStatusID),
+                  color: _getStatusColor(safeStatusID),
                   size: 18,
                 ),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'TAKAS DURUMU',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    letterSpacing: 0.5,
-                  ),
+              Text(
+                'TAKAS DURUMU',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -280,25 +288,25 @@ class _TradeDetailViewState extends State<TradeDetailView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: _getStatusColor(tradeDetail.statusID).withOpacity(0.1),
+              color: _getStatusColor(safeStatusID).withOpacity(0.1),
               borderRadius: BorderRadius.zero,
               border: Border.all(
-                color: _getStatusColor(tradeDetail.statusID),
+                color: _getStatusColor(safeStatusID),
                 width: 1.5,
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  _getStatusIcon(tradeDetail.statusID),
-                  color: _getStatusColor(tradeDetail.statusID),
+                  _getStatusIcon(safeStatusID),
+                  color: _getStatusColor(safeStatusID),
                   size: 16,
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  tradeDetail.statusTitle,
+                  tradeDetail.senderStatusTitle,
                   style: TextStyle(
-                    color: _getStatusColor(tradeDetail.statusID),
+                    color: _getStatusColor(safeStatusID),
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                     letterSpacing: 0.3,

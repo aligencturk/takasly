@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
-import '../../viewmodels/report_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
@@ -12,7 +11,6 @@ import '../../core/constants.dart';
 import '../../views/product/product_detail_view.dart';
 import '../../views/trade/start_trade_view.dart';
 import '../../views/profile/user_profile_detail_view.dart';
-import '../../widgets/product_card.dart';
 import '../../widgets/report_dialog.dart';
 
 class ChatDetailView extends StatefulWidget {
@@ -436,44 +434,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                                         borderRadius: BorderRadius.circular(12),
                                         color: Colors.grey[50],
                                       ),
-                                      child: product.images.isNotEmpty && product.images.first.isNotEmpty
-                                          ? ClipRRect(
-                                              borderRadius: BorderRadius.circular(12),
-                                              child: Image.network(
-                                                product.images.first,
-                                                width: 60,
-                                                height: 60,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  return Container(
-                                                    width: 60,
-                                                    height: 60,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.grey[100],
-                                                      borderRadius: BorderRadius.circular(12),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.image_not_supported_outlined,
-                                                      color: Colors.grey[400],
-                                                      size: 24,
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            )
-                                          : Container(
-                                              width: 60,
-                                              height: 60,
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[100],
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Icon(
-                                                Icons.image_not_supported_outlined,
-                                                color: Colors.grey[400],
-                                                size: 24,
-                                              ),
-                                            ),
+                                                                          child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: _buildProductImage(product.images.isNotEmpty ? product.images.first : '', 60, 60),
+                                    ),
                                     ),
                                     const SizedBox(width: 16),
                                     // İçerik
@@ -1243,35 +1207,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               width: 50,
               height: 50,
               color: Colors.grey[50],
-              child: product.images.isNotEmpty && product.images.first.isNotEmpty
-                  ? Image.network(
-                      product.images.first,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 50,
-                          height: 50,
-                          color: Colors.grey[100],
-                          child: Icon(
-                            Icons.image_not_supported_outlined,
-                            color: Colors.grey[400],
-                            size: 20,
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      width: 50,
-                      height: 50,
-                      color: Colors.grey[100],
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        color: Colors.grey[400],
-                        size: 20,
-                      ),
-                    ),
+              child: _buildProductImage(product.images.isNotEmpty ? product.images.first : '', 50, 50),
             ),
             const SizedBox(width: 12),
             // Orta kısım - İçerik
@@ -1328,11 +1264,87 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     );
   }
 
+  // URL validasyonu için yardımcı metod
+  bool _isValidImageUrl(String url) {
+    if (url.isEmpty || url == 'null' || url == 'undefined') {
+      return false;
+    }
+    
+    try {
+      final uri = Uri.parse(url);
+      // file:/// protokolü ile başlayan URL'ler geçersiz
+      if (uri.scheme == 'file') {
+        return false;
+      }
+      // HTTP veya HTTPS protokolü olmalı
+      return uri.scheme == 'http' || uri.scheme == 'https';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Güvenli resim widget'ı
+  Widget _buildProductImage(String imageUrl, double width, double height) {
+    if (!_isValidImageUrl(imageUrl)) {
+      return Container(
+        width: width,
+        height: height,
+        color: Colors.grey[100],
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          color: Colors.grey[400],
+          size: 20,
+        ),
+      );
+    }
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        imageUrl,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.grey[100],
+            child: Icon(
+              Icons.image_not_supported_outlined,
+              color: Colors.grey[400],
+              size: 20,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildAppBarTitle() {
     final authViewModel = context.read<AuthViewModel>();
     final otherParticipant = widget.chat.participants
         .where((user) => user.id != authViewModel.currentUser?.id)
         .firstOrNull;
+
+    // URL validasyonu için yardımcı metod
+    bool _isValidImageUrl(String url) {
+      if (url.isEmpty || url == 'null' || url == 'undefined') {
+        return false;
+      }
+      
+      try {
+        final uri = Uri.parse(url);
+        // file:/// protokolü ile başlayan URL'ler geçersiz
+        if (uri.scheme == 'file') {
+          return false;
+        }
+        // HTTP veya HTTPS protokolü olmalı
+        return uri.scheme == 'http' || uri.scheme == 'https';
+      } catch (e) {
+        return false;
+      }
+    }
 
     return Row(
       children: [
@@ -1397,7 +1409,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
             child: CircleAvatar(
               radius: 16,
               backgroundColor: Colors.white,
-              child: otherParticipant?.avatar != null
+              child: otherParticipant?.avatar != null && _isValidImageUrl(otherParticipant!.avatar!)
                   ? ClipOval(
                       child: Image.network(
                         otherParticipant!.avatar!,
@@ -1531,6 +1543,69 @@ class _MessageBubble extends StatelessWidget {
     required this.isMe,
   });
 
+  // URL validasyonu için yardımcı metod
+  bool _isValidImageUrl(String url) {
+    if (url.isEmpty || url == 'null' || url == 'undefined') {
+      return false;
+    }
+    
+    try {
+      final uri = Uri.parse(url);
+      // file:/// protokolü ile başlayan URL'ler geçersiz
+      if (uri.scheme == 'file') {
+        return false;
+      }
+      // HTTP veya HTTPS protokolü olmalı
+      return uri.scheme == 'http' || uri.scheme == 'https';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Güvenli resim widget'ı
+  Widget _buildProductImage(String imageUrl, double width, double height, {double borderRadius = 8}) {
+    if (!_isValidImageUrl(imageUrl)) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          color: Colors.grey[400],
+          size: 20,
+        ),
+      );
+    }
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: Image.network(
+        imageUrl,
+        width: width,
+        height: width,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
+            child: Icon(
+              Icons.image_not_supported_outlined,
+              color: Colors.grey[400],
+              size: 20,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Product mesajları için özel layout
@@ -1567,6 +1642,50 @@ class _MessageBubble extends StatelessWidget {
       );
     }
 
+    // Güvenli resim widget'ı
+    Widget _buildProductImage(String imageUrl, double width, double height, {double borderRadius = 8}) {
+      if (!_isValidImageUrl(imageUrl)) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            color: Colors.grey[400],
+            size: 20,
+          ),
+        );
+      }
+      
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Image.network(
+          imageUrl,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(borderRadius),
+              ),
+              child: Icon(
+                Icons.image_not_supported_outlined,
+                color: Colors.grey[400],
+                size: 20,
+              ),
+            );
+          },
+        ),
+      );
+    }
+
     // Diğer mesaj tipleri için normal bubble
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -1596,7 +1715,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
               ),
             ] else if (message.type == MessageType.image) ...[
-              if (message.imageUrl != null)
+              if (message.imageUrl != null && _isValidImageUrl(message.imageUrl!))
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
@@ -1689,44 +1808,10 @@ class _MessageBubble extends StatelessWidget {
                 borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
                 color: Colors.grey[50],
               ),
-              child: product.images.isNotEmpty && product.images.first.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-                      child: Image.network(
-                        product.images.first,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-                            ),
-                            child: Icon(
-                              Icons.image_not_supported_outlined,
-                              color: Colors.grey[400],
-                              size: 20,
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-                      ),
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        color: Colors.grey[400],
-                        size: 20,
-                      ),
-                    ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+                child: _buildProductImage(product.images.isNotEmpty ? product.images.first : '', 80, 80, borderRadius: 16),
+              ),
             ),
             // Sağ taraf - İçerik
             Expanded(

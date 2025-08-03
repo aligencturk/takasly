@@ -579,7 +579,13 @@ class TradeService {
 
       if (response.isSuccess) {
         final data = response.data;
-        Logger.info('Takas detayı başarılı: OfferID=${data?.offerID}, Status=${data?.statusTitle}, Sender=${data?.sender.userName}, Receiver=${data?.receiver.userName}', tag: _tag);
+        // Null değerleri güvenli bir şekilde log'la
+        final offerID = data?.offerID ?? 0;
+        final senderStatusTitle = data?.senderStatusTitle ?? 'Bilinmeyen';
+        final receiverStatusTitle = data?.receiverStatusTitle ?? 'Bilinmeyen';
+        final senderName = data?.sender.userName ?? 'Bilinmeyen';
+        final receiverName = data?.receiver.userName ?? 'Bilinmeyen';
+        Logger.info('Takas detayı başarılı: OfferID=$offerID, SenderStatus=$senderStatusTitle, ReceiverStatus=$receiverStatusTitle, Sender=$senderName, Receiver=$receiverName', tag: _tag);
       } else {
         Logger.error('Takas detayı hatası: ${response.error}', tag: _tag);
       }

@@ -280,56 +280,7 @@ class _TradeViewState extends State<TradeView>
           return const TradeGridSkeleton();
         }
 
-        // Kompakt durum filtreleme butonu
-        Widget _buildStatusFilterButton() {
-          return Container(
-            margin: EdgeInsets.all(12),
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey[300]!),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _showStatusFilterDialog(_tradeViewModel),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.filter_list, color: Color(0xFF10B981), size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'Durum Filtrele',
-                          style: TextStyle(
-                            color: Color(0xFF2D3748),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(Icons.arrow_drop_down, color: Color(0xFF10B981), size: 18),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        if (tradeViewModel.hasError) {
+       if (tradeViewModel.hasError) {
           return Container(
             color: Color(0xFFF8FAFF),
             child: Center(
@@ -421,7 +372,6 @@ class _TradeViewState extends State<TradeView>
           color: Color(0xFFF8FAFF),
           child: Column(
             children: [
-              _buildStatusFilterButton(),
               Expanded(
                 child: ListView.builder(
                   padding: EdgeInsets.symmetric(horizontal: 12),

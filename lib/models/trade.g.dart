@@ -282,6 +282,9 @@ UserTrade _$UserTradeFromJson(Map<String, dynamic> json) => UserTrade(
       ? null
       : TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>),
   cancelDesc: json['cancelDesc'] as String?,
+  rating: (json['rating'] as num?)?.toInt(),
+  comment: json['comment'] as String?,
+  hasReview: json['hasReview'] as bool?,
 );
 
 Map<String, dynamic> _$UserTradeToJson(UserTrade instance) => <String, dynamic>{
@@ -296,6 +299,9 @@ Map<String, dynamic> _$UserTradeToJson(UserTrade instance) => <String, dynamic>{
   'myProduct': instance.myProduct,
   'theirProduct': instance.theirProduct,
   'cancelDesc': instance.cancelDesc,
+  'rating': instance.rating,
+  'comment': instance.comment,
+  'hasReview': instance.hasReview,
 };
 
 TradeProduct _$TradeProductFromJson(Map<String, dynamic> json) => TradeProduct(

@@ -961,7 +961,14 @@ class TradeViewModel extends ChangeNotifier {
       if (!_isDisposed) {
         if (response.isSuccess && response.data != null) {
           _selectedTradeDetail = response.data;
-          Logger.info('Takas detayı başarıyla getirildi: OfferID=${response.data!.offerID}, Status=${response.data!.statusTitle}', tag: 'TradeViewModel');
+          
+          // Null değerleri güvenli bir şekilde log'la
+          final offerID = response.data!.offerID ?? 0;
+          final senderStatusTitle = response.data!.senderStatusTitle;
+          final receiverStatusTitle = response.data!.receiverStatusTitle;
+          final senderUserName = response.data!.sender.userName;
+          final receiverUserName = response.data!.receiver.userName;
+          Logger.info('Takas detayı başarıyla getirildi: OfferID=$offerID, SenderStatus=$senderStatusTitle, ReceiverStatus=$receiverStatusTitle, Sender=$senderUserName, Receiver=$receiverUserName', tag: 'TradeViewModel');
           
           _setLoadingTradeDetail(false);
           return true;
