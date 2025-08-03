@@ -101,6 +101,7 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Debug log ekle
     Logger.debug('ProductCard - Building card for product: ${product.title} (ID: ${product.id}), hideFavoriteIcon: $hideFavoriteIcon');
+    Logger.debug('ProductCard - Location info: cityTitle="${product.cityTitle}", districtTitle="${product.districtTitle}"');
     
     final textTheme = Theme.of(context).textTheme;
 
@@ -328,11 +329,26 @@ class ProductCard extends StatelessWidget {
                           size: 12, 
                           color: Colors.grey[500],
                         ),
-                        Text(
-                          product.cityTitle + "/" + product.districtTitle,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[500],
-                            fontSize: 11,
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              final cityTitle = product.cityTitle.isNotEmpty ? product.cityTitle : 'Şehir belirtilmemiş';
+                              final districtTitle = product.districtTitle.isNotEmpty ? product.districtTitle : 'İlçe belirtilmemiş';
+                              final locationText = '$cityTitle/$districtTitle';
+                              
+                              Logger.debug('📍 ProductCard - Location text: "$locationText"');
+                              Logger.debug('📍 ProductCard - cityTitle: "${product.cityTitle}", districtTitle: "${product.districtTitle}"');
+                              
+                              return Text(
+                                locationText,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey[500],
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
                           ),
                         ),
                       ],

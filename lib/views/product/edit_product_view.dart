@@ -37,6 +37,7 @@ class _EditProductViewState extends State<EditProductView> {
   List<String> _existingImages = [];
   List<File> _newImages = [];
   final ImagePicker _imagePicker = ImagePicker();
+  bool _isShowContact = true; // İletişim bilgilerinin görünürlüğü
 
   @override
   void initState() {
@@ -63,6 +64,9 @@ class _EditProductViewState extends State<EditProductView> {
       _selectedCategoryId = widget.product.categoryId;
       _selectedSubCategoryId = null; // Product modelinde subCategoryId yok
       _existingImages = List.from(widget.product.images);
+      
+      // İletişim bilgileri görünürlüğünü yükle
+      _isShowContact = widget.product.isShowContact ?? true;
       
       // Location bilgilerini yükle
       if (widget.product.cityId != null) {
@@ -117,7 +121,7 @@ class _EditProductViewState extends State<EditProductView> {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ürünü Düzenle'),
+        title: const Text('İlanı Düzenle'),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
@@ -136,11 +140,11 @@ class _EditProductViewState extends State<EditProductView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle(context, 'Ürün Bilgileri'),
+                  _buildSectionTitle(context, 'İlan Bilgileri'),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _titleController,
-                    decoration: const InputDecoration(labelText: 'Ürün Başlığı'),
+                    decoration: const InputDecoration(labelText: 'İlan Başlığı'),
                     validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
                   ),
                   const SizedBox(height: 16),
@@ -224,6 +228,11 @@ class _EditProductViewState extends State<EditProductView> {
                   _buildSectionTitle(context, 'Resimler'),
                   const SizedBox(height: 16),
                   _buildImageSection(),
+                  const SizedBox(height: 24),
+
+                  _buildSectionTitle(context, 'İletişim Ayarları'),
+                  const SizedBox(height: 16),
+                  _buildContactSettingsSection(),
                   const SizedBox(height: 32),
 
                   SizedBox(
@@ -785,6 +794,118 @@ class _EditProductViewState extends State<EditProductView> {
     });
   }
 
+  Widget _buildContactSettingsSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.contact_phone,
+                color: AppTheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'İletişim Bilgileri',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Switch
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Telefon numaramı göster',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Açıksa, diğer kullanıcılar size arayabilir',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isShowContact,
+                onChanged: (value) {
+                  setState(() {
+                    _isShowContact = value;
+                  });
+                },
+                activeColor: AppTheme.primary,
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Icon(
+                _isShowContact ? Icons.check_circle : Icons.info_outline,
+                color: _isShowContact ? Colors.green : Colors.orange,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _isShowContact 
+                      ? 'Telefon numaranız görünür olacak. Kullanıcılar size arayabilecek.'
+                      : 'Telefon numaranız gizli olacak. Sadece mesajlaşma ile iletişim kurulabilir.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: _isShowContact ? Colors.green.shade700 : Colors.orange.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Icon(Icons.security, color: Colors.blue, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Bu ayarı daha sonra ürün detay sayfasından değiştirebilirsiniz.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
     Future<void> _updateProduct() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -854,12 +975,13 @@ class _EditProductViewState extends State<EditProductView> {
         cityTitle: cityTitle,
         districtId: districtId,
         districtTitle: districtTitle,
+        isShowContact: _isShowContact,
       );
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Ürün başarıyla güncellendi!'),
+            content: Text('İlan başarıyla güncellendi!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -867,7 +989,7 @@ class _EditProductViewState extends State<EditProductView> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(productViewModel.errorMessage ?? 'Ürün güncellenirken hata oluştu'),
+            content: Text(productViewModel.errorMessage ?? 'İlan güncellenirken hata oluştu'),
             backgroundColor: Colors.red,
           ),
         );

@@ -489,6 +489,18 @@ class ProductService {
             print(
               '🔍 ProductService - Successfully parsed ${products.length} products',
             );
+            
+            // API'den gelen ham verileri kontrol et
+            print('🔍 ProductService - Raw API data for first product:');
+            if (list.isNotEmpty) {
+              final firstProduct = list.first;
+              print('🔍 ProductService - First product keys: ${firstProduct.keys.toList()}');
+              print('🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}');
+              print('🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}');
+              print('🔍 ProductService - First product cityID: ${firstProduct['cityID']}');
+              print('🔍 ProductService - First product districtID: ${firstProduct['districtID']}');
+            }
+            
             return products;
           }
           // Fallback: Diğer olası formatlar
@@ -504,6 +516,18 @@ class ProductService {
             print(
               '🔍 ProductService - Successfully parsed ${products.length} products',
             );
+            
+            // API'den gelen ham verileri kontrol et
+            print('🔍 ProductService - Raw API data for first product (userProductList):');
+            if (list.isNotEmpty) {
+              final firstProduct = list.first;
+              print('🔍 ProductService - First product keys: ${firstProduct.keys.toList()}');
+              print('🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}');
+              print('🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}');
+              print('🔍 ProductService - First product cityID: ${firstProduct['cityID']}');
+              print('🔍 ProductService - First product districtID: ${firstProduct['districtID']}');
+            }
+            
             return products;
           }
           if (json case {'products': final List<dynamic> list}) {
@@ -514,6 +538,18 @@ class ProductService {
             print(
               '🔍 ProductService - Successfully parsed ${products.length} products',
             );
+            
+            // API'den gelen ham verileri kontrol et
+            print('🔍 ProductService - Raw API data for first product (root):');
+            if (list.isNotEmpty) {
+              final firstProduct = list.first;
+              print('🔍 ProductService - First product keys: ${firstProduct.keys.toList()}');
+              print('🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}');
+              print('🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}');
+              print('🔍 ProductService - First product cityID: ${firstProduct['cityID']}');
+              print('🔍 ProductService - First product districtID: ${firstProduct['districtID']}');
+            }
+            
             return products;
           }
           print('❌ ProductService - No products found in response');
@@ -719,7 +755,9 @@ class ProductService {
     print('🏷️ Final categoryId: ${apiProduct['categoryID']}');
     print('🏷️ Final categoryTitle: ${apiProduct['categoryTitle']}');
 
-    return Product(
+
+    
+    final product = Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle']?.toString() ?? '',
       description: apiProduct['productDesc']?.toString() ?? '',
@@ -776,6 +814,15 @@ class ProductService {
       createdAt: _parseDate(apiProduct['createdAt']?.toString()),
       updatedAt: DateTime.now(),
     );
+    
+    // Adres bilgilerini debug et
+    print('📍 [NEW API] Location debug for product ${apiProduct['productTitle']}:');
+    print('📍 [NEW API] cityTitle: "${apiProduct['cityTitle']?.toString() ?? ''}"');
+    print('📍 [NEW API] districtTitle: "${apiProduct['districtTitle']?.toString() ?? ''}"');
+    print('📍 [NEW API] cityID: ${apiProduct['cityID']}');
+    print('📍 [NEW API] districtID: ${apiProduct['districtID']}');
+    
+    return product;
   }
 
   // Tarih parsing metodu
@@ -854,6 +901,15 @@ class ProductService {
     print('🖼️ [OLD API] Final images array: $images');
     print('🖼️ [OLD API] Total images count: ${images.length}');
 
+    // Adres bilgilerini debug et
+    final cityTitle = apiProduct['cityTitle'] ?? '';
+    final districtTitle = apiProduct['districtTitle'] ?? '';
+    print('📍 [OLD API] Location debug for product ${apiProduct['productTitle']}:');
+    print('📍 [OLD API] cityTitle: "$cityTitle"');
+    print('📍 [OLD API] districtTitle: "$districtTitle"');
+    print('📍 [OLD API] cityID: ${apiProduct['cityID']}');
+    print('📍 [OLD API] districtID: ${apiProduct['districtID']}');
+    
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle'] ?? '',
@@ -884,9 +940,9 @@ class ProductService {
           : [],
       status: ProductStatus.active,
       cityId: apiProduct['cityID']?.toString() ?? '',
-      cityTitle: apiProduct['cityTitle'] ?? '',
+      cityTitle: cityTitle,
       districtId: apiProduct['districtID']?.toString() ?? '',
-      districtTitle: apiProduct['districtTitle'] ?? '',
+      districtTitle: districtTitle,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -953,6 +1009,7 @@ class ProductService {
     String? cityTitle,
     String? districtId,
     String? districtTitle,
+    bool? isShowContact,
   }) async {
     print('🔄 ProductService.updateProduct called');
     print('📝 Parameters:');
@@ -971,6 +1028,7 @@ class ProductService {
     print('  - cityTitle: $cityTitle');
     print('  - districtId: $districtId');
     print('  - districtTitle: $districtTitle');
+    print('  - isShowContact: $isShowContact');
 
     // Token geçerliliğini kontrol et
     if (userToken.isEmpty) {
@@ -1011,6 +1069,7 @@ class ProductService {
       if (cityTitle != null) body['cityTitle'] = cityTitle;
       if (districtId != null) body['districtId'] = districtId;
       if (districtTitle != null) body['districtTitle'] = districtTitle;
+      if (isShowContact != null) body['isShowContact'] = isShowContact;
 
       print('🌐 Update Body: $body');
 

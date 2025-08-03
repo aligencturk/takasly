@@ -61,7 +61,16 @@ class _ProfileViewState extends State<ProfileView>
       Logger.info('👤 ProfileView - Loading data for user ID: $userId');
       
       // Kullanıcının ürünlerini yükle
-      productViewModel.loadUserProducts(userId);
+      Logger.info('👤 ProfileView - Loading user products for user ID: $userId');
+      await productViewModel.loadUserProducts(userId);
+      
+      // Yüklenen ürünlerin adres bilgilerini kontrol et
+      Logger.info('👤 ProfileView - Loaded ${productViewModel.myProducts.length} products');
+      for (int i = 0; i < productViewModel.myProducts.length; i++) {
+        final product = productViewModel.myProducts[i];
+        Logger.debug('👤 ProfileView - Product $i: ${product.title}');
+        Logger.debug('👤 ProfileView - Product $i location: cityTitle="${product.cityTitle}", districtTitle="${product.districtTitle}"');
+      }
       
       // Kullanıcının favori ürünlerini yükle
       await productViewModel.loadFavoriteProducts();

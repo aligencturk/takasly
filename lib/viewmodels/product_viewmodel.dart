@@ -376,6 +376,13 @@ class ProductViewModel extends ChangeNotifier {
         print(
           '✅ ProductViewModel - Successfully loaded ${_myProducts.length} user products',
         );
+        
+        // Yüklenen ürünlerin adres bilgilerini kontrol et
+        for (int i = 0; i < _myProducts.length; i++) {
+          final product = _myProducts[i];
+          print('📍 ProductViewModel - Product $i: ${product.title}');
+          print('📍 ProductViewModel - Product $i location: cityTitle="${product.cityTitle}", districtTitle="${product.districtTitle}"');
+        }
       } else {
         final errorMessage = response.error ?? ErrorMessages.unknownError;
         _setError(errorMessage);
@@ -1216,6 +1223,7 @@ class ProductViewModel extends ChangeNotifier {
     String? cityTitle,
     String? districtId,
     String? districtTitle,
+    bool? isShowContact,
   }) async {
     print('🔄 ProductViewModel.updateProduct called');
     print('📝 Parameters:');
@@ -1233,6 +1241,7 @@ class ProductViewModel extends ChangeNotifier {
     print('  - cityTitle: $cityTitle');
     print('  - districtId: $districtId');
     print('  - districtTitle: $districtTitle');
+    print('  - isShowContact: $isShowContact');
 
     _setLoading(true);
     _clearError();
@@ -1284,6 +1293,7 @@ class ProductViewModel extends ChangeNotifier {
         cityTitle: cityTitle,
         districtId: districtId,
         districtTitle: districtTitle,
+        isShowContact: isShowContact,
       );
 
       print('📡 Update response alındı');
