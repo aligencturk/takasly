@@ -55,6 +55,7 @@ class Product {
   final String? productLat;
   final String? productLong;
   final String? productCode;
+  final int? favoriteCount;
 
   const Product({
     required this.id,
@@ -105,6 +106,7 @@ class Product {
     this.productLat,
     this.productLong,
     this.productCode,
+    this.favoriteCount,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -210,6 +212,7 @@ class Product {
     final isSponsor = json['isSponsor'] as bool?;
     final isTrade = json['isTrade'] as bool?;
     final productCode = json['productCode'] != null ? safeString(json['productCode']) : null;
+    final favoriteCount = json['favoriteCount'] as int?;
 
     // Ana resim ve galeri resimlerini birleştir
     final allImages = <String>[];
@@ -309,6 +312,7 @@ class Product {
       productLat: productLat,
       productLong: productLong,
       productCode: productCode,
+      favoriteCount: favoriteCount,
     );
   }
   Map<String, dynamic> toJson() {
@@ -368,6 +372,7 @@ class Product {
     String? productLat,
     String? productLong,
     String? productCode,
+    int? favoriteCount,
   }) {
     return Product(
       id: id ?? this.id,
@@ -418,6 +423,7 @@ class Product {
       productLat: productLat ?? this.productLat,
       productLong: productLong ?? this.productLong,
       productCode: productCode ?? this.productCode,
+      favoriteCount: favoriteCount ?? this.favoriteCount,
     );
   }
 

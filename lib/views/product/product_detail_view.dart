@@ -651,6 +651,10 @@ class _ProductInfoState extends State<_ProductInfo> {
               _InfoRow('İlan Sahibi :', widget.product.userFullname ?? widget.product.owner?.name ?? 'Belirtilmemiş'),
               if (widget.product.proView != null && widget.product.proView!.isNotEmpty)
                 _InfoRow('Görüntülenme :', widget.product.proView!),
+              if (widget.product.favoriteCount != null && widget.product.favoriteCount! > 0)
+                _InfoRow('Favori :', 'Bu ilanı ${widget.product.favoriteCount} kişi favoriledi'),
+              if (widget.product.isShowContact == true)
+                _InfoRow('İletişim :', widget.product.userPhone ?? 'Belirtilmemiş'),
               
             ],
           ),
@@ -1228,6 +1232,12 @@ class _ProductInfoState extends State<_ProductInfo> {
     // Yeni API'den gelen kullanıcı bilgilerini kullan
     final userName = product.userFullname ?? product.owner?.name ?? 'Bilinmeyen Kullanıcı';
     final owner = product.owner;
+    final userPhone = product.userPhone;
+    
+    // Debug için log ekle
+    print('🔍 Product Detail - isShowContact: ${product.isShowContact}');
+    print('🔍 Product Detail - userPhone: $userPhone');
+    print('🔍 Product Detail - userPhone isNotEmpty: ${userPhone?.isNotEmpty}');
     
     if (owner == null && product.userFullname == null) {
       return Container(
@@ -1457,6 +1467,64 @@ class _ProductInfoState extends State<_ProductInfo> {
                         ),
                       ],
                     ),
+                    // Telefon numarası - sadece isShowContact true ise göster
+                    if (userPhone != null && userPhone.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.phone,
+                              size: 16,
+                              color: AppTheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              userPhone,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textPrimary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(4),
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: userPhone));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.copy, color: Colors.white, size: 18),
+                                          SizedBox(width: 8),
+                                          Text('Telefon numarası kopyalandı'),
+                                        ],
+                                      ),
+                                      backgroundColor: AppTheme.primary,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.copy,
+                                    size: 16,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1600,7 +1668,20 @@ class _ActionBar extends StatelessWidget {
       return;
     }
 
-    onShowSnackBar?.call('Arama özelliği yakında eklenecek.', error: false);
+    // isShowContact false ise telefon numarasını gösterme
+    if (product.isShowContact == false) {
+      onShowSnackBar?.call('Bu kullanıcının iletişim bilgileri gizli.', error: true);
+      return;
+    }
+
+    // Telefon numarası varsa arama yap
+    if (product.userPhone != null && product.userPhone!.isNotEmpty) {
+      // Telefon numarasını arama uygulamasında aç
+      // Bu kısım daha sonra implement edilebilir
+      onShowSnackBar?.call('Arama özelliği yakında eklenecek.', error: false);
+    } else {
+      onShowSnackBar?.call('Telefon numarası bulunamadı.', error: true);
+    }
   }
 
   @override
@@ -1691,30 +1772,33 @@ class _ActionBar extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
-              child: SizedBox(
-                height: 45,
-                child: OutlinedButton.icon(
-                  onPressed: () => _callOwner(context),
-                  icon: const Icon(Icons.phone, size: 16),
-                  label: const Text(
-                    'Ara',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+            // Arama butonu - sadece isShowContact true ise göster
+            if (product.isShowContact == true)
+              Expanded(
+                child: SizedBox(
+                  height: 45,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _callOwner(context),
+                    icon: const Icon(Icons.phone, size: 16),
+                    label: const Text(
+                      'Ara',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.primary,
-                    side: BorderSide(color: AppTheme.primary, width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppTheme.borderRadius,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      side: BorderSide(color: AppTheme.primary, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppTheme.borderRadius,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
+            // Arama butonu yoksa mesaj butonu tam genişlikte olsun
+            if (product.isShowContact == true) const SizedBox(width: 16),
             Expanded(
               child: SizedBox(
                 height: 45,
