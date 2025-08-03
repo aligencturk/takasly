@@ -15,6 +15,7 @@ class TradeCard extends StatelessWidget {
   final bool? showButtons; // API'den gelen showButtons değeri
   final VoidCallback? onDetailTap; // Takas detayı için callback
   final Function(UserTrade)? onReject; // Reddetme için callback
+  final Function(UserTrade)? onReview; // Yorum yapma için callback
 
   const TradeCard({
     super.key,
@@ -25,6 +26,7 @@ class TradeCard extends StatelessWidget {
     this.showButtons, // API'den gelen showButtons değeri
     this.onDetailTap, // Takas detayı için callback
     this.onReject, // Reddetme için callback
+    this.onReview, // Yorum yapma için callback
   });
 
   String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
@@ -246,21 +248,21 @@ class TradeCard extends StatelessWidget {
 
   Color _getStatusColor(int statusId) {
     switch (statusId) {
-      case 1: // Beklemede / Pending
+      case 1: // Onay Bekliyor
         return Colors.orange;
-      case 2: // Onaylandı / Approved
-        return Colors.green;
-      case 3: // İptal Edildi / Cancelled
-        return Colors.red;
-      case 4: // Tamamlandı / Completed
+      case 2: // Takas Başlatıldı
+        return Colors.blue;
+      case 3: // Kargoya Verildi
+        return Colors.purple;
+      case 4: // Teslim Edildi / Alındı
         return Color(0xFF10B981);
-      case 5: // Reddedildi / Rejected
-        return Colors.red;
-      case 6: // Beklemede / Pending (alternatif)
+      case 5: // Tamamlandı
+        return Colors.green;
+      case 6: // Beklemede
         return Colors.grey;
-      case 7: // Engellendi / Blocked
+      case 7: // İptal Edildi
         return Colors.red;
-      case 8: // İptal / Cancel (alternatif)
+      case 8: // Reddedildi
         return Colors.red;
       default:
         return Colors.grey;
@@ -269,22 +271,22 @@ class TradeCard extends StatelessWidget {
 
   IconData _getStatusIcon(int statusId) {
     switch (statusId) {
-      case 1: // Beklemede / Pending
+      case 1: // Onay Bekliyor
         return Icons.pending;
-      case 2: // Onaylandı / Approved
-        return Icons.check_circle;
-      case 3: // İptal Edildi / Cancelled
-        return Icons.cancel;
-      case 4: // Tamamlandı / Completed
+      case 2: // Takas Başlatıldı
+        return Icons.play_arrow;
+      case 3: // Kargoya Verildi
+        return Icons.local_shipping;
+      case 4: // Teslim Edildi / Alındı
         return Icons.done_all;
-      case 5: // Reddedildi / Rejected
-        return Icons.block;
-      case 6: // Beklemede / Pending (alternatif)
+      case 5: // Tamamlandı
+        return Icons.check_circle;
+      case 6: // Beklemede
         return Icons.pause;
-      case 7: // Engellendi / Blocked
-        return Icons.block;
-      case 8: // İptal / Cancel (alternatif)
+      case 7: // İptal Edildi
         return Icons.cancel;
+      case 8: // Reddedildi
+        return Icons.block;
       default:
         return Icons.help;
     }
@@ -490,7 +492,10 @@ class TradeCard extends StatelessWidget {
                       // Teslim edildi durumu için yorum butonu (statusID=4)
                       else if (trade.statusID == 4)
                         _buildReviewButton(context)
-                      // Bekleyen takaslar için onay/red butonları (statusID=1)
+                      // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
+                      else if (trade.statusID == 5)
+                        _buildReviewButton(context)
+                      // Onay bekleyen takaslar için onay/red butonları (statusID=1)
                       else if (trade.statusID == 1) ...[
                         // API'den showButtons değeri gelmişse, sadece true olduğunda butonları göster
                         if (showButtons == true)
@@ -703,6 +708,16 @@ class TradeCard extends StatelessWidget {
   }
 
   Widget _buildReviewButton(BuildContext context) {
+    // Buton metnini duruma göre ayarla
+    String buttonText;
+    if (trade.statusID == 4) {
+      buttonText = 'Takası Tamamla ve Değerlendir';
+    } else if (trade.statusID == 5) {
+      buttonText = 'Yorum Yap';
+    } else {
+      buttonText = 'Değerlendir';
+    }
+    
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: SizedBox(
@@ -717,8 +732,8 @@ class TradeCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
           ),
-          child: const Text(
-            'Takası Tamamla ve Değerlendir',
+          child: Text(
+            buttonText,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -762,10 +777,18 @@ class TradeCard extends StatelessWidget {
   }
 
   void _completeTradeWithReview(BuildContext context) {
-    Logger.info('Trade #${trade.offerID} tamamlanıyor ve değerlendiriliyor...', tag: 'TradeCard');
+    Logger.info('Trade #${trade.offerID} değerlendiriliyor... StatusID: ${trade.statusID}', tag: 'TradeCard');
     
     // Bu metod sadece buton gösterimi için, gerçek işlem TradeView'da yapılıyor
     // Burada sadece log atıyoruz
-    Logger.debug('Trade tamamlama butonu tıklandı, işlem TradeView\'da yapılacak', tag: 'TradeCard');
+    Logger.debug('Trade değerlendirme butonu tıklandı, işlem TradeView\'da yapılacak', tag: 'TradeCard');
+    
+    // Sadece onReview callback'ini kullan
+    if (onReview != null) {
+      Logger.info('onReview callback çağrılıyor', tag: 'TradeCard');
+      onReview!(trade);
+    } else {
+      Logger.warning('onReview callback tanımlanmamış!', tag: 'TradeCard');
+    }
   }
 } 

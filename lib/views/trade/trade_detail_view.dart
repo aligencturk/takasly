@@ -757,13 +757,21 @@ class _TradeDetailViewState extends State<TradeDetailView> {
 
     Color _getStatusColor(int statusID) {
     switch (statusID) {
-      case 1: // Beklemede
+      case 1: // Onay Bekliyor
         return Colors.orange;
       case 2: // Takas Başlatıldı
         return Colors.blue;
-      case 3: // Tamamlandı
+      case 3: // Kargoya Verildi
+        return Colors.purple;
+      case 4: // Teslim Edildi / Alındı
+        return Color(0xFF10B981);
+      case 5: // Tamamlandı
         return Colors.green;
-      case 4: // İptal Edildi
+      case 6: // Beklemede
+        return Colors.grey;
+      case 7: // İptal Edildi
+        return Colors.red;
+      case 8: // Reddedildi
         return Colors.red;
       default:
         return Colors.grey;
@@ -772,14 +780,22 @@ class _TradeDetailViewState extends State<TradeDetailView> {
 
   IconData _getStatusIcon(int statusID) {
     switch (statusID) {
-      case 1: // Beklemede
+      case 1: // Onay Bekliyor
         return Icons.pending;
       case 2: // Takas Başlatıldı
-        return Icons.swap_horiz;
-      case 3: // Tamamlandı
+        return Icons.play_arrow;
+      case 3: // Kargoya Verildi
+        return Icons.local_shipping;
+      case 4: // Teslim Edildi / Alındı
+        return Icons.done_all;
+      case 5: // Tamamlandı
         return Icons.check_circle;
-      case 4: // İptal Edildi
+      case 6: // Beklemede
+        return Icons.pause;
+      case 7: // İptal Edildi
         return Icons.cancel;
+      case 8: // Reddedildi
+        return Icons.block;
       default:
         return Icons.help;
     }
