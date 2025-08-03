@@ -1180,8 +1180,8 @@ class _ProductInfoState extends State<_ProductInfo> {
                     ),
                   ),
                 ),
-                // İlan No için kopyalama butonu
-                if (label.trim() == 'İlan No :')
+                // İlan Kodu için kopyalama butonu
+                if (label.trim() == 'İlan Kodu :')
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -1194,7 +1194,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                               children: [
                                 Icon(Icons.copy, color: Colors.white, size: 18),
                                 SizedBox(width: 8),
-                                Text('İlan numarası kopyalandı'),
+                                Text('İlan kodu kopyalandı'),
                               ],
                             ),
                             backgroundColor: AppTheme.primary,
