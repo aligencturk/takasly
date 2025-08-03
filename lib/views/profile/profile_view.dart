@@ -661,11 +661,6 @@ class _ProfileViewState extends State<ProfileView>
           icon: const Icon(Icons.settings_outlined, size: 24),
           tooltip: 'Ayarlar',
         ),
-        IconButton(
-          onPressed: () => _showLogoutConfirmDialog(),
-          icon: const Icon(Icons.logout, size: 24, color: Colors.red),
-          tooltip: 'Çıkış Yap',
-        ),
       ],
     );
   }
@@ -1467,108 +1462,7 @@ class _ProfileViewState extends State<ProfileView>
     }
   }
 
-  void _showLogoutConfirmDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.logout, color: Colors.red[700], size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Text('Çıkış Yap'),
-          ],
-        ),
-        content: const Text(
-          'Hesabınızdan çıkış yapmak istediğinizden emin misiniz?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              final authViewModel = Provider.of<AuthViewModel>(
-                context,
-                listen: false,
-              );
-              final userViewModel = Provider.of<UserViewModel>(
-                context,
-                listen: false,
-              );
 
-              Navigator.pop(dialogContext);
-
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (loadingContext) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  content: Row(
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(width: 16),
-                      const Text('Çıkış yapılıyor...'),
-                    ],
-                  ),
-                ),
-              );
-
-              try {
-                await authViewModel.logout();
-                await userViewModel.logout();
-
-                if (mounted) {
-                  navigator.pop();
-                  navigator.pushNamedAndRemoveUntil('/login', (route) => false);
-
-                  scaffoldMessenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Başarıyla çıkış yapıldı'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  navigator.pop();
-                  scaffoldMessenger.showSnackBar(
-                    SnackBar(
-                      content: Text('Çıkış yapılırken hata oluştu: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Çıkış Yap'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 

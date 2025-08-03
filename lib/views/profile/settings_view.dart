@@ -6,6 +6,7 @@ import '../../core/constants.dart';
 import '../../services/user_service.dart';
 import '../../utils/logger.dart';
 import '../../viewmodels/user_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 import '../auth/reset_password_view.dart';
 import 'change_password_view.dart';
 import 'edit_profile_view.dart';
@@ -187,13 +188,24 @@ class _SettingsViewState extends State<SettingsView> {
           Padding(
             padding: const EdgeInsets.all(20),
             child: Text(
-              'Hesabımı Sil',
+              'Hesap İşlemleri',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.red[700],
+                color: Colors.grey[700],
               ),
             ),
+          ),
+          Container(
+            height: 1,
+            color: Colors.grey[200],
+          ),
+          _buildSettingItem(
+            icon: Icons.logout,
+            title: 'Çıkış Yap',
+            subtitle: 'Hesabınızdan güvenli çıkış yapın',
+            textColor: Colors.orange[700],
+            onTap: _showLogoutConfirmDialog,
           ),
           Container(
             height: 1,
@@ -383,5 +395,108 @@ class _SettingsViewState extends State<SettingsView> {
         });
       }
     }
+  }
+
+  void _showLogoutConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.logout, color: Colors.orange[700], size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('Çıkış Yap'),
+          ],
+        ),
+        content: const Text(
+          'Hesabınızdan çıkış yapmak istediğinizden emin misiniz?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final authViewModel = Provider.of<AuthViewModel>(
+                context,
+                listen: false,
+              );
+              final userViewModel = Provider.of<UserViewModel>(
+                context,
+                listen: false,
+              );
+
+              Navigator.pop(dialogContext);
+
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (loadingContext) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  content: Row(
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(width: 16),
+                      const Text('Çıkış yapılıyor...'),
+                    ],
+                  ),
+                ),
+              );
+
+              try {
+                await authViewModel.logout();
+                await userViewModel.logout();
+
+                if (mounted) {
+                  navigator.pop();
+                  navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Başarıyla çıkış yapıldı'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  navigator.pop();
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Çıkış yapılırken hata oluştu: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Çıkış Yap'),
+          ),
+        ],
+      ),
+    );
   }
 } 

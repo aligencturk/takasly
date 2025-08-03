@@ -159,11 +159,23 @@ class _EditProfileViewState extends State<EditProfileView> {
       initialDate: DateTime.now(),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
+      locale: const Locale('tr', 'TR'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppTheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     
     if (picked != null) {
       setState(() {
-        _birthdayController.text = '${picked.day}/${picked.month}/${picked.year}';
+        // Türkçe tarih formatı: GG/AA/YYYY
+        _birthdayController.text = '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
       });
     }
   }
