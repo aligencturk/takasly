@@ -939,15 +939,6 @@ class _ProductInfoState extends State<_ProductInfo> {
       children: [
         Expanded(
           child: _buildMapButton(
-            title: Platform.isIOS ? 'Haritalar' : 'Google Maps',
-            icon: Platform.isIOS ? Icons.location_on : Icons.map,
-            color: Platform.isIOS ? Colors.red : Colors.blue,
-            onTap: () => _openInMaps(product),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildMapButton(
             title: 'Yol Tarifi Al',
             icon: Icons.directions,
             color: Colors.green,
@@ -973,72 +964,30 @@ class _ProductInfoState extends State<_ProductInfo> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18),
+      label: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
         ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        shadowColor: color.withOpacity(0.3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       ),
     );
   }
 
-  void _openInMaps(Product product) async {
-    try {
-      final lat = double.tryParse(product.productLat ?? '');
-      final lng = double.tryParse(product.productLong ?? '');
-      
-      if (lat == null || lng == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Konum bilgisi bulunamadı'),
-            backgroundColor: AppTheme.error,
-          ),
-        );
-        return;
-      }
 
-      // Platform'a göre direkt URL aç
-      if (Platform.isIOS) {
-        // iOS için Apple Maps
-        final url = 'https://maps.apple.com/?q=${product.title}&ll=$lat,$lng';
-        await launchUrl(Uri.parse(url));
-      } else {
-        // Android için Google Maps
-        final url = 'https://maps.google.com/?q=$lat,$lng';
-        await launchUrl(Uri.parse(url));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Harita açılırken hata oluştu: $e'),
-          backgroundColor: AppTheme.error,
-        ),
-      );
-    }
-  }
 
   void _getDirections(Product product) async {
     try {
@@ -1105,33 +1054,7 @@ class _ProductInfoState extends State<_ProductInfo> {
     }
   }
 
-  void _openInWebMaps(Product product) async {
-    try {
-      final lat = double.tryParse(product.productLat ?? '');
-      final lng = double.tryParse(product.productLong ?? '');
-      
-      if (lat == null || lng == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Konum bilgisi bulunamadı'),
-            backgroundColor: AppTheme.error,
-          ),
-        );
-        return;
-      }
 
-      // Web tarayıcısında Google Maps aç
-      final url = 'https://www.google.com/maps?q=$lat,$lng';
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Web haritası açılırken hata oluştu: $e'),
-          backgroundColor: AppTheme.error,
-        ),
-      );
-    }
-  }
 
   Widget _InfoRow(String label, String value) {
     return Container(
