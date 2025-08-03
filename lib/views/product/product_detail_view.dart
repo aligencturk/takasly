@@ -699,14 +699,8 @@ class _ProductInfoState extends State<_ProductInfo> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
-                  ),
-                  child: Row(
+        
+                  Row(
                     children: [
                       Icon(
                         Icons.swap_horiz,
@@ -726,10 +720,10 @@ class _ProductInfoState extends State<_ProductInfo> {
                       ),
                     ],
                   ),
-                ),
               ],
             ),
           ),
+
         
         const SizedBox(height: 8),
         
@@ -1593,14 +1587,8 @@ class _ActionBar extends StatelessWidget {
   Widget _buildOwnProductActions(BuildContext context) {
     return Column(
       children: [
-                  Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppTheme.error.withOpacity(0.1),
-              borderRadius: AppTheme.borderRadius,
-              border: Border.all(color: AppTheme.error.withOpacity(0.3)),
-            ),
-            child: Row(
+                
+            Row(
               children: [
                 Icon(
                   Icons.info_outline, 
@@ -1620,7 +1608,6 @@ class _ActionBar extends StatelessWidget {
                 ),
               ],
             ),
-          ),
           const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,

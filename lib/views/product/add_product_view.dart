@@ -562,6 +562,7 @@ class _AddProductViewState extends State<AddProductView> {
       case 2: return _selectedCategoryId != null && _selectedConditionId != null;
       case 3: return _selectedCityId != null && _selectedDistrictId != null;
       case 4: return _tradeForController.text.trim().isNotEmpty;
+      case 5: return false; // Bu adım hiçbir zaman otomatik tamamlanmış sayılmaz
       default: return false;
     }
   }
@@ -578,6 +579,8 @@ class _AddProductViewState extends State<AddProductView> {
         return _buildLocationStep();
       case 4:
         return _buildTradePreferencesStep();
+      case 5:
+        return _buildContactSettingsStep();
       default:
         return const Center(child: Text('Bilinmeyen adım'));
     }
@@ -901,14 +904,9 @@ class _AddProductViewState extends State<AddProductView> {
           const SizedBox(height: 16),
           
           // Info card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.withOpacity(0.3)),
-            ),
-            child: Row(
+
+            
+             Row(
               children: [
                 Icon(Icons.info_outline, color: Colors.blue),
                 const SizedBox(width: 12),
@@ -919,9 +917,8 @@ class _AddProductViewState extends State<AddProductView> {
                     color: Colors.blue.shade700,
                   ),
                 ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1235,21 +1232,7 @@ class _AddProductViewState extends State<AddProductView> {
   // -- Konum Widget'ları --
 
   Widget _buildAutoLocationButton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _currentPosition != null 
-            ? Colors.green.withOpacity(0.1)
-            : AppTheme.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _currentPosition != null 
-              ? Colors.green.withOpacity(0.3)
-              : AppTheme.primary.withOpacity(0.3),
-        ),
-      ),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -1335,8 +1318,8 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           ],
         ],
-      ),
-    );
+      );
+    
   }
 
   Future<void> _getCurrentLocation() async {
@@ -1811,6 +1794,179 @@ class _AddProductViewState extends State<AddProductView> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
+      ),
+    );
+  }
+
+  Widget _buildContactSettingsStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _stepIcons[5],
+                  color: AppTheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'İletişim Ayarları',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'İletişim bilgilerinizin görünürlüğünü ayarlayın',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // İletişim ayarları kartı
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.contact_phone,
+                      color: AppTheme.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'İletişim Bilgileri',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Switch
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Telefon numaramı göster',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Açıksa, diğer kullanıcılar size arayabilir',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _isShowContact,
+                      onChanged: (value) {
+                        setState(() {
+                          _isShowContact = value;
+                        });
+                      },
+                      activeColor: AppTheme.primary,
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+             
+              Row(
+                    children: [
+                      Icon(
+                        _isShowContact ? Icons.check_circle : Icons.info_outline,
+                        color: _isShowContact ? Colors.green : Colors.orange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _isShowContact 
+                              ? 'Telefon numaranız görünür olacak. Kullanıcılar size arayabilecek.'
+                              : 'Telefon numaranız gizli olacak. Sadece mesajlaşma ile iletişim kurulabilir.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: _isShowContact ? Colors.green.shade700 : Colors.orange.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          
+     
+            Row(
+              children: [
+                Icon(Icons.security, color: Colors.blue, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Bu ayarı daha sonra ürün detay sayfasından değiştirebilirsiniz.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          
+        ],
       ),
     );
   }
