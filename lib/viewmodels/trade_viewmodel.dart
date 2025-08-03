@@ -20,6 +20,10 @@ class TradeViewModel extends ChangeNotifier {
   List<UserTrade> _userTrades = [];
   String? _currentUserId;
   String? get currentUserId => _currentUserId;
+  
+  // checkTradeStatus sonuçlarını saklayacak Map
+  // Key: "senderProductID_receiverProductID", Value: CheckTradeStatusData
+  final Map<String, CheckTradeStatusData> _tradeStatusCache = {};
 
   // Trade Detail state
   TradeDetail? _selectedTradeDetail;
@@ -49,8 +53,9 @@ class TradeViewModel extends ChangeNotifier {
   List<TradeStatusModel> get tradeStatuses => _tradeStatuses;
   List<DeliveryType> get deliveryTypes => _deliveryTypes;
   List<UserTrade> get userTrades => _userTrades;
-
-  // Trade Detail getters
+  
+  // Cache getter
+  Map<String, CheckTradeStatusData> get tradeStatusCache => _tradeStatusCache;
   TradeDetail? get selectedTradeDetail => _selectedTradeDetail;
   bool get isLoadingTradeDetail => _isLoadingTradeDetail;
   String? get tradeDetailErrorMessage => _tradeDetailErrorMessage;
@@ -676,7 +681,7 @@ class TradeViewModel extends ChangeNotifier {
           
           // Yüklenen takasların detaylarını log'la
           for (var trade in _userTrades) {
-            Logger.info('📋 Yüklenen Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeViewModel');
+            Logger.info('📋 Yüklenen Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, cancelDesc="${trade.cancelDesc}"', tag: 'TradeViewModel');
           }
         } else {
           // 410 durumunda data null olabilir, boş liste kullan
@@ -908,6 +913,17 @@ class TradeViewModel extends ChangeNotifier {
         final data = response.data!.data;
         Logger.info('Takas kontrolü başarılı: success=${data?.success}, isSender=${data?.isSender}, isReceiver=${data?.isReceiver}, showButtons=${data?.showButtons}, message=${data?.message}', tag: 'TradeViewModel');
         
+        // Sonucu cache'e kaydet
+        if (data != null) {
+          final cacheKey = '${senderProductID}_${receiverProductID}';
+          Logger.debug('Cache key oluşturuluyor: $cacheKey', tag: 'TradeViewModel');
+          _tradeStatusCache[cacheKey] = data;
+          Logger.info('Takas durumu cache\'e kaydedildi: $cacheKey, message="${data.message}", showButtons=${data.showButtons}', tag: 'TradeViewModel');
+          
+          // UI'ı güncelle
+          notifyListeners();
+        }
+        
         _isCheckingTradeStatus = false;
         return response.data;
       } else {
@@ -968,6 +984,28 @@ class TradeViewModel extends ChangeNotifier {
       }
       return false;
     }
+  }
+
+  /// Cache'den takas durumu al
+  CheckTradeStatusData? getCachedTradeStatus(int senderProductID, int receiverProductID) {
+    final cacheKey = '${senderProductID}_${receiverProductID}';
+    final cachedData = _tradeStatusCache[cacheKey];
+    
+    Logger.debug('Cache arama: key=$cacheKey, bulundu=${cachedData != null}', tag: 'TradeViewModel');
+    
+    if (cachedData != null) {
+      Logger.debug('Cache\'den veri alındı: message="${cachedData.message}", showButtons=${cachedData.showButtons}', tag: 'TradeViewModel');
+    } else {
+      Logger.debug('Cache\'de veri bulunamadı: key=$cacheKey', tag: 'TradeViewModel');
+    }
+    
+    return cachedData;
+  }
+  
+  /// Cache'i temizle
+  void clearTradeStatusCache() {
+    _tradeStatusCache.clear();
+    Logger.info('Takas durumu cache\'i temizlendi', tag: 'TradeViewModel');
   }
 
   /// Takas detayını temizle

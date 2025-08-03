@@ -616,6 +616,7 @@ class UserTrade {
   final int? isConfirm; // 1: Mevcut kullanıcı teklifi gönderen, 0: Mevcut kullanıcı teklifi alan, null: Belirsiz
   final TradeProduct? myProduct;
   final TradeProduct? theirProduct;
+  final String? cancelDesc; // Reddetme sebebi (API'den cancelDesc olarak geliyor)
 
   const UserTrade({
     required this.offerID,
@@ -628,6 +629,7 @@ class UserTrade {
     this.isConfirm,
     this.myProduct,
     this.theirProduct,
+    this.cancelDesc,
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {
@@ -667,6 +669,11 @@ class UserTrade {
         theirProduct = null;
       }
       
+      final cancelDesc = json['cancelDesc'] as String?;
+      print('🔍 UserTrade.fromJson - cancelDesc: "$cancelDesc"');
+      print('�� UserTrade.fromJson - JSON keys: ${json.keys.toList()}');
+      print('🔍 UserTrade.fromJson - JSON contains cancelDesc: ${json.containsKey('cancelDesc')}');
+      
       final userTrade = UserTrade(
         offerID: offerID,
         statusID: statusID,
@@ -678,6 +685,7 @@ class UserTrade {
         isConfirm: isConfirm,
         myProduct: myProduct,
         theirProduct: theirProduct,
+        cancelDesc: cancelDesc,
       );
       
       print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, statusID=$statusID');
@@ -697,6 +705,7 @@ class UserTrade {
         isConfirm: _parseIsConfirm(json['isConfirm']),
         myProduct: null,
         theirProduct: null,
+        cancelDesc: json['cancelDesc'] as String?,
       );
     }
   }
@@ -712,6 +721,7 @@ class UserTrade {
     if (isConfirm != null) 'isConfirm': isConfirm,
     if (myProduct != null) 'myProduct': myProduct!.toJson(),
     if (theirProduct != null) 'theirProduct': theirProduct!.toJson(),
+    if (cancelDesc != null) 'cancelDesc': cancelDesc,
   };
 
   @override
@@ -960,9 +970,10 @@ class UserTradesData {
           for (int i = 0; i < tradesList.length; i++) {
             try {
               final tradeJson = tradesList[i] as Map<String, dynamic>;
+              print('🔍 UserTradesData.fromJson - Parsing trade $i: $tradeJson');
               final trade = UserTrade.fromJson(tradeJson);
               trades.add(trade);
-              print('✅ UserTradesData.fromJson - Successfully parsed trade $i: offerID=${trade.offerID}');
+              print('✅ UserTradesData.fromJson - Successfully parsed trade $i: offerID=${trade.offerID}, rejectionReason="${trade.cancelDesc}"');
             } catch (e) {
               print('⚠️ UserTradesData.fromJson - Failed to parse trade $i: $e');
               // Hatalı trade'i atla
@@ -1122,6 +1133,7 @@ class CheckTradeStatusData {
   final bool isReceiver;
   final bool showButtons;
   final String message;
+  final String statusID;
 
   const CheckTradeStatusData({
     required this.success,
@@ -1129,6 +1141,7 @@ class CheckTradeStatusData {
     required this.isReceiver,
     required this.showButtons,
     required this.message,
+    required this.statusID,
   });
 
   factory CheckTradeStatusData.fromJson(Map<String, dynamic> json) {
@@ -1138,11 +1151,12 @@ class CheckTradeStatusData {
       isReceiver: json['isReceiver'] as bool? ?? false,
       showButtons: json['showButtons'] as bool? ?? false,
       message: json['message'] as String? ?? '',
+      statusID: json['statusID'] as String? ?? '',
     );
   }
 
   @override
   String toString() {
-    return 'CheckTradeStatusData(success: $success, isSender: $isSender, isReceiver: $isReceiver, showButtons: $showButtons, message: $message)';
+    return 'CheckTradeStatusData(success: $success, isSender: $isSender, isReceiver: $isReceiver, showButtons: $showButtons, statusID: $statusID, message: $message)';
   }
 } 

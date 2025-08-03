@@ -32,6 +32,8 @@ class _TradeViewState extends State<TradeView>
   final AuthService _authService = AuthService();
   // Her trade için showButtons değerini saklayacak Map
   final Map<int, bool> _tradeShowButtonsMap = {};
+  String? _currentUserId;
+  ScaffoldMessengerState? _scaffoldMessenger;
 
   @override
   void initState() {
@@ -42,6 +44,12 @@ class _TradeViewState extends State<TradeView>
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scaffoldMessenger = ScaffoldMessenger.of(context);
+  }
+
   Future<void> _loadData() async {
     // showButtons Map'ini temizle
     _tradeShowButtonsMap.clear();
@@ -50,8 +58,8 @@ class _TradeViewState extends State<TradeView>
     final isLoggedIn = await _authService.isLoggedIn();
 
     if (!isLoggedIn) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
           SnackBar(
             content: Row(
               children: [
@@ -77,6 +85,7 @@ class _TradeViewState extends State<TradeView>
 
     // Dinamik kullanıcı ID'sini al
     final userId = await _authService.getCurrentUserId();
+    _currentUserId = userId;
 
     if (userId != null && userId.isNotEmpty) {
       // Paralel olarak tüm verileri yükle - performans optimizasyonu
@@ -99,8 +108,8 @@ class _TradeViewState extends State<TradeView>
         // Hata durumunda sadece log'la, UI'ı bloklama
       }
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
           SnackBar(
             content: Row(
               children: [
@@ -138,6 +147,16 @@ class _TradeViewState extends State<TradeView>
             fontWeight: FontWeight.w600,
           ),
         ),
+        actions: [
+          // Debug butonu - geçici
+          IconButton(
+            icon: Icon(Icons.bug_report, color: AppTheme.textPrimary),
+            onPressed: () {
+              _showDebugInfo();
+            },
+            tooltip: 'Debug Bilgisi',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primary,
@@ -421,16 +440,93 @@ class _TradeViewState extends State<TradeView>
                             ),
                           );
                         },
-                        onStatusChange: (newStatusId) {
-                          // TradeCard'dan gelen newStatusId aslında mevcut durum
-                          // Bu durumda sadece dialog açılması gerekiyor
+                        onReject: (trade) {
+                          // Reddetme sebebi dialog'unu göster
+                          _showRejectReasonDialog(trade);
+                        },
+                        onStatusChange: (newStatusId) async {
                           Logger.info('TradeCard onStatusChange çağrıldı: $newStatusId', tag: 'TradeView');
                           
-                          // Eğer mevcut durum 4 (Tamamlandı) ise yorum dialog'unu aç
-                          if (newStatusId == 4) {
-                            _showTradeCompleteDialog(updatedTrade);
-                          } else {
-                            _showStatusChangeDialog(updatedTrade);
+                          // AuthService'den userToken al
+                          final authService = AuthService();
+                          final userToken = await authService.getToken();
+                          
+                          if (userToken == null || userToken.isEmpty) {
+                            Logger.error('UserToken bulunamadı', tag: 'TradeView');
+                            if (mounted && _scaffoldMessenger != null) {
+                              _scaffoldMessenger!.showSnackBar(
+                                SnackBar(content: Text('Oturum bilgisi bulunamadı')),
+                              );
+                            }
+                            return;
+                          }
+                          
+                          if (!mounted) return;
+                          final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+                          
+                          try {
+                            bool success = false;
+                            
+                            if (newStatusId == 2) {
+                              // Onaylama işlemi
+                              Logger.info('Trade #${updatedTrade.offerID} onaylanıyor...', tag: 'TradeView');
+                              success = await tradeViewModel.confirmTrade(
+                                userToken: userToken,
+                                offerID: updatedTrade.offerID,
+                                isConfirm: true,
+                              );
+                            } else if (newStatusId == 3) {
+                              // Reddetme işlemi - artık onReject callback'i ile yapılıyor
+                              Logger.info('Trade #${updatedTrade.offerID} reddetme işlemi onReject callback\'i ile yapılacak', tag: 'TradeView');
+                              return; // Bu durumda işlem yapma, onReject callback'i kullanılacak
+                            } else if (newStatusId == 4) {
+                              // Tamamlama işlemi
+                              Logger.info('Trade #${updatedTrade.offerID} tamamlanıyor...', tag: 'TradeView');
+                              if (mounted) {
+                                _showTradeCompleteDialog(updatedTrade);
+                              }
+                              return;
+                            } else {
+                              // Diğer durum değişiklikleri için
+                              Logger.info('Trade #${updatedTrade.offerID} durumu güncelleniyor: $newStatusId', tag: 'TradeView');
+                              success = await tradeViewModel.updateTradeStatus(
+                                userToken: userToken,
+                                offerID: updatedTrade.offerID,
+                                newStatusID: newStatusId,
+                              );
+                            }
+                            
+                            if (success) {
+                              Logger.info('Trade #${updatedTrade.offerID} durumu başarıyla güncellendi', tag: 'TradeView');
+                              if (mounted && _scaffoldMessenger != null) {
+                                _scaffoldMessenger!.showSnackBar(
+                                  SnackBar(
+                                    content: Text(newStatusId == 2 ? 'Takas onaylandı' : newStatusId == 3 ? 'Takas reddedildi' : 'Durum güncellendi'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } else {
+                              Logger.error('Trade #${updatedTrade.offerID} durumu güncellenemedi', tag: 'TradeView');
+                              if (mounted && _scaffoldMessenger != null) {
+                                _scaffoldMessenger!.showSnackBar(
+                                  SnackBar(
+                                    content: Text(tradeViewModel.errorMessage ?? 'Bir hata oluştu'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          } catch (e) {
+                            Logger.error('Trade durumu güncelleme hatası: $e', tag: 'TradeView');
+                            if (mounted && _scaffoldMessenger != null) {
+                              _scaffoldMessenger!.showSnackBar(
+                                SnackBar(
+                                  content: Text('Bir hata oluştu: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
                         },
                       ),
@@ -446,144 +542,129 @@ class _TradeViewState extends State<TradeView>
   }
 
   Widget _buildTradeCard(UserTrade trade) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-        ],
+    // Cache'den showButtons değerini al
+    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    final myProduct = _getMyProduct(trade);
+    final theirProduct = _getTheirProduct(trade);
+    
+    bool? showButtons;
+    if (myProduct != null && theirProduct != null) {
+      final cachedStatus = tradeViewModel.getCachedTradeStatus(
+        myProduct.productID, 
+        theirProduct.productID
+      );
+      showButtons = cachedStatus?.showButtons;
+    }
+    
+    return TradeCard(
+      trade: trade,
+      currentUserId: _currentUserId,
+      showButtons: showButtons,
+      onTap: () => _onTradeTap(trade),
+      onStatusChange: (statusId) => _onStatusChange(trade, statusId),
+      onDetailTap: () => _onDetailTap(trade),
+      onReject: (trade) {
+        // Reddetme sebebi dialog'unu göster
+        _showRejectReasonDialog(trade);
+      },
+    );
+  }
+
+  void _onTradeTap(UserTrade trade) {
+    // Takas detayına git
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TradeDetailView(offerID: trade.offerID),
       ),
-      child: Column(
-        children: [
-          // Takas başlığı ve durumu
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _getStatusColor(trade.statusID).withOpacity(0.1),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
+    );
+  }
+
+  void _onStatusChange(UserTrade trade, int statusId) async {
+    Logger.info('Trade #${trade.offerID} durumu değiştiriliyor: $statusId', tag: 'TradeView');
+    
+    // AuthService'den userToken al
+    final authService = AuthService();
+    final userToken = await authService.getToken();
+    
+    if (userToken == null || userToken.isEmpty) {
+      Logger.error('UserToken bulunamadı', tag: 'TradeView');
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
+          SnackBar(content: Text('Oturum bilgisi bulunamadı')),
+        );
+      }
+      return;
+    }
+    
+    if (!mounted) return;
+    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    
+    try {
+      bool success = false;
+      
+      if (statusId == 2) {
+        // Onaylama işlemi
+        Logger.info('Trade #${trade.offerID} onaylanıyor...', tag: 'TradeView');
+        success = await tradeViewModel.confirmTrade(
+          userToken: userToken,
+          offerID: trade.offerID,
+          isConfirm: true,
+        );
+      } else if (statusId == 3) {
+        // Reddetme işlemi - artık onReject callback'i ile yapılıyor
+        Logger.info('Trade #${trade.offerID} reddetme işlemi onReject callback\'i ile yapılacak', tag: 'TradeView');
+        return; // Bu durumda işlem yapma, onReject callback'i kullanılacak
+      } else {
+        // Diğer durum değişiklikleri için
+        Logger.info('Trade #${trade.offerID} durumu güncelleniyor: $statusId', tag: 'TradeView');
+        success = await tradeViewModel.updateTradeStatus(
+          userToken: userToken,
+          offerID: trade.offerID,
+          newStatusID: statusId,
+        );
+      }
+      
+      if (success) {
+        Logger.info('Trade #${trade.offerID} durumu başarıyla güncellendi', tag: 'TradeView');
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text(statusId == 2 ? 'Takas onaylandı' : statusId == 3 ? 'Takas reddedildi' : 'Durum güncellendi'),
+              backgroundColor: Colors.green,
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(trade.statusID),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    _getStatusIcon(trade.statusID),
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Takas #${trade.offerID}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF2D3748),
-                        ),
-                      ),
-                      Text(
-                        trade.statusTitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: _getStatusColor(trade.statusID),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  trade.createdAt,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF718096),
-                  ),
-                ),
-              ],
+          );
+        }
+      } else {
+        Logger.error('Trade #${trade.offerID} durumu güncellenemedi', tag: 'TradeView');
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text(tradeViewModel.errorMessage ?? 'Bir hata oluştu'),
+              backgroundColor: Colors.red,
             ),
+          );
+        }
+      }
+    } catch (e) {
+      Logger.error('Trade durumu güncelleme hatası: $e', tag: 'TradeView');
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
+          SnackBar(
+            content: Text('Bir hata oluştu: $e'),
+            backgroundColor: Colors.red,
           ),
-          
-          // Ürünler
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Benim ürünüm
-                Expanded(
-                  child: _buildProductCard(trade.myProduct, 'Benim Ürünüm'),
-                ),
-                SizedBox(width: 16),
-                // Takas ikonu
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF10B981).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.swap_horiz,
-                    color: Color(0xFF10B981),
-                    size: 20,
-                  ),
-                ),
-                SizedBox(width: 16),
-                // Onların ürünü
-                Expanded(
-                  child: _buildProductCard(trade.theirProduct, 'Onların Ürünü'),
-                ),
-              ],
-            ),
-          ),
-          
-          // Teslimat bilgileri
-          if (trade.meetingLocation != null)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Color(0xFFF7FAFC),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    color: Color(0xFF718096),
-                    size: 16,
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${trade.deliveryType} - ${trade.meetingLocation}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF718096),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
+        );
+      }
+    }
+  }
+
+  void _onDetailTap(UserTrade trade) {
+    // Takas detayına git
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TradeDetailView(offerID: trade.offerID),
       ),
     );
   }
@@ -732,6 +813,52 @@ class _TradeViewState extends State<TradeView>
       default:
         return Icons.help;
     }
+  }
+
+  /// isConfirm alanına göre benim ürünümü belirle
+  TradeProduct? _getMyProduct(UserTrade trade) {
+    // isConfirm: true -> Gönderen (sender), myProduct kullanıcının ürünü
+    // isConfirm: false -> Alıcı (receiver), theirProduct kullanıcının ürünü
+    if (trade.isConfirm == true) {
+      return trade.myProduct; // Gönderen ise myProduct benim ürünüm
+    } else if (trade.isConfirm == false) {
+      return trade.theirProduct; // Alıcı ise theirProduct benim ürünüm
+    }
+    // isConfirm null ise varsayılan olarak myProduct'ı kullan
+    return trade.myProduct;
+  }
+
+  /// isConfirm alanına göre karşı tarafın ürününü belirle
+  TradeProduct? _getTheirProduct(UserTrade trade) {
+    // isConfirm: true -> Gönderen (sender), theirProduct karşı tarafın ürünü
+    // isConfirm: false -> Alıcı (receiver), myProduct karşı tarafın ürünü
+    if (trade.isConfirm == true) {
+      return trade.theirProduct; // Gönderen ise theirProduct karşı tarafın ürünü
+    } else if (trade.isConfirm == false) {
+      return trade.myProduct; // Alıcı ise myProduct karşı tarafın ürünü
+    }
+    // isConfirm null ise varsayılan olarak theirProduct'ı kullan
+    return trade.theirProduct;
+  }
+
+  /// isConfirm alanına göre benim ürünümün etiketini belirle
+  String _getMyProductLabel(UserTrade trade) {
+    if (trade.isConfirm == true) {
+      return 'Benim Ürünüm (Gönderen)';
+    } else if (trade.isConfirm == false) {
+      return 'Benim Ürünüm (Alıcı)';
+    }
+    return 'Benim Ürünüm';
+  }
+
+  /// isConfirm alanına göre karşı tarafın ürününün etiketini belirle
+  String _getTheirProductLabel(UserTrade trade) {
+    if (trade.isConfirm == true) {
+      return 'Karşı Taraf (Alıcı)';
+    } else if (trade.isConfirm == false) {
+      return 'Karşı Taraf (Gönderen)';
+    }
+    return 'Karşı Taraf';
   }
 
   Widget _buildFavoritesTab() {
@@ -1343,55 +1470,59 @@ class _TradeViewState extends State<TradeView>
         });
         
         if (result['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.favorite_border, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text(result['message']),
-                ],
+          if (_scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.favorite_border, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(result['message']),
+                  ],
+                ),
+                backgroundColor: Color(0xFFF56565),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                action: SnackBarAction(
+                  label: 'Tamam',
+                  textColor: Colors.white,
+                  onPressed: () {},
+                ),
               ),
-              backgroundColor: Color(0xFFF56565),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              action: SnackBarAction(
-                label: 'Tamam',
-                textColor: Colors.white,
-                onPressed: () {},
-              ),
-            ),
-          );
+            );
+          }
         } else {
           // 417 hatası veya diğer hatalar için API'den gelen mesajı göster
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.error_outline, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text(result['message']),
-                ],
+          if (_scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(result['message']),
+                  ],
+                ),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                action: SnackBarAction(
+                  label: 'Tamam',
+                  textColor: Colors.white,
+                  onPressed: () {},
+                ),
               ),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              action: SnackBarAction(
-                label: 'Tamam',
-                textColor: Colors.white,
-                onPressed: () {},
-              ),
-            ),
-          );
+            );
+          }
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
           SnackBar(
             content: Row(
               children: [
@@ -1642,12 +1773,14 @@ class _TradeViewState extends State<TradeView>
           ElevatedButton(
             onPressed: () async {
               if (selectedStatusId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Lütfen bir durum seçin'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
+                if (mounted && _scaffoldMessenger != null) {
+                  _scaffoldMessenger!.showSnackBar(
+                    SnackBar(
+                      content: Text('Lütfen bir durum seçin'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
                 return;
               }
               
@@ -1785,22 +1918,26 @@ class _TradeViewState extends State<TradeView>
               ElevatedButton(
                 onPressed: () async {
                   if (rating == 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Lütfen bir puan verin'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
+                    if (mounted && _scaffoldMessenger != null) {
+                      _scaffoldMessenger!.showSnackBar(
+                        SnackBar(
+                          content: Text('Lütfen bir puan verin'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
                     return;
                   }
                   
                   if (commentController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Lütfen bir yorum yazın'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
+                    if (mounted && _scaffoldMessenger != null) {
+                      _scaffoldMessenger!.showSnackBar(
+                        SnackBar(
+                          content: Text('Lütfen bir yorum yazın'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
                     return;
                   }
                   
@@ -1832,9 +1969,11 @@ class _TradeViewState extends State<TradeView>
       final userToken = await userService.getUserToken();
       
       if (userToken == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kullanici token\'i bulunamadi')),
-        );
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(content: Text('Kullanici token\'i bulunamadi')),
+          );
+        }
         return false;
       }
 
@@ -1842,8 +1981,8 @@ class _TradeViewState extends State<TradeView>
       Logger.info('Durum guncelleme oncesi takas kontrolu yapiliyor...', tag: 'TradeView');
       final checkResult = await tradeViewModel.checkTradeStatus(
         userToken: userToken,
-        senderProductID: trade.myProduct?.productID ?? 0,
-        receiverProductID: trade.theirProduct?.productID ?? 0,
+        senderProductID: _getMyProduct(trade)?.productID ?? 0,
+        receiverProductID: _getTheirProduct(trade)?.productID ?? 0,
       );
 
       if (checkResult != null && checkResult.data != null) {
@@ -1852,33 +1991,39 @@ class _TradeViewState extends State<TradeView>
         
         // API'den gelen bilgilere gore islem yap
         if (!data.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data.message),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(data.message),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
           return false;
         }
         
         // Butonlarin gosterilip gosterilmeyecegini kontrol et
         if (!data.showButtons) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data.message),
-              backgroundColor: Colors.blue,
-            ),
-          );
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(data.message),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
           return false;
         }
       } else {
         Logger.warning('Takas kontrolu basarisiz', tag: 'TradeView');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Takas durumu kontrol edilemedi. Lutfen tekrar deneyin.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            const SnackBar(
+              content: Text('Takas durumu kontrol edilemedi. Lutfen tekrar deneyin.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return false;
       }
 
@@ -1889,29 +2034,35 @@ class _TradeViewState extends State<TradeView>
       );
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Takas durumu basariyla guncellendi'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text('Takas durumu basariyla guncellendi'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
         return true;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(tradeViewModel.errorMessage ?? 'Durum guncellenirken hata olustu'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text(tradeViewModel.errorMessage ?? 'Durum guncellenirken hata olustu'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return false;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Durum guncellenirken hata olustu: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
+          SnackBar(
+            content: Text('Durum guncellenirken hata olustu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return false;
     }
   }
@@ -1940,10 +2091,13 @@ class _TradeViewState extends State<TradeView>
         // Her trade için takas kontrolü yap (paralel olarak, daha hızlı)
         final futures = tradesToCheck.map((trade) async {
           try {
-            final senderProductID = trade.myProduct?.productID ?? 0;
-            final receiverProductID = trade.theirProduct?.productID ?? 0;
+            final senderProductID = _getMyProduct(trade)?.productID ?? 0;
+            final receiverProductID = _getTheirProduct(trade)?.productID ?? 0;
+            
+            Logger.debug('Trade #${trade.offerID} için kontrol: senderProductID=$senderProductID, receiverProductID=$receiverProductID', tag: 'TradeView');
             
             if (senderProductID == 0 || receiverProductID == 0) {
+              Logger.debug('Trade #${trade.offerID} için ürün ID\'leri eksik, kontrol atlanıyor', tag: 'TradeView');
               return;
             }
             
@@ -1957,6 +2111,8 @@ class _TradeViewState extends State<TradeView>
               final data = checkResult.data!;
               _tradeShowButtonsMap[trade.offerID] = data.showButtons;
               
+              Logger.debug('Trade #${trade.offerID} kontrolü tamamlandı: showButtons=${data.showButtons}, message="${data.message}"', tag: 'TradeView');
+              
               // UI'ı güncelle (mounted kontrolü ile)
               if (mounted) {
                 setState(() {
@@ -1965,7 +2121,7 @@ class _TradeViewState extends State<TradeView>
               }
             }
           } catch (e) {
-            // Hata durumunda sessizce devam et
+            Logger.error('Trade #${trade.offerID} kontrolünde hata: $e', tag: 'TradeView');
           }
         });
 
@@ -2015,8 +2171,8 @@ class _TradeViewState extends State<TradeView>
         
         try {
           // Product ID'leri kontrol et
-          final senderProductID = trade.myProduct?.productID ?? 0;
-          final receiverProductID = trade.theirProduct?.productID ?? 0;
+          final senderProductID = _getMyProduct(trade)?.productID ?? 0;
+          final receiverProductID = _getTheirProduct(trade)?.productID ?? 0;
           
           // Eğer product ID'ler geçersizse API çağrısı yapma
           if (senderProductID == 0 || receiverProductID == 0) {
@@ -2081,9 +2237,11 @@ class _TradeViewState extends State<TradeView>
       final userToken = await userService.getUserToken();
       
       if (userToken == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kullanici token\'i bulunamadi')),
-        );
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(content: Text('Kullanici token\'i bulunamadi')),
+          );
+        }
         return false;
       }
 
@@ -2091,8 +2249,8 @@ class _TradeViewState extends State<TradeView>
       Logger.info('Takas tamamlama oncesi takas kontrolu yapiliyor...', tag: 'TradeView');
       final checkResult = await tradeViewModel.checkTradeStatus(
         userToken: userToken,
-        senderProductID: trade.myProduct?.productID ?? 0,
-        receiverProductID: trade.theirProduct?.productID ?? 0,
+        senderProductID: _getMyProduct(trade)?.productID ?? 0,
+        receiverProductID: _getTheirProduct(trade)?.productID ?? 0,
       );
 
       if (checkResult != null && checkResult.data != null) {
@@ -2101,49 +2259,60 @@ class _TradeViewState extends State<TradeView>
         
         // API'den gelen bilgilere gore islem yap
         if (!data.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data.message),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(data.message),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
           return false;
         }
         
         // Butonlarin gosterilip gosterilmeyecegini kontrol et
         if (!data.showButtons) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data.message),
-              backgroundColor: Colors.blue,
-            ),
-          );
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(data.message),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
           return false;
         }
       } else {
         Logger.warning('Takas kontrolu basarisiz', tag: 'TradeView');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Takas durumu kontrol edilemedi. Lutfen tekrar deneyin.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            const SnackBar(
+              content: Text('Takas durumu kontrol edilemedi. Lutfen tekrar deneyin.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return false;
       }
 
       // Karsi tarafin kullanici ID'sini bul
       int? toUserID;
-      if (trade.myProduct != null && trade.theirProduct != null) {
-        // Eger benim urunum varsa, karsi tarafin urununun sahibi
-        toUserID = trade.theirProduct!.userID;
-      } else if (trade.theirProduct != null) {
-        toUserID = trade.theirProduct!.userID;
+      final myProduct = _getMyProduct(trade);
+      final theirProduct = _getTheirProduct(trade);
+      
+      if (myProduct != null && theirProduct != null) {
+        // Karsi tarafin urununun sahibi
+        toUserID = theirProduct.userID;
+      } else if (theirProduct != null) {
+        toUserID = theirProduct.userID;
       }
 
       if (toUserID == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Karsi taraf bilgisi bulunamadi')),
-        );
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(content: Text('Karsi taraf bilgisi bulunamadi')),
+          );
+        }
         return false;
       }
 
@@ -2157,22 +2326,24 @@ class _TradeViewState extends State<TradeView>
       );
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Takas basariyla tamamlandi ve yorum gonderildi'),
-              ],
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Takas basariyla tamamlandi ve yorum gonderildi'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+          );
+        }
         
         // Takaslari yeniden yukle
         final userId = await _authService.getCurrentUserId();
@@ -2190,24 +2361,207 @@ class _TradeViewState extends State<TradeView>
         }
         return true;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanirken hata olustu'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanirken hata olustu'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return false;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Takas tamamlanirken hata olustu: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
+          SnackBar(
+            content: Text('Takas tamamlanirken hata olustu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return false;
     }
   }
 
+  /// Debug bilgisi göster
+  void _showDebugInfo() {
+    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    final trades = tradeViewModel.userTrades;
+    
+    String debugInfo = '🔍 DEBUG BİLGİSİ\n\n';
+    debugInfo += '📊 Toplam Takas Sayısı: ${trades.length}\n\n';
+    
+    for (int i = 0; i < trades.length; i++) {
+      final trade = trades[i];
+      debugInfo += '📋 Trade #${i + 1}:\n';
+      debugInfo += '  • OfferID: ${trade.offerID}\n';
+      debugInfo += '  • StatusID: ${trade.statusID}\n';
+      debugInfo += '  • StatusTitle: ${trade.statusTitle}\n';
+      debugInfo += '  • CancelDesc: "${trade.cancelDesc}"\n';
+      debugInfo += '  • isConfirm: ${trade.isConfirm}\n';
+      debugInfo += '\n';
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Debug Bilgisi'),
+        content: SingleChildScrollView(
+          child: Text(debugInfo),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Kapat'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Reddetme sebebi dialog'u göster
+  void _showRejectReasonDialog(UserTrade trade) {
+    final TextEditingController reasonController = TextEditingController();
+    
+    Logger.info('❌ Reddetme sebebi dialog\'u açılıyor - Trade #${trade.offerID}', tag: 'TradeView');
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.cancel, color: Colors.red, size: 24),
+            SizedBox(width: 8),
+            Text('Takası Reddet'),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Reddetme sebebinizi yazın:',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Reddetme sebebinizi buraya yazın...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.red, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) {
+                if (mounted && _scaffoldMessenger != null) {
+                  _scaffoldMessenger!.showSnackBar(
+                    SnackBar(
+                      content: Text('Lütfen reddetme sebebinizi yazın'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+                return;
+              }
+              
+              Navigator.pop(context);
+              
+              // Reddetme işlemini gerçekleştir
+              await _rejectTradeWithReason(trade, reason);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Reddet'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Sebep ile birlikte takası reddet
+  Future<void> _rejectTradeWithReason(UserTrade trade, String reason) async {
+    try {
+      final userToken = await _authService.getToken();
+      
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('UserToken bulunamadı', tag: 'TradeView');
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(content: Text('Oturum bilgisi bulunamadı')),
+          );
+        }
+        return;
+      }
+      
+      if (!mounted) return;
+      final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+      
+      Logger.info('❌ Takas reddediliyor - Trade #${trade.offerID}, Sebep: $reason', tag: 'TradeView');
+      
+      // confirmTrade metodunu isConfirm: false ile çağır (reddetme)
+      final success = await tradeViewModel.confirmTrade(
+        userToken: userToken,
+        offerID: trade.offerID,
+        isConfirm: false, // Reddetme
+        cancelDesc: reason, // Reddetme sebebi
+      );
+      
+      if (success) {
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text('Takas reddedildi'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        
+        // UI'ı yenile
+        final userId = await _authService.getCurrentUserId();
+        if (userId != null) {
+          await tradeViewModel.loadUserTrades(int.parse(userId));
+        }
+      } else {
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text(tradeViewModel.errorMessage ?? 'Takas reddedilemedi'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
+          SnackBar(
+            content: Text('Bir hata oluştu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
 } 

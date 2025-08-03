@@ -369,7 +369,7 @@ class TradeService {
         // Debug: Her trade'i logla
         if (response.data?.data?.trades != null) {
           for (var trade in response.data!.data!.trades!) {
-            Logger.debug('Trade: offerID=${trade.offerID}, statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: _tag);
+            Logger.debug('Trade: offerID=${trade.offerID}, statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, cancelDesc="${trade.cancelDesc}"', tag: _tag);
           }
         }
       } else {

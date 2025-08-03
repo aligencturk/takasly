@@ -164,32 +164,65 @@ class _TradeDetailViewState extends State<TradeDetailView> {
         children: [
           // Takas Durumu Kartı
           _buildStatusCard(tradeDetail),
-          
+
+          // Reddetme sebebi gösterimi (statusID=3 veya 8 ve sebep varsa)
+          if ((tradeDetail.statusID == 3 || tradeDetail.statusID == 8) &&
+              tradeDetail.cancelDesc.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red[200]!),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.cancel_outlined, color: Colors.red[600], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reddetme Sebebi:',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.red[700],
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            tradeDetail.cancelDesc,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.red[700],
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           const SizedBox(height: 12),
-          
+
           // Teslimat Bilgileri
           _buildDeliveryCard(tradeDetail),
-          
+
           const SizedBox(height: 12),
-          
-          // Gönderen Kullanıcı ve Ürünü
-          _buildParticipantCard(
-            'Gönderen',
-            tradeDetail.sender,
-            Colors.blue,
-          ),
-          
+
+          // Takas Edilen Ürünler
+          _buildTradeProductsCard(tradeDetail),
+
           const SizedBox(height: 12),
-          
-          // Alıcı Kullanıcı ve Ürünü
-          _buildParticipantCard(
-            'Alıcı',
-            tradeDetail.receiver,
-            Colors.green,
-          ),
-          
-          const SizedBox(height: 12),
-          
+
           // Takas Tarihleri
           _buildDatesCard(tradeDetail),
         ],
@@ -332,7 +365,7 @@ class _TradeDetailViewState extends State<TradeDetailView> {
     );
   }
 
-  Widget _buildParticipantCard(String title, TradeParticipant participant, Color color) {
+  Widget _buildTradeProductsCard(TradeDetail tradeDetail) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -356,18 +389,18 @@ class _TradeDetailViewState extends State<TradeDetailView> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: AppTheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.zero,
                 ),
                 child: Icon(
-                  Icons.person_outline,
-                  color: color,
+                  Icons.swap_horiz,
+                  color: AppTheme.primary,
                   size: 18,
                 ),
               ),
               const SizedBox(width: 10),
               Text(
-                title.toUpperCase(),
+                'TAKAS EDİLEN ÜRÜNLER',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
@@ -376,14 +409,63 @@ class _TradeDetailViewState extends State<TradeDetailView> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           
+          // Gönderen Kullanıcı ve Ürünü
+          _buildParticipantSection(
+            'Gönderen',
+            tradeDetail.sender,
+            Colors.blue,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Takas İkonu
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.zero,
+              ),
+              child: Icon(
+                Icons.swap_horiz,
+                color: AppTheme.primary,
+                size: 20,
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Alıcı Kullanıcı ve Ürünü
+          _buildParticipantSection(
+            'Alıcı',
+            tradeDetail.receiver,
+            Colors.green,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParticipantSection(String title, TradeParticipant participant, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.zero,
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           // Kullanıcı Bilgileri
           Row(
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: AppTheme.primary.withOpacity(0.1),
+                backgroundColor: color.withOpacity(0.1),
                 backgroundImage: participant.profilePhoto.isNotEmpty 
                     ? NetworkImage(participant.profilePhoto)
                     : null,
@@ -393,7 +475,7 @@ class _TradeDetailViewState extends State<TradeDetailView> {
                             ? participant.userName[0].toUpperCase()
                             : '?',
                         style: TextStyle(
-                          color: AppTheme.primary,
+                          color: color,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -410,6 +492,15 @@ class _TradeDetailViewState extends State<TradeDetailView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                     Text(
                       participant.userName,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -438,6 +529,8 @@ class _TradeDetailViewState extends State<TradeDetailView> {
       ),
     );
   }
+
+
 
   Widget _buildProductCard(TradeProduct product) {
     return Container(
@@ -691,4 +784,6 @@ class _TradeDetailViewState extends State<TradeDetailView> {
         return Icons.help;
     }
   }
+
+
 } 

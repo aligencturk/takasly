@@ -14,6 +14,7 @@ class TradeCard extends StatelessWidget {
   final Function(int)? onStatusChange;
   final bool? showButtons; // API'den gelen showButtons değeri
   final VoidCallback? onDetailTap; // Takas detayı için callback
+  final Function(UserTrade)? onReject; // Reddetme için callback
 
   const TradeCard({
     super.key,
@@ -23,6 +24,7 @@ class TradeCard extends StatelessWidget {
     this.onStatusChange,
     this.showButtons, // API'den gelen showButtons değeri
     this.onDetailTap, // Takas detayı için callback
+    this.onReject, // Reddetme için callback
   });
 
   String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
@@ -56,6 +58,190 @@ class TradeCard extends StatelessWidget {
       default:
         return 'Bilinmiyor';
     }
+  }
+
+  /// API'den gelen mesajı al
+  String _getApiMessage(TradeViewModel? tradeViewModel) {
+    if (tradeViewModel == null) {
+      Logger.debug('TradeViewModel null, API mesajı alınamıyor', tag: 'TradeCard');
+      return '';
+    }
+    
+    final myProduct = _getMyProduct();
+    final theirProduct = _getTheirProduct();
+    
+    if (myProduct == null || theirProduct == null) {
+      Logger.debug('Ürün bilgileri eksik, API mesajı alınamıyor', tag: 'TradeCard');
+      return '';
+    }
+    
+    Logger.debug('Cache kontrolü: myProductID=${myProduct.productID}, theirProductID=${theirProduct.productID}', tag: 'TradeCard');
+    
+    // Cache key'i oluştur ve log'la
+    final cacheKey = '${myProduct.productID}_${theirProduct.productID}';
+    Logger.debug('Cache key oluşturuldu: $cacheKey', tag: 'TradeCard');
+    
+    // Cache'den mesajı al
+    final cachedStatus = tradeViewModel.getCachedTradeStatus(
+      myProduct.productID, 
+      theirProduct.productID
+    );
+    
+    Logger.debug('Cache sonucu: cachedStatus=${cachedStatus != null ? "mevcut" : "null"}', tag: 'TradeCard');
+    
+    if (cachedStatus != null) {
+      Logger.debug('Cache içeriği: message="${cachedStatus.message}", showButtons=${cachedStatus.showButtons}', tag: 'TradeCard');
+      
+      if (cachedStatus.message.isNotEmpty) {
+        Logger.debug('API mesajı kullanılıyor: ${cachedStatus.message}', tag: 'TradeCard');
+        return cachedStatus.message;
+      } else {
+        Logger.debug('Cache\'de mesaj boş', tag: 'TradeCard');
+      }
+    } else {
+      Logger.debug('Cache\'de veri bulunamadı', tag: 'TradeCard');
+    }
+    
+    // Cache'de yoksa varsayılan mesaj
+    return '';
+  }
+
+  /// API mesajını gösteren widget
+  Widget _buildApiMessageWidget(BuildContext context, TradeViewModel? tradeViewModel) {
+    final apiMessage = _getApiMessage(tradeViewModel);
+    
+    if (apiMessage.isEmpty) {
+      // API mesajı yoksa varsayılan mesaj göster
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: Colors.orange.withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.pending_actions,
+                color: Colors.orange,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Karşı tarafın teklifini bekliyorsunuz',
+                  style: TextStyle(
+                    color: Colors.orange[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // API'den gelen mesajı göster
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: Colors.blue.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: Colors.blue,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                apiMessage,
+                style: TextStyle(
+                  color: Colors.blue[700],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Reddetme sebebini gösteren widget
+  Widget _buildRejectionReasonWidget(BuildContext context) {
+    Logger.debug('🔍 _buildRejectionReasonWidget çağrıldı - statusID: ${trade.statusID}, cancelDesc: "${trade.cancelDesc}"', tag: 'TradeCard');
+    Logger.debug('🔍 cancelDesc tipi: ${trade.cancelDesc.runtimeType}', tag: 'TradeCard');
+    Logger.debug('🔍 cancelDesc == null: ${trade.cancelDesc == null}', tag: 'TradeCard');
+    Logger.debug('🔍 cancelDesc.isEmpty: ${trade.cancelDesc?.isEmpty}', tag: 'TradeCard');
+    Logger.debug('🔍 cancelDesc.trim().isEmpty: ${trade.cancelDesc?.trim().isEmpty}', tag: 'TradeCard');
+    
+    if (trade.cancelDesc == null || trade.cancelDesc!.isEmpty || trade.cancelDesc!.trim().isEmpty) {
+      Logger.debug('❌ Reddetme sebebi null, boş veya sadece boşluk, widget gösterilmeyecek', tag: 'TradeCard');
+      return Container(); // Reddetme sebebi yoksa boş container döndür
+    }
+    
+    Logger.debug('✅ Reddetme sebebi gösteriliyor: "${trade.cancelDesc}"', tag: 'TradeCard');
+    
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.red[50],
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.red[200]!),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.cancel_outlined,
+              color: Colors.red[600],
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reddetme Sebebi:',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.red[700],
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    trade.cancelDesc!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.red[700],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Color _getStatusColor(int statusId) {
@@ -104,7 +290,61 @@ class TradeCard extends StatelessWidget {
     }
   }
 
+  /// isConfirm alanına göre benim ürünümü belirle
+  TradeProduct? _getMyProduct() {
+    // isConfirm: true -> Gönderen (sender), myProduct kullanıcının ürünü
+    // isConfirm: false -> Alıcı (receiver), myProduct kullanıcının ürünü
+    TradeProduct? result;
+    if (trade.isConfirm == true) {
+      result = trade.myProduct; // Gönderen ise myProduct benim ürünüm
+    } else if (trade.isConfirm == false) {
+      result = trade.theirProduct; // Alıcı ise myProduct benim ürünüm
+    } else {
+      // isConfirm null ise varsayılan olarak myProduct'ı kullan
+      result = trade.myProduct;
+    }
+    
+    Logger.debug('_getMyProduct: isConfirm=${trade.isConfirm}, result.productID=${result?.productID}', tag: 'TradeCard');
+    return result;
+  }
 
+  /// isConfirm alanına göre karşı tarafın ürününü belirle
+  TradeProduct? _getTheirProduct() {
+    // isConfirm: true -> Gönderen (sender), theirProduct karşı tarafın ürünü
+    // isConfirm: false -> Alıcı (receiver), myProduct karşı tarafın ürünü
+    TradeProduct? result;
+    if (trade.isConfirm == true) {
+      result = trade.theirProduct; // Gönderen ise theirProduct karşı tarafın ürünü
+    } else if (trade.isConfirm == false) {
+      result = trade.myProduct; // Alıcı ise myProduct karşı tarafın ürünü
+    } else {
+      // isConfirm null ise varsayılan olarak theirProduct'ı kullan
+      result = trade.theirProduct;
+    }
+    
+    Logger.debug('_getTheirProduct: isConfirm=${trade.isConfirm}, result.productID=${result?.productID}', tag: 'TradeCard');
+    return result;
+  }
+
+  /// isConfirm alanına göre benim ürünümün etiketini belirle
+  String _getMyProductLabel() {
+    if (trade.isConfirm == true) {
+      return 'Benim Ürünüm (Gönderen)';
+    } else if (trade.isConfirm == false) {
+      return 'Benim Ürünüm (Alıcı)';
+    }
+    return 'Benim Ürünüm';
+  }
+
+  /// isConfirm alanına göre karşı tarafın ürününün etiketini belirle
+  String _getTheirProductLabel() {
+    if (trade.isConfirm == true) {
+      return 'Karşı Tarafın Ürünü (Alıcı)';
+    } else if (trade.isConfirm == false) {
+      return 'Karşı Tarafın Ürünü (Gönderen)';
+    }
+    return 'Karşı Tarafın Ürünü';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,26 +356,26 @@ class TradeCard extends StatelessWidget {
     final isSender = trade.isConfirm == true;
     final isReceiver = trade.isConfirm == false;
     
-    Logger.debug('🔄 TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, isSender=$isSender, isReceiver=$isReceiver, currentUserId=$currentUserId, myProduct.userID=${trade.myProduct?.userID}, theirProduct.userID=${trade.theirProduct?.userID}, isConfirm=${trade.isConfirm}, showButtons=$showButtons', tag: 'TradeCard');
+    Logger.debug('TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, isSender=$isSender, isReceiver=$isReceiver, currentUserId=$currentUserId, myProduct.userID=${trade.myProduct?.userID}, theirProduct.userID=${trade.theirProduct?.userID}, isConfirm=${trade.isConfirm}, showButtons=$showButtons', tag: 'TradeCard');
     
     // Debug için ek kontroller
-    Logger.debug('🔍 isConfirm kontrolleri: isConfirm=${trade.isConfirm} (${trade.isConfirm.runtimeType}), isSender=$isSender, isReceiver=$isReceiver', tag: 'TradeCard');
-    Logger.debug('🔍 showButtons kontrolu: showButtons=$showButtons', tag: 'TradeCard');
+    Logger.debug('isConfirm kontrolleri: isConfirm=${trade.isConfirm} (${trade.isConfirm.runtimeType}), isSender=$isSender, isReceiver=$isReceiver', tag: 'TradeCard');
+    Logger.debug('showButtons kontrolu: showButtons=$showButtons', tag: 'TradeCard');
     
     // Buton gösterme mantığını log'la
     if (showButtons == true) {
-      Logger.info('✅ Trade #${trade.offerID} icin butonlar gosteriliyor (showButtons=true, isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
+      Logger.info('Trade #${trade.offerID} icin butonlar gosteriliyor (showButtons=true, isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
     } else if (showButtons == false) {
-      Logger.info('❌ Trade #${trade.offerID} icin butonlar gizleniyor (showButtons=false, isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
+      Logger.info('Trade #${trade.offerID} icin butonlar gizleniyor (showButtons=false, isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
     } else {
-      Logger.info('⚠️ Trade #${trade.offerID} icin showButtons null, eski mantik kullaniliyor (isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
+      Logger.info('Trade #${trade.offerID} icin showButtons null, eski mantik kullaniliyor (isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
     }
     
     // Durum değiştirme butonu kontrolü
     if (trade.statusID == 2) {
-      Logger.info('🔄 Trade #${trade.offerID} icin durum degistirme butonu gosterilecek (statusID=2: Onaylandi, showButtons: $showButtons)', tag: 'TradeCard');
+      Logger.info('Trade #${trade.offerID} icin durum degistirme butonu gosterilecek (statusID=2: Onaylandi, showButtons: $showButtons)', tag: 'TradeCard');
     } else if (trade.statusID == 1) {
-      Logger.info('🔄 Trade #${trade.offerID} icin onay/red butonlari kontrol ediliyor (statusID=1: Bekliyor, showButtons: $showButtons, isReceiver: $isReceiver, isSender: $isSender)', tag: 'TradeCard');
+      Logger.info('Trade #${trade.offerID} icin onay/red butonlari kontrol ediliyor (statusID=1: Bekliyor, showButtons: $showButtons, isReceiver: $isReceiver, isSender: $isSender)', tag: 'TradeCard');
     }
 
     return Consumer<TradeViewModel>(
@@ -168,12 +408,12 @@ class TradeCard extends StatelessWidget {
                       // Üst kısım - Ürün bilgileri
                       Row(
                         children: [
-                          // Benim ürünüm
+                          // Benim ürünüm (isConfirm'e göre belirlenir)
                           Expanded(
                             child: _buildProductInfo(
                               context,
-                              trade.myProduct,
-                              'Benim Ürünüm',
+                              _getMyProduct(),
+                              _getMyProductLabel(),
                               Colors.blue,
                             ),
                           ),
@@ -186,102 +426,85 @@ class TradeCard extends StatelessWidget {
                               size: 20,
                             ),
                           ),
-                          // Karşı tarafın ürünü
+                          // Karşı tarafın ürünü (isConfirm'e göre belirlenir)
                           Expanded(
                             child: _buildProductInfo(
                               context,
-                              trade.theirProduct,
-                              'Karşı Taraf',
+                              _getTheirProduct(),
+                              _getTheirProductLabel(),
                               Colors.green,
                             ),
                           ),
                         ],
                       ),
-                  const SizedBox(height: 12),
-                  
-                  // Orta kısım - Takas durumu
-                  Row(
-                    children: [
-                      Icon(
-                        _getStatusIcon(trade.statusID),
-                        color: _getStatusColor(trade.statusID),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _getStatusText(trade.statusID, tradeViewModel: tradeViewModel),
-                        style: textTheme.bodySmall?.copyWith(
-                          color: _getStatusColor(trade.statusID),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '#${trade.offerID}',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Alt kısım - Aksiyon butonları
-                  // API'den gelen showButtons değerine göre butonları göster
-                  
-                  // Onaylanmış takaslar için durum değiştirme butonu (statusID=2)
-                  if (trade.statusID == 2)
-                    _buildStatusChangeButton(context)
-                  // Teslim edildi durumu için yorum butonu (statusID=4)
-                  else if (trade.statusID == 4)
-                    _buildReviewButton(context)
-                  // Bekleyen takaslar için onay/red butonları (statusID=1)
-                  else if (trade.statusID == 1)
-                    // API'den showButtons değeri gelmişse, sadece true olduğunda butonları göster
-                    if (showButtons == true)
-                      _buildActionButtons(context)
-                    // API'den showButtons false gelmişse, hiçbir buton gösterme
-                    else if (showButtons == false)
-                      Container() // Boş container, hiçbir şey gösterme
-                    // API'den showButtons değeri gelmemişse (null), eski mantığı kullan
-                    else if (showButtons == null && isReceiver)
-                      _buildActionButtons(context)
-                    // API'den showButtons null gelmişse ve gönderen ise, mesaj göster
-                    else if (showButtons == null && isSender)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: Colors.orange.withOpacity(0.3),
+                      const SizedBox(height: 12),
+                      
+                      // Orta kısım - Takas durumu
+                      Row(
+                        children: [
+                          Icon(
+                            _getStatusIcon(trade.statusID),
+                            color: _getStatusColor(trade.statusID),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _getStatusText(trade.statusID, tradeViewModel: tradeViewModel),
+                            style: textTheme.bodySmall?.copyWith(
+                              color: _getStatusColor(trade.statusID),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.pending_actions,
-                                color: Colors.orange,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  'Karşı tarafın teklifini bekliyorsunuz',
-                                  style: TextStyle(
-                                    color: Colors.orange[700],
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const Spacer(),
+                          Text(
+                            '#${trade.offerID}',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
+                        ],
                       ),
+                      
+                      // Reddetme sebebi gösterimi (statusID=3 veya 8 ise)
+                      if ((trade.statusID == 3 || trade.statusID == 8) && trade.cancelDesc?.isNotEmpty == true) ...[
+                        Builder(
+                          builder: (context) {
+                            Logger.debug('🔍 Reddetme sebebi widget\'ı gösteriliyor - statusID: ${trade.statusID}, cancelDesc: "${trade.cancelDesc}"', tag: 'TradeCard');
+                            Logger.debug('🔍 Trade objesi: offerID=${trade.offerID}, statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeCard');
+                            Logger.debug('🔍 cancelDesc null mu?: ${trade.cancelDesc == null}', tag: 'TradeCard');
+                            Logger.debug('🔍 cancelDesc boş mu?: ${trade.cancelDesc?.isEmpty}', tag: 'TradeCard');
+                            Logger.debug('🔍 cancelDesc uzunluğu: ${trade.cancelDesc?.length}', tag: 'TradeCard');
+                            return _buildRejectionReasonWidget(context);
+                          },
+                        ),
+                      ],
+                      
+                      // Alt kısım - Aksiyon butonları
+                      // API'den gelen showButtons değerine göre butonları göster
+                      
+                      // Onaylanmış takaslar için durum değiştirme butonu (statusID=2)
+                      if (trade.statusID == 2)
+                        _buildStatusChangeButton(context)
+                      // Teslim edildi durumu için yorum butonu (statusID=4)
+                      else if (trade.statusID == 4)
+                        _buildReviewButton(context)
+                      // Bekleyen takaslar için onay/red butonları (statusID=1)
+                      else if (trade.statusID == 1) ...[
+                        // API'den showButtons değeri gelmişse, sadece true olduğunda butonları göster
+                        if (showButtons == true)
+                          _buildActionButtons(context)
+                        // API'den showButtons false gelmişse, hiçbir buton gösterme
+                        else if (showButtons == false)
+                          Container() // Boş container, hiçbir şey gösterme
+                        // API'den showButtons değeri gelmemişse (null), eski mantığı kullan
+                        else if (showButtons == null && isReceiver)
+                          _buildActionButtons(context)
+                        // API'den showButtons null gelmişse ve gönderen ise, mesaj göster
+                        else if (showButtons == null && isSender)
+                          _buildApiMessageWidget(context, tradeViewModel),
+                      ],
                     ],
                   ),
                 ),
@@ -377,16 +600,26 @@ class TradeCard extends StatelessWidget {
                   ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
-          product?.productTitle ?? 'Ürün bilgisi yok',
+          product?.productTitle ?? 'Ürün bulunamadı',
           style: textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
+        if (product?.productCondition != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            product!.productCondition,
+            style: textTheme.bodySmall?.copyWith(
+              color: Colors.grey[600],
+              fontSize: 10,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -397,10 +630,8 @@ class TradeCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _confirmTrade(context, true),
-              icon: const Icon(Icons.check, size: 16),
-              label: const Text('Onayla', style: TextStyle(fontSize: 12)),
+            child: ElevatedButton(
+              onPressed: () => _confirmTrade(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -409,20 +640,32 @@ class TradeCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
+              child: const Text(
+                'Onayla',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _confirmTrade(context, false),
-              icon: const Icon(Icons.close, size: 16),
-              label: const Text('Reddet', style: TextStyle(fontSize: 12)),
+            child: ElevatedButton(
+              onPressed: () => _rejectTrade(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              child: const Text(
+                'Reddet',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -432,226 +675,26 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmTrade(BuildContext context, bool isConfirm) async {
-    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
-    
-    Logger.info(
-      'Takas onaylama işlemi başlatılıyor... OfferID: ${trade.offerID}, Onay: $isConfirm',
-      tag: 'TradeCard',
-    );
-
-    // Önce takas kontrolü API'sini çağır
-    final userService = UserService();
-    final userToken = await userService.getUserToken();
-    
-    if (userToken == null || userToken.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Oturum bilgisi bulunamadi. Lutfen tekrar giris yapin.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Takas kontrolü yap
-    Logger.info('Takas kontrolu API\'si cagriliyor...', tag: 'TradeCard');
-    final checkResult = await tradeViewModel.checkTradeStatus(
-      userToken: userToken,
-      senderProductID: trade.myProduct?.productID ?? 0,
-      receiverProductID: trade.theirProduct?.productID ?? 0,
-    );
-
-    if (checkResult != null && checkResult.data != null) {
-      final data = checkResult.data!;
-      Logger.info('Takas kontrolu sonucu: success=${data.success}, isSender=${data.isSender}, isReceiver=${data.isReceiver}, showButtons=${data.showButtons}, message=${data.message}', tag: 'TradeCard');
-      
-      // API'den gelen bilgilere gore islem yap
-      if (!data.success) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data.message),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-      
-      // Butonlarin gosterilip gosterilmeyecegini kontrol et
-      if (!data.showButtons) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data.message),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        }
-        return;
-      }
-    } else {
-      Logger.warning('Takas kontrolu basarisiz', tag: 'TradeCard');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Takas durumu kontrol edilemedi. Lutfen tekrar deneyin.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    String? cancelDesc;
-    if (!isConfirm) {
-      // Reddetme durumunda açıklama iste
-      cancelDesc = await _showCancelDialog(context);
-      if (cancelDesc == null) return; // Kullanıcı iptal etti
-    }
-
-    final success = await tradeViewModel.confirmTrade(
-      userToken: userToken,
-      offerID: trade.offerID,
-      isConfirm: isConfirm,
-      cancelDesc: cancelDesc,
-    );
-
-    if (success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                isConfirm ? Icons.check_circle : Icons.cancel,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isConfirm 
-                    ? 'Takas basariyla onaylandi' 
-                    : 'Takas reddedildi',
-              ),
-            ],
-          ),
-          backgroundColor: isConfirm ? Colors.green : Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 8),
-              Text(
-                tradeViewModel.errorMessage ?? 'Islem basarisiz oldu',
-              ),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<String?> _showCancelDialog(BuildContext context) async {
-    final TextEditingController controller = TextEditingController();
-    
-    return showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Reddetme Nedeni'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Lütfen takası reddetme nedeninizi belirtin:',
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: 'Reddetme nedeninizi yazın...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('İptal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (controller.text.trim().isNotEmpty) {
-                  Navigator.of(context).pop(controller.text.trim());
-                }
-              },
-              child: const Text('Reddet'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Durum değiştirme butonu
   Widget _buildStatusChangeButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: Container(
+      child: SizedBox(
         width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF10B981), Color(0xFF059669)],
-          ),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0xFF10B981).withOpacity(0.3),
-              blurRadius: 8,
-              offset: Offset(0, 4),
+        child: ElevatedButton(
+          onPressed: () => _changeStatus(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _showStatusChangeDialog(context),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.update, color: Colors.white, size: 16),
-                  SizedBox(width: 6),
-                  Text(
-                    'Durum Değiştir',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          child: const Text(
+            'Durum Değiştir',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -659,47 +702,26 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  /// Yorum yapma butonu
   Widget _buildReviewButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: Container(
+      child: SizedBox(
         width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFF6B35), Color(0xFFE55A2B)],
-          ),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0xFFFF6B35).withOpacity(0.3),
-              blurRadius: 8,
-              offset: Offset(0, 4),
+        child: ElevatedButton(
+          onPressed: () => _completeTradeWithReview(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _showReviewDialog(context),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.star, color: Colors.white, size: 16),
-                  SizedBox(width: 6),
-                  Text(
-                    'Yorum Yap',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          child: const Text(
+            'Takası Tamamla ve Değerlendir',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -707,23 +729,43 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  /// Durum değiştirme dialog'u
-  void _showStatusChangeDialog(BuildContext context) {
-    // TradeView'daki dropdown dialog'u çağır
+  void _confirmTrade(BuildContext context) {
+    Logger.info('Trade #${trade.offerID} onaylanıyor...', tag: 'TradeCard');
+    
+    // Bu metod sadece buton gösterimi için, gerçek işlem TradeView'da yapılıyor
+    // Burada sadece log atıyoruz
+    Logger.debug('Trade onaylama butonu tıklandı, işlem TradeView\'da yapılacak', tag: 'TradeCard');
+    
     if (onStatusChange != null) {
-      // TradeView'daki _showStatusChangeDialog metodunu çağırmak için
-      // onStatusChange callback'ini kullanarak TradeView'a sinyal gönder
-      // Mevcut durumu gönder, TradeView dropdown'ı açacak
+      onStatusChange!(2); // Onaylandı durumu
+    }
+  }
+
+  void _rejectTrade(BuildContext context) {
+    Logger.info('Trade #${trade.offerID} reddediliyor...', tag: 'TradeCard');
+    
+    // Eğer onReject callback'i varsa onu kullan (reddetme sebebi dialog'u için)
+    if (onReject != null) {
+      onReject!(trade);
+    } else if (onStatusChange != null) {
+      // Eski yöntem (geriye uyumluluk için)
+      onStatusChange!(3); // Reddedildi durumu
+    }
+  }
+
+  void _changeStatus(BuildContext context) {
+    Logger.info('Trade #${trade.offerID} durumu değiştiriliyor...', tag: 'TradeCard');
+    
+    if (onStatusChange != null) {
       onStatusChange!(trade.statusID);
     }
   }
 
-  /// Yorum yapma dialog'u
-  void _showReviewDialog(BuildContext context) {
-    // TradeView'daki yorum dialog'unu çağır
-    if (onStatusChange != null) {
-      // StatusID 4 (Teslim Edildi) için yorum dialog'unu aç
-      onStatusChange!(4); // TradeView'da yorum dialog'u açılacak
-    }
+  void _completeTradeWithReview(BuildContext context) {
+    Logger.info('Trade #${trade.offerID} tamamlanıyor ve değerlendiriliyor...', tag: 'TradeCard');
+    
+    // Bu metod sadece buton gösterimi için, gerçek işlem TradeView'da yapılıyor
+    // Burada sadece log atıyoruz
+    Logger.debug('Trade tamamlama butonu tıklandı, işlem TradeView\'da yapılacak', tag: 'TradeCard');
   }
 } 
