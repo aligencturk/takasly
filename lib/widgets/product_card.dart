@@ -118,16 +118,10 @@ class ProductCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.grey[200]!,
+            color: const Color.fromARGB(255, 209, 209, 209)!,
             width: 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+        
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,8 +230,8 @@ class ProductCard extends StatelessWidget {
                         Logger.debug('ProductCard - Rendering favorite icon for product: ${product.id}');
                         final isFavorite = productViewModel.isFavorite(product.id);
                         return Positioned(
-                          top: 8,
-                          right: 8,
+                          top: 6,
+                          right: 6,
                           child: GestureDetector(
                             onTap: () async {
                               final result = await productViewModel.toggleFavorite(product.id);
@@ -260,13 +254,27 @@ class ProductCard extends StatelessWidget {
                                 );
                               }
                             },
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: Icon(
-                                isFavorite ? Icons.favorite : Icons.favorite_border,
-                                key: ValueKey('favorite_${product.id}'),
-                                color: isFavorite ? Colors.red : Colors.grey[600],
-                                size: 22,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                                  key: ValueKey('favorite_${product.id}'),
+                                  color: isFavorite ? Colors.red : Colors.grey[600],
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
