@@ -18,6 +18,13 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
 @override
 void initState() {
   super.initState();
+  
+  // Klavyeyi hemen kapat ve focus'u engelle
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    FocusScope.of(context).unfocus();
+    // Tüm focus'ları temizle
+    FocusManager.instance.primaryFocus?.unfocus();
+  });
 
   _controller = VideoPlayerController.asset("assets/splash/powered_by_rivorya_yazilim.mp4")
     ..initialize().then((_) {
@@ -59,18 +66,33 @@ Future<void> _checkAuthAndNavigate() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _controller.value.isInitialized
-          ? SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _controller.value.size.width,
-                  height: _controller.value.size.height,
-                  child: VideoPlayer(_controller),
-                ),
-              ),
-            )
-          : const Center(child: CircularProgressIndicator()),
+      resizeToAvoidBottomInset: false,
+      body: Focus(
+        autofocus: false,
+        canRequestFocus: false,
+        child: GestureDetector(
+          onTap: () {
+            // Klavyeyi kapat
+            FocusScope.of(context).unfocus();
+          },
+          child: _controller.value.isInitialized
+              ? SizedBox.expand(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: _controller.value.size.width,
+                      height: _controller.value.size.height,
+                      child: Focus(
+                    autofocus: false,
+                    canRequestFocus: false,
+                    child: VideoPlayer(_controller),
+                  ),
+                    ),
+                  ),
+                )
+              : const Center(child: CircularProgressIndicator()),
+        ),
+      ),
     );
   }
 }

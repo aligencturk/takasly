@@ -2,135 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/user_viewmodel.dart';
-import '../../core/app_theme.dart'; // Yeni temayı import et
+import '../../core/app_theme.dart';
 
 class LoginView extends StatelessWidget {
   const LoginView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Yeni temadan stilleri al
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      // Arka plan rengini temadan al
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppTheme.background,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/auth/1.png'),
-            fit: BoxFit.cover,
+      body: Transform.translate(
+        offset: Offset(0, -MediaQuery.of(context).viewInsets.bottom * 0.5),
+        child: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/auth/1.png'),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Column(
-              children: [
-                const Spacer(flex: 20), // Üst kısım için çok daha fazla esnek boşluk
-                
-                // E-posta ve Şifre alanları ile Kayıt Ol/Şifremi Unuttum seçenekleri
-                const _EmailPasswordForm(),
-
-                const Spacer(flex: 2), // Orta boşluk
-                
-                // Alt kısımdaki butonlar
-                const _BottomButtons(),
-              ],
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Column(
+                children: [
+                  const Spacer(flex: 26),
+                  const _EmailPasswordForm(),
+                  const Spacer(flex: 3),
+                  const _BottomButtons(),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  // Sosyal medya butonları için yardımcı metod
-  Widget _buildSocialLoginButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 24),
-          const SizedBox(width: 12),
-          Text(label),
-        ],
-      ),
-    );
-  }
-
-  // Google ile giriş
-  void _handleGoogleLogin(BuildContext context) {
-    // TODO: Google ile giriş entegrasyonu
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google ile giriş özelliği yakında!')),
-    );
-  }
-
-  // Apple ile giriş
-  void _handleAppleLogin(BuildContext context) {
-    // TODO: Apple ile giriş entegrasyonu
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Apple ile giriş özelliği yakında!')),
-    );
-  }
-
-  // Test login
-  Future<void> _handleTestLogin(BuildContext context, String testUser) async {
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-
-    String email, password;
-    if (testUser == 'ali') {
-      email = 'alitalipgencturk@gmail.com';
-      password = '151281';
-    } else {
-      email = 'ridvan.dasdelen@gmail.com';
-      password = '123a';
-    }
-
-    print('🧪 Test login başlatılıyor: $testUser ($email)');
-
-    final success = await authViewModel.login(email, password);
-
-    if (context.mounted) {
-      if (success) {
-        // Login başarılı olduktan sonra UserViewModel'i de güncelle
-        if (authViewModel.currentUser != null) {
-          userViewModel.setCurrentUser(authViewModel.currentUser!);
-        }
-        
-        print('🧪 Test login başarılı: $testUser');
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        print(
-          '🧪 Test login başarısız: $testUser - ${authViewModel.errorMessage}',
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Test login başarısız: ${authViewModel.errorMessage ?? 'Bilinmeyen hata'}',
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
-
-  // Kayıt ekranını göster
-  void _showRegisterScreen(BuildContext context) {
-    Navigator.of(context).pushNamed('/register');
   }
 }
 
-// E-posta ve şifre formunu ayrı bir widget olarak tanımla
 class _EmailPasswordForm extends StatefulWidget {
   const _EmailPasswordForm();
 
@@ -138,15 +47,12 @@ class _EmailPasswordForm extends StatefulWidget {
   State<_EmailPasswordForm> createState() => _EmailPasswordFormState();
 }
 
-// Alt kısımdaki butonları ayrı bir widget olarak tanımla
 class _BottomButtons extends StatefulWidget {
   const _BottomButtons();
 
   @override
   State<_BottomButtons> createState() => _BottomButtonsState();
 }
-
-
 
 class _EmailPasswordFormState extends State<_EmailPasswordForm> {
   final _emailController = TextEditingController();
@@ -165,7 +71,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 380), // Üst boşluk
+        const SizedBox(height: 100),
         
         // E-posta input
         Container(
@@ -193,7 +99,9 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
             ),
           ),
         ),
-        const SizedBox(height: 12), // E-posta ve şifre arası boşluk artırıldı
+        
+        const SizedBox(height: 12),
+        
         // Şifre input
         Container(
           height: 56,
@@ -233,7 +141,8 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
             ),
           ),
         ),
-        const SizedBox(height: 1), // Şifre ve butonlar arası boşluk azaltıldı
+        
+        const SizedBox(height: 1),
         
         // Şifremi Unuttum ve Kayıt Ol butonları
         Row(
@@ -268,13 +177,13 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ],
         ),
         
-        const SizedBox(height: 24), // Butonlar ve giriş butonu arası boşluk
- 
+        const SizedBox(height: 24),
+        
         ElevatedButton(
           onPressed: () => _submitLogin(context),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: AppTheme.primary,
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -354,11 +263,14 @@ class _BottomButtonsState extends State<_BottomButtons> {
             ),
           ],
         ),
-        // Google ve Apple ile Giriş - Tek satır
+        
+        const SizedBox(height: 16),
+        
+        // Google ve Apple ile Giriş
         Row(
           children: [
             Expanded(
-              child: Container(
+              child: SizedBox(
                 height: 40,
                 child: OutlinedButton.icon(
                   onPressed: () => _handleGoogleLogin(context),
@@ -382,10 +294,9 @@ class _BottomButtonsState extends State<_BottomButtons> {
                 ),
               ),
             ),
-            const SizedBox(height: 80),
             const SizedBox(width: 6),
             Expanded(
-              child: Container(
+              child: SizedBox(
                 height: 40,
                 child: OutlinedButton.icon(
                   onPressed: () => _handleAppleLogin(context),
@@ -411,8 +322,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
             ),
           ],
         ),
+        
+        const SizedBox(height: 16),
+        
         // Test butonları (geliştirme için)
-        const SizedBox(height: 2),
         Row(
           children: [
             Expanded(
@@ -505,6 +418,4 @@ class _BottomButtonsState extends State<_BottomButtons> {
       }
     }
   }
-}
-
-
+} 
