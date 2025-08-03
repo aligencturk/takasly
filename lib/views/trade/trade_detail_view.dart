@@ -383,10 +383,27 @@ class _TradeDetailViewState extends State<TradeDetailView> {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundImage: NetworkImage(participant.profilePhoto),
-                onBackgroundImageError: (exception, stackTrace) {
-                  Logger.error('❌ Profil fotoğrafı yüklenemedi: $exception', tag: 'TradeDetailView');
-                },
+                backgroundColor: AppTheme.primary.withOpacity(0.1),
+                backgroundImage: participant.profilePhoto.isNotEmpty 
+                    ? NetworkImage(participant.profilePhoto)
+                    : null,
+                child: participant.profilePhoto.isEmpty
+                    ? Text(
+                        participant.userName.isNotEmpty 
+                            ? participant.userName[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      )
+                    : null,
+                onBackgroundImageError: participant.profilePhoto.isNotEmpty
+                    ? (exception, stackTrace) {
+                        Logger.error('❌ Profil fotoğrafı yüklenemedi: $exception', tag: 'TradeDetailView');
+                      }
+                    : null,
               ),
               const SizedBox(width: 10),
               Expanded(
