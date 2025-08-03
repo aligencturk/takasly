@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://api.rivorya.com/takasly/';
+  static const String baseUrl = 'https://api.rivorya.com/takasly';
   static const String apiVersion = '';
   static const String fullUrl = baseUrl;
 
@@ -31,7 +31,7 @@ class ApiConstants {
       '/service/user/product'; // {userId}/addProduct eklenecek
   static const String userProducts =
       '/service/user/product'; // {userId}/productList eklenecek
-  static const String allProducts = 'service/user/product/allProductList';
+  static const String allProducts = '/service/user/product/allProductList';
   static const String categoriesList = '/service/general/general/categories/0';
   
   // Trade Service Endpoints

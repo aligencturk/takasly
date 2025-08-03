@@ -1482,22 +1482,6 @@ class _ChatDetailViewState extends State<ChatDetailView> {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.attach_file, size: 20),
-              onPressed: () {
-                // Dosya ekleme
-              },
-              tooltip: 'Dosya Ekle',
-              color: Colors.grey[700],
-              padding: const EdgeInsets.all(8),
-            ),
-          ),
-          const SizedBox(width: 8),
           Expanded(
             child: Container(
               decoration: BoxDecoration(

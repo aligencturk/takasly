@@ -10,6 +10,7 @@ import '../models/district.dart';
 import '../models/condition.dart';
 import '../models/location.dart';
 import '../services/location_service.dart';
+import '../utils/logger.dart';
 
 class ProductService {
   final HttpClient _httpClient = HttpClient();
@@ -20,14 +21,15 @@ class ProductService {
     int limit = AppConstants.defaultPageSize,
   }) async {
     try {
-      print(
-        '🌐 ProductService: Getting all products from ${ApiConstants.allProducts}',
+      Logger.info(
+        'Getting all products from ${ApiConstants.allProducts}',
+        tag: _tag,
       );
       final fullUrl = '${ApiConstants.fullUrl}${ApiConstants.allProducts}';
-      print('🌐 Full URL: $fullUrl');
+      Logger.debug('Full URL: $fullUrl', tag: _tag);
 
       // POST request ile dene (API POST method kullanıyor)
-      print('🌐 Using POST method with Basic Auth');
+      Logger.debug('Using POST method with Basic Auth', tag: _tag);
 
       // User token'ı al
       String userToken = '';
@@ -48,8 +50,8 @@ class ProductService {
         'conditionIDs': [],
         'cityID': 0,
         'districtID': 0,
-        'userLat': '',
-        'userLong': '',
+        'userLat': null,
+        'userLong': null,
         'sortType': 'default',
         'page': page,
       };
@@ -206,7 +208,7 @@ class ProductService {
         userLat: userLat,
         userLong: userLong,
       );
-      print('🌐 POST Body with filter: $body');
+      Logger.debug('POST Body with filter: $body', tag: _tag);
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.allProducts,
@@ -291,7 +293,7 @@ class ProductService {
     int page = 1,
     int limit = AppConstants.defaultPageSize,
     String? categoryId,
-    String? searchQuery,
+    String? searchText,
     String? city,
     String? condition,
     String? sortBy, // Sıralama parametresi eklendi
@@ -303,7 +305,7 @@ class ProductService {
       final queryParams = <String, dynamic>{'page': page, 'limit': limit};
 
       if (categoryId != null) queryParams['categoryId'] = categoryId;
-      if (searchQuery != null) queryParams['search'] = searchQuery;
+      if (searchText != null) queryParams['search'] = searchText;
       if (city != null) queryParams['city'] = city;
       if (condition != null) queryParams['condition'] = condition;
       if (sortBy != null) queryParams['sortBy'] = sortBy;
@@ -887,21 +889,6 @@ class ProductService {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-  }
-
-  Future<ApiResponse<List<Product>>> getMyProducts() async {
-    try {
-      final response = await _httpClient.get(
-        '${ApiConstants.products}/my',
-        fromJson: (json) => (json['products'] as List)
-            .map((item) => Product.fromJson(item))
-            .toList(),
-      );
-
-      return response;
-    } catch (e) {
-      return ApiResponse.error(ErrorMessages.unknownError);
-    }
   }
 
   Future<ApiResponse<Product>> createProduct({
@@ -1649,50 +1636,43 @@ class ProductService {
   }
 
   Future<ApiResponse<List<Condition>>> getConditions() async {
-    print(
-      '🏷️ ProductService: Getting conditions from service/general/general/productConditions',
-    );
-    final fullUrl =
-        '${ApiConstants.fullUrl}service/general/general/productConditions';
-    print('🌐 Full URL: $fullUrl');
+    print('ProductService: Getting conditions from /service/general/general/productConditions');
+    final fullUrl = '${ApiConstants.fullUrl}/service/general/general/productConditions';
+    print('Full URL: $fullUrl');
 
     try {
       final response = await _httpClient.getWithBasicAuth(
-        'service/general/general/productConditions',
+        '/service/general/general/productConditions',
         fromJson: (json) {
-          print('🔍 Raw Conditions API Response: $json');
+          print('Raw Conditions API Response: $json');
 
           // JSON yapısını kontrol et
           if (json == null) {
-            print('❌ Conditions API response is null');
+            print('Conditions API response is null');
             return <Condition>[];
           }
 
           if (json['data'] == null) {
-            print('❌ Conditions API response has no data field');
-            print('🔍 Available fields: ${json.keys}');
+            print('Conditions API response has no data field');
+            print('Available fields: ${json.keys}');
             return <Condition>[];
           }
 
           if (json['data']['conditions'] == null) {
-            print('❌ Conditions API response has no conditions field in data');
-            print('🔍 Available data fields: ${json['data'].keys}');
+            print('Conditions API response has no conditions field in data');
+            print('Available data fields: ${json['data'].keys}');
             return <Condition>[];
           }
 
           final conditionsList = json['data']['conditions'] as List;
-          print(
-            '🏷️ Conditions API returned ${conditionsList.length} conditions',
-          );
+          print('Conditions API returned ${conditionsList.length} conditions');
 
           // İlk birkaç durumu logla
           if (conditionsList.isNotEmpty) {
-            print('🏷️ All conditions in API response:');
+            print('All conditions in API response:');
             for (int i = 0; i < conditionsList.length; i++) {
               final condition = conditionsList[i];
-              print(
-                '  ${i + 1}. ${condition['conditionName']} (ID: ${condition['conditionID']})',
-              );
+              print('  ${i + 1}. ${condition['conditionName']} (ID: ${condition['conditionID']})');
             }
           }
 
@@ -1700,14 +1680,14 @@ class ProductService {
               .map((item) => Condition.fromJson(item))
               .toList();
 
-          print('🏷️ Parsed ${conditions.length} conditions successfully');
+          print('Parsed ${conditions.length} conditions successfully');
           return conditions;
         },
       );
 
       return response;
     } catch (e) {
-      print('❌ ProductService: Error getting conditions: $e');
+      Logger.error('Error getting conditions: $e', tag: _tag);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -1860,7 +1840,7 @@ class ProductService {
       print('🌐 Full URL: ${ApiConstants.fullUrl}service/user/product/$userId/favoriteList');
       print('🌐 Query params: $queryParams');
       final response = await _httpClient.getWithBasicAuth(
-        'service/user/product/$userId/favoriteList',
+        '/service/user/product/$userId/favoriteList',
         queryParams: queryParams,
         fromJson: (json) {
           print('📥 Get favorites response: $json');

@@ -45,7 +45,7 @@ class _SearchViewState extends State<SearchView> {
       
       final productViewModel = context.read<ProductViewModel>();
       final filter = productViewModel.currentFilter.copyWith(
-        searchQuery: query.trim(),
+        searchText: query.trim(),
       );
       productViewModel.applyFilter(filter);
     }
@@ -59,17 +59,38 @@ class _SearchViewState extends State<SearchView> {
     });
     
     final productViewModel = context.read<ProductViewModel>();
+    // Filtreleri temizle ve tüm ürünleri yükle
     productViewModel.clearFilters();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Geri dönmeden önce filtreleri temizle
+        if (_hasSearched) {
+          final productViewModel = context.read<ProductViewModel>();
+          productViewModel.clearFilters();
+        }
+        return true;
+      },
+      child: Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Geri dönmeden önce filtreleri temizle
+            if (_hasSearched) {
+              final productViewModel = context.read<ProductViewModel>();
+              productViewModel.clearFilters();
+            }
+            Navigator.pop(context);
+          },
+        ),
         title: Container(
           height: 40,
           decoration: BoxDecoration(
@@ -267,6 +288,7 @@ class _SearchViewState extends State<SearchView> {
               ),
             ),
         ],
+      ),
       ),
     );
   }

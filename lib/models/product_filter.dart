@@ -4,7 +4,7 @@ class ProductFilter {
   final String? cityId;
   final String? districtId;
   final String sortType;
-  final String? searchQuery;
+  final String? searchText;
 
   const ProductFilter({
     this.categoryId,
@@ -12,7 +12,7 @@ class ProductFilter {
     this.cityId,
     this.districtId,
     this.sortType = 'default',
-    this.searchQuery,
+    this.searchText,
   });
 
   ProductFilter copyWith({
@@ -21,7 +21,7 @@ class ProductFilter {
     String? cityId,
     String? districtId,
     String? sortType,
-    String? searchQuery,
+    String? searchText,
   }) {
     return ProductFilter(
       categoryId: categoryId,
@@ -29,7 +29,7 @@ class ProductFilter {
       cityId: cityId,
       districtId: districtId,
       sortType: sortType ?? this.sortType,
-      searchQuery: searchQuery,
+      searchText: searchText,
     );
   }
 
@@ -39,7 +39,7 @@ class ProductFilter {
         cityId != null ||
         districtId != null ||
         sortType != 'default' ||
-        (searchQuery != null && searchQuery!.isNotEmpty);
+        (searchText != null && searchText!.isNotEmpty);
   }
 
   Map<String, dynamic> toApiBody({
@@ -58,12 +58,13 @@ class ProductFilter {
       'userLong': userLong ?? '',
       'sortType': sortType,
       'page': page,
+      'searchText': searchText ?? '', // searchText parametresi eklendi
     };
   }
 
   @override
   String toString() {
-    return 'ProductFilter(categoryId: $categoryId, conditionIds: $conditionIds, cityId: $cityId, districtId: $districtId, sortType: $sortType, searchQuery: $searchQuery)';
+    return 'ProductFilter(categoryId: $categoryId, conditionIds: $conditionIds, cityId: $cityId, districtId: $districtId, sortType: $sortType, searchText: $searchText)';
   }
 }
 

@@ -43,7 +43,7 @@ class ProductViewModel extends ChangeNotifier {
 
   int _currentPage = 1;
   String? _currentCategoryId;
-  String? _currentSearchQuery;
+  String? _currentsearchText;
   String? _currentCity;
   String? _currentCondition;
   SortOption _currentSortOption = SortOption.defaultSort;
@@ -82,7 +82,7 @@ class ProductViewModel extends ChangeNotifier {
 
   int get currentPage => _currentPage;
   String? get currentCategoryId => _currentFilter.categoryId;
-  String? get currentSearchQuery => _currentSearchQuery;
+  String? get currentsearchText => _currentsearchText;
   String? get currentCity => _currentCity;
   String? get currentCondition => _currentCondition;
   SortOption get currentSortOption => _currentSortOption;
@@ -92,7 +92,7 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadInitialData() async {
-    await Future.wait([loadAllProducts(), loadCategories(), loadConditions(), loadMyProducts()]);
+    await Future.wait([loadAllProducts(), loadCategories(), loadConditions()]);
   }
 
   Future<void> loadAllProducts({
@@ -190,7 +190,7 @@ class ProductViewModel extends ChangeNotifier {
 
   Future<void> loadProducts({
     String? categoryId,
-    String? searchQuery,
+    String? searchText,
     String? city,
     String? condition,
     bool refresh = false,
@@ -204,7 +204,7 @@ class ProductViewModel extends ChangeNotifier {
     if (_isLoading || _isLoadingMore) return;
 
     _currentCategoryId = categoryId;
-    _currentSearchQuery = searchQuery;
+    _currentsearchText = searchText;
     _currentCity = city;
     _currentCondition = condition;
 
@@ -221,7 +221,7 @@ class ProductViewModel extends ChangeNotifier {
         page: _currentPage,
         limit: AppConstants.defaultPageSize,
         categoryId: categoryId,
-        searchQuery: searchQuery,
+        searchText: searchText,
         city: city,
         condition: condition,
         sortBy: _currentSortOption.value,
@@ -254,7 +254,7 @@ class ProductViewModel extends ChangeNotifier {
 
     await loadProducts(
       categoryId: _currentCategoryId,
-      searchQuery: _currentSearchQuery,
+      searchText: _currentsearchText,
       city: _currentCity,
       condition: _currentCondition,
     );
@@ -278,12 +278,12 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> searchProducts(String query) async {
-    _currentSearchQuery = query;
+    _currentsearchText = query;
     notifyListeners();
 
     await loadProducts(
       categoryId: _currentCategoryId,
-      searchQuery: query,
+      searchText: query,
       city: _currentCity,
       condition: _currentCondition,
       refresh: true,
@@ -302,7 +302,7 @@ class ProductViewModel extends ChangeNotifier {
 
     await loadProducts(
       categoryId: _currentCategoryId,
-      searchQuery: _currentSearchQuery,
+      searchText: _currentsearchText,
       city: _currentCity,
       condition: _currentCondition,
       refresh: true,
@@ -328,33 +328,6 @@ class ProductViewModel extends ChangeNotifier {
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
-    }
-  }
-
-  Future<void> loadMyProducts() async {
-    Logger.debug('🔄 ProductViewModel.loadMyProducts - Starting to load my products');
-    _setLoading(true);
-    _clearError();
-
-    try {
-      final response = await _productService.getMyProducts();
-      Logger.debug('📡 ProductViewModel.loadMyProducts - Response received, isSuccess: ${response.isSuccess}');
-
-      if (response.isSuccess && response.data != null) {
-        _myProducts = response.data!;
-        Logger.debug('✅ ProductViewModel.loadMyProducts - Successfully loaded ${_myProducts.length} my products');
-        Logger.debug('📦 My products IDs: ${_myProducts.map((p) => p.id).toList()}');
-      } else {
-        final errorMessage = response.error ?? ErrorMessages.unknownError;
-        Logger.debug('❌ ProductViewModel.loadMyProducts - API error: $errorMessage');
-        _setError(errorMessage);
-      }
-    } catch (e) {
-      Logger.debug('💥 ProductViewModel.loadMyProducts - Exception: $e');
-      _setError(ErrorMessages.unknownError);
-    } finally {
-      _setLoading(false);
-      Logger.debug('🏁 ProductViewModel.loadMyProducts - Completed');
     }
   }
 
@@ -965,7 +938,7 @@ class ProductViewModel extends ChangeNotifier {
     _hasMore = true;
     _currentFilter = const ProductFilter();
     _currentCategoryId = null;
-    _currentSearchQuery = null;
+    _currentsearchText = null;
     _currentCity = null;
     _currentCondition = null;
     _clearError();
@@ -1519,8 +1492,26 @@ class ProductViewModel extends ChangeNotifier {
 
   Future<void> clearFilters() async {
     print('🔄 ProductViewModel.clearFilters - Clearing all filters');
+    print('🔄 ProductViewModel.clearFilters - Before: _currentFilter = $_currentFilter');
+    
+    // Tüm filtreleri sıfırla
     _currentFilter = const ProductFilter();
+    _currentPage = 1;
+    _hasMore = true;
+    _products.clear();
+    
+    // Eski arama parametrelerini de temizle
+    _currentCategoryId = null;
+    _currentsearchText = null;
+    _currentCity = null;
+    _currentCondition = null;
+    
+    print('🔄 ProductViewModel.clearFilters - After: _currentFilter = $_currentFilter');
+    print('🔄 ProductViewModel.clearFilters - Loading all products...');
+    
     await loadAllProducts(refresh: true);
+    
+    print('✅ ProductViewModel.clearFilters - Completed, products count: ${_products.length}');
   }
 
   Future<void> loadMoreFilteredProducts() async {
