@@ -932,6 +932,7 @@ class _TradeViewState extends State<TradeView>
                         child: ProductCard(
                           product: product,
                           heroTag: 'favorite_${product.id}_$index',
+                          hideFavoriteIcon: false, // Favori sayfasında favori ikonu gösterilmeli
                           onTap: () {
                             Navigator.push(
                               context,

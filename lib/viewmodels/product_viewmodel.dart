@@ -841,6 +841,17 @@ class ProductViewModel extends ChangeNotifier {
   Future<Map<String, dynamic>> toggleFavorite(String productId) async {
     print('🔄 ProductViewModel.toggleFavorite - Starting toggle for product: $productId');
     try {
+      // Kullanıcının kendi ürünü olup olmadığını kontrol et
+      final isOwnProduct = _myProducts.any((p) => p.id == productId);
+      if (isOwnProduct) {
+        print('❌ ProductViewModel.toggleFavorite - User cannot favorite their own product: $productId');
+        return {
+          'success': false,
+          'wasFavorite': false,
+          'message': 'Kendi ürününüzü favoriye ekleyemezsiniz',
+        };
+      }
+      
       print('🔄 ProductViewModel.toggleFavorite - Toggling favorite for product: $productId');
       final isFavorite = _favoriteProducts.any((p) => p.id == productId);
       print('🔍 ProductViewModel.toggleFavorite - Is currently favorite: $isFavorite');

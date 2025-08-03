@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../viewmodels/product_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/skeletons/product_grid_skeleton.dart';
+import '../../utils/logger.dart';
 
 class SearchView extends StatefulWidget {
   const SearchView({super.key});
@@ -275,9 +277,29 @@ class _SearchViewState extends State<SearchView> {
                           ),
                           itemCount: vm.products.length,
                           itemBuilder: (context, index) {
+                            final product = vm.products[index];
+                            
+                            // Kullanıcının kendi ürünü olup olmadığını kontrol et
+                            bool isOwnProduct = false;
+                            if (vm.myProducts.isNotEmpty) {
+                              isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
+                            } else {
+                              // myProducts henüz yüklenmemişse, product.ownerId ile kontrol et
+                              final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+                              final currentUserId = authViewModel.currentUser?.id;
+                              isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
+                            }
+                            
+                            // Debug log ekle
+                            Logger.debug('SearchView - Product: ${product.title} (ID: ${product.id}), isOwnProduct: $isOwnProduct, myProducts count: ${vm.myProducts.length}, ownerId: ${product.ownerId}');
+                            if (isOwnProduct) {
+                              Logger.debug('SearchView - This is user\'s own product, hiding favorite icon');
+                            }
+                            
                             return ProductCard(
-                              product: vm.products[index],
-                              heroTag: 'search_product_${vm.products[index].id}_$index',
+                              product: product,
+                              heroTag: 'search_product_${product.id}_$index',
+                              hideFavoriteIcon: isOwnProduct, // Kullanıcının kendi ürünü ise favori ikonunu gizle
                             );
                           },
                         ),

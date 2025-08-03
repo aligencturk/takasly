@@ -1708,6 +1708,24 @@ class ProductService {
         print('⚠️ Error getting user data: $e');
       }
 
+      // Kullanıcının kendi ürünü olup olmadığını kontrol et
+      try {
+        final productDetailResponse = await getProductDetail(
+          userToken: userToken,
+          productId: productId,
+        );
+        if (productDetailResponse.isSuccess && productDetailResponse.data != null) {
+          final product = productDetailResponse.data!;
+          if (product.ownerId == userId) {
+            print('❌ ProductService.addToFavorites - User cannot favorite their own product: $productId');
+            return ApiResponse.error('Kendi ürününüzü favoriye ekleyemezsiniz');
+          }
+        }
+      } catch (e) {
+        print('⚠️ ProductService.addToFavorites - Error checking product ownership: $e');
+        // Ürün sahipliği kontrolü başarısız olsa bile devam et
+      }
+
       // API body'sini hazırla
       final body = {
         'userToken': userToken,
