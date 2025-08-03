@@ -454,16 +454,22 @@ class _AddProductViewState extends State<AddProductView> {
 
   Widget _buildNavigationButtons() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
             offset: const Offset(0, -2),
           ),
         ],
+        border: Border(
+          top: BorderSide(
+            color: Colors.grey.shade200,
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -472,12 +478,26 @@ class _AddProductViewState extends State<AddProductView> {
               onPressed: _currentStep > 0 ? _previousStep : null,
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                side: BorderSide(color: AppTheme.primary),
+                side: BorderSide(
+                  color: _currentStep > 0 ? AppTheme.primary : Colors.grey.shade300,
+                  width: 1.5,
+                ),
+                backgroundColor: _currentStep > 0 ? Colors.transparent : Colors.grey.shade50,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: const Text('Geri'),
+              child: Text(
+                'Geri',
+                style: TextStyle(
+                  color: _currentStep > 0 ? AppTheme.primary : Colors.grey.shade400,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Expanded(
             child: ElevatedButton(
               onPressed: () {
@@ -501,11 +521,22 @@ class _AddProductViewState extends State<AddProductView> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: _canGoToNextStep() ? AppTheme.primary : Colors.grey.shade400,
+                backgroundColor: _canGoToNextStep() ? AppTheme.primary : AppTheme.primary.withOpacity(0.3),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
+                elevation: _canGoToNextStep() ? 2 : 0,
+                shadowColor: _canGoToNextStep() ? AppTheme.primary.withOpacity(0.3) : Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: Text(_currentStep == _totalSteps - 1 ? 'Tamamla' : 'İleri'),
+              child: Text(
+                _currentStep == _totalSteps - 1 ? 'Tamamla' : 'İleri',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
         ],

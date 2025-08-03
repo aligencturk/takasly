@@ -81,6 +81,8 @@ class HttpClient {
             )
           : uri;
 
+      print("🌐 Full URL: $uriWithParams");
+
       final headers = await _getHeaders();
 
       final response = await http
@@ -114,6 +116,8 @@ class HttpClient {
             )
           : uri;
 
+      print("🌐 Full URL: $uriWithParams");
+
       final headers = _getBasicAuthHeaders();
 
       final response = await http
@@ -139,6 +143,7 @@ class HttpClient {
   }) async {
     try {
       final uri = Uri.parse('${ApiConstants.fullUrl}$endpoint');
+      print("🌐 Full URL: $uri");
       final headers = await _getHeaders();
 
       final response = await http
@@ -211,6 +216,7 @@ class HttpClient {
   }) async {
     try {
       final uri = Uri.parse('${ApiConstants.fullUrl}$endpoint');
+      print("🌐 Full URL: $uri");
       final headers = await _getHeaders();
 
       final response = await http
@@ -239,6 +245,7 @@ class HttpClient {
   }) async {
     try {
       final uri = Uri.parse('${ApiConstants.fullUrl}$endpoint');
+      print("🌐 Full URL: $uri");
       final headers = await _getHeaders();
 
       final response = await http

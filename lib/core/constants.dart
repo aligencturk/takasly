@@ -34,6 +34,27 @@ class ApiConstants {
   static const String allProducts = '/service/user/product/allProductList';
   static const String categoriesList = '/service/general/general/categories/0';
   
+  // Product Service Endpoints
+  static const String productDetail = '/service/user/product'; // {productId}/productDetail eklenecek
+  static const String editProduct = '/service/user/product'; // {userId}/editProduct eklenecek
+  static const String deleteProduct = '/service/user/product'; // {userId}/deleteProduct eklenecek
+  static const String addFavorite = '/service/user/product/addFavorite';
+  static const String removeFavorite = '/service/user/product/removeFavorite';
+  static const String favoriteList = '/service/user/product'; // {userId}/favoriteList eklenecek
+  static const String productView = '/products'; // {productId}/view eklenecek
+  
+  // Category Service Endpoints
+  static const String subCategories = '/service/general/general/categories'; // {parentCategoryId} eklenecek
+  static const String subSubCategories = '/service/general/general/categories'; // {parentSubCategoryId} eklenecek
+  static const String subSubSubCategories = '/service/general/general/categories'; // {parentSubSubCategoryId} eklenecek
+  
+  // Location Service Endpoints
+  static const String cities = '/service/general/general/cities/all';
+  static const String districts = '/service/general/general/districts'; // {cityId} eklenecek
+  
+  // Condition Service Endpoints
+  static const String productConditions = '/service/general/general/productConditions';
+  
   // Trade Service Endpoints
   static const String startTrade = '/service/user/product/startTrade';
   static const String tradeComplete = '/service/user/product/tradeComplete';

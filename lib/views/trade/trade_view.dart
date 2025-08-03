@@ -1700,111 +1700,125 @@ class _TradeViewState extends State<TradeView>
 
   /// Takas tamamlandığında yorum ve yıldız verme dialog'u göster
   void _showTradeCompleteDialog(UserTrade trade) {
-    double rating = 5.0;
-    final TextEditingController commentController = TextEditingController();
-    
-    // Dialog başlığını duruma göre ayarla
-    String dialogTitle = trade.statusID == 4 ? 'Teslim Edildi' : 'Takas Tamamlandı';
-    String dialogSubtitle = trade.statusID == 4 
-        ? 'Ürün teslim edildi! Karşı tarafa yorum ve puan verin.'
-        : 'Takasınızı tamamladınız! Karşı tarafa yorum ve puan verin.';
-    
+    // StatefulBuilder kullanarak dialog içinde state yönetimi
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.star, color: Colors.amber, size: 24),
-            SizedBox(width: 8),
-            Text(dialogTitle),
-          ],
-        ),
-        content: Container(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                dialogSubtitle,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              SizedBox(height: 20),
-              
-              // Yıldız değerlendirmesi
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          double rating = 0.0; // Başlangıçta boş yıldızlar
+          final TextEditingController commentController = TextEditingController();
+          
+          // Dialog başlığını duruma göre ayarla
+          String dialogTitle = trade.statusID == 4 ? 'Teslim Edildi' : 'Takas Tamamlandı';
+          String dialogSubtitle = trade.statusID == 4 
+              ? 'Ürün teslim edildi! Karşı tarafa yorum ve puan verin.'
+              : 'Takasınızı tamamladınız! Karşı tarafa yorum ve puan verin.';
+          
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.star, color: Colors.amber, size: 24),
+                SizedBox(width: 8),
+                Text(dialogTitle),
+              ],
+            ),
+            content: Container(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Puan: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  SizedBox(width: 8),
-                  ...List.generate(5, (index) {
-                    return GestureDetector(
-                      onTap: () {
-                        rating = index + 1.0;
-                        // State'i güncellemek için dialog'u yeniden build et
-                        Navigator.pop(context);
-                        _showTradeCompleteDialog(trade);
-                      },
-                      child: Icon(
-                        index < rating ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
-                        size: 32,
+                  Text(
+                    dialogSubtitle,
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                  SizedBox(height: 20),
+                  
+                  // Yıldız değerlendirmesi
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Puan: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      SizedBox(width: 8),
+                      ...List.generate(5, (index) {
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              rating = index + 1.0;
+                            });
+                          },
+                          child: Icon(
+                            index < rating ? Icons.star : Icons.star_border,
+                            color: index < rating ? Colors.amber : Colors.grey.shade400,
+                            size: 32,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                  
+                  SizedBox(height: 20),
+                  
+                  // Yorum alanı
+                  TextField(
+                    controller: commentController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Takas deneyiminizi paylaşın...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  }),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Color(0xFF10B981), width: 2),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              
-              SizedBox(height: 20),
-              
-              // Yorum alanı
-              TextField(
-                controller: commentController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Takas deneyiminizi paylaşın...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Color(0xFF10B981), width: 2),
-                  ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('İptal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (rating == 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Lütfen bir puan verin'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    return;
+                  }
+                  
+                  if (commentController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Lütfen bir yorum yazın'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    return;
+                  }
+                  
+                  Navigator.pop(context);
+                  final success = await _completeTradeWithReview(trade, rating.toInt(), commentController.text.trim());
+                  if (success) {
+                    // Başarılı işlem sonrası ek işlemler gerekebilir
+                    Logger.info('Takas tamamlama ve yorum gönderme başarılı', tag: 'TradeView');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF10B981),
+                  foregroundColor: Colors.white,
                 ),
+                child: Text('Tamamla'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (commentController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Lütfen bir yorum yazın'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-              
-              Navigator.pop(context);
-              final success = await _completeTradeWithReview(trade, rating.toInt(), commentController.text.trim());
-              if (success) {
-                // Başarılı işlem sonrası ek işlemler gerekebilir
-                Logger.info('Takas tamamlama ve yorum gönderme başarılı', tag: 'TradeView');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF10B981),
-              foregroundColor: Colors.white,
-            ),
-            child: Text('Tamamla'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

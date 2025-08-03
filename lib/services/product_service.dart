@@ -420,11 +420,12 @@ class ProductService {
     required String productId,
   }) async {
     try {
-      final endpoint = 'service/user/product/$productId/productDetail';
-      final queryParams = {'userToken': userToken};
+      final endpoint = '${ApiConstants.productDetail}/$productId/productDetail';
+      
+      // userToken'ı query parameter olarak değil, Authorization header'ında gönder
+      // Basic auth kullanıyoruz, bu yüzden query parameter'a gerek yok
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
-        queryParams: queryParams,
         fromJson: (json) {
           print('🔍 Product Detail API Response: $json');
           
@@ -1014,7 +1015,7 @@ class ProductService {
       print('🌐 Update Body: $body');
 
       // Yeni endpoint formatını kullan: service/user/product/userid/editProduct
-      final endpoint = 'service/user/product/$currentUserId/editProduct';
+      final endpoint = '${ApiConstants.editProduct}/$currentUserId/editProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       print('🌐 Full URL: $fullUrl');
 
@@ -1135,7 +1136,7 @@ class ProductService {
       print('  - Expected token length: ~100+ characters');
 
       // Doğru endpoint formatını kullan - userId kullanılmalı
-      final endpoint = 'service/user/product/$currentUserId/deleteProduct';
+      final endpoint = '${ApiConstants.deleteProduct}/$currentUserId/deleteProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       print('🌐 Full URL: $fullUrl');
       
@@ -1404,7 +1405,7 @@ class ProductService {
     );
     try {
       final response = await _httpClient.getWithBasicAuth(
-        'service/general/general/categories/$parentCategoryId',
+        '${ApiConstants.subCategories}/$parentCategoryId',
         fromJson: (json) => (json['data']['categories'] as List)
             .map(
               (item) => Category(
@@ -1432,7 +1433,7 @@ class ProductService {
     );
     try {
       final response = await _httpClient.getWithBasicAuth(
-        'service/general/general/categories/$parentSubCategoryId',
+        '${ApiConstants.subSubCategories}/$parentSubCategoryId',
         fromJson: (json) {
           print('🏷️ ProductService: Raw sub-sub-categories response: $json');
           
@@ -1482,7 +1483,7 @@ class ProductService {
   Future<ApiResponse<List<Category>>> getSubSubSubCategories(String parentSubSubCategoryId) async {
     try {
       final response = await _httpClient.getWithBasicAuth(
-        'service/general/general/categories/$parentSubSubCategoryId',
+        '${ApiConstants.subSubSubCategories}/$parentSubSubCategoryId',
         fromJson: (json) {
           if (json == null) {
             return <Category>[];
@@ -1527,7 +1528,7 @@ class ProductService {
 
     try {
       final response = await _httpClient.getWithBasicAuth(
-        'service/general/general/cities/all',
+        ApiConstants.cities,
         fromJson: (json) {
           print('🔍 Raw Cities API Response: $json');
 
@@ -1587,7 +1588,7 @@ class ProductService {
     );
     try {
       final response = await _httpClient.getWithBasicAuth(
-        'service/general/general/districts/$cityId',
+        '${ApiConstants.districts}/$cityId',
         fromJson: (json) {
           print('🏘️ Raw districts response: $json');
 
@@ -1642,7 +1643,7 @@ class ProductService {
 
     try {
       final response = await _httpClient.getWithBasicAuth(
-        '/service/general/general/productConditions',
+        ApiConstants.productConditions,
         fromJson: (json) {
           print('Raw Conditions API Response: $json');
 
@@ -1715,7 +1716,7 @@ class ProductService {
       print('🌐 Add to favorites body: $body');
 
       final response = await _httpClient.postWithBasicAuth(
-        'service/user/product/addFavorite',
+        ApiConstants.addFavorite,
         body: body,
         fromJson: (json) {
           print('📥 Add to favorites response: $json');
@@ -1754,11 +1755,11 @@ class ProductService {
       };
       print('🌐 Remove from favorites body: $body');
 
-      print('🌐 Calling removeFromFavorites API with endpoint: service/user/product/removeFavorite');
-      print('🌐 Full URL: ${ApiConstants.fullUrl}service/user/product/removeFavorite');
+      print('🌐 Calling removeFromFavorites API with endpoint: ${ApiConstants.removeFavorite}');
+      print('🌐 Full URL: ${ApiConstants.fullUrl}${ApiConstants.removeFavorite}');
       print('🌐 Request body: $body');
       final response = await _httpClient.postWithBasicAuth(
-        'service/user/product/removeFavorite',
+        ApiConstants.removeFavorite,
         body: body,
         useBasicAuth: true,
         fromJson: (json) {
@@ -1836,11 +1837,11 @@ class ProductService {
       final queryParams = {'userToken': userToken};
       print('🌐 Get favorites query params: $queryParams');
 
-      print('🌐 Calling getFavoriteProducts API with endpoint: service/user/product/$userId/favoriteList');
-      print('🌐 Full URL: ${ApiConstants.fullUrl}service/user/product/$userId/favoriteList');
+      print('🌐 Calling getFavoriteProducts API with endpoint: ${ApiConstants.favoriteList}/$userId/favoriteList');
+      print('🌐 Full URL: ${ApiConstants.fullUrl}${ApiConstants.favoriteList}/$userId/favoriteList');
       print('🌐 Query params: $queryParams');
       final response = await _httpClient.getWithBasicAuth(
-        '/service/user/product/$userId/favoriteList',
+        '${ApiConstants.favoriteList}/$userId/favoriteList',
         queryParams: queryParams,
         fromJson: (json) {
           print('📥 Get favorites response: $json');
@@ -1929,7 +1930,7 @@ class ProductService {
   Future<ApiResponse<void>> incrementViewCount(String productId) async {
     try {
       final response = await _httpClient.post(
-        '${ApiConstants.products}/$productId/view',
+        '${ApiConstants.productView}/$productId/view',
         fromJson: (json) => null,
       );
 
