@@ -1325,6 +1325,7 @@ class ProductViewModel extends ChangeNotifier {
     required List<File> productImages,
     String? selectedCityId,
     String? selectedDistrictId,
+    bool? isShowContact,
   }) async {
     print('🚀 addProductWithEndpoint başlatıldı');
     print('📝 Parametreler:');
@@ -1336,6 +1337,7 @@ class ProductViewModel extends ChangeNotifier {
     print('  - productImages count: ${productImages.length}');
     print('  - selectedCityId: $selectedCityId');
     print('  - selectedDistrictId: $selectedDistrictId');
+    print('  - isShowContact: $isShowContact');
 
     // Validasyonlar
     if (productTitle.trim().isEmpty || productDescription.trim().isEmpty) {
@@ -1405,6 +1407,7 @@ class ProductViewModel extends ChangeNotifier {
         productImages: productImages,
         selectedCityId: selectedCityId,
         selectedDistrictId: selectedDistrictId,
+        isShowContact: isShowContact,
       );
 
       print('📡 API response alındı');

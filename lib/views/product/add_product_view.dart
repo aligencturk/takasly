@@ -30,6 +30,7 @@ class _AddProductViewState extends State<AddProductView> {
   List<File> _selectedImages = [];
   int _coverImageIndex = 0; // Kapak fotoğrafı indeksi
   final ImagePicker _imagePicker = ImagePicker();
+  bool _isShowContact = true; // İletişim bilgilerinin görünürlüğü
   
   // Konum servisi
   final LocationService _locationService = LocationService();
@@ -38,7 +39,7 @@ class _AddProductViewState extends State<AddProductView> {
 
   // Step management
   int _currentStep = 0;
-  final int _totalSteps = 5;
+  final int _totalSteps = 6;
 
   // Step titles
   final List<String> _stepTitles = [
@@ -47,6 +48,7 @@ class _AddProductViewState extends State<AddProductView> {
     'Kategorizasyon',
     'Konum',
     'Takas Tercihleri',
+    'İletişim Ayarları',
   ];
 
   // Step icons
@@ -56,6 +58,7 @@ class _AddProductViewState extends State<AddProductView> {
     Icons.category,
     Icons.location_on,
     Icons.swap_horiz,
+    Icons.contact_phone,
   ];
 
   @override
@@ -98,6 +101,9 @@ class _AddProductViewState extends State<AddProductView> {
         break;
       case 4: // Takas Tercihleri
         canGo = _tradeForController.text.trim().isNotEmpty;
+        break;
+      case 5: // İletişim Ayarları
+        canGo = true; // Bu adım her zaman geçilebilir
         break;
       default:
         canGo = false;
@@ -150,6 +156,9 @@ class _AddProductViewState extends State<AddProductView> {
         break;
       case 4: // Takas Tercihleri
         errorMessage = 'Lütfen takas tercihlerini girin';
+        break;
+      case 5: // İletişim Ayarları
+        errorMessage = 'Lütfen iletişim ayarlarını yapın';
         break;
       default:
         errorMessage = 'Lütfen tüm gerekli alanları doldurun';
@@ -271,6 +280,7 @@ class _AddProductViewState extends State<AddProductView> {
           productImages: _selectedImages,
           selectedCityId: _selectedCityId,
           selectedDistrictId: _selectedDistrictId,
+          isShowContact: _isShowContact,
         );
 
     // Yükleniyor dialog'unu kapat

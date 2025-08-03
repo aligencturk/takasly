@@ -1951,6 +1951,7 @@ class ProductService {
     required List<File> productImages,
     String? selectedCityId,
     String? selectedDistrictId,
+    bool? isShowContact,
   }) async {
     print('🚀 ProductService.addProduct called');
     print('📝 Parameters:');
@@ -1964,6 +1965,7 @@ class ProductService {
     print('  - productImages count: ${productImages.length}');
     print('  - selectedCityId: $selectedCityId');
     print('  - selectedDistrictId: $selectedDistrictId');
+    print('  - isShowContact: $isShowContact');
 
     try {
       // Kategori bilgilerini al
@@ -2021,6 +2023,7 @@ class ProductService {
         'productDistrict': selectedDistrictId ?? '',
         'productLat': latitude?.toString() ?? '',
         'productLong': longitude?.toString() ?? '',
+        'isShowContact': (isShowContact ?? true) ? '1' : '0',
       };
 
       print('📋 Form fields prepared:');
