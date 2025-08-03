@@ -21,21 +21,25 @@ void initState() {
   
   // Klavyeyi hemen kapat ve focus'u engelle
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    FocusScope.of(context).unfocus();
-    // Tüm focus'ları temizle
-    FocusManager.instance.primaryFocus?.unfocus();
+    if (mounted) {
+      FocusScope.of(context).unfocus();
+      // Tüm focus'ları temizle
+      FocusManager.instance.primaryFocus?.unfocus();
+    }
   });
 
   _controller = VideoPlayerController.asset("assets/splash/powered_by_rivorya_yazilim.mp4")
     ..initialize().then((_) {
-      setState(() {});
-      // Video başladıktan 3 saniye sonra giriş kontrolü yap
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          _checkAuthAndNavigate();
-        }
-      });
-      _controller.play();
+      if (mounted) {
+        setState(() {});
+        // Video başladıktan 3 saniye sonra giriş kontrolü yap
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            _checkAuthAndNavigate();
+          }
+        });
+        _controller.play();
+      }
     });
 }
 
@@ -43,17 +47,35 @@ Future<void> _checkAuthAndNavigate() async {
   try {
     Logger.info('🔍 SplashView - Checking authentication status...');
     
+    // Widget'ın hala aktif olup olmadığını kontrol et
+    if (!mounted) {
+      Logger.warning('⚠️ SplashView - Widget is no longer mounted, aborting navigation');
+      return;
+    }
+    
     // AuthViewModel'i al ve giriş durumunu kontrol et
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     
     // AuthViewModel'i initialize et (hot reload için)
     await authViewModel.checkHotReloadState();
     
+    // Widget'ın hala aktif olup olmadığını tekrar kontrol et
+    if (!mounted) {
+      Logger.warning('⚠️ SplashView - Widget is no longer mounted after auth check, aborting navigation');
+      return;
+    }
+    
     // Kullanıcının giriş durumunu kontrol et
     final isLoggedIn = await authViewModel.isLoggedInAsync;
     
     Logger.info('🔍 SplashView - User login status: $isLoggedIn');
     Logger.info('🔍 SplashView - Current user: ${authViewModel.currentUser?.name ?? 'None'}');
+    
+    // Widget'ın hala aktif olup olmadığını son kez kontrol et
+    if (!mounted) {
+      Logger.warning('⚠️ SplashView - Widget is no longer mounted before navigation, aborting');
+      return;
+    }
     
     // Daha güvenli kontrol: Hem isLoggedIn hem de currentUser kontrolü
     if (isLoggedIn && authViewModel.currentUser != null && authViewModel.currentUser!.id.isNotEmpty) {
@@ -71,6 +93,13 @@ Future<void> _checkAuthAndNavigate() async {
     }
   } catch (e) {
     Logger.error('❌ SplashView - Error checking auth status: $e', error: e);
+    
+    // Hata durumunda da mounted kontrolü yap
+    if (!mounted) {
+      Logger.warning('⚠️ SplashView - Widget is no longer mounted during error handling, aborting navigation');
+      return;
+    }
+    
     // Hata durumunda login sayfasına yönlendir
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const LoginView()),
@@ -81,6 +110,7 @@ Future<void> _checkAuthAndNavigate() async {
 
   @override
   void dispose() {
+    Logger.info('🔄 SplashView - Disposing splash view');
     _controller.dispose();
     super.dispose();
   }
@@ -95,7 +125,9 @@ Future<void> _checkAuthAndNavigate() async {
         child: GestureDetector(
           onTap: () {
             // Klavyeyi kapat
-            FocusScope.of(context).unfocus();
+            if (mounted) {
+              FocusScope.of(context).unfocus();
+            }
           },
           child: _controller.value.isInitialized
               ? SizedBox.expand(
