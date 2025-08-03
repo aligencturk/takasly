@@ -109,18 +109,6 @@ class _AddProductViewState extends State<AddProductView> {
         canGo = false;
     }
     
-    // Debug için geçici print
-    print('🔍 Step $_currentStep validation:');
-    print('  - Images: ${_selectedImages.length}');
-    print('  - Title: "${_titleController.text.trim()}"');
-    print('  - Description: "${_descriptionController.text.trim()}"');
-    print('  - Category: $_selectedCategoryId');
-    print('  - Condition: $_selectedConditionId');
-    print('  - City: $_selectedCityId');
-    print('  - District: $_selectedDistrictId');
-    print('  - Trade: "${_tradeForController.text.trim()}"');
-    print('  - Can go: $canGo');
-    
     return canGo;
   }
 
@@ -213,10 +201,7 @@ class _AddProductViewState extends State<AddProductView> {
       return;
     }
 
-    print('📸 Submitting product with ${_selectedImages.length} images');
-    for (int i = 0; i < _selectedImages.length; i++) {
-      print('  ${i + 1}. ${_selectedImages[i].path.split('/').last}');
-    }
+
 
     final categoryId = _selectedSubSubSubCategoryId ?? _selectedSubSubCategoryId ?? _selectedSubCategoryId ?? _selectedCategoryId;
     
@@ -511,9 +496,6 @@ class _AddProductViewState extends State<AddProductView> {
           Expanded(
             child: ElevatedButton(
               onPressed: () {
-                print('🔍 Button pressed - Current step: $_currentStep, Total steps: $_totalSteps');
-                print('🔍 Can go to next step: ${_canGoToNextStep()}');
-                
                 if (_currentStep == _totalSteps - 1) {
                   if (_canGoToNextStep()) {
                     _submitProduct();
@@ -531,8 +513,8 @@ class _AddProductViewState extends State<AddProductView> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: _canGoToNextStep() ? AppTheme.primary : AppTheme.primary.withOpacity(0.3),
-                foregroundColor: Colors.white,
+                backgroundColor: _canGoToNextStep() ? AppTheme.primary : Colors.grey.shade300,
+                foregroundColor: _canGoToNextStep() ? Colors.white : Colors.grey.shade600,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 elevation: _canGoToNextStep() ? 2 : 0,
                 shadowColor: _canGoToNextStep() ? AppTheme.primary.withOpacity(0.3) : Colors.transparent,
@@ -695,6 +677,7 @@ class _AddProductViewState extends State<AddProductView> {
               hintText: 'Örn: iPhone 13 Pro Max 256GB',
             ),
             validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
+            onChanged: (value) => setState(() {}),
           ),
           const SizedBox(height: 24),
           TextFormField(
@@ -705,6 +688,7 @@ class _AddProductViewState extends State<AddProductView> {
             ),
             maxLines: 6,
             validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
+            onChanged: (value) => setState(() {}),
           ),
         ],
       ),
@@ -981,6 +965,7 @@ class _AddProductViewState extends State<AddProductView> {
             ),
             maxLines: 4,
             validator: (v) => v!.isEmpty ? 'Takas tercihi zorunludur' : null,
+            onChanged: (value) => setState(() {}),
           ),
           const SizedBox(height: 24),
           
@@ -1159,7 +1144,9 @@ class _AddProductViewState extends State<AddProductView> {
                 (con) => DropdownMenuItem(value: con.id, child: Text(con.name)),
               )
               .toList(),
-          onChanged: (value) => setState(() => _selectedConditionId = value),
+          onChanged: (value) {
+            setState(() => _selectedConditionId = value);
+          },
           validator: (v) => v == null ? 'Durum seçimi zorunludur' : null,
         );
       },
@@ -1220,7 +1207,9 @@ class _AddProductViewState extends State<AddProductView> {
           ],
           onChanged: _selectedCityId == null
               ? null
-              : (value) => setState(() => _selectedDistrictId = value),
+              : (value) {
+                  setState(() => _selectedDistrictId = value);
+                },
           validator: (v) => _selectedCityId != null && v == null
               ? 'İlçe seçimi zorunludur'
               : null,
@@ -1680,9 +1669,7 @@ class _AddProductViewState extends State<AddProductView> {
           }
         });
 
-        print('📸 Image added: ${pickedFile.path}');
-        print('📸 Total images: ${_selectedImages.length}');
-        print('📸 Cover image index: $_coverImageIndex');
+
       }
     } catch (e) {
       print('❌ Error picking image: $e');
@@ -1729,9 +1716,7 @@ class _AddProductViewState extends State<AddProductView> {
           }
         });
 
-        print('📸 ${filesToAdd.length} images added');
-        print('📸 Total images: ${_selectedImages.length}');
-        print('📸 Cover image index: $_coverImageIndex');
+
 
         if (pickedFiles.length > remainingSlots) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1767,16 +1752,14 @@ class _AddProductViewState extends State<AddProductView> {
         _coverImageIndex--;
       }
     });
-    print('🗑️ Image removed at index $index');
-    print('📸 Remaining images: ${_selectedImages.length}');
-    print('📸 Cover image index: $_coverImageIndex');
+
   }
 
   void _setCoverImage(int index) {
     setState(() {
       _coverImageIndex = index;
     });
-    print('⭐ Cover image set to index: $index');
+
     
     // Kullanıcıya bilgi ver
     ScaffoldMessenger.of(context).showSnackBar(
