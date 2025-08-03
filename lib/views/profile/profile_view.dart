@@ -63,6 +63,9 @@ class _ProfileViewState extends State<ProfileView>
       // Kullanıcının ürünlerini yükle
       productViewModel.loadUserProducts(userId);
       
+      // Kullanıcının favori ürünlerini yükle
+      await productViewModel.loadFavoriteProducts();
+      
       // Kullanıcının profil detaylarını yükle (değerlendirmeler için)
       await _loadUserProfileDetail(int.parse(userId));
     } else {
@@ -96,25 +99,34 @@ class _ProfileViewState extends State<ProfileView>
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(),
-      body: Consumer2<UserViewModel, ProductViewModel>(
-        builder: (context, userVm, productVm, child) {
+      body: Consumer3<UserViewModel, ProductViewModel, UserProfileDetailViewModel>(
+        builder: (context, userVm, productVm, profileDetailVm, child) {
           if (userVm.isLoading || userVm.currentUser == null) {
             return const LoadingWidget();
           }
 
           final user = userVm.currentUser!;
           final productCount = productVm.myProducts.length;
-          // Profil sayfasında favori ürünler yüklenmediği için 0 göster
-          final favoriteCount = 0;
+          // Favori sayısını ProductViewModel'den al
+          final favoriteCount = productVm.favoriteProducts.length;
+          
+          // Puanı UserProfileDetailViewModel'den al
+          String score = '0';
+          if (profileDetailVm.hasData && profileDetailVm.profileDetail != null) {
+            score = profileDetailVm.profileDetail!.averageRating.toStringAsFixed(1);
+          }
           
           // Debug logları
           Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
           Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
           Logger.debug('👤 ProfileView - User email: ${user.email}');
+          Logger.debug('👤 ProfileView - Product count: $productCount');
+          Logger.debug('👤 ProfileView - Favorite count: $favoriteCount');
+          Logger.debug('👤 ProfileView - Score: $score');
           
           return Column(
             children: [
-              _buildProfileHeader(context, user, productCount, favoriteCount),
+              _buildProfileHeader(context, user, productCount, favoriteCount, score),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 color: Colors.white,
@@ -658,7 +670,7 @@ class _ProfileViewState extends State<ProfileView>
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, User user, int productCount, int favoriteCount) {
+  Widget _buildProfileHeader(BuildContext context, User user, int productCount, int favoriteCount, String score) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -817,7 +829,7 @@ class _ProfileViewState extends State<ProfileView>
                 label: 'Favori',
               ),
               _buildKurumsalStatItem(
-                count: '0',
+                count: score,
                 label: 'Puan',
               ),
             ],
