@@ -644,14 +644,46 @@ class UserTrade {
       print('🔍 UserTrade.fromJson - JSON data: $json');
       
       final offerID = json['offerID'] as int? ?? 0;
-      final statusID = json['statusID'] as int? ?? 0;
-      final statusTitle = json['statusTitle'] as String? ?? '';
+      final senderUserID = json['senderUserID'] as int? ?? 0;
+      final receiverUserID = json['receiverUserID'] as int? ?? 0;
+      final senderStatusID = json['senderStatusID'] as int? ?? 0;
+      final receiverStatusID = json['receiverStatusID'] as int? ?? 0;
+      final senderStatusTitle = json['senderStatusTitle'] as String? ?? '';
+      final receiverStatusTitle = json['receiverStatusTitle'] as String? ?? '';
       final deliveryType = json['deliveryType'] as String? ?? '';
       final meetingLocation = json['meetingLocation'] as String?;
       final createdAt = json['createdAt'] as String? ?? '';
       final completedAt = json['completedAt'] as String?;
       // isConfirm alanını güvenli şekilde parse et
       final isConfirm = _parseIsConfirm(json['isConfirm']);
+      
+      // Mevcut kullanıcının ID'sini al (AuthService'den)
+      // Bu değer TradeViewModel'de set edilecek
+      final currentUserId = json['currentUserId'] as int? ?? 0;
+      
+      // Mevcut kullanıcının sender mı receiver mı olduğunu belirle
+      bool isSender = false;
+      bool isReceiver = false;
+      int statusID = 0;
+      String statusTitle = '';
+      
+      if (currentUserId > 0) {
+        if (currentUserId == senderUserID) {
+          isSender = true;
+          statusID = senderStatusID;
+          statusTitle = senderStatusTitle;
+        } else if (currentUserId == receiverUserID) {
+          isReceiver = true;
+          statusID = receiverStatusID;
+          statusTitle = receiverStatusTitle;
+        }
+      }
+      
+      // Eğer currentUserId belirlenemezse, varsayılan olarak sender durumunu kullan
+      if (statusID == 0) {
+        statusID = senderStatusID;
+        statusTitle = senderStatusTitle;
+      }
       
       // myProduct güvenli parse
       TradeProduct? myProduct;
@@ -677,7 +709,7 @@ class UserTrade {
       
       final cancelDesc = json['cancelDesc'] as String?;
       print('🔍 UserTrade.fromJson - cancelDesc: "$cancelDesc"');
-      print('�� UserTrade.fromJson - JSON keys: ${json.keys.toList()}');
+      print('🔍 UserTrade.fromJson - JSON keys: ${json.keys.toList()}');
       print('🔍 UserTrade.fromJson - JSON contains cancelDesc: ${json.containsKey('cancelDesc')}');
       
       final userTrade = UserTrade(
@@ -694,7 +726,7 @@ class UserTrade {
         cancelDesc: cancelDesc,
       );
       
-      print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, statusID=$statusID');
+      print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, statusID=$statusID, statusTitle="$statusTitle"');
       return userTrade;
     } catch (e) {
       // JSON parse hatası durumunda varsayılan değerlerle oluştur
@@ -963,7 +995,6 @@ class UserTradesData {
 
   factory UserTradesData.fromJson(Map<String, dynamic> json) {
     try {
-      // Debug: JSON verisini logla
       print('🔍 UserTradesData.fromJson - JSON data: $json');
       
       List<UserTrade>? trades;
@@ -977,6 +1008,12 @@ class UserTradesData {
             try {
               final tradeJson = tradesList[i] as Map<String, dynamic>;
               print('🔍 UserTradesData.fromJson - Parsing trade $i: $tradeJson');
+              
+              // currentUserId'yi ekle (AuthService'den alınacak)
+              // Bu değer TradeViewModel'de set edilecek
+              final currentUserId = json['currentUserId'] as int? ?? 0;
+              tradeJson['currentUserId'] = currentUserId;
+              
               final trade = UserTrade.fromJson(tradeJson);
               trades.add(trade);
               print('✅ UserTradesData.fromJson - Successfully parsed trade $i: offerID=${trade.offerID}, rejectionReason="${trade.cancelDesc}"');

@@ -359,7 +359,11 @@ class TradeService {
       
       final response = await _httpClient.getWithBasicAuth(
         '${ApiConstants.userTrades}/$userId/tradeList',
-        fromJson: (json) => UserTradesResponse.fromJson(json),
+        fromJson: (json) {
+          // currentUserId'yi JSON'a ekle
+          json['currentUserId'] = userId;
+          return UserTradesResponse.fromJson(json);
+        },
       );
 
       if (response.isSuccess) {
