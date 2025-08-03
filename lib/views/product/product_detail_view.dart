@@ -582,7 +582,7 @@ class _ProductInfoState extends State<_ProductInfo> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Başlık ve Konum
+        // 1. Başlık ve Konum (En önemli - üstte)
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -624,7 +624,7 @@ class _ProductInfoState extends State<_ProductInfo> {
         
         const SizedBox(height: 8),
         
-        // Ürün Bilgileri
+        // 2. Kullanıcı Özeti (İletişim için önemli)
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -633,36 +633,55 @@ class _ProductInfoState extends State<_ProductInfo> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'İlan Bilgileri',
+                'Kullanıcı Bilgileri',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 16),
-              _InfoRow('Kategori :', _getCategoryDisplayName(widget.product)),
-              _InfoRow('Durum :', widget.product.productCondition ?? widget.product.condition ?? 'Belirtilmemiş'),
-              _InfoRow('İlan Tarihi :', 
-                "${widget.product.createdAt.day.toString().padLeft(2, '0')}.${widget.product.createdAt.month.toString().padLeft(2, '0')}.${widget.product.createdAt.year}"),
-              _InfoRow('İlan No :', widget.product.id),
-              if (widget.product.productCode != null && widget.product.productCode!.isNotEmpty)
-                _InfoRow('İlan Kodu :', widget.product.productCode!),
-              _InfoRow('İlan Sahibi :', widget.product.userFullname ?? widget.product.owner?.name ?? 'Belirtilmemiş'),
-              if (widget.product.proView != null && widget.product.proView!.isNotEmpty)
-                _InfoRow('Görüntülenme :', widget.product.proView!),
-              if (widget.product.favoriteCount != null && widget.product.favoriteCount! > 0)
-                _InfoRow('Favori :', 'Bu ilanı ${widget.product.favoriteCount} kişi favoriledi'),
-              if (widget.product.isShowContact == true)
-                _InfoRow('İletişim :', widget.product.userPhone ?? 'Belirtilmemiş'),
-              
+              const SizedBox(height: 12),
+              _buildUserSummary(context, widget.product),
             ],
           ),
         ),
         
         const SizedBox(height: 8),
         
-        // Takas Tercihi
+        // 3. Açıklama (Ürün detayı için kritik)
+        if (widget.product.description != null && widget.product.description.isNotEmpty)
+          Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          color: AppTheme.surface,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Açıklama',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.product.description,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textPrimary,
+                  height: 1.5,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              ],
+            ),
+          ),
+        
+        const SizedBox(height: 8),
+        
+        // 4. Takas Tercihi (Takas uygulaması için önemli)
         if (widget.product.tradeFor != null && widget.product.tradeFor!.isNotEmpty)
           Container(
             width: double.infinity,
@@ -714,9 +733,8 @@ class _ProductInfoState extends State<_ProductInfo> {
         
         const SizedBox(height: 8),
         
-        // Açıklama
-        if (widget.product.description != null && widget.product.description.isNotEmpty)
-          Container(
+        // 5. Ürün Bilgileri (Teknik detaylar)
+        Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           color: AppTheme.surface,
@@ -724,30 +742,40 @@ class _ProductInfoState extends State<_ProductInfo> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Açıklama',
+                'İlan Bilgileri',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                widget.product.description,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.textPrimary,
-                  height: 1.5,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              ],
-            ),
+              const SizedBox(height: 16),
+              // 1. En önemli bilgiler (üst sırada)
+              _InfoRow('İlan Sahibi :', widget.product.userFullname ?? widget.product.owner?.name ?? 'Belirtilmemiş'),
+              if (widget.product.isShowContact == true)
+                _InfoRow('İletişim :', widget.product.userPhone ?? 'Belirtilmemiş'),
+              _InfoRow('Durum :', widget.product.productCondition ?? widget.product.condition ?? 'Belirtilmemiş'),
+              _InfoRow('Kategori :', _getCategoryDisplayName(widget.product)),
+              
+              // 2. Orta önemdeki bilgiler
+              _InfoRow('İlan Tarihi :', 
+                "${widget.product.createdAt.day.toString().padLeft(2, '0')}.${widget.product.createdAt.month.toString().padLeft(2, '0')}.${widget.product.createdAt.year}"),
+              if (widget.product.proView != null && widget.product.proView!.isNotEmpty)
+                _InfoRow('Görüntülenme :', widget.product.proView!),
+              if (widget.product.favoriteCount != null && widget.product.favoriteCount! > 0)
+                _InfoRow('Favori :', 'Bu ilanı ${widget.product.favoriteCount} kişi favoriledi'),
+              
+              // 3. Teknik bilgiler (alt sırada)
+              _InfoRow('İlan No :', widget.product.id),
+              if (widget.product.productCode != null && widget.product.productCode!.isNotEmpty)
+                _InfoRow('İlan Kodu :', widget.product.productCode!),
+            ],
           ),
+        ),
         
         const SizedBox(height: 8),
         
-        // Konum Detayı
+        // 6. Konum Detayı (En altta - harita ve detaylar)
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -796,30 +824,6 @@ class _ProductInfoState extends State<_ProductInfo> {
                   widget.product.productLat!.isNotEmpty &&
                   widget.product.productLong!.isNotEmpty)
                 _buildMapButtons(widget.product),
-            ],
-          ),
-        ),
-        
-        const SizedBox(height: 8),
-        
-        // Kullanıcı Özeti
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          color: AppTheme.surface,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Kullanıcı Bilgileri',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildUserSummary(context, widget.product),
             ],
           ),
         ),
@@ -931,50 +935,33 @@ class _ProductInfoState extends State<_ProductInfo> {
   }
 
   Widget _buildMapButtons(Product product) {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildMapButton(
-                title: Platform.isIOS ? 'Apple Maps' : 'Google Maps',
-                icon: Platform.isIOS ? Icons.location_on : Icons.map,
-                color: Platform.isIOS ? Colors.red : Colors.blue,
-                onTap: () => _openInMaps(product),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildMapButton(
-                title: 'Yol Tarifi Al',
-                icon: Icons.directions,
-                color: Colors.green,
-                onTap: () => _getDirections(product),
-              ),
-            ),
-          ],
+        Expanded(
+          child: _buildMapButton(
+            title: Platform.isIOS ? 'Haritalar' : 'Google Maps',
+            icon: Platform.isIOS ? Icons.location_on : Icons.map,
+            color: Platform.isIOS ? Colors.red : Colors.blue,
+            onTap: () => _openInMaps(product),
+          ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMapButton(
-                title: 'Konumu Paylaş',
-                icon: Icons.share_location,
-                color: Colors.orange,
-                onTap: () => _shareLocation(product),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildMapButton(
-                title: 'Haritada Aç',
-                icon: Icons.open_in_new,
-                color: Colors.purple,
-                onTap: () => _openInWebMaps(product),
-              ),
-            ),
-          ],
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildMapButton(
+            title: 'Yol Tarifi Al',
+            icon: Icons.directions,
+            color: Colors.green,
+            onTap: () => _getDirections(product),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildMapButton(
+            title: 'Konumu Paylaş',
+            icon: Icons.share_location,
+            color: Colors.orange,
+            onTap: () => _shareLocation(product),
+          ),
         ),
       ],
     );
@@ -1075,7 +1062,7 @@ class _ProductInfoState extends State<_ProductInfo> {
         await launchUrl(Uri.parse(url));
       } else {
         // Android için Google Maps yol tarifi
-        final url = 'https://maps.google.com/maps?daddr=$lat,$lng&dirflg=d';
+        final url = 'https://maps.google.com/maps?daddr=$lat,$lng';
         await launchUrl(Uri.parse(url));
       }
     } catch (e) {
@@ -1241,49 +1228,36 @@ class _ProductInfoState extends State<_ProductInfo> {
     
     if (owner == null && product.userFullname == null) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.grey[200]!),
         ),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
                 Icons.person_outline,
                 color: Colors.grey,
-                size: 24,
+                size: 16,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Bilinmeyen Kullanıcı',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Kullanıcı bilgileri bulunamadı',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Bilinmeyen Kullanıcı',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                ),
               ),
             ),
           ],
@@ -1298,7 +1272,7 @@ class _ProductInfoState extends State<_ProductInfo> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         onTap: () async {
           print('🔍 Product Detail - Kullanıcı özetine tıklandı');
           print('🔍 Product Detail - owner: ${owner.id} - ${owner.name}');
@@ -1347,36 +1321,36 @@ class _ProductInfoState extends State<_ProductInfo> {
           }
         },
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey[200]!),
           ),
           child: Row(
             children: [
-              // Kullanıcı Avatar
+              // Kullanıcı Avatar - Daha küçük
               Container(
-                width: 48,
-                height: 48,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: owner.avatar != null && owner.avatar!.isNotEmpty
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(16),
                         child: CachedNetworkImage(
                           imageUrl: owner.avatar!,
-                          width: 48,
-                          height: 48,
+                          width: 32,
+                          height: 32,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
                             color: Colors.grey[100],
                             child: const Icon(
                               Icons.person,
                               color: Colors.grey,
-                              size: 24,
+                              size: 16,
                             ),
                           ),
                           errorWidget: (context, url, error) => Container(
@@ -1389,7 +1363,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                                 style: const TextStyle(
                                   color: AppTheme.primary,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+                                  fontSize: 12,
                                 ),
                               ),
                             ),
@@ -1404,141 +1378,133 @@ class _ProductInfoState extends State<_ProductInfo> {
                           style: const TextStyle(
                             color: AppTheme.primary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                            fontSize: 12,
                           ),
                         ),
                       ),
               ),
-              const SizedBox(width: 12),
-              // Kullanıcı Bilgileri
+              const SizedBox(width: 8),
+              // Kullanıcı Bilgileri - Kompakt tasarım
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      userName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                    // İsim ve puan yan yana
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.star,
+                                size: 12,
+                                color: Colors.amber,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                averageRating.toStringAsFixed(1),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '($totalReviews)',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        // Puan
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.star,
-                              size: 16,
-                              color: Colors.amber,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              averageRating.toStringAsFixed(1),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 12),
-                        // Yorum sayısı
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.rate_review,
-                              size: 16,
-                              color: AppTheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '$totalReviews yorum',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
                     // Telefon numarası - sadece isShowContact true ise göster
                     if (userPhone != null && userPhone.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.phone,
-                              size: 16,
-                              color: AppTheme.primary,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.phone,
+                            size: 14,
+                            color: AppTheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            userPhone,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textPrimary,
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              userPhone,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.textPrimary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(4),
-                                onTap: () {
-                                  Clipboard.setData(ClipboardData(text: userPhone));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          Icon(Icons.copy, color: Colors.white, size: 18),
-                                          SizedBox(width: 8),
-                                          Text('Telefon numarası kopyalandı'),
-                                        ],
-                                      ),
-                                      backgroundColor: AppTheme.primary,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      duration: Duration(seconds: 2),
+                          ),
+                          const SizedBox(width: 4),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(4),
+                              onTap: () {
+                                Clipboard.setData(ClipboardData(text: userPhone));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.copy, color: Colors.white, size: 16),
+                                        SizedBox(width: 6),
+                                        Text('Telefon kopyalandı'),
+                                      ],
                                     ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  child: Icon(
-                                    Icons.copy,
-                                    size: 16,
-                                    color: AppTheme.primary,
+                                    backgroundColor: AppTheme.primary,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    duration: Duration(seconds: 2),
                                   ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                child: Icon(
+                                  Icons.copy,
+                                  size: 12,
+                                  color: AppTheme.primary,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                   ],
                 ),
               ),
-              // Tıklama göstergesi
+              // Tıklama göstergesi - Daha küçük
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: AppTheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(
                   Icons.arrow_forward_ios,
                   color: AppTheme.primary,
-                  size: 16,
+                  size: 12,
                 ),
               ),
             ],
