@@ -617,6 +617,9 @@ class UserTrade {
   final TradeProduct? myProduct;
   final TradeProduct? theirProduct;
   final String? cancelDesc; // Reddetme sebebi (API'den cancelDesc olarak geliyor)
+  final int? rating; // Yorum puanı
+  final String? comment; // Yorum metni
+  final bool? hasReview; // Yorum yapılıp yapılmadığı
 
   const UserTrade({
     required this.offerID,
@@ -630,6 +633,9 @@ class UserTrade {
     this.myProduct,
     this.theirProduct,
     this.cancelDesc,
+    this.rating,
+    this.comment,
+    this.hasReview,
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {

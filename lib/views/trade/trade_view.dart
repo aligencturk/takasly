@@ -34,6 +34,10 @@ class _TradeViewState extends State<TradeView>
   final Map<int, bool> _tradeShowButtonsMap = {};
   String? _currentUserId;
   ScaffoldMessengerState? _scaffoldMessenger;
+  
+  // Provider referanslarını sakla
+  TradeViewModel? _tradeViewModel;
+  ProductViewModel? _productViewModel;
 
   @override
   void initState() {
@@ -48,6 +52,10 @@ class _TradeViewState extends State<TradeView>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    // Provider referanslarını sakla
+    _tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    _productViewModel = Provider.of<ProductViewModel>(context, listen: false);
   }
 
   Future<void> _loadData() async {
@@ -77,11 +85,13 @@ class _TradeViewState extends State<TradeView>
       return;
     }
 
-    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
-    final productViewModel = Provider.of<ProductViewModel>(
-      context,
-      listen: false,
-    );
+    final tradeViewModel = _tradeViewModel;
+    final productViewModel = _productViewModel;
+    
+    if (tradeViewModel == null || productViewModel == null) {
+      Logger.error('Provider referansları bulunamadı', tag: 'TradeView');
+      return;
+    }
 
     // Dinamik kullanıcı ID'sini al
     final userId = await _authService.getCurrentUserId();
@@ -130,6 +140,9 @@ class _TradeViewState extends State<TradeView>
   @override
   void dispose() {
     _tabController.dispose();
+    // Provider referanslarını temizle
+    _tradeViewModel = null;
+    _productViewModel = null;
     super.dispose();
   }
 
@@ -288,7 +301,7 @@ class _TradeViewState extends State<TradeView>
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => _showStatusFilterDialog(tradeViewModel),
+                  onTap: () => _showStatusFilterDialog(_tradeViewModel),
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -334,11 +347,11 @@ class _TradeViewState extends State<TradeView>
                   ElevatedButton(
                     onPressed: () async {
                       final userId = await _authService.getCurrentUserId();
-                      if (userId != null) {
+                      if (userId != null && _tradeViewModel != null) {
                         try {
-                          await tradeViewModel.loadUserTrades(int.parse(userId));
+                          await _tradeViewModel!.loadUserTrades(int.parse(userId));
                         } catch (e) {
-                          print('⚠️ TradeView - Retry loadUserTrades exception: $e');
+                          Logger.error('TradeView - Retry loadUserTrades exception: $e', tag: 'TradeView');
                         }
                       }
                     },
@@ -474,7 +487,12 @@ class _TradeViewState extends State<TradeView>
                           }
                           
                           if (!mounted) return;
-                          final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+                          final tradeViewModel = _tradeViewModel;
+                          
+                          if (tradeViewModel == null) {
+                            Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+                            return;
+                          }
                           
                           try {
                             bool success = false;
@@ -562,7 +580,12 @@ class _TradeViewState extends State<TradeView>
 
   Widget _buildTradeCard(UserTrade trade) {
     // Cache'den showButtons değerini al
-    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    final tradeViewModel = _tradeViewModel;
+    
+    if (tradeViewModel == null) {
+      Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+      return Container(); // Boş container döndür
+    }
     final myProduct = _getMyProduct(trade);
     final theirProduct = _getTheirProduct(trade);
     
@@ -646,7 +669,12 @@ class _TradeViewState extends State<TradeView>
     }
     
     if (!mounted) return;
-    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    final tradeViewModel = _tradeViewModel;
+    
+    if (tradeViewModel == null) {
+      Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+      return;
+    }
     
     try {
       bool success = false;
@@ -921,7 +949,9 @@ class _TradeViewState extends State<TradeView>
           return CustomErrorWidget(
             message: productViewModel.favoriteErrorMessage ?? 'Favoriler yüklenirken hata oluştu',
             onRetry: () async {
-              await productViewModel.loadFavoriteProducts();
+              if (_productViewModel != null) {
+                await _productViewModel!.loadFavoriteProducts();
+              }
             },
           );
         }
@@ -986,7 +1016,9 @@ class _TradeViewState extends State<TradeView>
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () async {
-                            await productViewModel.loadFavoriteProducts();
+                            if (_productViewModel != null) {
+                              await _productViewModel!.loadFavoriteProducts();
+                            }
                           },
                           borderRadius: BorderRadius.circular(16),
                           child: Padding(
@@ -1066,7 +1098,9 @@ class _TradeViewState extends State<TradeView>
           color: Color(0xFFF8FAFF),
           child: RefreshIndicator(
             onRefresh: () async {
-              await productViewModel.loadFavoriteProducts();
+              if (_productViewModel != null) {
+                await _productViewModel!.loadFavoriteProducts();
+              }
             },
             child: Padding(
               padding: EdgeInsets.all(12),
@@ -1506,10 +1540,12 @@ class _TradeViewState extends State<TradeView>
 
   Future<void> _removeFromFavorites(String productId) async {
     try {
-      final productViewModel = Provider.of<ProductViewModel>(
-        context,
-        listen: false,
-      );
+      final productViewModel = _productViewModel;
+      
+      if (productViewModel == null) {
+        Logger.error('ProductViewModel referansı bulunamadı', tag: 'TradeView');
+        return;
+      }
       final result = await productViewModel.toggleFavorite(productId);
 
       if (mounted) {
@@ -1591,7 +1627,11 @@ class _TradeViewState extends State<TradeView>
   }
 
   /// Durum filtreleme dialog'u göster
-  void _showStatusFilterDialog(TradeViewModel tradeViewModel) {
+  void _showStatusFilterDialog(TradeViewModel? tradeViewModel) {
+    if (tradeViewModel == null) {
+      Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+      return;
+    }
     int? selectedStatusId;
     
     // API'den gelen durumları kontrol et
@@ -1689,7 +1729,12 @@ class _TradeViewState extends State<TradeView>
   /// Durum değiştirme dropdown dialog'u göster
   void _showStatusChangeDialog(UserTrade trade) {
     int? selectedStatusId;
-    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    final tradeViewModel = _tradeViewModel;
+    
+    if (tradeViewModel == null) {
+      Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+      return;
+    }
     
     Logger.info('🔄 Durum değiştirme dialog\'u açılıyor - Trade #${trade.offerID}, Mevcut Durum: ${trade.statusID} (${trade.statusTitle})', tag: 'TradeView');
     
@@ -1850,7 +1895,7 @@ class _TradeViewState extends State<TradeView>
                 
                 // Manuel olarak TradeViewModel'i yenile
                 final userId = await _authService.getCurrentUserId();
-                if (userId != null) {
+                if (userId != null && tradeViewModel != null) {
                   await tradeViewModel.loadUserTrades(int.parse(userId));
                   Logger.info('✅ TradeViewModel manuel olarak yenilendi', tag: 'TradeView');
                   
@@ -2009,6 +2054,11 @@ class _TradeViewState extends State<TradeView>
                   if (success) {
                     // Başarılı işlem sonrası ek işlemler gerekebilir
                     Logger.info('Takas tamamlama ve yorum gönderme başarılı', tag: 'TradeView');
+                    
+                                    // Kullanıcı takaslarını yenile
+                if (_currentUserId != null && _tradeViewModel != null) {
+                  await _tradeViewModel!.loadUserTrades(int.parse(_currentUserId!));
+                }
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -2027,7 +2077,12 @@ class _TradeViewState extends State<TradeView>
   /// Takas durumunu güncelle
   Future<bool> _updateTradeStatus(UserTrade trade, int newStatusId) async {
     try {
-      final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+      final tradeViewModel = _tradeViewModel;
+      
+      if (tradeViewModel == null) {
+        Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+        return false;
+      }
       final userService = UserService();
       final userToken = await userService.getUserToken();
       
@@ -2283,7 +2338,12 @@ class _TradeViewState extends State<TradeView>
   /// Takas tamamlandığında yorum ve yıldız ile birlikte tamamla
   Future<bool> _completeTradeWithReview(UserTrade trade, int rating, String comment) async {
     try {
-      final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+      final tradeViewModel = _tradeViewModel;
+      
+      if (tradeViewModel == null) {
+        Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+        return false;
+      }
       final userService = UserService();
       final userToken = await userService.getUserToken();
       
@@ -2351,7 +2411,7 @@ class _TradeViewState extends State<TradeView>
         
         // Takaslari yeniden yukle
         final userId = await _authService.getCurrentUserId();
-        if (userId != null) {
+        if (userId != null && tradeViewModel != null) {
           await tradeViewModel.loadUserTrades(int.parse(userId));
           Logger.info('✅ TradeViewModel manuel olarak yenilendi (completeTradeWithReview)', tag: 'TradeView');
           
@@ -2390,7 +2450,12 @@ class _TradeViewState extends State<TradeView>
 
   /// Debug bilgisi göster
   void _showDebugInfo() {
-    final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+    final tradeViewModel = _tradeViewModel;
+    
+    if (tradeViewModel == null) {
+      Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+      return;
+    }
     final trades = tradeViewModel.userTrades;
     
     String debugInfo = '🔍 DEBUG BİLGİSİ\n\n';
@@ -2519,7 +2584,12 @@ class _TradeViewState extends State<TradeView>
       }
       
       if (!mounted) return;
-      final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
+      final tradeViewModel = _tradeViewModel;
+      
+      if (tradeViewModel == null) {
+        Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+        return;
+      }
       
       Logger.info('❌ Takas reddediliyor - Trade #${trade.offerID}, Sebep: $reason', tag: 'TradeView');
       
@@ -2543,7 +2613,7 @@ class _TradeViewState extends State<TradeView>
         
         // UI'ı yenile
         final userId = await _authService.getCurrentUserId();
-        if (userId != null) {
+        if (userId != null && tradeViewModel != null) {
           await tradeViewModel.loadUserTrades(int.parse(userId));
         }
       } else {

@@ -492,9 +492,9 @@ class TradeCard extends StatelessWidget {
                       // Teslim edildi durumu için yorum butonu (statusID=4)
                       else if (trade.statusID == 4)
                         _buildReviewButton(context)
-                      // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
-                      else if (trade.statusID == 5)
-                        _buildReviewButton(context)
+                                             // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
+                       else if (trade.statusID == 5 && (trade.hasReview != true))
+                         _buildReviewButton(context)
                       // Onay bekleyen takaslar için onay/red butonları (statusID=1)
                       else if (trade.statusID == 1) ...[
                         // API'den showButtons değeri gelmişse, sadece true olduğunda butonları göster

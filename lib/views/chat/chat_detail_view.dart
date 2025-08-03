@@ -32,6 +32,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   final ScrollController _scrollController = ScrollController();
   bool _hasMessageSent = false; // Mesaj gönderildi mi kontrolü için
   Product? _chatProduct; // Chat'e ait ürün bilgisi
+  bool _isDisposed = false; // Widget dispose edildi mi kontrolü için
 
   @override
   void initState() {
@@ -56,6 +57,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -63,7 +65,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _cleanupEmptyChat() {
     // Eğer hiç mesaj gönderilmediyse ve widget hala mounted ise
-    if (mounted && !_hasMessageSent) {
+    if (!_isDisposed && !_hasMessageSent) {
       try {
         final chatViewModel = context.read<ChatViewModel>();
         final chatMessages = chatViewModel.messages.where((message) => message.chatId == widget.chat.id).toList();
@@ -82,7 +84,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _onScroll() {
     // Yukarı scroll edildiğinde ve en üstteyse eski mesajları yükle
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
+    if (!_isDisposed && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
       try {
         final chatViewModel = context.read<ChatViewModel>();
         if (chatViewModel.hasMoreMessages && !chatViewModel.isLoadingMore) {
@@ -96,6 +98,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   void _loadMessages() {
+    if (_isDisposed) return;
+    
     try {
       final chatViewModel = context.read<ChatViewModel>();
       final authViewModel = context.read<AuthViewModel>();
@@ -109,7 +113,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       if (authViewModel.currentUser != null) {
         Future.delayed(const Duration(milliseconds: 500), () {
           try {
-            if (mounted) {
+            if (!_isDisposed) {
               final chatViewModel = context.read<ChatViewModel>();
               final authViewModel = context.read<AuthViewModel>();
               chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
@@ -125,15 +129,17 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   void _loadChatProduct() async {
+    if (_isDisposed) return;
+    
     try {
       // Öncelik: trade içindeki ürünler
       if (widget.chat.trade.offeredProducts.isNotEmpty) {
         _chatProduct = widget.chat.trade.offeredProducts.first;
-        setState(() {});
+        if (!_isDisposed) setState(() {});
         return;
       } else if (widget.chat.trade.requestedProducts.isNotEmpty) {
         _chatProduct = widget.chat.trade.requestedProducts.first;
-        setState(() {});
+        if (!_isDisposed) setState(() {});
         return;
       }
       
@@ -146,7 +152,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       if (productMsgs.isNotEmpty) {
         // En son gönderilen ürün mesajını al
         _chatProduct = productMsgs.last.product;
-        setState(() {});
+        if (!_isDisposed) setState(() {});
         return;
       }
       
@@ -154,7 +160,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       if (widget.chat.tradeId.isNotEmpty) {
         final productViewModel = context.read<ProductViewModel>();
         final product = await productViewModel.getProductDetail(widget.chat.tradeId);
-        if (product != null) {
+        if (!_isDisposed && product != null) {
           _chatProduct = product;
           setState(() {});
         }
@@ -166,6 +172,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   // Mesajlar yüklendiğinde ürün bilgisini güncelle
   void _updateChatProductFromMessages() {
+    if (_isDisposed) return;
+    
     try {
       final chatViewModel = context.read<ChatViewModel>();
       final productMsgs = chatViewModel.messages.where(
@@ -175,7 +183,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       if (productMsgs.isNotEmpty && _chatProduct == null) {
         // En son gönderilen ürün mesajını al
         _chatProduct = productMsgs.last.product;
-        setState(() {});
+        if (!_isDisposed) setState(() {});
       }
     } catch (e) {
       print('ChatDetailView: _updateChatProductFromMessages hatası: $e');
@@ -183,6 +191,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   void _sendMessage() {
+    if (_isDisposed) return;
+    
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
 
@@ -205,7 +215,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         // Mesaj gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
         Future.delayed(const Duration(milliseconds: 300), () {
           try {
-            if (mounted) {
+            if (!_isDisposed) {
               final chatViewModel = context.read<ChatViewModel>();
               final authViewModel = context.read<AuthViewModel>();
               chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
@@ -221,8 +231,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   void _scrollToBottom() {
+    if (_isDisposed) return;
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (!_isDisposed && _scrollController.hasClients) {
         // reverse: true olduğu için en üste scroll et (en yeni mesajlar aşağıda)
         _scrollController.animateTo(
           0,
@@ -827,6 +839,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   void _sendProductOnly(Product product) {
+    if (_isDisposed) return;
+    
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
 
@@ -843,16 +857,20 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       
       // Chat'e ait ürün bilgisini güncelle
       _chatProduct = product;
-      setState(() {});
+      if (!_isDisposed) setState(() {});
       
       // Ürün mesajı gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
       Future.delayed(const Duration(milliseconds: 300), () {
-        chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+        if (!_isDisposed) {
+          chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+        }
       });
     }
   }
 
   void _sendProductWithMessage(Product product, String message) {
+    if (_isDisposed) return;
+    
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
 
@@ -866,15 +884,17 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       
       // Chat'e ait ürün bilgisini güncelle
       _chatProduct = product;
-      setState(() {});
+      if (!_isDisposed) setState(() {});
       
       // Sonra seçilen mesajı gönder
       Future.delayed(const Duration(milliseconds: 500), () {
-        chatViewModel.sendMessage(
-          chatId: widget.chat.id,
-          content: message,
-          senderId: authViewModel.currentUser!.id,
-        );
+        if (!_isDisposed) {
+          chatViewModel.sendMessage(
+            chatId: widget.chat.id,
+            content: message,
+            senderId: authViewModel.currentUser!.id,
+          );
+        }
       });
       
       _scrollToBottom();
@@ -884,7 +904,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       
       // Mesajlar gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
       Future.delayed(const Duration(milliseconds: 800), () {
-        chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+        if (!_isDisposed) {
+          chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+        }
       });
     }
   }
@@ -1059,40 +1081,16 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           if (chatProduct != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Başlık
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.inventory_2_rounded,
-                            color: AppTheme.primary,
-                            size: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Ürün kartı
-                  _buildChatProductCard(chatProduct),
-                ],
-              ),
+              child: _buildChatProductCard(chatProduct),
             ),
           Expanded(
             child: Consumer<ChatViewModel>(
               builder: (context, chatViewModel, child) {
                 // Mesajlar yüklendiğinde ürün bilgisini güncelle
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _updateChatProductFromMessages();
+                  if (!_isDisposed) {
+                    _updateChatProductFromMessages();
+                  }
                 });
                 
                 if (chatViewModel.isLoading && chatViewModel.messages.isEmpty) {
