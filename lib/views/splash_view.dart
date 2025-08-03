@@ -41,15 +41,37 @@ void initState() {
 
 Future<void> _checkAuthAndNavigate() async {
   try {
-    Logger.info('🔍 SplashView - Always navigating to login for first entry');
+    Logger.info('🔍 SplashView - Checking authentication status...');
     
-    // Her zaman login sayfasına git (ilk giriş için)
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginView()),
-    );
+    // AuthViewModel'i al ve giriş durumunu kontrol et
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    
+    // AuthViewModel'i initialize et (hot reload için)
+    await authViewModel.checkHotReloadState();
+    
+    // Kullanıcının giriş durumunu kontrol et
+    final isLoggedIn = await authViewModel.isLoggedInAsync;
+    
+    Logger.info('🔍 SplashView - User login status: $isLoggedIn');
+    Logger.info('🔍 SplashView - Current user: ${authViewModel.currentUser?.name ?? 'None'}');
+    
+    // Daha güvenli kontrol: Hem isLoggedIn hem de currentUser kontrolü
+    if (isLoggedIn && authViewModel.currentUser != null && authViewModel.currentUser!.id.isNotEmpty) {
+      Logger.info('✅ SplashView - User is logged in, navigating to home');
+      // Kullanıcı giriş yapmışsa home'a yönlendir
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeView()),
+      );
+    } else {
+      Logger.info('❌ SplashView - User is not logged in, navigating to login');
+      // Kullanıcı giriş yapmamışsa login'e yönlendir
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginView()),
+      );
+    }
   } catch (e) {
-    Logger.error('❌ SplashView - Error navigating to login: $e', error: e);
-    // Hata durumunda da login sayfasına yönlendir
+    Logger.error('❌ SplashView - Error checking auth status: $e', error: e);
+    // Hata durumunda login sayfasına yönlendir
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const LoginView()),
     );

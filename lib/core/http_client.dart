@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 import 'constants.dart';
+import '../services/error_handler_service.dart';
 
 class HttpClient {
   static final HttpClient _instance = HttpClient._internal();
@@ -35,8 +37,27 @@ class HttpClient {
       await prefs.remove(AppConstants.userIdKey);
       await prefs.remove(AppConstants.userDataKey);
       print('✅ User data cleared successfully');
+      
+      // Global error handler'ı çağır
+      ErrorHandlerService.handleUnauthorizedError(null);
     } catch (e) {
       print('❌ Error clearing user data: $e');
+    }
+  }
+
+  Future<void> _handleForbidden() async {
+    print('🚨 403 Forbidden - Clearing user data and forcing logout');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppConstants.userTokenKey);
+      await prefs.remove(AppConstants.userIdKey);
+      await prefs.remove(AppConstants.userDataKey);
+      print('✅ User data cleared successfully for 403 error');
+      
+      // Global error handler'ı çağır
+      ErrorHandlerService.handleForbiddenError(null);
+    } catch (e) {
+      print('❌ Error clearing user data for 403: $e');
     }
   }
 
@@ -506,12 +527,15 @@ class HttpClient {
           print('❌ Error response data: $data');
 
           // Farklı hata mesajı alanlarını kontrol et
-          errorMessage =
-              data['message'] ??
-              data['error'] ??
-              data['error_message'] ??
-              data['errorMessage'] ??
-              errorMessage;
+          if (data['error_message'] != null) {
+            errorMessage = data['error_message'].toString();
+          } else if (data['message'] != null) {
+            errorMessage = data['message'].toString();
+          } else if (data['error'] != null) {
+            errorMessage = data['error'].toString();
+          } else if (data['errorMessage'] != null) {
+            errorMessage = data['errorMessage'].toString();
+          }
 
           print('❌ Extracted error message: $errorMessage');
         } catch (e) {
@@ -549,6 +573,8 @@ class HttpClient {
           // 401 hatası alındığında sadece Bearer token kullanan endpoint'lerde otomatik logout
           if (!isBasicAuth) {
             await _handleUnauthorized();
+            // Global error handler'ı çağır (401 hatası için)
+            ErrorHandlerService.handleUnauthorizedError(null);
             if (errorMessage == ErrorMessages.unknownError) {
               errorMessage = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.';
             }
@@ -559,8 +585,19 @@ class HttpClient {
           }
           break;
         case ApiConstants.forbidden:
-          if (errorMessage == ErrorMessages.unknownError) {
-            errorMessage = ErrorMessages.accessDenied;
+          // 403 hatası alındığında sadece Bearer token kullanan endpoint'lerde otomatik logout
+          if (!isBasicAuth) {
+            print('🚨 403 Forbidden error detected in HTTP client');
+            await _handleForbidden();
+            // Global error handler'ı çağır (403 hatası için)
+            ErrorHandlerService.handleForbiddenError(null);
+            if (errorMessage == ErrorMessages.unknownError) {
+              errorMessage = 'Erişim reddedildi. Lütfen tekrar giriş yapın.';
+            }
+          } else {
+            if (errorMessage == ErrorMessages.unknownError) {
+              errorMessage = ErrorMessages.accessDenied;
+            }
           }
           break;
         case ApiConstants.notFound:

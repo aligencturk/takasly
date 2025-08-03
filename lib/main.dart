@@ -24,6 +24,7 @@ import 'core/constants.dart';
 import 'core/app_theme.dart';
 import 'utils/logger.dart';
 import 'services/cache_service.dart';
+import 'services/error_handler_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,6 +78,7 @@ class TakaslyApp extends StatelessWidget {
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        navigatorKey: ErrorHandlerService.navigatorKey,
         initialRoute: '/',
         routes: {
           '/': (context) => SplashVideoPage(),

@@ -4,8 +4,42 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../core/app_theme.dart';
 
-class LoginView extends StatelessWidget {
+class LoginView extends StatefulWidget {
   const LoginView({super.key});
+
+  @override
+  State<LoginView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends State<LoginView> {
+  @override
+  void initState() {
+    super.initState();
+    // Sayfa açıldığında kullanıcının giriş durumunu kontrol et
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuthStatus(context);
+    });
+  }
+
+  Future<void> _checkAuthStatus(BuildContext context) async {
+    try {
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      
+      // AuthViewModel'i initialize et
+      await authViewModel.checkHotReloadState();
+      
+      // Kullanıcının giriş durumunu kontrol et
+      final isLoggedIn = await authViewModel.isLoggedInAsync;
+      
+      // Daha güvenli kontrol: Hem isLoggedIn hem de currentUser kontrolü
+      if (isLoggedIn && authViewModel.currentUser != null && authViewModel.currentUser!.id.isNotEmpty) {
+        // Kullanıcı zaten giriş yapmışsa home'a yönlendir
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } catch (e) {
+      // Hata durumunda login sayfasında kal
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

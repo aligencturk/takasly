@@ -14,6 +14,7 @@ import '../core/constants.dart';
 import '../core/sort_options.dart';
 import '../views/home/widgets/category_list.dart'; // CategoryIconCache için
 import '../utils/logger.dart';
+import '../services/error_handler_service.dart';
 
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
@@ -173,6 +174,16 @@ class ProductViewModel extends ChangeNotifier {
         print(
           '❌ ProductViewModel.loadAllProducts - API error: ${response.error}',
         );
+        
+        // 403 hatası kontrolü
+        if (response.error != null && 
+            (response.error!.contains('403') || 
+             response.error!.contains('Erişim reddedildi') ||
+             response.error!.contains('Geçersiz kullanıcı token'))) {
+          Logger.warning('🚨 403 error detected in ProductViewModel - triggering global error handler');
+          ErrorHandlerService.handleForbiddenError(null);
+        }
+        
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
@@ -239,6 +250,15 @@ class ProductViewModel extends ChangeNotifier {
         _hasMore = newProducts.length == AppConstants.defaultPageSize;
         _currentPage++;
       } else {
+        // 403 hatası kontrolü
+        if (response.error != null && 
+            (response.error!.contains('403') || 
+             response.error!.contains('Erişim reddedildi') ||
+             response.error!.contains('Geçersiz kullanıcı token'))) {
+          Logger.warning('🚨 403 error detected in ProductViewModel.loadProducts - triggering global error handler');
+          ErrorHandlerService.handleForbiddenError(null);
+        }
+        
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
@@ -322,6 +342,15 @@ class ProductViewModel extends ChangeNotifier {
         // View count'u artır
         _productService.incrementViewCount(productId);
       } else {
+        // 403 hatası kontrolü
+        if (response.error != null && 
+            (response.error!.contains('403') || 
+             response.error!.contains('Erişim reddedildi') ||
+             response.error!.contains('Geçersiz kullanıcı token'))) {
+          Logger.warning('🚨 403 error detected in ProductViewModel.loadProductById - triggering global error handler');
+          ErrorHandlerService.handleForbiddenError(null);
+        }
+        
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {

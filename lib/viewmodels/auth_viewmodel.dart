@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/firebase_chat_service.dart';
@@ -30,6 +31,15 @@ class AuthViewModel extends ChangeNotifier {
   bool get hasError => _errorMessage != null;
   bool get isInitialized => _isInitialized;
 
+  // Async login durumu kontrolü
+  Future<bool> get isLoggedInAsync async {
+    if (!_isInitialized) {
+      await _initializeAuth();
+    }
+    // Daha güvenli kontrol: Hem isLoggedIn hem de currentUser kontrolü
+    return _isLoggedIn && _currentUser != null && _currentUser!.id.isNotEmpty;
+  }
+
   AuthViewModel() {
     Logger.info('🚀 AuthViewModel constructor called');
     // Constructor'da hiç otomatik giriş yapma
@@ -56,7 +66,7 @@ class AuthViewModel extends ChangeNotifier {
         Logger.info('✅ User is logged in, fetching current user data...');
         _currentUser = await _authService.getCurrentUser();
         
-        if (_currentUser != null) {
+        if (_currentUser != null && _currentUser!.id.isNotEmpty && _currentUser!.id != '0') {
           Logger.info('✅ Current user loaded: ${_currentUser!.name} (${_currentUser!.id})');
           
           // Firebase'e kullanıcıyı kaydet (hot reload için)
@@ -67,11 +77,24 @@ class AuthViewModel extends ChangeNotifier {
             Logger.warning('⚠️ Firebase save error during hot reload: $e');
           }
         } else {
-          Logger.warning('⚠️ User is logged in but current user data is null');
+          Logger.warning('⚠️ User is logged in but current user data is null, empty ID, or ID is 0');
           _isLoggedIn = false;
+          _currentUser = null;
+          
+          // Geçersiz verileri temizle
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove(AppConstants.userTokenKey);
+            await prefs.remove(AppConstants.userIdKey);
+            await prefs.remove(AppConstants.userDataKey);
+            Logger.info('✅ Invalid user data cleared');
+          } catch (e) {
+            Logger.error('❌ Error clearing invalid user data: $e', error: e);
+          }
         }
       } else {
         Logger.info('❌ User is not logged in');
+        _currentUser = null;
       }
       
       _isInitialized = true;
@@ -79,6 +102,8 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('❌ AuthViewModel initialization error: $e', error: e);
       _setError(ErrorMessages.unknownError);
+      _isLoggedIn = false;
+      _currentUser = null;
     } finally {
       _setLoading(false);
     }
@@ -687,6 +712,28 @@ class AuthViewModel extends ChangeNotifier {
 
   void setError(String error) {
     _setError(error);
+  }
+
+  // 403 hatası durumunda otomatik logout
+  Future<void> handleForbiddenError() async {
+    Logger.warning('🚨 403 Forbidden error detected - Auto logout');
+    
+    // Token'ı temizle
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppConstants.userTokenKey);
+      await prefs.remove(AppConstants.userIdKey);
+      await prefs.remove(AppConstants.userDataKey);
+      Logger.info('✅ User data cleared for 403 error');
+    } catch (e) {
+      Logger.error('❌ Error clearing user data: $e', error: e);
+    }
+    
+    _currentUser = null;
+    _isLoggedIn = false;
+    _isInitialized = false;
+    _clearError();
+    notifyListeners();
   }
 
   bool _isValidEmail(String email) {
