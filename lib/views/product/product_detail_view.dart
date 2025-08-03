@@ -441,23 +441,7 @@ class _ImageCarousel extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Tam ekran göstergesi
-                    Positioned(
-                      top: 16,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.fullscreen,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
+
                   ],
                 ),
               );
