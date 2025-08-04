@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../core/app_theme.dart';
+import '../../utils/logger.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -15,6 +16,7 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
+    Logger.info('LoginView initialized', tag: 'LoginView');
     // Otomatik giriş kontrolü kaldırıldı - her seferinde login isteniyor
   }
 
@@ -214,6 +216,10 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
   }
 
   Future<void> _submitLogin(BuildContext context) async {
+    Logger.debug('_submitLogin called', tag: 'LoginView');
+    Logger.debug('Email: ${_emailController.text.trim()}', tag: 'LoginView');
+    Logger.debug('Password: ${_passwordController.text.trim().isNotEmpty ? "provided" : "empty"}', tag: 'LoginView');
+    
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
     
@@ -222,13 +228,21 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       _passwordController.text.trim(),
     );
 
+    Logger.debug('Login result: $success', tag: 'LoginView');
+    if (!success) {
+      Logger.error('Login failed: ${authViewModel.errorMessage}', tag: 'LoginView');
+    }
+
     if (mounted) {
       if (success) {
+        Logger.info('Login successful, navigating to home', tag: 'LoginView');
         if (authViewModel.currentUser != null) {
+          Logger.debug('Setting current user: ${authViewModel.currentUser!.name}', tag: 'LoginView');
           userViewModel.setCurrentUser(authViewModel.currentUser!);
         }
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
+        Logger.warning('Login failed, showing error message', tag: 'LoginView');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -402,7 +416,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
       password = '123';
     }
 
-    print('🧪 Test login başlatılıyor: $testUser ($email)');
+    Logger.info('Test login başlatılıyor: $testUser ($email)', tag: 'LoginView');
 
     final success = await authViewModel.login(email, password);
 
@@ -412,12 +426,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
           userViewModel.setCurrentUser(authViewModel.currentUser!);
         }
         
-        print('🧪 Test login başarılı: $testUser');
+        Logger.info('Test login başarılı: $testUser', tag: 'LoginView');
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
-        print(
-          '🧪 Test login başarısız: $testUser - ${authViewModel.errorMessage}',
-        );
+        Logger.error('Test login başarısız: $testUser - ${authViewModel.errorMessage}', tag: 'LoginView');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

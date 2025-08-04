@@ -24,6 +24,7 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
   birthday: json['birthday'] as String?,
   gender: json['gender'] as String?,
   token: json['token'] as String?,
+  isShowContact: json['isShowContact'] as bool?,
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -42,4 +43,5 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'birthday': instance.birthday,
   'gender': instance.gender,
   'token': instance.token,
+  'isShowContact': instance.isShowContact,
 };

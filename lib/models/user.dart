@@ -19,6 +19,7 @@ class User {
   final String? birthday;
   final String? gender; // Erkek, Kadın, Belirtilmemiş
   final String? token; // Kullanıcı token'ı
+  final bool? isShowContact; // Telefon numarasının görünürlüğü
 
   const User({
     required this.id,
@@ -36,6 +37,7 @@ class User {
     this.birthday,
     this.gender,
     this.token,
+    this.isShowContact,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -161,6 +163,7 @@ class User {
       gender: json['gender'] != null ? safeString(json['gender']) : 
               json['userGender'] != null ? safeString(json['userGender']) : null,
       token: json['token'] != null ? safeString(json['token']) : null,
+      isShowContact: json['isShowContact'] != null ? safeBool(json['isShowContact']) : true,
     );
   }
   Map<String, dynamic> toJson() {
@@ -190,6 +193,7 @@ class User {
     String? birthday,
     String? gender,
     String? token,
+    bool? isShowContact,
   }) {
     return User(
       id: id ?? this.id,
@@ -207,6 +211,7 @@ class User {
       birthday: birthday ?? this.birthday,
       gender: gender ?? this.gender,
       token: token ?? this.token,
+      isShowContact: isShowContact ?? this.isShowContact,
     );
   }
 

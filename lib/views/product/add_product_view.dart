@@ -1940,7 +1940,7 @@ class _AddProductViewState extends State<AddProductView> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Bu ayarı daha sonra ürün detay sayfasından değiştirebilirsiniz.',
+                    'Bu ayarı daha sonra ilan detay sayfasından değiştirebilirsiniz.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.blue.shade700,
                     ),

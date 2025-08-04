@@ -5,6 +5,7 @@ import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/user.dart';
 import '../models/user_profile_detail.dart';
+import '../utils/logger.dart';
 
 class UserService {
   final HttpClient _httpClient = HttpClient();
@@ -22,9 +23,10 @@ class UserService {
       final detectedPlatform = platform ?? getPlatform();
       final appVersion = version ?? AppConstants.appVersion;
 
-      print('🔄 UPDATE USER PROFILE');
-      print(
-        '📤 Request Body: {"userToken": "$userToken", "platform": "$detectedPlatform", "version": "$appVersion"}',
+      Logger.debug('UPDATE USER PROFILE', tag: 'UserService');
+      Logger.debug(
+        'Request Body: {"userToken": "$userToken", "platform": "$detectedPlatform", "version": "$appVersion"}',
+        tag: 'UserService',
       );
       final response = await _httpClient.putWithBasicAuth(
         ApiConstants.userProfile,
@@ -34,14 +36,14 @@ class UserService {
           'version': appVersion,
         },
         fromJson: (json) {
-          print('🔍 Update Profile fromJson - Raw data: $json');
+          Logger.debug('Update Profile fromJson - Raw data: $json', tag: 'UserService');
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
             // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
             if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
               final newToken = json['token'].toString();
-              print('🔄 Update Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              Logger.debug('Update Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...', tag: 'UserService');
               _updateTokenInBackground(newToken);
             }
 
@@ -60,7 +62,7 @@ class UserService {
               // Data içinde token kontrolü
               if (userDataToTransform.containsKey('token') && userDataToTransform['token'] != null && userDataToTransform['token'].toString().isNotEmpty) {
                 final newToken = userDataToTransform['token'].toString();
-                print('🔄 Update Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                Logger.debug('Update Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...', tag: 'UserService');
                 _updateTokenInBackground(newToken);
               }
             }
@@ -69,8 +71,9 @@ class UserService {
                 json['user'] is Map<String, dynamic>) {
               userDataToTransform = json['user'];
             } else {
-              print(
-                '⚠️ Update Profile - Unexpected response format, creating default user',
+              Logger.warning(
+                'Update Profile - Unexpected response format, creating default user',
+                tag: 'UserService',
               );
               return User(
                 id: '0',
@@ -173,9 +176,19 @@ class UserService {
     String? userBirthday,
     int? userGender,
     String? profilePhoto,
+    bool? isShowContact,
   }) async {
     try {
-      print('🔄 UPDATE ACCOUNT');
+      Logger.debug('UPDATE ACCOUNT called', tag: 'UserService');
+      Logger.debug('userToken: ${userToken.substring(0, 20)}...', tag: 'UserService');
+      Logger.debug('userFirstname: $userFirstname', tag: 'UserService');
+      Logger.debug('userLastname: $userLastname', tag: 'UserService');
+      Logger.debug('userEmail: $userEmail', tag: 'UserService');
+      Logger.debug('userPhone: $userPhone', tag: 'UserService');
+      Logger.debug('userBirthday: $userBirthday', tag: 'UserService');
+      Logger.debug('userGender: $userGender', tag: 'UserService');
+      Logger.debug('isShowContact: $isShowContact', tag: 'UserService');
+      Logger.debug('profilePhoto: ${profilePhoto != null ? "provided" : "null"}', tag: 'UserService');
 
       // Request body oluştur
       final Map<String, dynamic> body = {'userToken': userToken};
@@ -187,26 +200,27 @@ class UserService {
       if (userPhone != null) body['userPhone'] = userPhone;
       if (userBirthday != null) body['userBirthday'] = userBirthday;
       if (userGender != null) body['userGender'] = userGender;
+      if (isShowContact != null) body['isShowContact'] = isShowContact;
       if (profilePhoto != null) {
         // Profil fotoğrafını base64 formatında gönder
         body['profilePhoto'] = profilePhoto;
-        print('🔄 Update Account - Profile photo will be sent as base64');
+        Logger.debug('Profile photo will be sent as base64', tag: 'UserService');
       }
 
-      print('📤 Request Body: $body');
+      Logger.debug('Request Body: $body', tag: 'UserService');
 
       final response = await _httpClient.putWithBasicAuth(
         ApiConstants.updateAccount,
         body: body,
         fromJson: (json) {
-          print('🔍 Update Account fromJson - Raw data: $json');
+          Logger.debug('Update Account fromJson - Raw data: $json', tag: 'UserService');
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
             // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
             if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
               final newToken = json['token'].toString();
-              print('🔄 Update Account - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              Logger.debug('Update Account - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...', tag: 'UserService');
               _updateTokenInBackground(newToken);
             }
 
@@ -225,7 +239,7 @@ class UserService {
               // Data içinde token kontrolü
               if (userDataToTransform.containsKey('token') && userDataToTransform['token'] != null && userDataToTransform['token'].toString().isNotEmpty) {
                 final newToken = userDataToTransform['token'].toString();
-                print('🔄 Update Account - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                Logger.debug('Update Account - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...', tag: 'UserService');
                 _updateTokenInBackground(newToken);
               }
             }
@@ -237,8 +251,9 @@ class UserService {
             // Eğer sadece success mesajı gelirse, parametrelerden user oluştur
             else if (json.containsKey('message') ||
                 json.containsKey('success')) {
-              print(
-                '🔍 Update Account - Success message format, creating user from parameters',
+              Logger.debug(
+                'Update Account - Success message format, creating user from parameters',
+                tag: 'UserService',
               );
               return User(
                 id: '0',
@@ -259,8 +274,9 @@ class UserService {
                 gender: userGender?.toString(),
               );
             } else {
-              print(
-                '⚠️ Update Account - Unexpected response format, creating default user',
+              Logger.warning(
+                'Update Account - Unexpected response format, creating default user',
+                tag: 'UserService',
               );
               return User(
                 id: '0',

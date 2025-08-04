@@ -3,6 +3,7 @@ import '../models/user.dart';
 import '../services/user_service.dart';
 import '../core/constants.dart';
 import '../services/error_handler_service.dart';
+import '../utils/logger.dart';
 
 class UserViewModel extends ChangeNotifier {
   final UserService _userService = UserService();
@@ -28,19 +29,19 @@ class UserViewModel extends ChangeNotifier {
       final user = await _userService.getCurrentUser();
       if (user != null) {
         _currentUser = user;
-        print('✅ UserViewModel - Local user loaded: ${user.name}');
+        Logger.info('Local user loaded: ${user.name}', tag: 'UserViewModel');
       } else {
-        print('⚠️ UserViewModel - No local user, checking token...');
+        Logger.warning('No local user, checking token...', tag: 'UserViewModel');
         final token = await _userService.getUserToken();
         if (token != null && token.isNotEmpty) {
-          print('🔑 UserViewModel - Token found, fetching from API');
+          Logger.debug('Token found, fetching from API', tag: 'UserViewModel');
           await refreshUser();
         } else {
-          print('❌ UserViewModel - No token found, user needs to login');
+          Logger.error('No token found, user needs to login', tag: 'UserViewModel');
         }
       }
     } catch (e) {
-      print('❌ UserViewModel - Initialize error: $e');
+      Logger.error('Initialize error: $e', tag: 'UserViewModel');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
@@ -53,28 +54,28 @@ class UserViewModel extends ChangeNotifier {
     _clearError();
     
     try {
-      print('🔄 UserViewModel.forceRefreshUser - Starting...');
+      Logger.debug('forceRefreshUser - Starting...', tag: 'UserViewModel');
       
       // Önce local storage'daki mevcut kullanıcıyı kontrol et
       final localUser = await _userService.getCurrentUser();
       if (localUser != null) {
-        print('📱 UserViewModel - Found local user: ${localUser.name} (ID: ${localUser.id})');
-        print('📱 UserViewModel - Local user details: firstName=${localUser.firstName}, lastName=${localUser.lastName}');
+        Logger.debug('Found local user: ${localUser.name} (ID: ${localUser.id})', tag: 'UserViewModel');
+        Logger.debug('Local user details: firstName=${localUser.firstName}, lastName=${localUser.lastName}', tag: 'UserViewModel');
       } else {
-        print('📱 UserViewModel - No local user found');
+        Logger.debug('No local user found', tag: 'UserViewModel');
       }
       
       final success = await getUserProfile();
       if (success) {
-        print('✅ UserViewModel - User refreshed successfully');
-        print('✅ UserViewModel - Current user: ${_currentUser?.name} (ID: ${_currentUser?.id})');
-        print('✅ UserViewModel - User details: firstName=${_currentUser?.firstName}, lastName=${_currentUser?.lastName}');
-        print('✅ UserViewModel - User isVerified: ${_currentUser?.isVerified}');
+        Logger.info('User refreshed successfully', tag: 'UserViewModel');
+        Logger.debug('Current user: ${_currentUser?.name} (ID: ${_currentUser?.id})', tag: 'UserViewModel');
+        Logger.debug('User details: firstName=${_currentUser?.firstName}, lastName=${_currentUser?.lastName}', tag: 'UserViewModel');
+        Logger.debug('User isVerified: ${_currentUser?.isVerified}', tag: 'UserViewModel');
       } else {
-        print('❌ UserViewModel - Failed to refresh user');
+        Logger.error('Failed to refresh user', tag: 'UserViewModel');
       }
     } catch (e) {
-      print('❌ UserViewModel - Force refresh error: $e');
+      Logger.error('Force refresh error: $e', tag: 'UserViewModel');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
@@ -137,9 +138,21 @@ class UserViewModel extends ChangeNotifier {
     String? userBirthday,
     int? userGender,
     String? profilePhoto,
+    bool? isShowContact,
   }) async {
+    Logger.debug('updateAccount called with:', tag: 'UserViewModel');
+    Logger.debug('userFirstname: $userFirstname', tag: 'UserViewModel');
+    Logger.debug('userLastname: $userLastname', tag: 'UserViewModel');
+    Logger.debug('userEmail: $userEmail', tag: 'UserViewModel');
+    Logger.debug('userPhone: $userPhone', tag: 'UserViewModel');
+    Logger.debug('userBirthday: $userBirthday', tag: 'UserViewModel');
+    Logger.debug('userGender: $userGender', tag: 'UserViewModel');
+    Logger.debug('isShowContact: $isShowContact', tag: 'UserViewModel');
+    Logger.debug('profilePhoto: ${profilePhoto != null ? "provided" : "null"}', tag: 'UserViewModel');
+    
     final token = await _userService.getUserToken();
     if (token == null) {
+      Logger.error('No token found for updateAccount', tag: 'UserViewModel');
       _setError(ErrorMessages.sessionExpired);
       return false;
     }
@@ -148,6 +161,7 @@ class UserViewModel extends ChangeNotifier {
     _clearError();
 
     try {
+      Logger.debug('Calling _userService.updateAccount...', tag: 'UserViewModel');
       final response = await _userService.updateAccount(
         userToken: token,
         userFirstname: userFirstname,
@@ -157,19 +171,28 @@ class UserViewModel extends ChangeNotifier {
         userBirthday: userBirthday,
         userGender: userGender,
         profilePhoto: profilePhoto,
+        isShowContact: isShowContact,
       );
       
+      Logger.debug('updateAccount response received:', tag: 'UserViewModel');
+      Logger.debug('isSuccess: ${response.isSuccess}', tag: 'UserViewModel');
+      Logger.debug('error: ${response.error}', tag: 'UserViewModel');
+      Logger.debug('data: ${response.data != null ? "present" : "null"}', tag: 'UserViewModel');
+      
       if (response.isSuccess && response.data != null) {
+        Logger.info('Account updated successfully', tag: 'UserViewModel');
         _currentUser = response.data;
         await _userService.saveCurrentUser(response.data!);
         _setLoading(false);
         return true;
       } else {
+        Logger.error('Account update failed: ${response.error}', tag: 'UserViewModel');
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
+      Logger.error('updateAccount exception: $e', tag: 'UserViewModel');
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
@@ -183,7 +206,7 @@ class UserViewModel extends ChangeNotifier {
   }) async {
     final token = await _userService.getUserToken();
     if (token == null) {
-      print('❌ UserViewModel.getUserProfile - No token found');
+      Logger.error('getUserProfile - No token found', tag: 'UserViewModel');
       _setError(ErrorMessages.sessionExpired);
       return false;
     }
@@ -192,7 +215,7 @@ class UserViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      print('🔄 UserViewModel.getUserProfile - Calling API with token: ${token.substring(0, 20)}...');
+      Logger.debug('getUserProfile - Calling API with token: ${token.substring(0, 20)}...', tag: 'UserViewModel');
       
       final response = await _userService.getUserProfile(
         userToken: token,
@@ -200,28 +223,28 @@ class UserViewModel extends ChangeNotifier {
         version: version,
       );
       
-      print('📡 UserViewModel.getUserProfile - API response received');
-      print('📡 Response isSuccess: ${response.isSuccess}');
-      print('📡 Response error: ${response.error}');
+      Logger.debug('getUserProfile - API response received', tag: 'UserViewModel');
+      Logger.debug('Response isSuccess: ${response.isSuccess}', tag: 'UserViewModel');
+      Logger.debug('Response error: ${response.error}', tag: 'UserViewModel');
       
       if (response.isSuccess && response.data != null) {
-        print('✅ UserViewModel.getUserProfile - API returned user data');
-        print('✅ User data: name=${response.data!.name}, firstName=${response.data!.firstName}, lastName=${response.data!.lastName}');
-        print('✅ User data: email=${response.data!.email}, phone=${response.data!.phone}');
+        Logger.info('getUserProfile - API returned user data', tag: 'UserViewModel');
+        Logger.debug('User data: name=${response.data!.name}, firstName=${response.data!.firstName}, lastName=${response.data!.lastName}', tag: 'UserViewModel');
+        Logger.debug('User data: email=${response.data!.email}, phone=${response.data!.phone}', tag: 'UserViewModel');
         
         _currentUser = response.data;
         await _userService.saveCurrentUser(response.data!);
         _setLoading(false);
         return true;
       } else {
-        print('❌ UserViewModel.getUserProfile - API failed or returned null');
+        Logger.error('getUserProfile - API failed or returned null', tag: 'UserViewModel');
         
         // 403 hatası kontrolü
         if (response.error != null && 
             (response.error!.contains('403') || 
              response.error!.contains('Erişim reddedildi') ||
              response.error!.contains('Geçersiz kullanıcı token'))) {
-          print('🚨 403 error detected in UserViewModel.getUserProfile - triggering global error handler');
+          Logger.warning('403 error detected in getUserProfile - triggering global error handler', tag: 'UserViewModel');
           ErrorHandlerService.handleForbiddenError(null);
         }
         

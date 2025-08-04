@@ -6,6 +6,7 @@ import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:takasly/utils/phone_formatter.dart';
+import 'package:takasly/utils/logger.dart';
 import 'dart:io';
 import 'dart:convert';
 
@@ -27,6 +28,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   String? _selectedGender;
   File? _selectedImage;
   bool _isLoading = false;
+  bool _isShowContact = true; // Telefon numarasının görünürlüğü
   
   final ImagePicker _picker = ImagePicker();
 
@@ -50,10 +52,10 @@ class _EditProfileViewState extends State<EditProfileView> {
       }
       
       final dataUrl = 'data:$mimeType;base64,$base64String';
-      print('🔄 EditProfile - Image converted to base64, size: ${bytes.length} bytes');
+      Logger.debug('Image converted to base64, size: ${bytes.length} bytes', tag: 'EditProfile');
       return dataUrl;
     } catch (e) {
-      print('❌ EditProfile - Error converting image to base64: $e');
+      Logger.error('Error converting image to base64: $e', tag: 'EditProfile');
       return null;
     }
   }
@@ -72,12 +74,12 @@ class _EditProfileViewState extends State<EditProfileView> {
     final user = userViewModel.currentUser;
     
     if (user != null) {
-      print('🔄 EditProfile - Loading user data: ${user.name}');
-      print('🔄 EditProfile - firstName: ${user.firstName}');
-      print('🔄 EditProfile - lastName: ${user.lastName}');
-      print('🔄 EditProfile - email: ${user.email}');
-      print('🔄 EditProfile - gender (raw): ${user.gender}');
-      print('🔄 EditProfile - gender type: ${user.gender.runtimeType}');
+      Logger.debug('Loading user data: ${user.name}', tag: 'EditProfile');
+      Logger.debug('firstName: ${user.firstName}', tag: 'EditProfile');
+      Logger.debug('lastName: ${user.lastName}', tag: 'EditProfile');
+      Logger.debug('email: ${user.email}', tag: 'EditProfile');
+      Logger.debug('gender (raw): ${user.gender}', tag: 'EditProfile');
+      Logger.debug('gender type: ${user.gender.runtimeType}', tag: 'EditProfile');
       
       setState(() {
         _firstNameController.text = user.firstName ?? '';
@@ -90,25 +92,29 @@ class _EditProfileViewState extends State<EditProfileView> {
         
         // Gender değerini API'ye uygun şekilde set et
         final genderValue = user.gender?.toString();
-        print('🔄 EditProfile - genderValue: $genderValue');
+        Logger.debug('genderValue: $genderValue', tag: 'EditProfile');
         
         // String gender değerlerini int'e map et
         if (genderValue == 'Erkek' || genderValue == '1') {
           _selectedGender = '1';
-          print('🔄 EditProfile - _selectedGender set to: $_selectedGender (Erkek)');
+          Logger.debug('_selectedGender set to: $_selectedGender (Erkek)', tag: 'EditProfile');
         } else if (genderValue == 'Kadın' || genderValue == '2') {
           _selectedGender = '2';
-          print('🔄 EditProfile - _selectedGender set to: $_selectedGender (Kadın)');
+          Logger.debug('_selectedGender set to: $_selectedGender (Kadın)', tag: 'EditProfile');
         } else if (genderValue == 'Belirtilmemiş' || genderValue == '3') {
           _selectedGender = '3';
-          print('🔄 EditProfile - _selectedGender set to: $_selectedGender (Belirtilmemiş)');
+          Logger.debug('_selectedGender set to: $_selectedGender (Belirtilmemiş)', tag: 'EditProfile');
         } else {
           _selectedGender = '3'; // default: Belirtilmemiş
-          print('🔄 EditProfile - _selectedGender set to default: $_selectedGender (Belirtilmemiş)');
+          Logger.debug('_selectedGender set to default: $_selectedGender (Belirtilmemiş)', tag: 'EditProfile');
         }
+        
+        // Telefon numarası görünürlük ayarını yükle
+        _isShowContact = user.isShowContact ?? true;
+        Logger.debug('_isShowContact set to: $_isShowContact', tag: 'EditProfile');
       });
     } else {
-      print('⚠️ EditProfile - No user data available, refreshing...');
+      Logger.warning('No user data available, refreshing...', tag: 'EditProfile');
       // Kullanıcı verisi yoksa yenile
       userViewModel.forceRefreshUser().then((_) {
         if (mounted) {
@@ -141,9 +147,10 @@ class _EditProfileViewState extends State<EditProfileView> {
           ),
         );
         
-        print('🔄 EditProfile - Image selected: ${image.path}');
+        Logger.debug('Image selected: ${image.path}', tag: 'EditProfile');
       }
     } catch (e) {
+      Logger.error('Error selecting image: $e', tag: 'EditProfile');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Resim seçilirken hata oluştu: $e'),
@@ -192,15 +199,15 @@ class _EditProfileViewState extends State<EditProfileView> {
     try {
       final userViewModel = Provider.of<UserViewModel>(context, listen: false);
       
-      print('🔄 EditProfile - Updating account with:');
-      print('🔄 firstName: ${_firstNameController.text}');
-      print('🔄 lastName: ${_lastNameController.text}');
-      print('🔄 email: ${_emailController.text}');
+      Logger.debug('Updating account with:', tag: 'EditProfile');
+      Logger.debug('firstName: ${_firstNameController.text}', tag: 'EditProfile');
+      Logger.debug('lastName: ${_lastNameController.text}', tag: 'EditProfile');
+      Logger.debug('email: ${_emailController.text}', tag: 'EditProfile');
       
       // Profil fotoğrafını base64 formatına dönüştür
       String? profilePhotoBase64;
       if (_selectedImage != null) {
-        print('🔄 EditProfile - Converting selected image to base64...');
+        Logger.debug('Converting selected image to base64...', tag: 'EditProfile');
         profilePhotoBase64 = _convertImageToBase64(_selectedImage!);
         if (profilePhotoBase64 == null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -211,10 +218,10 @@ class _EditProfileViewState extends State<EditProfileView> {
           );
           return;
         }
-        print('✅ EditProfile - Image successfully converted to base64');
-        print('📏 EditProfile - Base64 string length: ${profilePhotoBase64.length}');
+        Logger.info('Image successfully converted to base64', tag: 'EditProfile');
+        Logger.debug('Base64 string length: ${profilePhotoBase64.length}', tag: 'EditProfile');
       } else {
-        print('ℹ️ EditProfile - No new image selected, keeping existing photo');
+        Logger.info('No new image selected, keeping existing photo', tag: 'EditProfile');
       }
       
       final result = await userViewModel.updateAccount(
@@ -225,6 +232,7 @@ class _EditProfileViewState extends State<EditProfileView> {
         userBirthday: _birthdayController.text,
         userGender: _selectedGender != null ? int.tryParse(_selectedGender!) : null,
         profilePhoto: profilePhotoBase64,
+        isShowContact: _isShowContact,
       );
 
       if (mounted) {
@@ -366,6 +374,8 @@ class _EditProfileViewState extends State<EditProfileView> {
                     _buildDateField(),
                     const SizedBox(height: 16),
                     _buildGenderDropdown(),
+                    const SizedBox(height: 16),
+                    _buildContactVisibilitySection(),
                     const SizedBox(height: 32),
                         _buildUpdateButton(),
                       ],
@@ -509,6 +519,99 @@ class _EditProfileViewState extends State<EditProfileView> {
           child: Text('Belirtilmemiş'),
         ),
       ],
+    );
+  }
+
+  Widget _buildContactVisibilitySection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.phone, color: AppTheme.primary, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Telefon Numarası Görünürlüğü',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Açıksa, diğer kullanıcılar size arayabilir',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isShowContact,
+                onChanged: (value) {
+                  setState(() {
+                    _isShowContact = value;
+                  });
+                },
+                activeColor: AppTheme.primary,
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Icon(
+                _isShowContact ? Icons.check_circle : Icons.info_outline,
+                color: _isShowContact ? Colors.green : Colors.orange,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _isShowContact 
+                      ? 'Telefon numaranız görünür olacak. Kullanıcılar size arayabilecek.'
+                      : 'Telefon numaranız gizli olacak. Sadece mesajlaşma ile iletişim kurulabilir.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: _isShowContact ? Colors.green.shade700 : Colors.orange.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Icon(Icons.security, color: Colors.blue, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Bu ayarı daha sonra profil sayfasından değiştirebilirsiniz.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

@@ -9,6 +9,7 @@ import '../../widgets/error_widget.dart' as custom_error;
 import '../../models/user_profile_detail.dart';
 import '../../widgets/report_dialog.dart';
 import '../../views/product/product_detail_view.dart';
+import '../../utils/logger.dart';
 
 class UserProfileDetailView extends StatefulWidget {
   final int userId;
@@ -32,6 +33,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
   @override
   void initState() {
     super.initState();
+    Logger.info('UserProfileDetailView initialized for userId: ${widget.userId}', tag: 'UserProfileDetailView');
     _viewModel = UserProfileDetailViewModel();
     _tabController = TabController(length: 2, vsync: this);
     _viewModel.setUserToken(widget.userToken);
@@ -39,6 +41,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
   }
 
   Future<void> _loadProfileDetail() async {
+    Logger.debug('Loading profile detail for userId: ${widget.userId}', tag: 'UserProfileDetailView');
     await _viewModel.loadProfileDetail(
       userToken: widget.userToken,
       userId: widget.userId,
