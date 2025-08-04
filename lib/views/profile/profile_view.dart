@@ -31,7 +31,7 @@ class _ProfileViewState extends State<ProfileView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     // Widget build edildikten sonra veri yükleme işlemini yap
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadProfileData();
@@ -154,6 +154,10 @@ class _ProfileViewState extends State<ProfileView>
                       icon: Icon(Icons.rate_review_outlined, size: 20),
                       text: 'Yorumlar',
                     ),
+                    Tab(
+                      icon: Icon(Icons.rate_review, size: 20),
+                      text: 'Değerlendirmelerim',
+                    ),
                   ],
                 ),
               ),
@@ -163,6 +167,7 @@ class _ProfileViewState extends State<ProfileView>
                   children: [
                     _buildProductsTab(user),
                     _buildReviewsTab(),
+                    _buildMyReviewsTab(),
                   ],
                 ),
               ),
@@ -191,6 +196,10 @@ class _ProfileViewState extends State<ProfileView>
           Tab(
             icon: Icon(Icons.rate_review_outlined, size: 20),
             text: 'Yorumlar',
+          ),
+          Tab(
+            icon: Icon(Icons.rate_review, size: 20),
+            text: 'Değerlendirmelerim',
           ),
         ],
       ),
@@ -622,6 +631,122 @@ class _ProfileViewState extends State<ProfileView>
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMyReviewsTab() {
+    return Consumer<UserProfileDetailViewModel>(
+      builder: (context, profileDetailVm, child) {
+        if (profileDetailVm.isLoading) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(40.0),
+            color: Colors.white,
+            child: const Center(child: LoadingWidget()),
+          );
+        }
+
+        if (profileDetailVm.hasError) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(40.0),
+            color: Colors.white,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Değerlendirmeleriniz yüklenemedi',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                    final userId = userViewModel.currentUser?.id;
+                    if (userId != null) {
+                      _loadUserProfileDetail(int.parse(userId));
+                    }
+                  },
+                  child: const Text('Tekrar Dene'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (!profileDetailVm.hasData || profileDetailVm.profileDetail == null) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(40.0),
+            color: Colors.white,
+            child: _buildEmptyTab(
+              icon: Icons.rate_review_outlined,
+              title: 'Henüz Değerlendirme Yapmamışsınız',
+              subtitle: 'Henüz hiç değerlendirme yapmamışsınız.',
+            ),
+          );
+        }
+
+        final profile = profileDetailVm.profileDetail!;
+        
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Değerlendirme sayısı
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(20),
+                color: Colors.white,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildReviewStatItem(
+                      icon: Icons.rate_review,
+                      value: profile.myReviews.length.toString(),
+                      label: 'Yaptığınız Değerlendirme',
+                      color: AppTheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Değerlendirmeler listesi
+              if (profile.myReviews.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  color: Colors.white,
+                  child: Column(
+                    children: profile.myReviews.map((review) => _buildReviewItem(review)).toList(),
+                  ),
+                )
+              else
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(40.0),
+                  color: Colors.white,
+                  child: _buildEmptyTab(
+                    icon: Icons.rate_review_outlined,
+                    title: 'Henüz Değerlendirme Yapmamışsınız',
+                    subtitle: 'Henüz hiç değerlendirme yapmamışsınız.',
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

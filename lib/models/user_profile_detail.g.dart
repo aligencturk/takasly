@@ -20,6 +20,9 @@ UserProfileDetail _$UserProfileDetailFromJson(Map<String, dynamic> json) =>
       reviews: (json['reviews'] as List<dynamic>)
           .map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
           .toList(),
+      myReviews: (json['myReviews'] as List<dynamic>)
+          .map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$UserProfileDetailToJson(UserProfileDetail instance) =>
@@ -32,6 +35,7 @@ Map<String, dynamic> _$UserProfileDetailToJson(UserProfileDetail instance) =>
       'totalReviews': instance.totalReviews,
       'products': instance.products,
       'reviews': instance.reviews,
+      'myReviews': instance.myReviews,
     };
 
 ProfileProduct _$ProfileProductFromJson(Map<String, dynamic> json) =>

@@ -134,7 +134,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ),
         ),
         
-        const SizedBox(height: 12),
+        const SizedBox(height: 5),
         
         // Şifre input
         Container(

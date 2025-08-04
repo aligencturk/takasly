@@ -121,6 +121,12 @@ class UserProfileDetailViewModel extends ChangeNotifier {
     return _profileDetail!.reviews.length.toString();
   }
 
+  /// Kendi yorum sayısını formatlar
+  String get formattedMyReviewCount {
+    if (_profileDetail == null) return '0';
+    return _profileDetail!.myReviews.length.toString();
+  }
+
   /// Ürünlerin favori olup olmadığını kontrol eder
   bool isProductFavorite(int productId) {
     if (_profileDetail == null) return false;
@@ -171,6 +177,32 @@ class UserProfileDetailViewModel extends ChangeNotifier {
     }
     
     return sortedReviews.take(limit).toList();
+  }
+
+  /// En son kendi yorumlarını alır (limit ile)
+  List<ProfileReview> getRecentMyReviews({int limit = 5}) {
+    if (_profileDetail == null) return [];
+    
+    final sortedMyReviews = List<ProfileReview>.from(_profileDetail!.myReviews);
+    sortedMyReviews.sort((a, b) => b.reviewDate.compareTo(a.reviewDate));
+    
+    if (sortedMyReviews.length <= limit) {
+      return sortedMyReviews;
+    }
+    
+    return sortedMyReviews.take(limit).toList();
+  }
+
+  /// Belirli bir kendi yorumunu alır
+  ProfileReview? getMyReviewById(int reviewId) {
+    if (_profileDetail == null) return null;
+    try {
+      return _profileDetail!.myReviews.firstWhere(
+        (r) => r.reviewID == reviewId,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   /// En popüler ürünleri alır (limit ile)
