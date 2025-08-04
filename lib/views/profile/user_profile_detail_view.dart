@@ -393,11 +393,20 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
           ),
         );
       },
-                           child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey[200]!),
-          ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[200]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -408,36 +417,29 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
                 ),
                 child: product.mainImage != null && product.mainImage!.isNotEmpty
                     ? ClipRRect(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                        ),
                         child: Image.network(
                           product.mainImage!,
                           width: double.infinity,
+                          height: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                              ),
-                              child: const Icon(
-                                Icons.image_not_supported,
-                                color: Colors.grey,
-                              ),
-                            );
+                            Logger.warning('Product image failed to load: ${product.mainImage}', tag: 'UserProfileDetailView');
+                            return _buildProductImagePlaceholder();
                           },
                         ),
                       )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                        ),
-                        child: const Icon(
-                          Icons.inventory_2,
-                          color: Colors.grey,
-                        ),
-                      ),
+                    : _buildProductImagePlaceholder(),
               ),
             ),
             
@@ -445,37 +447,166 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      product.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'ID: ${product.productID}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    if (product.isFavorite) ...[
-                      const SizedBox(height: 4),
-                      const Icon(
-                        Icons.favorite,
-                        color: Colors.red,
-                        size: 16,
-                      ),
-                    ],
+                                         // Ürün başlığı
+                     Text(
+                       product.title.isNotEmpty ? product.title : 'İsimsiz Ürün',
+                       style: const TextStyle(
+                         fontSize: 14,
+                         fontWeight: FontWeight.w600,
+                         color: Colors.black87,
+                         height: 1.2,
+                       ),
+                       maxLines: 2,
+                       overflow: TextOverflow.ellipsis,
+                     ),
+                     const SizedBox(height: 4),
+                     
+                     // Kategori ve durum bilgisi
+                     if (product.categoryName != null || product.condition != null) ...[
+                       Row(
+                         children: [
+                           if (product.categoryName != null) ...[
+                             Icon(
+                               Icons.category_outlined,
+                               size: 12,
+                               color: Colors.grey[500],
+                             ),
+                             const SizedBox(width: 2),
+                             Expanded(
+                               child: Text(
+                                 product.categoryName!,
+                                 style: TextStyle(
+                                   fontSize: 11,
+                                   color: Colors.grey[600],
+                                   fontWeight: FontWeight.w500,
+                                 ),
+                                 maxLines: 1,
+                                 overflow: TextOverflow.ellipsis,
+                               ),
+                             ),
+                           ],
+                           if (product.condition != null) ...[
+                             const SizedBox(width: 4),
+                             Container(
+                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                               decoration: BoxDecoration(
+                                 color: _getConditionColor(product.condition!).withOpacity(0.1),
+                                 borderRadius: BorderRadius.circular(4),
+                               ),
+                               child: Text(
+                                 product.condition!,
+                                 style: TextStyle(
+                                   fontSize: 9,
+                                   color: _getConditionColor(product.condition!),
+                                   fontWeight: FontWeight.w600,
+                                 ),
+                               ),
+                             ),
+                           ],
+                         ],
+                       ),
+                       const SizedBox(height: 4),
+                     ],
+                     
+                     // Konum bilgisi
+                     if (product.cityTitle != null || product.districtTitle != null) ...[
+                       Row(
+                         children: [
+                           Icon(
+                             Icons.location_on_outlined,
+                             size: 12,
+                             color: Colors.grey[500],
+                           ),
+                           const SizedBox(width: 2),
+                           Expanded(
+                             child: Text(
+                               [product.districtTitle, product.cityTitle]
+                                   .where((e) => e != null && e.isNotEmpty)
+                                   .join(', '),
+                               style: TextStyle(
+                                 fontSize: 10,
+                                 color: Colors.grey[600],
+                                 fontWeight: FontWeight.w400,
+                               ),
+                               maxLines: 1,
+                               overflow: TextOverflow.ellipsis,
+                             ),
+                           ),
+                         ],
+                       ),
+                       const SizedBox(height: 4),
+                     ],
+                     
+                     // Alt bilgiler
+                     Row(
+                       children: [
+                         // Favori ikonu ve sayısı
+                         if (product.isFavorite || (product.favoriteCount != null && product.favoriteCount! > 0)) ...[
+                           Row(
+                             children: [
+                               Icon(
+                                 Icons.favorite,
+                                 color: product.isFavorite ? Colors.red : Colors.grey[400],
+                                 size: 12,
+                               ),
+                               if (product.favoriteCount != null && product.favoriteCount! > 0) ...[
+                                 const SizedBox(width: 2),
+                                 Text(
+                                   '${product.favoriteCount}',
+                                   style: TextStyle(
+                                     fontSize: 10,
+                                     color: Colors.grey[600],
+                                     fontWeight: FontWeight.w500,
+                                   ),
+                                 ),
+                               ],
+                             ],
+                           ),
+                           const SizedBox(width: 6),
+                         ],
+                         
+                         // Takas ikonu
+                         if (product.isTrade == true) ...[
+                           Icon(
+                             Icons.swap_horiz,
+                             size: 12,
+                             color: AppTheme.primary,
+                           ),
+                           const SizedBox(width: 6),
+                         ],
+                         
+                         // Sponsor ikonu
+                         if (product.isSponsor == true) ...[
+                           Icon(
+                             Icons.star,
+                             size: 12,
+                             color: Colors.amber,
+                           ),
+                           const SizedBox(width: 6),
+                         ],
+                         
+                         // Ürün kodu (sadece varsa göster)
+                         if (product.productCode != null && product.productCode!.isNotEmpty) ...[
+                           Expanded(
+                             child: Text(
+                               'Kod: ${product.productCode}',
+                               style: TextStyle(
+                                 fontSize: 10,
+                                 color: Colors.grey[600],
+                                 fontWeight: FontWeight.w400,
+                               ),
+                             ),
+                           ),
+                         ] else ...[
+                           // Boş alan - sağ tarafta boşluk bırak
+                           const Expanded(child: SizedBox()),
+                         ],
+                       ],
+                     ),
                   ],
                 ),
               ),
@@ -755,5 +886,61 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
         ),
       ),
     );
+  }
+
+  Widget _buildProductImagePlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 32,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Resim Yok',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[500],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getConditionColor(String condition) {
+    switch (condition.toLowerCase()) {
+      case 'yeni':
+      case 'new':
+        return Colors.green;
+      case 'az kullanılmış':
+      case 'like new':
+      case 'çok az kullanılmış':
+        return Colors.blue;
+      case 'iyi':
+      case 'good':
+        return Colors.orange;
+      case 'orta':
+      case 'fair':
+        return Colors.deepOrange;
+      case 'kötü':
+      case 'poor':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 } 

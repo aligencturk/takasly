@@ -116,21 +116,61 @@ class ProfileProduct {
   final String title;
   final String? mainImage;
   final bool isFavorite;
+  // Ek alanlar - endpoint'ten gelen veriler
+  final String? description;
+  final String? categoryName;
+  final String? condition;
+  final String? brand;
+  final String? model;
+  final double? estimatedValue;
+  final String? cityTitle;
+  final String? districtTitle;
+  final DateTime? createdAt;
+  final String? productCode;
+  final int? favoriteCount;
+  final bool? isTrade;
+  final bool? isSponsor;
 
   const ProfileProduct({
     required this.productID,
     required this.title,
     this.mainImage,
     required this.isFavorite,
+    this.description,
+    this.categoryName,
+    this.condition,
+    this.brand,
+    this.model,
+    this.estimatedValue,
+    this.cityTitle,
+    this.districtTitle,
+    this.createdAt,
+    this.productCode,
+    this.favoriteCount,
+    this.isTrade,
+    this.isSponsor,
   });
 
   factory ProfileProduct.fromJson(Map<String, dynamic> json) {
     try {
       return ProfileProduct(
-        productID: json['productID'] ?? 0,
-        title: json['title'] ?? '',
-        mainImage: json['mainImage'],
+        productID: json['productID'] ?? json['id'] ?? 0,
+        title: json['productTitle'] ?? json['title'] ?? '',
+        mainImage: json['productImage'] ?? json['mainImage'] ?? json['image'],
         isFavorite: json['isFavorite'] ?? false,
+        description: json['productDesc'] ?? json['description'],
+        categoryName: json['categoryName'] ?? json['catname'] ?? json['category'],
+        condition: json['productCondition'] ?? json['condition'],
+        brand: json['brand'],
+        model: json['model'],
+        estimatedValue: json['estimatedValue'] != null ? (json['estimatedValue'] is int ? (json['estimatedValue'] as int).toDouble() : json['estimatedValue'] as double?) : null,
+        cityTitle: json['cityTitle'] ?? json['city'],
+        districtTitle: json['districtTitle'] ?? json['district'],
+        createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
+        productCode: json['productCode'] ?? json['code'],
+        favoriteCount: json['favoriteCount'] ?? json['favorites'],
+        isTrade: json['isTrade'] ?? json['trade'],
+        isSponsor: json['isSponsor'] ?? json['sponsor'],
       );
     } catch (e) {
       print('⚠️ ProfileProduct.fromJson - Parse error: $e');
@@ -149,12 +189,38 @@ class ProfileProduct {
     String? title,
     String? mainImage,
     bool? isFavorite,
+    String? description,
+    String? categoryName,
+    String? condition,
+    String? brand,
+    String? model,
+    double? estimatedValue,
+    String? cityTitle,
+    String? districtTitle,
+    DateTime? createdAt,
+    String? productCode,
+    int? favoriteCount,
+    bool? isTrade,
+    bool? isSponsor,
   }) {
     return ProfileProduct(
       productID: productID ?? this.productID,
       title: title ?? this.title,
       mainImage: mainImage ?? this.mainImage,
       isFavorite: isFavorite ?? this.isFavorite,
+      description: description ?? this.description,
+      categoryName: categoryName ?? this.categoryName,
+      condition: condition ?? this.condition,
+      brand: brand ?? this.brand,
+      model: model ?? this.model,
+      estimatedValue: estimatedValue ?? this.estimatedValue,
+      cityTitle: cityTitle ?? this.cityTitle,
+      districtTitle: districtTitle ?? this.districtTitle,
+      createdAt: createdAt ?? this.createdAt,
+      productCode: productCode ?? this.productCode,
+      favoriteCount: favoriteCount ?? this.favoriteCount,
+      isTrade: isTrade ?? this.isTrade,
+      isSponsor: isSponsor ?? this.isSponsor,
     );
   }
 
