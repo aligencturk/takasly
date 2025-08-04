@@ -17,6 +17,7 @@ class AuthViewModel extends ChangeNotifier {
   bool _isLoggedIn = false;
   String? _errorMessage;
   bool _isInitialized = false; // Hot reload kontrolü için
+  bool _isHotRestart = false; // Hot restart kontrolü için
 
   // ProductViewModel referansını ayarla
   void setProductViewModel(ProductViewModel productViewModel) {
@@ -33,7 +34,8 @@ class AuthViewModel extends ChangeNotifier {
 
   // Async login durumu kontrolü
   Future<bool> get isLoggedInAsync async {
-    if (!_isInitialized) {
+    // Sadece hot restart durumunda otomatik giriş yap
+    if (!_isInitialized && _isHotRestart) {
       await _initializeAuth();
     }
     // Daha güvenli kontrol: Hem isLoggedIn hem de currentUser kontrolü
@@ -116,26 +118,35 @@ class AuthViewModel extends ChangeNotifier {
     await _initializeAuth();
   }
 
+  // Hot restart için otomatik giriş yap
+  Future<void> enableHotRestartAutoLogin() async {
+    Logger.info('🔄 Enabling hot restart auto-login...');
+    _isHotRestart = true;
+    if (!_isInitialized) {
+      await _initializeAuth();
+    }
+  }
+
   // Hot reload durumunu kontrol et ve gerekirse yeniden başlat
   Future<void> checkHotReloadState() async {
     Logger.info('🔄 Checking hot reload state...');
     
-    // Eğer zaten initialized değilse, initialize et
-    if (!_isInitialized) {
-      Logger.info('🔄 Not initialized, running initialization...');
+    // Sadece hot restart durumunda otomatik giriş yap
+    if (!_isInitialized && _isHotRestart) {
+      Logger.info('🔄 Hot restart detected, running initialization...');
       await _initializeAuth();
       return;
     }
     
-    // Eğer initialized ama user data yoksa, yeniden kontrol et
-    if (_isInitialized && _currentUser == null && _isLoggedIn) {
-      Logger.warning('⚠️ Initialized but no user data, rechecking...');
+    // Eğer initialized ama user data yoksa ve hot restart ise, yeniden kontrol et
+    if (_isInitialized && _currentUser == null && _isLoggedIn && _isHotRestart) {
+      Logger.warning('⚠️ Hot restart: Initialized but no user data, rechecking...');
       _isInitialized = false;
       await _initializeAuth();
       return;
     }
     
-    Logger.info('✅ Hot reload state check completed - User: ${_currentUser?.name ?? 'None'}, LoggedIn: $_isLoggedIn');
+    Logger.info('✅ Hot reload state check completed - User: ${_currentUser?.name ?? 'None'}, LoggedIn: $_isLoggedIn, HotRestart: $_isHotRestart');
   }
 
   Future<bool> login(String email, String password) async {

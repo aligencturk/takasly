@@ -244,14 +244,72 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Kullanıcı Adı
-              Text(
-                profile.userFullname,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+              // Kullanıcı Adı ve Onay Durumu
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      profile.userFullname,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                                     // Onay Durumu Badge'i
+                   if (profile.isApproved) ...[
+                     const SizedBox(width: 8),
+                     Icon(
+                       Icons.verified,
+                       size: 18,
+                       color: AppTheme.primary,
+                     ),
+                   ] else ...[
+                     const SizedBox(width: 8),
+                     GestureDetector(
+                       onTap: () {
+                         // Doğrulama işlemi için gerekirse buraya navigasyon eklenebilir
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           const SnackBar(
+                             content: Text('Bu kullanıcı henüz doğrulanmamış'),
+                             backgroundColor: Colors.orange,
+                             behavior: SnackBarBehavior.floating,
+                           ),
+                         );
+                       },
+                       child: Container(
+                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                         decoration: BoxDecoration(
+                           color: Colors.orange.shade50,
+                           borderRadius: BorderRadius.circular(12),
+                           border: Border.all(color: Colors.orange.shade200),
+                         ),
+                         child: Row(
+                           mainAxisSize: MainAxisSize.min,
+                           children: [
+                             Icon(
+                               Icons.warning_amber_outlined,
+                               size: 14,
+                               color: Colors.orange.shade700,
+                             ),
+                             const SizedBox(width: 4),
+                             Text(
+                               'Doğrulanmamış',
+                               style: TextStyle(
+                                 fontSize: 11,
+                                 fontWeight: FontWeight.w500,
+                                 color: Colors.orange.shade700,
+                               ),
+                             ),
+                           ],
+                         ),
+                       ),
+                     ),
+                   ],
+                ],
               ),
               
               const SizedBox(height: 6),

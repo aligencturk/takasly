@@ -23,6 +23,7 @@ UserProfileDetail _$UserProfileDetailFromJson(Map<String, dynamic> json) =>
       myReviews: (json['myReviews'] as List<dynamic>)
           .map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
           .toList(),
+      isApproved: json['isApproved'] as bool,
     );
 
 Map<String, dynamic> _$UserProfileDetailToJson(UserProfileDetail instance) =>
@@ -36,6 +37,7 @@ Map<String, dynamic> _$UserProfileDetailToJson(UserProfileDetail instance) =>
       'products': instance.products,
       'reviews': instance.reviews,
       'myReviews': instance.myReviews,
+      'isApproved': instance.isApproved,
     };
 
 ProfileProduct _$ProfileProductFromJson(Map<String, dynamic> json) =>

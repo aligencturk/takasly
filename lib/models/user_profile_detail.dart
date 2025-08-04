@@ -13,6 +13,7 @@ class UserProfileDetail {
   final List<ProfileProduct> products;
   final List<ProfileReview> reviews;
   final List<ProfileReview> myReviews;
+  final bool isApproved;
 
   const UserProfileDetail({
     required this.userID,
@@ -24,6 +25,7 @@ class UserProfileDetail {
     required this.products,
     required this.reviews,
     required this.myReviews,
+    required this.isApproved,
   });
 
   factory UserProfileDetail.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class UserProfileDetail {
                 ?.map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
+        isApproved: json['isApproved'] ?? false,
       );
     } catch (e) {
       print('⚠️ UserProfileDetail.fromJson - Parse error: $e');
@@ -59,6 +62,7 @@ class UserProfileDetail {
         products: [],
         reviews: [],
         myReviews: [],
+        isApproved: false,
       );
     }
   }
@@ -75,6 +79,7 @@ class UserProfileDetail {
     List<ProfileProduct>? products,
     List<ProfileReview>? reviews,
     List<ProfileReview>? myReviews,
+    bool? isApproved,
   }) {
     return UserProfileDetail(
       userID: userID ?? this.userID,
@@ -86,6 +91,7 @@ class UserProfileDetail {
       products: products ?? this.products,
       reviews: reviews ?? this.reviews,
       myReviews: myReviews ?? this.myReviews,
+      isApproved: isApproved ?? this.isApproved,
     );
   }
 

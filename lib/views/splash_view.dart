@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:takasly/views/home/home_view.dart';
 import 'package:takasly/views/auth/login_view.dart';
 import 'package:takasly/viewmodels/auth_viewmodel.dart';
@@ -53,46 +54,44 @@ Future<void> _checkAuthAndNavigate() async {
       return;
     }
     
-    // AuthViewModel'i al ve giriş durumunu kontrol et
+    // AuthViewModel'i al
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     
-    // AuthViewModel'i initialize et (hot reload için)
-    await authViewModel.checkHotReloadState();
+    // Hot restart durumunu kontrol et (kullanıcı zaten giriş yapmış olabilir)
+    final isHotRestart = await _checkIfHotRestart();
     
-    // Widget'ın hala aktif olup olmadığını tekrar kontrol et
-    if (!mounted) {
-      Logger.warning('⚠️ SplashView - Widget is no longer mounted after auth check, aborting navigation');
-      return;
+    if (isHotRestart) {
+      Logger.info('🔄 SplashView - Hot restart detected, enabling auto-login...');
+      await authViewModel.enableHotRestartAutoLogin();
+      
+      // Hot restart durumunda otomatik giriş kontrolü yap
+      final isLoggedIn = await authViewModel.isLoggedInAsync;
+      
+      if (isLoggedIn && authViewModel.currentUser != null && authViewModel.currentUser!.id.isNotEmpty) {
+        Logger.info('✅ SplashView - Hot restart: User is logged in, navigating to home');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeView()),
+        );
+        return;
+      }
     }
     
-    // Kullanıcının giriş durumunu kontrol et
-    final isLoggedIn = await authViewModel.isLoggedInAsync;
+    // Normal durum veya hot restart'ta giriş yapılmamışsa login'e yönlendir
+    Logger.info('🔒 SplashView - Navigating to login (normal startup or no valid session)');
     
-    Logger.info('🔍 SplashView - User login status: $isLoggedIn');
-    Logger.info('🔍 SplashView - Current user: ${authViewModel.currentUser?.name ?? 'None'}');
-    
-    // Widget'ın hala aktif olup olmadığını son kez kontrol et
+    // Widget'ın hala aktif olup olmadığını kontrol et
     if (!mounted) {
       Logger.warning('⚠️ SplashView - Widget is no longer mounted before navigation, aborting');
       return;
     }
     
-    // Daha güvenli kontrol: Hem isLoggedIn hem de currentUser kontrolü
-    if (isLoggedIn && authViewModel.currentUser != null && authViewModel.currentUser!.id.isNotEmpty) {
-      Logger.info('✅ SplashView - User is logged in, navigating to home');
-      // Kullanıcı giriş yapmışsa home'a yönlendir
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeView()),
-      );
-    } else {
-      Logger.info('❌ SplashView - User is not logged in, navigating to login');
-      // Kullanıcı giriş yapmamışsa login'e yönlendir
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginView()),
-      );
-    }
+    // Login sayfasına yönlendir
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const LoginView()),
+    );
+    
   } catch (e) {
-    Logger.error('❌ SplashView - Error checking auth status: $e', error: e);
+    Logger.error('❌ SplashView - Error during navigation: $e', error: e);
     
     // Hata durumunda da mounted kontrolü yap
     if (!mounted) {
@@ -100,10 +99,33 @@ Future<void> _checkAuthAndNavigate() async {
       return;
     }
     
-    // Hata durumunda login sayfasına yönlendir
+    // Hata durumunda da login sayfasına yönlendir
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const LoginView()),
     );
+  }
+}
+
+// Hot restart durumunu kontrol et
+Future<bool> _checkIfHotRestart() async {
+  try {
+    // SharedPreferences'dan bir flag kontrol et
+    final prefs = await SharedPreferences.getInstance();
+    final lastAppStart = prefs.getInt('last_app_start') ?? 0;
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    
+    // Eğer son uygulama başlatma zamanı 10 saniye içindeyse hot restart olabilir
+    final isHotRestart = (currentTime - lastAppStart) < 10000; // 10 saniye
+    
+    // Şimdiki zamanı kaydet
+    await prefs.setInt('last_app_start', currentTime);
+    
+    Logger.info('🔍 SplashView - Hot restart check: $isHotRestart (time diff: ${currentTime - lastAppStart}ms)');
+    
+    return isHotRestart;
+  } catch (e) {
+    Logger.error('❌ SplashView - Error checking hot restart: $e', error: e);
+    return false;
   }
 }
 
