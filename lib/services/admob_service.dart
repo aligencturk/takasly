@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../utils/logger.dart';
 
@@ -27,6 +28,10 @@ class AdMobService {
   int _retryCount = 0;
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 5);
+  
+  // Thread güvenliği için mutex
+  final Completer<void> _initCompleter = Completer<void>();
+  bool _isInitializing = false;
 
   /// AdMob'u başlat
   Future<void> initialize() async {
@@ -35,11 +40,28 @@ class AdMobService {
       return;
     }
 
+    if (_isInitializing) {
+      Logger.debug('🔄 AdMobService - AdMob zaten başlatılıyor, bekle...');
+      await _initCompleter.future;
+      return;
+    }
+
+    _isInitializing = true;
+
     try {
       Logger.info('🚀 AdMobService - AdMob başlatılıyor...');
       
-      // UI thread'i bloklamamak için compute kullan
-      await compute(_initializeAdMobInBackground, null);
+      // WidgetsFlutterBinding'in hazır olduğundan emin ol
+      if (!WidgetsBinding.instance.isRootWidgetAttached) {
+        Logger.warning('⚠️ AdMobService - WidgetsBinding henüz hazır değil, bekleniyor...');
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
+      
+      // Flutter binding'in tamamen hazır olduğundan emin ol
+      WidgetsFlutterBinding.ensureInitialized();
+      
+      // AdMob'u doğrudan başlat
+      await MobileAds.instance.initialize();
       
       // Test modunu etkinleştir (sadece debug modda)
       if (kDebugMode) {
@@ -50,22 +72,18 @@ class AdMobService {
       }
 
       _isInitialized = true;
+      _initCompleter.complete();
       Logger.info('✅ AdMobService - AdMob başarıyla başlatıldı');
     } catch (e) {
       Logger.error('❌ AdMobService - AdMob başlatılırken hata: $e');
       _isInitialized = false;
+      _initCompleter.completeError(e);
+    } finally {
+      _isInitializing = false;
     }
   }
 
-  // Arka planda AdMob başlatma
-  static Future<void> _initializeAdMobInBackground(void _) async {
-    try {
-      await MobileAds.instance.initialize();
-    } catch (e) {
-      Logger.error('❌ AdMobService - Arka plan başlatma hatası: $e');
-      rethrow;
-    }
-  }
+
 
   /// Uygulama ID'sini al
   String get appId {
@@ -106,9 +124,9 @@ class AdMobService {
       return;
     }
 
-    // Eğer reklam zaten yüklüyse, yeni reklam yükleme
-    if (_isAdLoaded && _nativeAd != null) {
-      Logger.debug('ℹ️ AdMobService - Reklam zaten yüklü');
+    // Eğer reklam zaten yüklüyse ve geçerliyse, yeni reklam yükleme
+    if (_isAdLoaded && _nativeAd != null && _isAdValid()) {
+      Logger.debug('ℹ️ AdMobService - Reklam zaten yüklü ve geçerli');
       return;
     }
 
@@ -132,6 +150,16 @@ class AdMobService {
     }
   }
 
+  // Reklamın geçerli olup olmadığını kontrol et
+  bool _isAdValid() {
+    try {
+      return _nativeAd != null;
+    } catch (e) {
+      Logger.error('❌ AdMobService - Reklam geçerlilik kontrolü hatası: $e');
+      return false;
+    }
+  }
+
   // Arka planda reklam yükleme
   Future<void> _loadAdInBackground() async {
     try {
@@ -150,7 +178,7 @@ class AdMobService {
             Logger.error('❌ AdMobService - Native reklam yüklenemedi: ${error.message}');
             Logger.error('❌ AdMobService - Error code: ${error.code}');
             _handleLoadError();
-            ad.dispose();
+            _safeDisposeAd(ad as NativeAd);
           },
           onAdClicked: (ad) {
             Logger.info('👆 AdMobService - Native reklam tıklandı');
@@ -178,6 +206,15 @@ class AdMobService {
     } catch (e) {
       Logger.error('❌ AdMobService - Arka plan reklam yükleme hatası: $e');
       rethrow;
+    }
+  }
+
+  // Güvenli reklam dispose etme
+  void _safeDisposeAd(NativeAd ad) {
+    try {
+      ad.dispose();
+    } catch (e) {
+      Logger.error('❌ AdMobService - Güvenli reklam dispose hatası: $e');
     }
   }
 
@@ -218,15 +255,20 @@ class AdMobService {
   /// Native reklamın yüklenip yüklenmediğini kontrol et
   bool get isAdLoaded {
     // Eğer nativeAd objesi varsa ama _isAdLoaded false ise, true döndür
-    if (_nativeAd != null && !_isAdLoaded) {
+    if (_nativeAd != null && !_isAdLoaded && _isAdValid()) {
       Logger.warning('⚠️ AdMobService - nativeAd mevcut ama _isAdLoaded false, düzeltiliyor...');
       _isAdLoaded = true;
     }
-    return _isAdLoaded;
+    return _isAdLoaded && _isAdValid();
   }
 
-  /// Native reklamı al
-  NativeAd? get nativeAd => _nativeAd;
+  /// Native reklamı al (güvenli)
+  NativeAd? get nativeAd {
+    if (_nativeAd != null && _isAdValid()) {
+      return _nativeAd;
+    }
+    return null;
+  }
 
   /// Reklamı temizle
   void dispose() {

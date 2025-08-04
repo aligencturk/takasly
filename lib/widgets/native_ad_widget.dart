@@ -16,6 +16,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   bool _isAdLoaded = false;
   bool _isLoading = false;
   bool _hasError = false;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -25,14 +26,17 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _disposeAd();
     super.dispose();
   }
 
   Future<void> _loadAd() async {
-    if (_isLoading || _isAdLoaded) {
+    if (_isLoading || _isAdLoaded || _isDisposed) {
       return;
     }
+
+    if (!mounted) return;
 
     setState(() {
       _isLoading = true;
@@ -45,14 +49,17 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       // AdMob servisinden reklam yükle
       await _adMobService.loadNativeAd();
       
-      if (mounted) {
+      if (mounted && !_isDisposed) {
+        final nativeAd = _adMobService.nativeAd;
+        final isAdLoaded = _adMobService.isAdLoaded;
+        
         setState(() {
-          _nativeAd = _adMobService.nativeAd;
-          _isAdLoaded = _adMobService.isAdLoaded;
+          _nativeAd = nativeAd;
+          _isAdLoaded = isAdLoaded;
           _isLoading = false;
         });
         
-        if (_isAdLoaded) {
+        if (_isAdLoaded && _nativeAd != null) {
           Logger.info('✅ NativeAdWidget - Reklam başarıyla yüklendi');
         } else {
           Logger.warning('⚠️ NativeAdWidget - Reklam yüklenemedi');
@@ -61,7 +68,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       }
     } catch (e) {
       Logger.error('❌ NativeAdWidget - Reklam yükleme hatası: $e');
-      if (mounted) {
+      if (mounted && !_isDisposed) {
         setState(() {
           _isLoading = false;
           _hasError = true;
@@ -83,6 +90,11 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Widget dispose edilmişse boş container döndür
+    if (_isDisposed) {
+      return const SizedBox.shrink();
+    }
+
     if (_isLoading) {
       return _buildLoadingWidget();
     }
@@ -158,6 +170,11 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   }
 
   Widget _buildAdWidget() {
+    // Son güvenlik kontrolü
+    if (_nativeAd == null || _isDisposed) {
+      return _buildErrorWidget();
+    }
+
     return Container(
       height: 120,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

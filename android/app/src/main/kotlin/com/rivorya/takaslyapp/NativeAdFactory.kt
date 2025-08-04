@@ -1,6 +1,7 @@
 package com.rivorya.takaslyapp
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
@@ -13,17 +14,26 @@ import io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin
 
 class NativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.NativeAdFactory {
 
+    private val TAG = "NativeAdFactory"
+
     override fun createNativeAd(
         nativeAd: NativeAd,
         customOptions: MutableMap<String, Any>?
     ): NativeAdView {
-        val nativeAdView = LayoutInflater.from(context)
-            .inflate(R.layout.native_ad_layout, null) as NativeAdView
+        Log.d(TAG, "Native ad oluşturuluyor...")
+        
+        val nativeAdView = try {
+            LayoutInflater.from(context)
+                .inflate(R.layout.native_ad_layout, null) as NativeAdView
+        } catch (e: Exception) {
+            Log.e(TAG, "Layout inflate hatası: ${e.message}")
+            throw e
+        }
 
         try {
             // Headline
             nativeAdView.headlineView = nativeAdView.findViewById(R.id.ad_headline)
-            if (nativeAd.headline != null) {
+            if (nativeAd.headline != null && nativeAd.headline!!.isNotEmpty()) {
                 (nativeAdView.headlineView as TextView).text = nativeAd.headline
                 nativeAdView.headlineView?.visibility = View.VISIBLE
             } else {
@@ -57,6 +67,7 @@ class NativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.Nati
                     (nativeAdView.iconView as ImageView).setImageDrawable(nativeAd.icon?.drawable)
                     nativeAdView.iconView?.visibility = View.VISIBLE
                 } catch (e: Exception) {
+                    Log.w(TAG, "Icon yükleme hatası: ${e.message}")
                     nativeAdView.iconView?.visibility = View.GONE
                 }
             }
@@ -70,6 +81,7 @@ class NativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.Nati
                     (nativeAdView.starRatingView as RatingBar).rating = nativeAd.starRating!!.toFloat()
                     nativeAdView.starRatingView?.visibility = View.VISIBLE
                 } catch (e: Exception) {
+                    Log.w(TAG, "Star rating yükleme hatası: ${e.message}")
                     nativeAdView.starRatingView?.visibility = View.GONE
                 }
             }
@@ -102,27 +114,46 @@ class NativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.Nati
             }
 
             // Native ad'ı view'a bağla
-            nativeAdView.setNativeAd(nativeAd)
+            try {
+                nativeAdView.setNativeAd(nativeAd)
+                Log.d(TAG, "Native ad başarıyla oluşturuldu")
+            } catch (e: Exception) {
+                Log.e(TAG, "Native ad bağlama hatası: ${e.message}")
+                throw e
+            }
 
         } catch (e: Exception) {
+            Log.e(TAG, "Native ad oluşturma hatası: ${e.message}")
+            
             // Hata durumunda minimum görünüm sağla
             try {
+                Log.d(TAG, "Minimum native ad görünümü oluşturuluyor...")
+                
                 nativeAdView.headlineView = nativeAdView.findViewById(R.id.ad_headline)
-                if (nativeAd.headline != null) {
+                if (nativeAd.headline != null && nativeAd.headline!!.isNotEmpty()) {
                     (nativeAdView.headlineView as TextView).text = nativeAd.headline
                     nativeAdView.headlineView?.visibility = View.VISIBLE
                 }
                 
                 nativeAdView.callToActionView = nativeAdView.findViewById(R.id.ad_call_to_action)
-                if (nativeAd.callToAction != null) {
+                if (nativeAd.callToAction != null && nativeAd.callToAction!!.isNotEmpty()) {
                     (nativeAdView.callToActionView as Button).text = nativeAd.callToAction
                     nativeAdView.callToActionView?.visibility = View.VISIBLE
                 }
                 
                 nativeAdView.setNativeAd(nativeAd)
+                Log.d(TAG, "Minimum native ad görünümü başarıyla oluşturuldu")
             } catch (e2: Exception) {
+                Log.e(TAG, "Minimum native ad görünümü oluşturma hatası: ${e2.message}")
+                
                 // Son çare olarak sadece native ad'ı bağla
-                nativeAdView.setNativeAd(nativeAd)
+                try {
+                    nativeAdView.setNativeAd(nativeAd)
+                    Log.d(TAG, "Son çare native ad bağlama başarılı")
+                } catch (e3: Exception) {
+                    Log.e(TAG, "Son çare native ad bağlama hatası: ${e3.message}")
+                    throw e3
+                }
             }
         }
 

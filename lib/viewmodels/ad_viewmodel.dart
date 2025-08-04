@@ -11,6 +11,7 @@ class AdViewModel extends ChangeNotifier {
   int _productCount = 0;
   int _adFrequency = 4; // Her 4 üründen sonra 1 reklam
   int _lastAdIndex = -1;
+  bool _isInitialized = false;
 
   bool get isAdLoaded => _isAdLoaded;
   bool get isLoadingAd => _isLoadingAd;
@@ -19,11 +20,24 @@ class AdViewModel extends ChangeNotifier {
 
   /// AdMob'u başlat (performans optimizasyonlu)
   Future<void> initializeAdMob() async {
+    if (_isInitialized) {
+      Logger.debug('ℹ️ AdViewModel - AdMob zaten başlatılmış');
+      return;
+    }
+
     try {
       Logger.info('🚀 AdViewModel - AdMob başlatılıyor...');
       
+      // WidgetsFlutterBinding'in hazır olduğundan emin ol
+      if (!WidgetsBinding.instance.isRootWidgetAttached) {
+        Logger.warning('⚠️ AdViewModel - WidgetsBinding henüz hazır değil, bekleniyor...');
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
+      
       // UI thread'i bloklamamak için arka planda başlat
       await _initializeInBackground();
+      
+      _isInitialized = true;
       
       // Reklam yükleme işlemini de arka planda yap
       _loadAdInBackground();

@@ -59,10 +59,17 @@ class _HomeViewState extends State<HomeView> {
         productViewModel.loadCategories();
       }
       
-      // AdMob'u arka planda başlat (UI'ı bloklamasın)
-      Future.microtask(() {
-        final adViewModel = Provider.of<AdViewModel>(context, listen: false);
-        adViewModel.initializeAdMob();
+      // AdMob'u güvenli şekilde başlat (WidgetsFlutterBinding hazır olduktan sonra)
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          try {
+            final adViewModel = Provider.of<AdViewModel>(context, listen: false);
+            adViewModel.initializeAdMob();
+            Logger.info('🚀 HomeView - AdMob başlatma işlemi başlatıldı');
+          } catch (e) {
+            Logger.error('❌ HomeView - AdMob başlatma hatası: $e');
+          }
+        }
       });
     });
   }

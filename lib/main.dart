@@ -20,6 +20,24 @@ import 'viewmodels/ad_viewmodel.dart';
 import 'viewmodels/report_viewmodel.dart';
 import 'viewmodels/user_profile_detail_viewmodel.dart';
 import 'views/splash_view.dart';
+import 'views/home/home_view.dart';
+import 'views/auth/login_view.dart';
+import 'views/auth/register_view.dart';
+import 'views/auth/reset_password_view.dart';
+import 'views/auth/email_verification_view.dart';
+import 'views/product/add_product_view.dart';
+import 'views/product/edit_product_view.dart';
+import 'views/product/product_detail_view.dart';
+import 'views/profile/profile_view.dart';
+import 'views/profile/edit_profile_view.dart';
+import 'views/profile/settings_view.dart';
+import 'views/profile/change_password_view.dart';
+import 'views/profile/user_profile_detail_view.dart';
+import 'views/trade/trade_view.dart';
+import 'views/trade/trade_detail_view.dart';
+import 'views/trade/start_trade_view.dart';
+import 'views/chat/chat_list_view.dart';
+import 'views/chat/chat_detail_view.dart';
 import 'utils/logger.dart';
 
 
@@ -43,23 +61,15 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-      // Firebase'i başlat
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      
-      Logger.info('✅ Firebase başarıyla başlatıldı');
-    } catch (e) {
-      Logger.error('❌ Firebase başlatılırken hata: $e');
-    }
-
-  // AdMob'u başlat (arka planda)
+  // Firebase'i başlat
   try {
-    await MobileAds.instance.initialize();
-    Logger.info('✅ AdMob başarıyla başlatıldı');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    
+    Logger.info('✅ Firebase başarıyla başlatıldı');
   } catch (e) {
-    Logger.error('❌ AdMob başlatılırken hata: $e');
+    Logger.error('❌ Firebase başlatılırken hata: $e');
   }
 
   // Cache servisini başlat
@@ -68,6 +78,16 @@ void main() async {
     Logger.info('✅ Cache servisi başarıyla başlatıldı');
   } catch (e) {
     Logger.error('❌ Cache servisi başlatılırken hata: $e');
+  }
+
+  // AdMob'u başlat (WidgetsFlutterBinding.ensureInitialized() sonrası)
+  try {
+    Logger.info('🚀 AdMob başlatılıyor...');
+    await MobileAds.instance.initialize();
+    Logger.info('✅ AdMob başarıyla başlatıldı');
+  } catch (e) {
+    Logger.error('❌ AdMob başlatılırken hata: $e');
+    // AdMob başlatılamasa bile uygulama çalışmaya devam etsin
   }
 
   runApp(const MyApp());
@@ -85,25 +105,125 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TradeViewModel()),
         ChangeNotifierProvider(create: (_) => ChatViewModel()),
         ChangeNotifierProvider(create: (_) => UserViewModel()),
-        ChangeNotifierProvider(create: (_) => AdViewModel()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final adViewModel = AdViewModel();
+            // AdMob'u güvenli bir şekilde başlat
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              adViewModel.initializeAdMob();
+            });
+            return adViewModel;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => ReportViewModel()),
         ChangeNotifierProvider(create: (_) => UserProfileDetailViewModel()),
       ],
-      child: MaterialApp(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-                 home: SplashVideoPage(),
-        builder: (context, child) {
-          // Performans optimizasyonları
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaleFactor: 1.0, // Text scaling'i devre dışı bırak
-            ),
-            child: child!,
-          );
-        },
-      ),
+             child: MaterialApp(
+         title: AppConstants.appName,
+         debugShowCheckedModeBanner: false,
+         theme: AppTheme.lightTheme,
+         home: SplashVideoPage(),
+                   routes: {
+            '/home': (context) => const HomeView(),
+            '/login': (context) => const LoginView(),
+            '/register': (context) => const RegisterView(),
+            '/reset-password': (context) => const ResetPasswordView(),
+            '/profile': (context) => const ProfileView(),
+            '/edit-profile': (context) => const EditProfileView(),
+            '/settings': (context) => const SettingsView(),
+            '/change-password': (context) => const ChangePasswordView(),
+            '/trade': (context) => const TradeView(),
+            '/chat-list': (context) => const ChatListView(),
+          },
+          onGenerateRoute: (settings) {
+            Logger.info('🔄 Route oluşturuluyor: ${settings.name}');
+            
+            switch (settings.name) {
+              case '/email-verification':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (context) => EmailVerificationView(
+                    email: args?['email'] ?? '',
+                    codeToken: args?['codeToken'] ?? '',
+                  ),
+                );
+                
+              case '/add-product':
+                return MaterialPageRoute(
+                  builder: (context) => const AddProductView(),
+                );
+                
+              case '/edit-product':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (context) => EditProductView(
+                    product: args?['product'],
+                  ),
+                );
+                
+              case '/product-detail':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (context) => ProductDetailView(
+                    productId: args?['productId'] ?? '',
+                  ),
+                );
+                
+              case '/user-profile-detail':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (context) => UserProfileDetailView(
+                    userId: args?['userId'] ?? '',
+                    userToken: args?['userToken'] ?? '',
+                  ),
+                );
+                
+              case '/trade-detail':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (context) => TradeDetailView(
+                    offerID: args?['offerID'] ?? 0,
+                  ),
+                );
+                
+              case '/start-trade':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (context) => StartTradeView(
+                    receiverProduct: args?['receiverProduct'],
+                  ),
+                );
+                
+              case '/chat-detail':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (context) => ChatDetailView(
+                    chat: args?['chat'],
+                  ),
+                );
+                
+              default:
+                return MaterialPageRoute(
+                  builder: (context) => const HomeView(),
+                );
+            }
+          },
+         onUnknownRoute: (settings) {
+           Logger.warning('🚨 Bilinmeyen route: ${settings.name}');
+           return MaterialPageRoute(
+             builder: (context) => const HomeView(),
+           );
+         },
+         builder: (context, child) {
+           // Performans optimizasyonları
+           return MediaQuery(
+             data: MediaQuery.of(context).copyWith(
+               textScaleFactor: 1.0, // Text scaling'i devre dışı bırak
+             ),
+             child: child!,
+           );
+         },
+       ),
     );
   }
 }
