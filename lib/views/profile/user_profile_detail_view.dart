@@ -196,24 +196,10 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                         profile.userImage!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[100],
-                            child: const Icon(
-                              Icons.person,
-                              size: 36,
-                              color: Colors.grey,
-                            ),
-                          );
+                          return _buildAvatarPlaceholder(profile.userFullname);
                         },
                       )
-                    : Container(
-                        color: Colors.grey[100],
-                        child: const Icon(
-                          Icons.person,
-                          size: 36,
-                          color: Colors.grey,
-                        ),
-                      ),
+                    : _buildAvatarPlaceholder(profile.userFullname),
               ),
               
               const SizedBox(width: 32),
@@ -744,6 +730,30 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+
+  Widget _buildAvatarPlaceholder(String? userName) {
+    // Kullanıcı adından baş harfi al
+    String initial = '';
+    if (userName != null && userName.isNotEmpty) {
+      initial = userName.trim().substring(0, 1).toUpperCase();
+    } else {
+      initial = '?';
+    }
+
+    return Container(
+      color: Colors.grey[100],
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+      ),
     );
   }
 } 
