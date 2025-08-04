@@ -39,6 +39,8 @@ class _ProfileViewState extends State<ProfileView>
   }
 
   Future<void> _loadProfileData() async {
+    if (!mounted) return;
+    
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
     final productViewModel = Provider.of<ProductViewModel>(
       context,
@@ -50,10 +52,12 @@ class _ProfileViewState extends State<ProfileView>
       Logger.info('👤 ProfileView - User not loaded yet, waiting for initialization...');
       // UserViewModel'in initialize olmasını bekle
       await Future.delayed(Duration(milliseconds: 500));
+      if (!mounted) return;
     }
 
     // Önce kullanıcı verilerini yükle
     await userViewModel.forceRefreshUser();
+    if (!mounted) return;
 
     // Kullanıcı verileri yüklendikten sonra diğer verileri yükle
     final userId = userViewModel.currentUser?.id;
@@ -63,6 +67,7 @@ class _ProfileViewState extends State<ProfileView>
       // Kullanıcının ürünlerini yükle
       Logger.info('👤 ProfileView - Loading user products for user ID: $userId');
       await productViewModel.loadUserProducts(userId);
+      if (!mounted) return;
       
       // Yüklenen ürünlerin adres bilgilerini kontrol et
       Logger.info('👤 ProfileView - Loaded ${productViewModel.myProducts.length} products');
@@ -74,6 +79,7 @@ class _ProfileViewState extends State<ProfileView>
       
       // Kullanıcının favori ürünlerini yükle
       await productViewModel.loadFavoriteProducts();
+      if (!mounted) return;
       
       // Kullanıcının profil detaylarını yükle (değerlendirmeler için)
       await _loadUserProfileDetail(int.parse(userId));
@@ -84,6 +90,8 @@ class _ProfileViewState extends State<ProfileView>
   }
 
   Future<void> _loadUserProfileDetail(int userId) async {
+    if (!mounted) return;
+    
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
     final profileDetailViewModel = Provider.of<UserProfileDetailViewModel>(context, listen: false);
     final userToken = userViewModel.currentUser?.token;
@@ -400,6 +408,7 @@ class _ProfileViewState extends State<ProfileView>
                 const SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: () {
+                    if (!mounted) return;
                     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
                     final userId = userViewModel.currentUser?.id;
                     if (userId != null) {
@@ -671,6 +680,7 @@ class _ProfileViewState extends State<ProfileView>
                 const SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: () {
+                    if (!mounted) return;
                     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
                     final userId = userViewModel.currentUser?.id;
                     if (userId != null) {
@@ -975,6 +985,8 @@ class _ProfileViewState extends State<ProfileView>
                   color: Colors.grey[100],
                   child: TextButton(
                     onPressed: () async {
+                      if (!mounted) return;
+                      
                       final userViewModel = Provider.of<UserViewModel>(context, listen: false);
                       
                       final result = await Navigator.push(
@@ -1105,6 +1117,8 @@ class _ProfileViewState extends State<ProfileView>
   }
 
   void _editProduct(Product product) async {
+    if (!mounted) return;
+    
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -1119,6 +1133,8 @@ class _ProfileViewState extends State<ProfileView>
   }
 
   void _showDeleteConfirmDialog(Product product) {
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -1168,6 +1184,8 @@ class _ProfileViewState extends State<ProfileView>
   }
 
   Future<void> _deleteProduct(Product product) async {
+    if (!mounted) return;
+    
     // Loading dialog göster
     showDialog(
       context: context,
@@ -1264,6 +1282,8 @@ class _ProfileViewState extends State<ProfileView>
 
 
   void _navigateToEmailVerification() async {
+    if (!mounted) return;
+    
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     
@@ -1278,13 +1298,15 @@ class _ProfileViewState extends State<ProfileView>
     
     if (user == null) {
       Logger.error('❌ ProfileView: User is null in both ViewModels, cannot proceed with email verification');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       return;
     }
     
@@ -1458,6 +1480,8 @@ class _ProfileViewState extends State<ProfileView>
   }
 
   Future<void> _sendEmailVerificationWithToken(String userToken) async {
+    if (!mounted) return;
+    
     // Loading dialog göster
     showDialog(
       context: context,

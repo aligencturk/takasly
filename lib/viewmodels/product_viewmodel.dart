@@ -112,6 +112,11 @@ class ProductViewModel extends ChangeNotifier {
       print(
         '🔄 ProductViewModel.loadAllProducts - refresh mode, cleared products',
       );
+    } else {
+      // Refresh değilse ve ilk sayfa ise sayfa numarasını 1'e ayarla
+      if (_currentPage == 1) {
+        _hasMore = true;
+      }
     }
 
     if (_isLoading || _isLoadingMore) {
@@ -166,7 +171,11 @@ class ProductViewModel extends ChangeNotifier {
         }
 
         _hasMore = newProducts.length == AppConstants.defaultPageSize;
-        _currentPage++;
+        if (_currentPage == 1) {
+          _currentPage = 2; // İlk sayfa yüklendikten sonra 2. sayfaya geç
+        } else {
+          _currentPage++; // Sonraki sayfalar için artır
+        }
         print(
           '✅ ProductViewModel.loadAllProducts - hasMore: $_hasMore, nextPage: $_currentPage',
         );
@@ -206,28 +215,45 @@ class ProductViewModel extends ChangeNotifier {
     String? condition,
     bool refresh = false,
   }) async {
+    print('🔄 ProductViewModel.loadProducts - Starting with params: categoryId=$categoryId, searchText=$searchText, city=$city, condition=$condition, refresh=$refresh');
+    print('🔄 ProductViewModel.loadProducts - Current state: page=$_currentPage, hasMore=$_hasMore, isLoading=$_isLoading, isLoadingMore=$_isLoadingMore');
+    
     if (refresh) {
       _currentPage = 1;
       _hasMore = true;
       _products.clear();
+      print('🔄 ProductViewModel.loadProducts - Refresh mode: reset page=1, hasMore=true, cleared products');
+    } else {
+      // Refresh değilse ve ilk sayfa ise sayfa numarasını 1'e ayarla
+      if (_currentPage == 1) {
+        _hasMore = true;
+        print('🔄 ProductViewModel.loadProducts - First page: set hasMore=true');
+      }
     }
 
-    if (_isLoading || _isLoadingMore) return;
+    if (_isLoading || _isLoadingMore) {
+      print('⚠️ ProductViewModel.loadProducts - Already loading, returning');
+      return;
+    }
 
     _currentCategoryId = categoryId;
     _currentsearchText = searchText;
     _currentCity = city;
     _currentCondition = condition;
+    print('🔄 ProductViewModel.loadProducts - Updated current filters: categoryId=$_currentCategoryId, searchText=$_currentsearchText, city=$_currentCity, condition=$_currentCondition');
 
     if (_currentPage == 1) {
       _setLoading(true);
+      print('🔄 ProductViewModel.loadProducts - First page: set loading=true');
     } else {
       _setLoadingMore(true);
+      print('🔄 ProductViewModel.loadProducts - Next page: set loadingMore=true');
     }
 
     _clearError();
 
     try {
+      print('📡 ProductViewModel.loadProducts - Making API call with page=$_currentPage, sortBy=${_currentSortOption.value}');
       final response = await _productService.getProducts(
         page: _currentPage,
         limit: AppConstants.defaultPageSize,
@@ -238,17 +264,31 @@ class ProductViewModel extends ChangeNotifier {
         sortBy: _currentSortOption.value,
       );
 
+      print('📡 ProductViewModel.loadProducts - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data length: ${response.data?.length ?? 0}');
+
       if (response.isSuccess && response.data != null) {
         final newProducts = response.data!;
+        print('✅ ProductViewModel.loadProducts - Got ${newProducts.length} products');
 
         if (_currentPage == 1) {
           _products = newProducts;
+          print('✅ ProductViewModel.loadProducts - First page: replaced products list');
         } else {
           _products.addAll(newProducts);
+          print('✅ ProductViewModel.loadProducts - Next page: added ${newProducts.length} products to existing list');
         }
 
         _hasMore = newProducts.length == AppConstants.defaultPageSize;
-        _currentPage++;
+        if (_currentPage == 1) {
+          _currentPage = 2; // İlk sayfa yüklendikten sonra 2. sayfaya geç
+        } else {
+          _currentPage++; // Sonraki sayfalar için artır
+        }
+        
+        print('✅ ProductViewModel.loadProducts - Updated state: hasMore=$_hasMore, nextPage=$_currentPage, totalProducts=${_products.length}');
       } else {
         // 403 hatası kontrolü
         if (response.error != null && 
@@ -259,25 +299,53 @@ class ProductViewModel extends ChangeNotifier {
           ErrorHandlerService.handleForbiddenError(null);
         }
         
+        print('❌ ProductViewModel.loadProducts - API error: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
+      print('💥 ProductViewModel.loadProducts - Exception: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
       _setLoadingMore(false);
+      notifyListeners();
+      print('🏁 ProductViewModel.loadProducts - Completed, final state: isLoading=$_isLoading, isLoadingMore=$_isLoadingMore');
     }
   }
 
   Future<void> loadMoreProducts() async {
     if (!_hasMore || _isLoadingMore) return;
 
-    await loadProducts(
-      categoryId: _currentCategoryId,
-      searchText: _currentsearchText,
-      city: _currentCity,
-      condition: _currentCondition,
-    );
+    print('🔄 ProductViewModel.loadMoreProducts - Loading page $_currentPage');
+    _setLoadingMore(true);
+    _clearError();
+
+    try {
+      final response = await _productService.getAllProducts(
+        page: _currentPage,
+        limit: AppConstants.defaultPageSize,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final newProducts = response.data!;
+        print('✅ ProductViewModel.loadMoreProducts - got ${newProducts.length} more products');
+
+        _products.addAll(newProducts);
+        _hasMore = newProducts.length == AppConstants.defaultPageSize;
+        _currentPage++;
+        
+        print('✅ ProductViewModel.loadMoreProducts - hasMore: $_hasMore, nextPage: $_currentPage');
+      } else {
+        print('❌ ProductViewModel.loadMoreProducts - API error: ${response.error}');
+        _setError(response.error ?? ErrorMessages.unknownError);
+      }
+    } catch (e) {
+      print('💥 ProductViewModel.loadMoreProducts - Exception: $e');
+      _setError(ErrorMessages.unknownError);
+    } finally {
+      _setLoadingMore(false);
+      notifyListeners();
+    }
   }
 
   Future<void> refreshProducts() async {
@@ -286,6 +354,9 @@ class ProductViewModel extends ChangeNotifier {
       '🔄 ProductViewModel - Current _products.length: ${_products.length}',
     );
     try {
+      // Sayfa numarasını sıfırla
+      _currentPage = 1;
+      _hasMore = true;
       await Future.wait([loadCategories(), loadAllProducts(refresh: true)]);
       print('✅ ProductViewModel.refreshProducts completed');
       print('✅ ProductViewModel - Final _products.length: ${_products.length}');
@@ -298,9 +369,17 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> searchProducts(String query) async {
+    print('🔍 ProductViewModel.searchProducts - Starting search with query: "$query"');
+    print('🔍 ProductViewModel.searchProducts - Current state: page=$_currentPage, hasMore=$_hasMore');
+    
     _currentsearchText = query;
+    // Sayfa numarasını sıfırla
+    _currentPage = 1;
+    _hasMore = true;
+    print('🔍 ProductViewModel.searchProducts - Reset pagination: page=1, hasMore=true');
     notifyListeners();
 
+    print('🔍 ProductViewModel.searchProducts - Calling loadProducts with filters: categoryId=$_currentCategoryId, searchText=$query, city=$_currentCity, condition=$_currentCondition');
     await loadProducts(
       categoryId: _currentCategoryId,
       searchText: query,
@@ -308,18 +387,42 @@ class ProductViewModel extends ChangeNotifier {
       condition: _currentCondition,
       refresh: true,
     );
+    
+    print('✅ ProductViewModel.searchProducts - Search completed, total products: ${_products.length}');
   }
 
   Future<void> filterByCategory(String? categoryId) async {
+    print('🏷️ ProductViewModel.filterByCategory - Starting filter with categoryId: $categoryId');
+    print('🏷️ ProductViewModel.filterByCategory - Current state: page=$_currentPage, hasMore=$_hasMore');
+    
+    // Sayfa numarasını sıfırla
+    _currentPage = 1;
+    _hasMore = true;
+    print('🏷️ ProductViewModel.filterByCategory - Reset pagination: page=1, hasMore=true');
+    
     // Yeni filtreleme sistemi kullan
     final newFilter = _currentFilter.copyWith(categoryId: categoryId);
+    print('🏷️ ProductViewModel.filterByCategory - Created new filter: $newFilter');
+    print('🏷️ ProductViewModel.filterByCategory - Previous filter: $_currentFilter');
+    
     await applyFilter(newFilter);
+    
+    print('✅ ProductViewModel.filterByCategory - Filter applied, total products: ${_products.length}');
   }
 
   Future<void> sortProducts(SortOption sortOption) async {
+    print('📊 ProductViewModel.sortProducts - Starting sort with option: $sortOption');
+    print('📊 ProductViewModel.sortProducts - Current state: page=$_currentPage, hasMore=$_hasMore');
+    print('📊 ProductViewModel.sortProducts - Previous sort option: $_currentSortOption');
+    
     _currentSortOption = sortOption;
+    // Sayfa numarasını sıfırla
+    _currentPage = 1;
+    _hasMore = true;
+    print('📊 ProductViewModel.sortProducts - Reset pagination: page=1, hasMore=true');
     notifyListeners();
 
+    print('📊 ProductViewModel.sortProducts - Calling loadProducts with filters: categoryId=$_currentCategoryId, searchText=$_currentsearchText, city=$_currentCity, condition=$_currentCondition');
     await loadProducts(
       categoryId: _currentCategoryId,
       searchText: _currentsearchText,
@@ -327,19 +430,30 @@ class ProductViewModel extends ChangeNotifier {
       condition: _currentCondition,
       refresh: true,
     );
+    
+    print('✅ ProductViewModel.sortProducts - Sort completed, total products: ${_products.length}');
   }
 
   Future<void> loadProductById(String productId) async {
+    print('🔍 ProductViewModel.loadProductById - Starting to load product: $productId');
     _setLoading(true);
     _clearError();
 
     try {
+      print('📡 ProductViewModel.loadProductById - Making API call for product: $productId');
       final response = await _productService.getProductById(productId);
+
+      print('📡 ProductViewModel.loadProductById - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data?.title ?? 'null'}');
 
       if (response.isSuccess && response.data != null) {
         _selectedProduct = response.data;
+        print('✅ ProductViewModel.loadProductById - Product loaded successfully: ${response.data!.title}');
 
         // View count'u artır
+        print('👁️ ProductViewModel.loadProductById - Incrementing view count');
         _productService.incrementViewCount(productId);
       } else {
         // 403 hatası kontrolü
@@ -351,12 +465,15 @@ class ProductViewModel extends ChangeNotifier {
           ErrorHandlerService.handleForbiddenError(null);
         }
         
+        print('❌ ProductViewModel.loadProductById - API error: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
+      print('💥 ProductViewModel.loadProductById - Exception: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
+      print('🏁 ProductViewModel.loadProductById - Completed');
     }
   }
 
@@ -798,25 +915,36 @@ class ProductViewModel extends ChangeNotifier {
     String? districtId,
     String? districtTitle,
   }) async {
+    print('🚀 ProductViewModel.createProduct - Starting product creation');
+    print('📝 Product details: title="$title", categoryId=$categoryId, condition=$condition');
+    print('📸 Images count: ${images.length}');
+    print('🏷️ Trade preferences: $tradePreferences');
+    print('📍 Location: cityId=$cityId, districtId=$districtId');
+    
     if (title.trim().isEmpty || description.trim().isEmpty) {
+      print('❌ ProductViewModel.createProduct - Validation failed: title or description is empty');
       _setError(ErrorMessages.fieldRequired);
       return false;
     }
 
     if (images.isEmpty) {
+      print('❌ ProductViewModel.createProduct - Validation failed: no images provided');
       _setError('En az bir resim eklemelisiniz');
       return false;
     }
 
     if (tradePreferences.isEmpty) {
+      print('❌ ProductViewModel.createProduct - Validation failed: no trade preferences');
       _setError('Takas tercihlerinizi belirtmelisiniz');
       return false;
     }
 
+    print('✅ ProductViewModel.createProduct - Validation passed, starting API call');
     _setLoading(true);
     _clearError();
 
     try {
+      print('📡 ProductViewModel.createProduct - Making API call to create product');
       final response = await _productService.createProduct(
         title: title,
         description: description,
@@ -833,16 +961,25 @@ class ProductViewModel extends ChangeNotifier {
         districtTitle: districtTitle,
       );
 
+      print('📡 ProductViewModel.createProduct - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data?.title ?? 'null'}');
+
       if (response.isSuccess && response.data != null) {
         _myProducts.insert(0, response.data!);
+        print('✅ ProductViewModel.createProduct - Product created successfully: ${response.data!.title}');
+        print('✅ ProductViewModel.createProduct - Added to myProducts list, total count: ${_myProducts.length}');
         _setLoading(false);
         return true;
       } else {
+        print('❌ ProductViewModel.createProduct - API error: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
+      print('💥 ProductViewModel.createProduct - Exception: $e');
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
@@ -1046,25 +1183,36 @@ class ProductViewModel extends ChangeNotifier {
     required String tradeFor,
     required List<File> productImages,
   }) async {
+    print('🚀 ProductViewModel.addProduct - Starting product addition');
+    print('📝 Product details: title="$productTitle", categoryId=$categoryId, conditionId=$conditionId');
+    print('👤 User: userId=$userId, token=${userToken.substring(0, 20)}...');
+    print('📸 Images count: ${productImages.length}');
+    print('🔄 Trade for: $tradeFor');
+    
     if (productTitle.trim().isEmpty) {
+      print('❌ ProductViewModel.addProduct - Validation failed: product title is empty');
       _setError('Ürün başlığı boş olamaz');
       return false;
     }
 
     if (productDescription.trim().isEmpty) {
+      print('❌ ProductViewModel.addProduct - Validation failed: product description is empty');
       _setError('Ürün açıklaması boş olamaz');
       return false;
     }
 
     if (productImages.isEmpty) {
+      print('❌ ProductViewModel.addProduct - Validation failed: no product images');
       _setError('En az bir ürün resmi seçmelisiniz');
       return false;
     }
 
+    print('✅ ProductViewModel.addProduct - Validation passed, starting API call');
     _setLoading(true);
     _clearError();
 
     try {
+      print('📡 ProductViewModel.addProduct - Making API call to add product');
       final response = await _productService.addProduct(
         userToken: userToken,
         userId: userId,
@@ -1076,25 +1224,31 @@ class ProductViewModel extends ChangeNotifier {
         productImages: productImages,
       );
 
+      print('📡 ProductViewModel.addProduct - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data}');
+
       if (response.isSuccess && response.data != null) {
         final responseData = response.data!;
         final productId = responseData['productID']?.toString() ?? 'unknown';
         final message = responseData['message']?.toString() ?? 'İlan eklendi';
 
-        print('✅ Product added successfully!');
+        print('✅ ProductViewModel.addProduct - Product added successfully!');
         print('🆔 Product ID: $productId');
         print('💬 Message: $message');
 
         // Başarılı olduktan sonra ürün listesini yenile
-        print('🔄 Refreshing products...');
+        print('🔄 ProductViewModel.addProduct - Refreshing products...');
         await refreshProducts();
         return true;
       } else {
-        print('❌ Product add failed: ${response.error}');
+        print('❌ ProductViewModel.addProduct - API error: ${response.error}');
         _setError(response.error ?? 'İlan eklenemedi');
         return false;
       }
     } catch (e) {
+      print('💥 ProductViewModel.addProduct - Exception: $e');
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
@@ -1544,12 +1698,14 @@ class ProductViewModel extends ChangeNotifier {
       print(
         '🏁 ProductViewModel.applyFilter completed - final products count: ${_products.length}',
       );
+      notifyListeners();
     }
   }
 
   Future<void> clearFilters() async {
-    print('🔄 ProductViewModel.clearFilters - Clearing all filters');
-    print('🔄 ProductViewModel.clearFilters - Before: _currentFilter = $_currentFilter');
+    print('🧹 ProductViewModel.clearFilters - Starting to clear all filters');
+    print('🧹 ProductViewModel.clearFilters - Before: _currentFilter = $_currentFilter');
+    print('🧹 ProductViewModel.clearFilters - Current state: page=$_currentPage, hasMore=$_hasMore, productsCount=${_products.length}');
     
     // Tüm filtreleri sıfırla
     _currentFilter = const ProductFilter();
@@ -1563,8 +1719,10 @@ class ProductViewModel extends ChangeNotifier {
     _currentCity = null;
     _currentCondition = null;
     
-    print('🔄 ProductViewModel.clearFilters - After: _currentFilter = $_currentFilter');
-    print('🔄 ProductViewModel.clearFilters - Loading all products...');
+    print('🧹 ProductViewModel.clearFilters - After: _currentFilter = $_currentFilter');
+    print('🧹 ProductViewModel.clearFilters - Reset pagination: page=1, hasMore=true');
+    print('🧹 ProductViewModel.clearFilters - Cleared all filter parameters');
+    print('🧹 ProductViewModel.clearFilters - Loading all products...');
     
     await loadAllProducts(refresh: true);
     
@@ -1606,53 +1764,80 @@ class ProductViewModel extends ChangeNotifier {
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoadingMore(false);
+      notifyListeners();
     }
   }
 
   Future<bool> _verifyDeletion(String productId, {int retries = 3, Duration delay = const Duration(seconds: 1)}) async {
+    print('🔍 ProductViewModel._verifyDeletion - Starting verification for product: $productId');
+    print('🔍 ProductViewModel._verifyDeletion - Retries: $retries, delay: $delay');
+    
     for (int i = 0; i < retries; i++) {
-      print('🔍 Verification attempt #${i + 1} for product $productId...');
+      print('🔍 ProductViewModel._verifyDeletion - Verification attempt #${i + 1} for product $productId...');
       final currentUser = await _authService.getCurrentUser();
-      if (currentUser == null) return false; // Should not happen
+      if (currentUser == null) {
+        print('❌ ProductViewModel._verifyDeletion - Current user is null, verification failed');
+        return false; // Should not happen
+      }
 
+      print('👤 ProductViewModel._verifyDeletion - Current user: ${currentUser.id}');
       await loadUserProducts(currentUser.id);
       final productStillExists = _myProducts.any((p) => p.id == productId);
 
       if (!productStillExists) {
+        print('✅ ProductViewModel._verifyDeletion - Product $productId successfully deleted, verification passed');
         return true; // Verified!
       }
 
-      print('⚠️ Product $productId still exists, waiting for ${delay * (i + 1)}...');
+      print('⚠️ ProductViewModel._verifyDeletion - Product $productId still exists in myProducts list');
+      print('⚠️ ProductViewModel._verifyDeletion - Waiting for ${delay * (i + 1)} before next attempt...');
       await Future.delayed(delay * (i + 1)); // Increasing delay
     }
+    
+    print('❌ ProductViewModel._verifyDeletion - Verification failed after $retries attempts');
     return false; // Failed after all retries
   }
 
   /// Ürün detayını getirir (detay sayfası için)
   Future<product_model.Product?> getProductDetail(String productId) async {
+    print('🔍 ProductViewModel.getProductDetail - Starting to get product detail: $productId');
     _setLoading(true);
     _clearError();
     try {
+      print('🔑 ProductViewModel.getProductDetail - Getting user token');
       final userToken = await _authService.getToken();
       if (userToken == null || userToken.isEmpty) {
+        print('❌ ProductViewModel.getProductDetail - User token is null or empty');
         _setError('Kullanıcı oturumu bulunamadı');
         _setLoading(false);
         return null;
       }
+      print('✅ ProductViewModel.getProductDetail - User token obtained: ${userToken.substring(0, 20)}...');
+      
+      print('📡 ProductViewModel.getProductDetail - Making API call for product detail');
       final response = await _productService.getProductDetail(
         userToken: userToken,
         productId: productId,
       );
+      
+      print('📡 ProductViewModel.getProductDetail - Response received');
+      print('📊 Response success: ${response.isSuccess}');
+      print('📊 Response error: ${response.error}');
+      print('📊 Response data: ${response.data?.title ?? 'null'}');
+      
       if (response.isSuccess && response.data != null) {
         _selectedProduct = response.data;
+        print('✅ ProductViewModel.getProductDetail - Product detail loaded successfully: ${response.data!.title}');
         _setLoading(false);
         return response.data;
       } else {
+        print('❌ ProductViewModel.getProductDetail - API error: ${response.error}');
         _setError(response.error ?? 'Ürün detayı alınamadı');
         _setLoading(false);
         return null;
       }
     } catch (e) {
+      print('💥 ProductViewModel.getProductDetail - Exception: $e');
       _setError('Ürün detayı alınamadı: $e');
       _setLoading(false);
       return null;
