@@ -730,8 +730,8 @@ class _ProductInfoState extends State<_ProductInfo> {
               const SizedBox(height: 16),
               // 1. En önemli bilgiler (üst sırada)
               _InfoRow('İlan Sahibi :', widget.product.userFullname ?? widget.product.owner?.name ?? 'Belirtilmemiş'),
-              if (widget.product.isShowContact == true)
-                _InfoRow('İletişim :', widget.product.userPhone ?? 'Belirtilmemiş'),
+              if (widget.product.isShowContact == true && widget.product.userPhone != null && widget.product.userPhone!.isNotEmpty)
+                _InfoRow('İletişim :', widget.product.userPhone!),
               _InfoRow('Durum :', widget.product.productCondition ?? widget.product.condition ?? 'Belirtilmemiş'),
               _InfoRow('Kategori :', _getCategoryDisplayName(widget.product)),
               
@@ -1123,9 +1123,9 @@ class _ProductInfoState extends State<_ProductInfo> {
     final userPhone = product.userPhone;
     
     // Debug için log ekle
-    print('🔍 Product Detail - isShowContact: ${product.isShowContact}');
-    print('🔍 Product Detail - userPhone: $userPhone');
-    print('🔍 Product Detail - userPhone isNotEmpty: ${userPhone?.isNotEmpty}');
+    Logger.debug('Product Detail - isShowContact: ${product.isShowContact}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - userPhone: $userPhone', tag: 'ProductDetail');
+    Logger.debug('Product Detail - userPhone isNotEmpty: ${userPhone?.isNotEmpty}', tag: 'ProductDetail');
     
     if (owner == null && product.userFullname == null) {
       return Container(
@@ -1175,20 +1175,20 @@ class _ProductInfoState extends State<_ProductInfo> {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () async {
-          print('🔍 Product Detail - Kullanıcı özetine tıklandı');
-          print('🔍 Product Detail - owner: ${owner.id} - ${owner.name}');
+          Logger.debug('Product Detail - Kullanıcı özetine tıklandı', tag: 'ProductDetail');
+          Logger.debug('Product Detail - owner: ${owner.id} - ${owner.name}', tag: 'ProductDetail');
           
           // Token'ı SharedPreferences'dan al
           final prefs = await SharedPreferences.getInstance();
           final userToken = prefs.getString(AppConstants.userTokenKey);
-          print('🔍 Product Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...');
+          Logger.debug('Product Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...', tag: 'ProductDetail');
           
           if (userToken != null && userToken.isNotEmpty) {
                       try {
             // Yeni API'den gelen userID'yi kullan
             final userId = int.parse(product.ownerId);
-            print('🔍 Product Detail - userId parsed: $userId');
-            print('🔍 Product Detail - Navigating to UserProfileDetailView...');
+            Logger.debug('Product Detail - userId parsed: $userId', tag: 'ProductDetail');
+            Logger.debug('Product Detail - Navigating to UserProfileDetailView...', tag: 'ProductDetail');
             
             Navigator.push(
               context,
@@ -1199,9 +1199,9 @@ class _ProductInfoState extends State<_ProductInfo> {
                 ),
               ),
             );
-            print('🔍 Product Detail - Navigation completed');
+            Logger.debug('Product Detail - Navigation completed', tag: 'ProductDetail');
           } catch (e) {
-            print('❌ Product Detail - ID parse error: $e');
+            Logger.error('Product Detail - ID parse error: $e', tag: 'ProductDetail');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Kullanıcı profili açılamadı'),
@@ -1211,7 +1211,7 @@ class _ProductInfoState extends State<_ProductInfo> {
             );
           }
           } else {
-            print('❌ Product Detail - Token not available');
+            Logger.error('Product Detail - Token not available', tag: 'ProductDetail');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Kullanıcı profili açılamadı'),
@@ -1337,7 +1337,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                       ),
                     ),
                     // Telefon numarası - sadece isShowContact true ise göster
-                    if (userPhone != null && userPhone.isNotEmpty)
+                    if (product.isShowContact == true && userPhone != null && userPhone.isNotEmpty)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1522,7 +1522,7 @@ class _ActionBar extends StatelessWidget {
     }
   }
 
-  void _callOwner(BuildContext context) {
+  Future<void> _callOwner(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
     
     if (authViewModel.currentUser == null) {
@@ -1544,8 +1544,13 @@ class _ActionBar extends StatelessWidget {
     // Telefon numarası varsa arama yap
     if (product.userPhone != null && product.userPhone!.isNotEmpty) {
       // Telefon numarasını arama uygulamasında aç
-      // Bu kısım daha sonra implement edilebilir
-      onShowSnackBar?.call('Arama özelliği yakında eklenecek.', error: false);
+      try {
+        final phoneNumber = product.userPhone!.replaceAll(RegExp(r'[^\d+]'), '');
+        final url = 'tel:$phoneNumber';
+        await launchUrl(Uri.parse(url));
+      } catch (e) {
+        onShowSnackBar?.call('Arama başlatılamadı: $e', error: true);
+      }
     } else {
       onShowSnackBar?.call('Telefon numarası bulunamadı.', error: true);
     }
@@ -1638,7 +1643,7 @@ class _ActionBar extends StatelessWidget {
                 child: SizedBox(
                   height: 45,
                   child: OutlinedButton.icon(
-                    onPressed: () => _callOwner(context),
+                    onPressed: () async => await _callOwner(context),
                     icon: const Icon(Icons.phone, size: 16),
                     label: const Text(
                       'Ara',
