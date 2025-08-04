@@ -107,23 +107,42 @@ class _TradeViewState extends State<TradeView>
     _currentUserId = userId;
 
     if (userId != null && userId.isNotEmpty) {
-      // Paralel olarak tüm verileri yükle - performans optimizasyonu
+      // Performans optimizasyonu: Hangi sekme açılacaksa ona göre veri yükle
       try {
-        await Future.wait([
-          // Takas durumlarını yükle
-          tradeViewModel.loadTradeStatuses(),
-          // Kullanıcı takaslarını yükle
-          tradeViewModel.loadUserTrades(int.parse(userId)),
-          // Favorileri yükle (eğer yüklenmemişse)
-          productViewModel.favoriteProducts.isEmpty 
-              ? productViewModel.loadFavoriteProducts() 
-              : Future.value(),
-        ]);
-        
-        // Takas kontrolü API'sini arka planda çalıştır (UI'ı bloklamasın)
-        _checkTradeStatusesInBackground(tradeViewModel);
+        if (widget.initialTabIndex == 1) {
+          // Favoriler sekmesi açılacaksa sadece favorileri yükle
+          Logger.info('🚀 Favoriler sekmesi için optimize edilmiş yükleme başlatılıyor', tag: 'TradeView');
+          
+          if (productViewModel.favoriteProducts.isEmpty) {
+            await productViewModel.loadFavoriteProducts();
+          } else {
+            Logger.info('✅ Favoriler zaten yüklü, tekrar yüklenmiyor', tag: 'TradeView');
+          }
+          
+          // Takas verilerini arka planda yükle (UI'ı bloklamasın)
+          _loadTradeDataInBackground(tradeViewModel, userId);
+          
+        } else {
+          // Takaslar sekmesi açılacaksa tüm verileri yükle
+          Logger.info('🚀 Takaslar sekmesi için tam yükleme başlatılıyor', tag: 'TradeView');
+          
+          await Future.wait([
+            // Takas durumlarını yükle
+            tradeViewModel.loadTradeStatuses(),
+            // Kullanıcı takaslarını yükle
+            tradeViewModel.loadUserTrades(int.parse(userId)),
+            // Favorileri yükle (eğer yüklenmemişse)
+            productViewModel.favoriteProducts.isEmpty 
+                ? productViewModel.loadFavoriteProducts() 
+                : Future.value(),
+          ]);
+          
+          // Takas kontrolü API'sini arka planda çalıştır (UI'ı bloklamasın)
+          _checkTradeStatusesInBackground(tradeViewModel);
+        }
         
       } catch (e) {
+        Logger.error('Veri yükleme hatası: $e', tag: 'TradeView');
         // Hata durumunda sadece log'la, UI'ı bloklama
       }
     } else {
@@ -899,8 +918,8 @@ class _TradeViewState extends State<TradeView>
   Widget _buildFavoritesTab() {
     return Consumer<ProductViewModel>(
       builder: (context, productViewModel, child) {
-        // Loading durumunda skeleton göster
-        if (productViewModel.isLoadingFavorites) {
+        // Loading durumunda skeleton göster (sadece favoriler boşsa ve loading ise)
+        if (productViewModel.isLoadingFavorites && productViewModel.favoriteProducts.isEmpty) {
           return const FavoriteGridSkeleton();
         }
 
@@ -2130,6 +2149,31 @@ class _TradeViewState extends State<TradeView>
       }
       return false;
     }
+  }
+
+  /// Takas verilerini arka planda yükle (UI'ı bloklamasın)
+  void _loadTradeDataInBackground(TradeViewModel tradeViewModel, String userId) {
+    // Arka planda çalıştır, UI'ı bloklamasın
+    Future.microtask(() async {
+      try {
+        Logger.info('🔄 Takas verileri arka planda yükleniyor...', tag: 'TradeView');
+        
+        await Future.wait([
+          // Takas durumlarını yükle
+          tradeViewModel.loadTradeStatuses(),
+          // Kullanıcı takaslarını yükle
+          tradeViewModel.loadUserTrades(int.parse(userId)),
+        ]);
+        
+        Logger.info('✅ Takas verileri arka planda yüklendi', tag: 'TradeView');
+        
+        // Takas kontrolü API'sini de arka planda çalıştır
+        _checkTradeStatusesInBackground(tradeViewModel);
+        
+      } catch (e) {
+        Logger.error('Arka plan takas veri yükleme hatası: $e', tag: 'TradeView');
+      }
+    });
   }
 
   /// Arka planda takas kontrolü yap (UI'ı bloklamasın)

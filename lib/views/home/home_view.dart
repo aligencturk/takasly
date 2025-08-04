@@ -48,7 +48,10 @@ class _HomeViewState extends State<HomeView> {
         listen: false,
       );
       productViewModel.loadInitialData();
-      productViewModel.loadFavoriteProducts();
+      // Favorileri arka planda yükle (UI'ı bloklamasın)
+      Future.microtask(() {
+        productViewModel.loadFavoriteProducts();
+      });
       // Kategorilerin yüklendiğinden emin ol
       if (productViewModel.categories.isEmpty) {
         productViewModel.loadCategories();

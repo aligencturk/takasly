@@ -401,41 +401,45 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadFavoriteProducts() async {
-    print('🔄 ProductViewModel.loadFavoriteProducts - Starting to load favorite products');
+    // Eğer favoriler zaten yüklüyse ve loading değilse, tekrar yükleme
+    if (_favoriteProducts.isNotEmpty && !_isLoadingFavorites) {
+      Logger.info('✅ Favoriler zaten yüklü (${_favoriteProducts.length} ürün), tekrar yüklenmiyor', tag: 'ProductViewModel');
+      return;
+    }
+    
+    Logger.info('🔄 ProductViewModel.loadFavoriteProducts - Starting to load favorite products', tag: 'ProductViewModel');
     _setLoadingFavorites(true);
     _clearFavoriteError();
 
     try {
-      print('🌐 ProductViewModel.loadFavoriteProducts - Calling productService.getFavoriteProducts()');
+      Logger.info('🌐 ProductViewModel.loadFavoriteProducts - Calling productService.getFavoriteProducts()', tag: 'ProductViewModel');
       final response = await _productService.getFavoriteProducts();
       
-      print('📡 ProductViewModel.loadFavoriteProducts - Response received');
-      print('📊 Response isSuccess: ${response.isSuccess}');
-      print('📊 Response error: ${response.error}');
-      print('📊 Response data length: ${response.data?.length ?? 0}');
+      Logger.info('📡 ProductViewModel.loadFavoriteProducts - Response received', tag: 'ProductViewModel');
+      Logger.info('📊 Response isSuccess: ${response.isSuccess}, data length: ${response.data?.length ?? 0}', tag: 'ProductViewModel');
 
       if (response.isSuccess && response.data != null) {
-        print('📦 ProductViewModel.loadFavoriteProducts - Before assignment, current count: ${_favoriteProducts.length}');
+        Logger.info('📦 ProductViewModel.loadFavoriteProducts - Before assignment, current count: ${_favoriteProducts.length}', tag: 'ProductViewModel');
         _favoriteProducts = response.data!;
-        print('✅ ProductViewModel.loadFavoriteProducts - Successfully loaded ${_favoriteProducts.length} favorite products');
+        Logger.info('✅ ProductViewModel.loadFavoriteProducts - Successfully loaded ${_favoriteProducts.length} favorite products', tag: 'ProductViewModel');
         
-        // Favori ürünlerin detaylarını yazdır
+        // Favori ürünlerin detaylarını logla
         for (int i = 0; i < _favoriteProducts.length; i++) {
           final product = _favoriteProducts[i];
-          print('📦 Favorite product $i: ${product.title} (ID: ${product.id})');
+          Logger.debug('📦 Favorite product $i: ${product.title} (ID: ${product.id})', tag: 'ProductViewModel');
         }
-        print('📦 ProductViewModel.loadFavoriteProducts - After assignment, favorite IDs: ${_favoriteProducts.map((p) => p.id).toList()}');
+        Logger.info('📦 ProductViewModel.loadFavoriteProducts - After assignment, favorite IDs: ${_favoriteProducts.map((p) => p.id).toList()}', tag: 'ProductViewModel');
       } else {
         final errorMessage = response.error ?? ErrorMessages.unknownError;
-        print('❌ ProductViewModel.loadFavoriteProducts - API error: $errorMessage');
+        Logger.error('❌ ProductViewModel.loadFavoriteProducts - API error: $errorMessage', tag: 'ProductViewModel');
         _setFavoriteError(errorMessage);
       }
     } catch (e) {
-      print('💥 ProductViewModel.loadFavoriteProducts - Exception: $e');
+      Logger.error('💥 ProductViewModel.loadFavoriteProducts - Exception: $e', tag: 'ProductViewModel');
       _setFavoriteError(ErrorMessages.unknownError);
     } finally {
       _setLoadingFavorites(false);
-      print('🏁 ProductViewModel.loadFavoriteProducts - Completed');
+      Logger.info('🏁 ProductViewModel.loadFavoriteProducts - Completed', tag: 'ProductViewModel');
     }
   }
 
