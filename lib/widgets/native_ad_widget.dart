@@ -44,7 +44,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
     });
 
     try {
-      Logger.info('🚀 NativeAdWidget - Reklam yükleniyor...');
+      Logger.info('🚀 NativeAdWidget - Reklam yukleniyor...');
       
       // AdMob servisinden reklam yükle
       await _adMobService.loadNativeAd();
@@ -59,15 +59,17 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
           _isLoading = false;
         });
         
-        if (_isAdLoaded && _nativeAd != null) {
-          Logger.info('✅ NativeAdWidget - Reklam başarıyla yüklendi');
+        if (_isAdLoaded && _nativeAd != null && _isAdValid()) {
+          Logger.info('✅ NativeAdWidget - Reklam basariyla yuklendi');
         } else {
-          Logger.warning('⚠️ NativeAdWidget - Reklam yüklenemedi');
-          _hasError = true;
+          Logger.warning('⚠️ NativeAdWidget - Reklam yuklenemedi');
+          setState(() {
+            _hasError = true;
+          });
         }
       }
     } catch (e) {
-      Logger.error('❌ NativeAdWidget - Reklam yükleme hatası: $e');
+      Logger.error('❌ NativeAdWidget - Reklam yukleme hatasi: $e');
       if (mounted && !_isDisposed) {
         setState(() {
           _isLoading = false;
@@ -90,20 +92,25 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Widget dispose edilmişse boş container döndür
-    if (_isDisposed) {
-      return const SizedBox.shrink();
-    }
+    try {
+      // Widget dispose edilmişse boş container döndür
+      if (_isDisposed) {
+        return const SizedBox.shrink();
+      }
 
-    if (_isLoading) {
-      return _buildLoadingWidget();
-    }
+      if (_isLoading) {
+        return _buildLoadingWidget();
+      }
 
-    if (_hasError || !_isAdLoaded || _nativeAd == null) {
+      if (_hasError || !_isAdLoaded || _nativeAd == null) {
+        return _buildErrorWidget();
+      }
+
+      return _buildAdWidget();
+    } catch (e) {
+      Logger.error('❌ NativeAdWidget - Build hatasi: $e');
       return _buildErrorWidget();
     }
-
-    return _buildAdWidget();
   }
 
   Widget _buildLoadingWidget() {
@@ -175,13 +182,37 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       return _buildErrorWidget();
     }
 
-    return Container(
-      height: 120,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: AdWidget(ad: _nativeAd!),
-      ),
-    );
+    try {
+      // Reklamın geçerli olup olmadığını kontrol et
+      if (!_isAdValid()) {
+        Logger.warning('⚠️ NativeAdWidget - Reklam gecersiz, hata widget gosteriliyor');
+        return _buildErrorWidget();
+      }
+
+      return Container(
+        height: 120,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: AdWidget(ad: _nativeAd!),
+        ),
+      );
+    } catch (e) {
+      Logger.error('❌ NativeAdWidget - AdWidget oluşturma hatası: $e');
+      return _buildErrorWidget();
+    }
+  }
+
+  // Reklamın geçerli olup olmadığını kontrol et
+  bool _isAdValid() {
+    try {
+      if (_nativeAd == null) return false;
+      
+      // AdMob servisinden reklam durumunu kontrol et
+      return _adMobService.isAdLoaded && _isAdLoaded;
+    } catch (e) {
+      Logger.error('❌ NativeAdWidget - Reklam geçerlilik kontrolü hatası: $e');
+      return false;
+    }
   }
 } 

@@ -441,6 +441,51 @@ class Product {
   }
 }
 
+class PaginatedProducts {
+  final List<Product> products;
+  final int currentPage;
+  final int totalPages;
+  final int totalItems;
+  final bool hasMore;
+
+  PaginatedProducts({
+    required this.products,
+    required this.currentPage,
+    required this.totalPages,
+    required this.totalItems,
+    required this.hasMore,
+  });
+
+  factory PaginatedProducts.fromJson(Map<String, dynamic> json) {
+    // API response'unda products listesi data.products içinde olabilir
+    List<dynamic> productsList;
+    if (json['data'] != null && json['data']['products'] != null) {
+      productsList = json['data']['products'] as List;
+    } else if (json['products'] != null) {
+      productsList = json['products'] as List;
+    } else {
+      productsList = [];
+    }
+    
+    final products = productsList.map((item) => Product.fromJson(item)).toList();
+    
+    // Sayfalama bilgileri data içinde olabilir
+    Map<String, dynamic> data = json['data'] ?? json;
+    final currentPage = data['page'] as int? ?? 1;
+    final totalPages = data['totalPages'] as int? ?? 1;
+    final totalItems = data['totalItems'] as int? ?? products.length;
+    final hasMore = currentPage < totalPages;
+
+    return PaginatedProducts(
+      products: products,
+      currentPage: currentPage,
+      totalPages: totalPages,
+      totalItems: totalItems,
+      hasMore: hasMore,
+    );
+  }
+}
+
 @JsonSerializable()
 class Category {
   final String id;

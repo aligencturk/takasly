@@ -8,7 +8,6 @@ import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
-import '../models/location.dart';
 import '../services/location_service.dart';
 import '../utils/logger.dart';
 
@@ -16,7 +15,7 @@ class ProductService {
   final HttpClient _httpClient = HttpClient();
   static const String _tag = 'ProductService';
 
-  Future<ApiResponse<List<Product>>> getAllProducts({
+  Future<ApiResponse<PaginatedProducts>> getAllProducts({
     int page = 1,
     int limit = AppConstants.defaultPageSize,
   }) async {
@@ -57,7 +56,7 @@ class ProductService {
       };
       print('🌐 POST Body: $body');
 
-      final response = await _httpClient.postWithBasicAuth(
+      final response = await _httpClient.postWithBasicAuth<PaginatedProducts>(
         ApiConstants.allProducts,
         body: body,
         useBasicAuth: true,
@@ -71,7 +70,13 @@ class ProductService {
           // JSON yapısını kontrol et
           if (json == null) {
             print('❌ All Products API response is null');
-            return <Product>[];
+            return PaginatedProducts(
+              products: [],
+              currentPage: page,
+              totalPages: 1,
+              totalItems: 0,
+              hasMore: false,
+            );
           }
 
           if (json['data'] == null) {
@@ -89,7 +94,14 @@ class ProductService {
                   .map((item) => _transformApiProductToModel(item))
                   .toList();
               print('📦 Parsed ${products.length} products successfully');
-              return products;
+              return PaginatedProducts.fromJson({
+                'data': {
+                  'products': productsList,
+                  'page': page,
+                  'totalPages': 1,
+                  'totalItems': products.length,
+                }
+              });
             }
 
             // Eğer response direkt bir liste ise
@@ -99,20 +111,49 @@ class ProductService {
                   .map((item) => _transformApiProductToModel(item))
                   .toList();
               print('📦 Parsed ${products.length} products successfully');
-              return products;
+              return PaginatedProducts.fromJson({
+                'data': {
+                  'products': json,
+                  'page': page,
+                  'totalPages': 1,
+                  'totalItems': products.length,
+                }
+              });
             }
 
-            return <Product>[];
+            return PaginatedProducts.fromJson({
+              'data': {
+                'products': [],
+                'page': page,
+                'totalPages': 1,
+                'totalItems': 0,
+              }
+            });
           }
 
           if (json['data']['products'] == null) {
             print('❌ All Products API response has no products field in data');
             print('🔍 Available data fields: ${json['data'].keys}');
-            return <Product>[];
+            return PaginatedProducts.fromJson({
+              'data': {
+                'products': [],
+                'page': page,
+                'totalPages': 1,
+                'totalItems': 0,
+              }
+            });
           }
 
           final productsList = json['data']['products'] as List;
           print('📦 All Products API returned ${productsList.length} products');
+
+          // Sayfalama bilgilerini al
+          final currentPage = json['data']['page'] as int? ?? page;
+          final totalPages = json['data']['totalPages'] as int? ?? 1;
+          final totalItems = json['data']['totalItems'] as int? ?? productsList.length;
+          final hasMore = currentPage < totalPages;
+
+          print('📦 Pagination info: page=$currentPage, totalPages=$totalPages, totalItems=$totalItems, hasMore=$hasMore');
 
           // İlk birkaç ürünü logla
           if (productsList.isNotEmpty) {
@@ -146,18 +187,19 @@ class ProductService {
               .toList();
 
           print('📦 Parsed ${products.length} products successfully');
-          return products;
+          // PaginatedProducts.fromJson kullanarak parse et
+          return PaginatedProducts.fromJson(json as Map<String, dynamic>);
         },
       );
 
       return response;
     } catch (e) {
       print('❌ ProductService: Error getting all products: $e');
-      return ApiResponse.error(ErrorMessages.unknownError);
+      return ApiResponse<PaginatedProducts>.error(ErrorMessages.unknownError);
     }
   }
 
-  Future<ApiResponse<List<Product>>> getAllProductsWithFilter({
+  Future<ApiResponse<PaginatedProducts>> getAllProductsWithFilter({
     required ProductFilter filter,
     int page = 1,
     int limit = AppConstants.defaultPageSize,
@@ -210,7 +252,7 @@ class ProductService {
       );
       Logger.debug('POST Body with filter: $body', tag: _tag);
 
-      final response = await _httpClient.postWithBasicAuth(
+      final response = await _httpClient.postWithBasicAuth<PaginatedProducts>(
         ApiConstants.allProducts,
         body: body,
         useBasicAuth: true,
@@ -220,7 +262,13 @@ class ProductService {
           // JSON yapısını kontrol et
           if (json == null) {
             print('❌ Filtered Products API response is null');
-            return <Product>[];
+            return PaginatedProducts(
+              products: [],
+              currentPage: page,
+              totalPages: 1,
+              totalItems: 0,
+              hasMore: false,
+            );
           }
 
           // Yeni API formatını kontrol et
@@ -240,10 +288,12 @@ class ProductService {
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
 
+            
               print(
                 '📦 Parsed ${products.length} filtered products successfully',
               );
-              return products;
+              // PaginatedProducts.fromJson kullanarak parse et
+              return PaginatedProducts.fromJson(json as Map<String, dynamic>);
             }
           }
 
@@ -263,9 +313,23 @@ class ProductService {
               print(
                 '📦 Parsed ${products.length} filtered products successfully from 410',
               );
-              return products;
+              return PaginatedProducts.fromJson({
+                'data': {
+                  'products': productsList,
+                  'page': page,
+                  'totalPages': 1,
+                  'totalItems': products.length,
+                }
+              });
             }
-            return <Product>[];
+            return PaginatedProducts.fromJson({
+              'data': {
+                'products': [],
+                'page': page,
+                'totalPages': 1,
+                'totalItems': 0,
+              }
+            });
           }
 
           // Boş success response
@@ -273,19 +337,33 @@ class ProductService {
             print(
               '🔍 ProductService - Empty success response for filtered products',
             );
-            return <Product>[];
+            return PaginatedProducts.fromJson({
+              'data': {
+                'products': [],
+                'page': page,
+                'totalPages': 1,
+                'totalItems': 0,
+              }
+            });
           }
 
           print('❌ Filtered Products API - No products found in response');
           print('❌ Available keys: ${json.keys.toList()}');
-          return <Product>[];
+          return PaginatedProducts.fromJson({
+            'data': {
+              'products': [],
+              'page': page,
+              'totalPages': 1,
+              'totalItems': 0,
+            }
+          });
         },
       );
 
       return response;
     } catch (e) {
       print('❌ ProductService: Error getting filtered products: $e');
-      return ApiResponse.error(ErrorMessages.unknownError);
+      return ApiResponse<PaginatedProducts>.error(ErrorMessages.unknownError);
     }
   }
 

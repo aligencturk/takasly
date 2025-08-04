@@ -6,31 +6,7 @@ part of 'chat.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Chat _$ChatFromJson(Map<String, dynamic> json) => Chat(
-  id: json['id'] as String,
-  tradeId: json['tradeId'] as String,
-  trade: Trade.fromJson(json['trade'] as Map<String, dynamic>),
-  participantIds: (json['participantIds'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList(),
-  participants: (json['participants'] as List<dynamic>)
-      .map((e) => User.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  lastMessageId: json['lastMessageId'] as String?,
-  lastMessage: json['lastMessage'] == null
-      ? null
-      : Message.fromJson(json['lastMessage'] as Map<String, dynamic>),
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: DateTime.parse(json['updatedAt'] as String),
-  lastReadTimes: (json['lastReadTimes'] as Map<String, dynamic>).map(
-    (k, e) => MapEntry(k, DateTime.parse(e as String)),
-  ),
-  isActive: json['isActive'] as bool,
-  isPinned: json['isPinned'] as bool? ?? false,
-  deletedBy:
-      (json['deletedBy'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-      const [],
-);
+
 
 Map<String, dynamic> _$ChatToJson(Chat instance) => <String, dynamic>{
   'id': instance.id,
@@ -49,27 +25,6 @@ Map<String, dynamic> _$ChatToJson(Chat instance) => <String, dynamic>{
   'isPinned': instance.isPinned,
   'deletedBy': instance.deletedBy,
 };
-
-Message _$MessageFromJson(Map<String, dynamic> json) => Message(
-  id: json['id'] as String,
-  chatId: json['chatId'] as String,
-  senderId: json['senderId'] as String,
-  sender: User.fromJson(json['sender'] as Map<String, dynamic>),
-  content: json['content'] as String,
-  type: $enumDecode(_$MessageTypeEnumMap, json['type']),
-  imageUrl: json['imageUrl'] as String?,
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: DateTime.parse(json['updatedAt'] as String),
-  isRead: json['isRead'] as bool,
-  isDeleted: json['isDeleted'] as bool,
-  replyToId: json['replyToId'] as String?,
-  replyTo: json['replyTo'] == null
-      ? null
-      : Message.fromJson(json['replyTo'] as Map<String, dynamic>),
-  product: json['product'] == null
-      ? null
-      : Product.fromJson(json['product'] as Map<String, dynamic>),
-);
 
 Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
   'id': instance.id,

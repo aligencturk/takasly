@@ -1004,8 +1004,13 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildCategoryDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        // Seçili değerin listede olup olmadığını kontrol et
+        final validValue = vm.categories.any((cat) => cat.id == _selectedCategoryId) 
+            ? _selectedCategoryId 
+            : null;
+            
         return DropdownButtonFormField<String>(
-          value: _selectedCategoryId,
+          value: validValue,
           decoration: const InputDecoration(labelText: 'Ana Kategori'),
           items: vm.categories
               .map(
@@ -1032,8 +1037,13 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildSubCategoryDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        // Seçili değerin listede olup olmadığını kontrol et
+        final validValue = vm.subCategories.any((cat) => cat.id == _selectedSubCategoryId) 
+            ? _selectedSubCategoryId 
+            : null;
+            
         return DropdownButtonFormField<String>(
-          value: _selectedSubCategoryId,
+          value: validValue,
           decoration: InputDecoration(
             labelText: 'Alt Kategori',
             enabled: _selectedCategoryId != null && vm.subCategories.isNotEmpty,
@@ -1070,8 +1080,13 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildSubSubCategoryDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        // Seçili değerin listede olup olmadığını kontrol et
+        final validValue = vm.subSubCategories.any((cat) => cat.id == _selectedSubSubCategoryId) 
+            ? _selectedSubSubCategoryId 
+            : null;
+            
         return DropdownButtonFormField<String>(
-          value: _selectedSubSubCategoryId,
+          value: validValue,
           decoration: InputDecoration(
             labelText: 'Alt Alt Kategori',
             enabled: _selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty,
@@ -1108,8 +1123,13 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildSubSubSubCategoryDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        // Seçili değerin listede olup olmadığını kontrol et
+        final validValue = vm.subSubSubCategories.any((cat) => cat.id == _selectedSubSubSubCategoryId) 
+            ? _selectedSubSubSubCategoryId 
+            : null;
+            
         return DropdownButtonFormField<String>(
-          value: _selectedSubSubSubCategoryId,
+          value: validValue,
           decoration: InputDecoration(
             labelText: 'Ürün Kategorisi',
             enabled: _selectedSubSubCategoryId != null && vm.subSubSubCategories.isNotEmpty,
@@ -1138,8 +1158,13 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildConditionDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        // Seçili değerin listede olup olmadığını kontrol et
+        final validValue = vm.conditions.any((con) => con.id == _selectedConditionId) 
+            ? _selectedConditionId 
+            : null;
+            
         return DropdownButtonFormField<String>(
-          value: _selectedConditionId,
+          value: validValue,
           decoration: const InputDecoration(labelText: 'Ürün Durumu'),
           items: vm.conditions
               .map(
@@ -1158,8 +1183,13 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildCityDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        // Seçili değerin listede olup olmadığını kontrol et
+        final validValue = vm.cities.any((city) => city.id == _selectedCityId) 
+            ? _selectedCityId 
+            : null;
+            
         return DropdownButtonFormField<String>(
-          value: _selectedCityId,
+          value: validValue,
           decoration: const InputDecoration(
             labelText: 'İl',
             hintText: 'İl seçiniz',
@@ -1190,8 +1220,13 @@ class _AddProductViewState extends State<AddProductView> {
   Widget _buildDistrictDropdown() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
+        // Seçili değerin listede olup olmadığını kontrol et
+        final validValue = vm.districts.any((dist) => dist.id == _selectedDistrictId) 
+            ? _selectedDistrictId 
+            : null;
+            
         return DropdownButtonFormField<String>(
-          value: _selectedDistrictId,
+          value: validValue,
           decoration: InputDecoration(
             labelText: 'İlçe',
             hintText: 'İlçe seçiniz',

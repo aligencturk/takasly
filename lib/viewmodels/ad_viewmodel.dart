@@ -111,7 +111,7 @@ class AdViewModel extends ChangeNotifier {
   /// Ürün sayısını güncelle
   void updateProductCount(int count) {
     _productCount = count;
-    Logger.debug('📊 AdViewModel - Ürün sayısı güncellendi: $_productCount');
+    Logger.info('📊 AdViewModel - Ürün sayısı güncellendi: $_productCount');
   }
 
   /// Belirli bir index'te reklam gösterilip gösterilmeyeceğini kontrol et

@@ -1784,7 +1784,16 @@ class _TradeViewState extends State<TradeView>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: DropdownButtonFormField<int>(
-                  value: selectedStatusId,
+                  value: () {
+                    final allStatuses = tradeViewModel.tradeStatuses;
+                    final filteredStatuses = allStatuses.where((status) => 
+                      status.statusID != trade.statusID &&
+                      (status.statusID == 2 || status.statusID == 3 || status.statusID == 4 || status.statusID == 5 || status.statusID == 7 || status.statusID == 8)
+                    ).toList();
+                    return filteredStatuses.any((status) => status.statusID == selectedStatusId) 
+                        ? selectedStatusId 
+                        : null;
+                  }(),
                   decoration: InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     border: InputBorder.none,

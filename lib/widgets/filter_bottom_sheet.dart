@@ -272,7 +272,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
             // Şehir Dropdown
             DropdownButtonFormField<String>(
-              value: _selectedCityId,
+              value: vm.cities.any((city) => city.id == _selectedCityId) 
+                  ? _selectedCityId 
+                  : null,
               decoration: InputDecoration(
                 labelText: 'Şehir Seçin',
                 border: OutlineInputBorder(
@@ -315,7 +317,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
             // İlçe Dropdown
             DropdownButtonFormField<String>(
-              value: _tempFilter.districtId,
+              value: _districts.any((district) => district.id == _tempFilter.districtId) 
+                  ? _tempFilter.districtId 
+                  : null,
               decoration: InputDecoration(
                 labelText: 'İlçe Seçin',
                 border: OutlineInputBorder(

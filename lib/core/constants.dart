@@ -119,7 +119,7 @@ class AppConstants {
   static const int longAnimation = 600;
 
   // Pagination
-  static const int defaultPageSize = 20;
+  static const int defaultPageSize = 10;
   static const int maxPageSize = 100;
 }
 

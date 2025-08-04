@@ -1,17 +1,16 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/product.dart' as product_model;
-import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
 import '../models/product_filter.dart';
-import '../models/location.dart';
 import '../services/product_service.dart';
 import '../services/auth_service.dart';
 import '../services/cache_service.dart';
 import '../core/constants.dart';
 import '../core/sort_options.dart';
+import '../core/http_client.dart'; // ApiResponse için
 import '../views/home/widgets/category_list.dart'; // CategoryIconCache için
 import '../utils/logger.dart';
 import '../services/error_handler_service.dart';
@@ -101,7 +100,7 @@ class ProductViewModel extends ChangeNotifier {
     int limit = AppConstants.defaultPageSize,
     bool refresh = false,
   }) async {
-    print(
+    Logger.info(
       '🔄 ProductViewModel.loadAllProducts started - page: $page, refresh: $refresh',
     );
 
@@ -109,7 +108,7 @@ class ProductViewModel extends ChangeNotifier {
       _currentPage = 1;
       _hasMore = true;
       _products.clear();
-      print(
+      Logger.info(
         '🔄 ProductViewModel.loadAllProducts - refresh mode, cleared products',
       );
     } else {
@@ -120,19 +119,19 @@ class ProductViewModel extends ChangeNotifier {
     }
 
     if (_isLoading || _isLoadingMore) {
-      print('⚠️ ProductViewModel.loadAllProducts - already loading, returning');
-      print('⚠️ _isLoading: $_isLoading, _isLoadingMore: $_isLoadingMore');
+      Logger.warning('⚠️ ProductViewModel.loadAllProducts - already loading, returning');
+      Logger.warning('⚠️ _isLoading: $_isLoading, _isLoadingMore: $_isLoadingMore');
       return;
     }
 
     if (_currentPage == 1) {
       _setLoading(true);
-      print(
+      Logger.info(
         '🔄 ProductViewModel.loadAllProducts - set loading true for first page',
       );
     } else {
       _setLoadingMore(true);
-      print(
+      Logger.info(
         '🔄 ProductViewModel.loadAllProducts - set loading more true for page $_currentPage',
       );
     }
@@ -140,48 +139,49 @@ class ProductViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      print(
-        '🌐 ProductViewModel.loadAllProducts - calling getAllProducts with page: $page, limit: $limit',
+      Logger.info(
+        '🌐 ProductViewModel.loadAllProducts - calling getAllProducts with page: $_currentPage, limit: $limit',
       );
       final response = await _productService.getAllProducts(
-        page: page,
+        page: _currentPage,
         limit: limit,
       );
 
-      print('📡 ProductViewModel.loadAllProducts - response received');
-      print('📊 Response success: ${response.isSuccess}');
-      print('📊 Response error: ${response.error}');
-      print('📊 Response data length: ${response.data?.length ?? 0}');
+      Logger.info('📡 ProductViewModel.loadAllProducts - response received');
+      Logger.info('📊 Response success: ${response.isSuccess}');
+      Logger.info('📊 Response error: ${response.error}');
+      Logger.info('📊 Response data products count: ${response.data?.products.length ?? 0}');
 
       if (response.isSuccess && response.data != null) {
-        final newProducts = response.data!;
-        print(
+        final paginatedData = response.data!;
+        final newProducts = paginatedData.products;
+        Logger.info(
           '✅ ProductViewModel.loadAllProducts - got ${newProducts.length} products',
+        );
+        Logger.info(
+          '✅ ProductViewModel.loadAllProducts - pagination: page=${paginatedData.currentPage}, totalPages=${paginatedData.totalPages}, totalItems=${paginatedData.totalItems}, hasMore=${paginatedData.hasMore}',
         );
 
         if (_currentPage == 1) {
           _products = newProducts;
-          print(
+          Logger.info(
             '✅ ProductViewModel.loadAllProducts - set products for first page',
           );
         } else {
           _products.addAll(newProducts);
-          print(
+          Logger.info(
             '✅ ProductViewModel.loadAllProducts - added products to existing list',
           );
         }
 
-        _hasMore = newProducts.length == AppConstants.defaultPageSize;
-        if (_currentPage == 1) {
-          _currentPage = 2; // İlk sayfa yüklendikten sonra 2. sayfaya geç
-        } else {
-          _currentPage++; // Sonraki sayfalar için artır
-        }
-        print(
-          '✅ ProductViewModel.loadAllProducts - hasMore: $_hasMore, nextPage: $_currentPage',
+        // API'den gelen sayfalama bilgilerini kullan
+        _hasMore = paginatedData.hasMore; // currentPage < totalPages
+        _currentPage = paginatedData.currentPage + 1; // Bir sonraki sayfa
+        Logger.info(
+          '✅ ProductViewModel.loadAllProducts - hasMore: $_hasMore (${paginatedData.currentPage} < ${paginatedData.totalPages}), nextPage: $_currentPage, totalProducts: ${_products.length}',
         );
       } else {
-        print(
+        Logger.error(
           '❌ ProductViewModel.loadAllProducts - API error: ${response.error}',
         );
         
@@ -197,12 +197,12 @@ class ProductViewModel extends ChangeNotifier {
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-      print('💥 ProductViewModel.loadAllProducts - Exception: $e');
+      Logger.error('💥 ProductViewModel.loadAllProducts - Exception: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
       _setLoadingMore(false);
-      print(
+      Logger.info(
         '🏁 ProductViewModel.loadAllProducts completed - final products count: ${_products.length}',
       );
       notifyListeners(); // UI'ı güncelle
@@ -216,24 +216,24 @@ class ProductViewModel extends ChangeNotifier {
     String? condition,
     bool refresh = false,
   }) async {
-    print('🔄 ProductViewModel.loadProducts - Starting with params: categoryId=$categoryId, searchText=$searchText, city=$city, condition=$condition, refresh=$refresh');
-    print('🔄 ProductViewModel.loadProducts - Current state: page=$_currentPage, hasMore=$_hasMore, isLoading=$_isLoading, isLoadingMore=$_isLoadingMore');
+    Logger.info('🔄 ProductViewModel.loadProducts - Starting with params: categoryId=$categoryId, searchText=$searchText, city=$city, condition=$condition, refresh=$refresh');
+    Logger.info('🔄 ProductViewModel.loadProducts - Current state: page=$_currentPage, hasMore=$_hasMore, isLoading=$_isLoading, isLoadingMore=$_isLoadingMore');
     
     if (refresh) {
       _currentPage = 1;
       _hasMore = true;
       _products.clear();
-      print('🔄 ProductViewModel.loadProducts - Refresh mode: reset page=1, hasMore=true, cleared products');
+      Logger.info('🔄 ProductViewModel.loadProducts - Refresh mode: reset page=1, hasMore=true, cleared products');
     } else {
       // Refresh değilse ve ilk sayfa ise sayfa numarasını 1'e ayarla
       if (_currentPage == 1) {
         _hasMore = true;
-        print('🔄 ProductViewModel.loadProducts - First page: set hasMore=true');
+        Logger.info('🔄 ProductViewModel.loadProducts - First page: set hasMore=true');
       }
     }
 
     if (_isLoading || _isLoadingMore) {
-      print('⚠️ ProductViewModel.loadProducts - Already loading, returning');
+      Logger.warning('⚠️ ProductViewModel.loadProducts - Already loading, returning');
       return;
     }
 
@@ -241,55 +241,49 @@ class ProductViewModel extends ChangeNotifier {
     _currentsearchText = searchText;
     _currentCity = city;
     _currentCondition = condition;
-    print('🔄 ProductViewModel.loadProducts - Updated current filters: categoryId=$_currentCategoryId, searchText=$_currentsearchText, city=$_currentCity, condition=$_currentCondition');
+    Logger.info('🔄 ProductViewModel.loadProducts - Updated current filters: categoryId=$_currentCategoryId, searchText=$_currentsearchText, city=$_currentCity, condition=$_currentCondition');
 
     if (_currentPage == 1) {
       _setLoading(true);
-      print('🔄 ProductViewModel.loadProducts - First page: set loading=true');
+      Logger.info('🔄 ProductViewModel.loadProducts - First page: set loading=true');
     } else {
       _setLoadingMore(true);
-      print('🔄 ProductViewModel.loadProducts - Next page: set loadingMore=true');
+      Logger.info('🔄 ProductViewModel.loadProducts - Next page: set loadingMore=true');
     }
 
     _clearError();
 
     try {
-      print('📡 ProductViewModel.loadProducts - Making API call with page=$_currentPage, sortBy=${_currentSortOption.value}');
-      final response = await _productService.getProducts(
+      Logger.info('📡 ProductViewModel.loadProducts - Making API call with page=$_currentPage, sortBy=${_currentSortOption.value}');
+      final response = await _productService.getAllProducts(
         page: _currentPage,
         limit: AppConstants.defaultPageSize,
-        categoryId: categoryId,
-        searchText: searchText,
-        city: city,
-        condition: condition,
-        sortBy: _currentSortOption.value,
       );
 
-      print('📡 ProductViewModel.loadProducts - Response received');
-      print('📊 Response success: ${response.isSuccess}');
-      print('📊 Response error: ${response.error}');
-      print('📊 Response data length: ${response.data?.length ?? 0}');
+      Logger.info('📡 ProductViewModel.loadProducts - Response received');
+      Logger.info('📊 Response success: ${response.isSuccess}');
+      Logger.info('📊 Response error: ${response.error}');
+      Logger.info('📊 Response data: ${response.data}');
 
       if (response.isSuccess && response.data != null) {
-        final newProducts = response.data!;
-        print('✅ ProductViewModel.loadProducts - Got ${newProducts.length} products');
+        final paginatedData = response.data!;
+        final newProducts = paginatedData.products;
+        Logger.info('✅ ProductViewModel.loadProducts - Got ${newProducts.length} products');
+        Logger.info('✅ ProductViewModel.loadProducts - pagination: page=${paginatedData.currentPage}, totalPages=${paginatedData.totalPages}, totalItems=${paginatedData.totalItems}, hasMore=${paginatedData.hasMore}');
 
         if (_currentPage == 1) {
           _products = newProducts;
-          print('✅ ProductViewModel.loadProducts - First page: replaced products list');
+          Logger.info('✅ ProductViewModel.loadProducts - First page: replaced products list');
         } else {
           _products.addAll(newProducts);
-          print('✅ ProductViewModel.loadProducts - Next page: added ${newProducts.length} products to existing list');
+          Logger.info('✅ ProductViewModel.loadProducts - Next page: added ${newProducts.length} products to existing list');
         }
 
-        _hasMore = newProducts.length == AppConstants.defaultPageSize;
-        if (_currentPage == 1) {
-          _currentPage = 2; // İlk sayfa yüklendikten sonra 2. sayfaya geç
-        } else {
-          _currentPage++; // Sonraki sayfalar için artır
-        }
+        // API'den gelen sayfalama bilgilerini kullan
+        _hasMore = paginatedData.hasMore;
+        _currentPage = paginatedData.currentPage + 1;
         
-        print('✅ ProductViewModel.loadProducts - Updated state: hasMore=$_hasMore, nextPage=$_currentPage, totalProducts=${_products.length}');
+        Logger.info('✅ ProductViewModel.loadProducts - Updated state: hasMore=$_hasMore (${paginatedData.currentPage} < ${paginatedData.totalPages}), nextPage=$_currentPage, totalProducts=${_products.length}');
       } else {
         // 403 hatası kontrolü
         if (response.error != null && 
@@ -300,58 +294,87 @@ class ProductViewModel extends ChangeNotifier {
           ErrorHandlerService.handleForbiddenError(null);
         }
         
-        print('❌ ProductViewModel.loadProducts - API error: ${response.error}');
+        Logger.error('❌ ProductViewModel.loadProducts - API error: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-      print('💥 ProductViewModel.loadProducts - Exception: $e');
+      Logger.error('💥 ProductViewModel.loadProducts - Exception: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
       _setLoadingMore(false);
       notifyListeners();
-      print('🏁 ProductViewModel.loadProducts - Completed, final state: isLoading=$_isLoading, isLoadingMore=$_isLoadingMore');
+      Logger.info('🏁 ProductViewModel.loadProducts - Completed, final state: isLoading=$_isLoading, isLoadingMore=$_isLoadingMore');
     }
   }
 
   Future<void> loadMoreProducts() async {
-    if (!_hasMore || _isLoadingMore) return;
+    if (!_hasMore || _isLoadingMore) {
+      Logger.info('⚠️ ProductViewModel.loadMoreProducts - Skipping: hasMore=$_hasMore, isLoadingMore=$_isLoadingMore');
+      return;
+    }
 
-    print('🔄 ProductViewModel.loadMoreProducts - Loading page $_currentPage');
+    Logger.info('🔄 ProductViewModel.loadMoreProducts - Loading page $_currentPage');
+    Logger.info('🔄 ProductViewModel.loadMoreProducts - Current filter: $_currentFilter');
+    Logger.info('🔄 ProductViewModel.loadMoreProducts - Current products count: ${_products.length}');
+    
     _setLoadingMore(true);
     _clearError();
 
     try {
-      final response = await _productService.getAllProducts(
-        page: _currentPage,
-        limit: AppConstants.defaultPageSize,
-      );
+      ApiResponse<product_model.PaginatedProducts> response;
+      
+      // Eğer aktif filtreler varsa filtrelenmiş ürünleri yükle
+      if (_currentFilter.hasActiveFilters) {
+        Logger.info('🔍 ProductViewModel.loadMoreProducts - Using filtered products API');
+        response = await _productService.getAllProductsWithFilter(
+          filter: _currentFilter,
+          page: _currentPage,
+          limit: AppConstants.defaultPageSize,
+        );
+      } else {
+        Logger.info('🔍 ProductViewModel.loadMoreProducts - Using all products API');
+        response = await _productService.getAllProducts(
+          page: _currentPage,
+          limit: AppConstants.defaultPageSize,
+        );
+      }
+
+      Logger.info('📡 ProductViewModel.loadMoreProducts - Response received');
+      Logger.info('📊 Response success: ${response.isSuccess}');
+      Logger.info('📊 Response error: ${response.error}');
+      Logger.info('📊 Response data: ${response.data}');
 
       if (response.isSuccess && response.data != null) {
-        final newProducts = response.data!;
-        print('✅ ProductViewModel.loadMoreProducts - got ${newProducts.length} more products');
+        final paginatedData = response.data!;
+        final newProducts = paginatedData.products;
+        Logger.info('✅ ProductViewModel.loadMoreProducts - got ${newProducts.length} more products');
+        Logger.info('✅ ProductViewModel.loadMoreProducts - pagination: page=${paginatedData.currentPage}, totalPages=${paginatedData.totalPages}, totalItems=${paginatedData.totalItems}, hasMore=${paginatedData.hasMore}');
 
+        // Yeni ürünleri mevcut listeye ekle
         _products.addAll(newProducts);
-        _hasMore = newProducts.length == AppConstants.defaultPageSize;
-        _currentPage++;
+        _hasMore = paginatedData.hasMore;
+        _currentPage = paginatedData.currentPage + 1;
         
-        print('✅ ProductViewModel.loadMoreProducts - hasMore: $_hasMore, nextPage: $_currentPage');
+        Logger.info('✅ ProductViewModel.loadMoreProducts - hasMore: $_hasMore (${paginatedData.currentPage} < ${paginatedData.totalPages}), nextPage: $_currentPage, totalProducts: ${_products.length}');
+        Logger.info('✅ ProductViewModel.loadMoreProducts - All products loaded successfully');
       } else {
-        print('❌ ProductViewModel.loadMoreProducts - API error: ${response.error}');
+        Logger.error('❌ ProductViewModel.loadMoreProducts - API error: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-      print('💥 ProductViewModel.loadMoreProducts - Exception: $e');
+      Logger.error('💥 ProductViewModel.loadMoreProducts - Exception: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoadingMore(false);
       notifyListeners();
+      Logger.info('🏁 ProductViewModel.loadMoreProducts - Completed, final state: isLoadingMore=$_isLoadingMore, totalProducts: ${_products.length}');
     }
   }
 
   Future<void> refreshProducts() async {
-    print('🔄 ProductViewModel.refreshProducts started');
-    print(
+    Logger.info('🔄 ProductViewModel.refreshProducts started');
+    Logger.info(
       '🔄 ProductViewModel - Current _products.length: ${_products.length}',
     );
     try {
@@ -370,27 +393,27 @@ class ProductViewModel extends ChangeNotifier {
       // Ürünleri yeniden yükle
       await loadAllProducts(refresh: true);
       
-      print('✅ ProductViewModel.refreshProducts completed');
-      print('✅ ProductViewModel - Final _products.length: ${_products.length}');
+      Logger.info('✅ ProductViewModel.refreshProducts completed');
+      Logger.info('✅ ProductViewModel - Final _products.length: ${_products.length}');
     } catch (e) {
-      print('❌ refreshProducts error: $e');
+      Logger.error('❌ refreshProducts error: $e');
       _errorMessage = 'Veri yenilenirken hata oluştu: $e';
       notifyListeners();
     }
   }
 
   Future<void> searchProducts(String query) async {
-    print('🔍 ProductViewModel.searchProducts - Starting search with query: "$query"');
-    print('🔍 ProductViewModel.searchProducts - Current state: page=$_currentPage, hasMore=$_hasMore');
+    Logger.info('🔍 ProductViewModel.searchProducts - Starting search with query: "$query"');
+    Logger.info('🔍 ProductViewModel.searchProducts - Current state: page=$_currentPage, hasMore=$_hasMore');
     
     _currentsearchText = query;
     // Sayfa numarasını sıfırla
     _currentPage = 1;
     _hasMore = true;
-    print('🔍 ProductViewModel.searchProducts - Reset pagination: page=1, hasMore=true');
+    Logger.info('🔍 ProductViewModel.searchProducts - Reset pagination: page=1, hasMore=true');
     notifyListeners();
 
-    print('🔍 ProductViewModel.searchProducts - Calling loadProducts with filters: categoryId=$_currentCategoryId, searchText=$query, city=$_currentCity, condition=$_currentCondition');
+    Logger.info('🔍 ProductViewModel.searchProducts - Calling loadProducts with filters: categoryId=$_currentCategoryId, searchText=$query, city=$_currentCity, condition=$_currentCondition');
     await loadProducts(
       categoryId: _currentCategoryId,
       searchText: query,
@@ -399,41 +422,41 @@ class ProductViewModel extends ChangeNotifier {
       refresh: true,
     );
     
-    print('✅ ProductViewModel.searchProducts - Search completed, total products: ${_products.length}');
+    Logger.info('✅ ProductViewModel.searchProducts - Search completed, total products: ${_products.length}');
   }
 
   Future<void> filterByCategory(String? categoryId) async {
-    print('🏷️ ProductViewModel.filterByCategory - Starting filter with categoryId: $categoryId');
-    print('🏷️ ProductViewModel.filterByCategory - Current state: page=$_currentPage, hasMore=$_hasMore');
+    Logger.info('🏷️ ProductViewModel.filterByCategory - Starting filter with categoryId: $categoryId');
+    Logger.info('🏷️ ProductViewModel.filterByCategory - Current state: page=$_currentPage, hasMore=$_hasMore');
     
     // Sayfa numarasını sıfırla
     _currentPage = 1;
     _hasMore = true;
-    print('🏷️ ProductViewModel.filterByCategory - Reset pagination: page=1, hasMore=true');
+    Logger.info('🏷️ ProductViewModel.filterByCategory - Reset pagination: page=1, hasMore=true');
     
     // Yeni filtreleme sistemi kullan
     final newFilter = _currentFilter.copyWith(categoryId: categoryId);
-    print('🏷️ ProductViewModel.filterByCategory - Created new filter: $newFilter');
-    print('🏷️ ProductViewModel.filterByCategory - Previous filter: $_currentFilter');
+    Logger.info('🏷️ ProductViewModel.filterByCategory - Created new filter: $newFilter');
+    Logger.info('🏷️ ProductViewModel.filterByCategory - Previous filter: $_currentFilter');
     
     await applyFilter(newFilter);
     
-    print('✅ ProductViewModel.filterByCategory - Filter applied, total products: ${_products.length}');
+    Logger.info('✅ ProductViewModel.filterByCategory - Filter applied, total products: ${_products.length}');
   }
 
   Future<void> sortProducts(SortOption sortOption) async {
-    print('📊 ProductViewModel.sortProducts - Starting sort with option: $sortOption');
-    print('📊 ProductViewModel.sortProducts - Current state: page=$_currentPage, hasMore=$_hasMore');
-    print('📊 ProductViewModel.sortProducts - Previous sort option: $_currentSortOption');
+    Logger.info('📊 ProductViewModel.sortProducts - Starting sort with option: $sortOption');
+    Logger.info('📊 ProductViewModel.sortProducts - Current state: page=$_currentPage, hasMore=$_hasMore');
+    Logger.info('📊 ProductViewModel.sortProducts - Previous sort option: $_currentSortOption');
     
     _currentSortOption = sortOption;
     // Sayfa numarasını sıfırla
     _currentPage = 1;
     _hasMore = true;
-    print('📊 ProductViewModel.sortProducts - Reset pagination: page=1, hasMore=true');
+    Logger.info('📊 ProductViewModel.sortProducts - Reset pagination: page=1, hasMore=true');
     notifyListeners();
 
-    print('📊 ProductViewModel.sortProducts - Calling loadProducts with filters: categoryId=$_currentCategoryId, searchText=$_currentsearchText, city=$_currentCity, condition=$_currentCondition');
+    Logger.info('📊 ProductViewModel.sortProducts - Calling loadProducts with filters: categoryId=$_currentCategoryId, searchText=$_currentsearchText, city=$_currentCity, condition=$_currentCondition');
     await loadProducts(
       categoryId: _currentCategoryId,
       searchText: _currentsearchText,
@@ -1737,7 +1760,7 @@ class ProductViewModel extends ChangeNotifier {
 
   // Yeni filtreleme metodları
   Future<void> applyFilter(ProductFilter filter) async {
-    print('🔍 ProductViewModel.applyFilter - New filter: $filter');
+    Logger.info('🔍 ProductViewModel.applyFilter - New filter: $filter');
     _currentFilter = filter;
     _currentPage = 1;
     _hasMore = true;
@@ -1753,31 +1776,35 @@ class ProductViewModel extends ChangeNotifier {
         limit: AppConstants.defaultPageSize,
       );
 
-      print('📡 ProductViewModel.applyFilter - response received');
-      print('📊 Response success: ${response.isSuccess}');
-      print('📊 Response data length: ${response.data?.length ?? 0}');
+      Logger.info('📡 ProductViewModel.applyFilter - response received');
+      Logger.info('📊 Response success: ${response.isSuccess}');
+      Logger.info('📊 Response data: ${response.data}');
 
       if (response.isSuccess && response.data != null) {
-        final newProducts = response.data!;
-        print(
+        final paginatedData = response.data!;
+        final newProducts = paginatedData.products;
+        Logger.info(
           '✅ ProductViewModel.applyFilter - got ${newProducts.length} products',
+        );
+        Logger.info(
+          '✅ ProductViewModel.applyFilter - pagination: page=${paginatedData.currentPage}, totalPages=${paginatedData.totalPages}, totalItems=${paginatedData.totalItems}, hasMore=${paginatedData.hasMore}',
         );
 
         _products = newProducts;
-        _hasMore = newProducts.length == AppConstants.defaultPageSize;
-        _currentPage = 2;
+        _hasMore = paginatedData.hasMore;
+        _currentPage = paginatedData.currentPage + 1; // Bir sonraki sayfa
 
-        print('✅ ProductViewModel.applyFilter - hasMore: $_hasMore');
+        Logger.info('✅ ProductViewModel.applyFilter - hasMore: $_hasMore (${paginatedData.currentPage} < ${paginatedData.totalPages})');
       } else {
-        print('❌ ProductViewModel.applyFilter - API error: ${response.error}');
+        Logger.error('❌ ProductViewModel.applyFilter - API error: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-      print('💥 ProductViewModel.applyFilter - Exception: $e');
+      Logger.error('💥 ProductViewModel.applyFilter - Exception: $e');
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
-      print(
+      Logger.info(
         '🏁 ProductViewModel.applyFilter completed - final products count: ${_products.length}',
       );
       notifyListeners();
@@ -1785,9 +1812,9 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> clearFilters() async {
-    print('🧹 ProductViewModel.clearFilters - Starting to clear all filters');
-    print('🧹 ProductViewModel.clearFilters - Before: _currentFilter = $_currentFilter');
-    print('🧹 ProductViewModel.clearFilters - Current state: page=$_currentPage, hasMore=$_hasMore, productsCount=${_products.length}');
+    Logger.info('🧹 ProductViewModel.clearFilters - Starting to clear all filters');
+    Logger.info('🧹 ProductViewModel.clearFilters - Before: _currentFilter = $_currentFilter');
+    Logger.info('🧹 ProductViewModel.clearFilters - Current state: page=$_currentPage, hasMore=$_hasMore, productsCount=${_products.length}');
     
     // Tüm filtreleri sıfırla
     _currentFilter = const ProductFilter();
@@ -1801,54 +1828,17 @@ class ProductViewModel extends ChangeNotifier {
     _currentCity = null;
     _currentCondition = null;
     
-    print('🧹 ProductViewModel.clearFilters - After: _currentFilter = $_currentFilter');
-    print('🧹 ProductViewModel.clearFilters - Reset pagination: page=1, hasMore=true');
-    print('🧹 ProductViewModel.clearFilters - Cleared all filter parameters');
-    print('🧹 ProductViewModel.clearFilters - Loading all products...');
+    Logger.info('🧹 ProductViewModel.clearFilters - After: _currentFilter = $_currentFilter');
+    Logger.info('🧹 ProductViewModel.clearFilters - Reset pagination: page=1, hasMore=true');
+    Logger.info('🧹 ProductViewModel.clearFilters - Cleared all filter parameters');
+    Logger.info('🧹 ProductViewModel.clearFilters - Loading all products...');
     
     await loadAllProducts(refresh: true);
     
-    print('✅ ProductViewModel.clearFilters - Completed, products count: ${_products.length}');
+    Logger.info('✅ ProductViewModel.clearFilters - Completed, products count: ${_products.length}');
   }
 
-  Future<void> loadMoreFilteredProducts() async {
-    if (!_hasMore || _isLoadingMore) return;
 
-    print(
-      '🔄 ProductViewModel.loadMoreFilteredProducts - Loading page $_currentPage',
-    );
-    _setLoadingMore(true);
-
-    try {
-      final response = await _productService.getAllProductsWithFilter(
-        filter: _currentFilter,
-        page: _currentPage,
-        limit: AppConstants.defaultPageSize,
-      );
-
-      if (response.isSuccess && response.data != null) {
-        final newProducts = response.data!;
-        print(
-          '✅ ProductViewModel.loadMoreFilteredProducts - got ${newProducts.length} more products',
-        );
-
-        _products.addAll(newProducts);
-        _hasMore = newProducts.length == AppConstants.defaultPageSize;
-        _currentPage++;
-      } else {
-        print(
-          '❌ ProductViewModel.loadMoreFilteredProducts - API error: ${response.error}',
-        );
-        _setError(response.error ?? ErrorMessages.unknownError);
-      }
-    } catch (e) {
-      print('💥 ProductViewModel.loadMoreFilteredProducts - Exception: $e');
-      _setError(ErrorMessages.unknownError);
-    } finally {
-      _setLoadingMore(false);
-      notifyListeners();
-    }
-  }
 
   Future<bool> _verifyDeletion(String productId, {int retries = 3, Duration delay = const Duration(seconds: 1)}) async {
     print('🔍 ProductViewModel._verifyDeletion - Starting verification for product: $productId');

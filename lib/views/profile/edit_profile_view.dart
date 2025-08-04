@@ -487,8 +487,12 @@ class _EditProfileViewState extends State<EditProfileView> {
   }
 
   Widget _buildGenderDropdown() {
+    // Geçerli değerleri kontrol et
+    final validValues = ['1', '2', '3'];
+    final validValue = validValues.contains(_selectedGender) ? _selectedGender : null;
+    
     return DropdownButtonFormField<String>(
-      value: _selectedGender,
+      value: validValue,
       onChanged: (String? newValue) {
         setState(() {
           _selectedGender = newValue;

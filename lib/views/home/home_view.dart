@@ -4,7 +4,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
-import '../../viewmodels/ad_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
@@ -17,7 +16,6 @@ import '../chat/chat_list_view.dart';
 import '../home/search_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
-import '../../widgets/native_ad_widget.dart';
 import '../../utils/logger.dart';
 
 
@@ -59,18 +57,7 @@ class _HomeViewState extends State<HomeView> {
         productViewModel.loadCategories();
       }
       
-      // AdMob'u güvenli şekilde başlat (WidgetsFlutterBinding hazır olduktan sonra)
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          try {
-            final adViewModel = Provider.of<AdViewModel>(context, listen: false);
-            adViewModel.initializeAdMob();
-            Logger.info('🚀 HomeView - AdMob başlatma işlemi başlatıldı');
-          } catch (e) {
-            Logger.error('❌ HomeView - AdMob başlatma hatası: $e');
-          }
-        }
-      });
+
     });
   }
 
@@ -82,15 +69,24 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.9) {
+    // Scroll pozisyonunu kontrol et
+    final position = _scrollController.position;
+    final maxScrollExtent = position.maxScrollExtent;
+    final currentPixels = position.pixels;
+    
+    // Eğer scroll pozisyonu %80'e ulaştıysa ve daha fazla ürün varsa yükle (daha agresif)
+    if (currentPixels >= maxScrollExtent * 0.8 && maxScrollExtent > 0) {
       final productViewModel = Provider.of<ProductViewModel>(
         context,
         listen: false,
       );
-      if (productViewModel.currentFilter.hasActiveFilters) {
-        productViewModel.loadMoreFilteredProducts();
-      } else {
+      
+      Logger.info('📜 HomeView - Scroll position: $currentPixels/$maxScrollExtent (${(currentPixels / maxScrollExtent * 100).toStringAsFixed(1)}%)');
+      Logger.info('📜 HomeView - hasMore: ${productViewModel.hasMore}, isLoadingMore: ${productViewModel.isLoadingMore}');
+      
+      // Sadece loadMoreProducts çağır, o zaten filtreleri kontrol ediyor
+      if (productViewModel.hasMore && !productViewModel.isLoadingMore) {
+        Logger.info('📜 HomeView - Triggering loadMoreProducts');
         productViewModel.loadMoreProducts();
       }
     }
@@ -190,8 +186,8 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildProductGrid() {
-    return Consumer2<ProductViewModel, AdViewModel>(
-      builder: (context, vm, adVm, child) {
+    return Consumer<ProductViewModel>(
+      builder: (context, vm, child) {
         if (vm.isLoading && vm.products.isEmpty) {
           return const SliverToBoxAdapter(child: ProductGridSkeleton());
         }
@@ -219,14 +215,7 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
-        // Ürün sayısını AdViewModel'e bildir
-        adVm.updateProductCount(vm.products.length);
-
-        // Her 4 üründe 1 reklam göstermek için toplam item sayısını hesapla
-        final int totalItems = vm.products.length + (vm.products.length ~/ 4);
-        
-        Logger.debug('📊 HomeView - Toplam ürün: ${vm.products.length}, Toplam item: $totalItems');
-        Logger.debug('📊 HomeView - Reklam durumu: isAdLoaded=${adVm.isAdLoaded}');
+        Logger.info('📊 HomeView - Toplam ürün: ${vm.products.length}, Toplam item: ${vm.products.length}, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}');
         
         return SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -239,43 +228,8 @@ class _HomeViewState extends State<HomeView> {
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                // Her 4 üründen sonra reklam göster (4, 8, 12, 16, ...)
-                final int adFrequency = 4;
-                final int adCount = index ~/ (adFrequency + 1); // Kaç tane reklam geçti
-                final int productIndex = index - adCount; // Gerçek ürün indeksi
-                
-                // Bu pozisyon reklam pozisyonu mu?
-                final bool isAdPosition = (index + 1) % (adFrequency + 1) == 0;
-                
-                Logger.debug('🎯 HomeView - Index: $index, ProductIndex: $productIndex, isAdPosition: $isAdPosition');
-                
-                                 // Eğer bu pozisyon reklam pozisyonu ise ve reklam yüklüyse
-                 if (isAdPosition && adVm.isAdLoaded) {
-                   Logger.info('✅ HomeView - Reklam gösteriliyor. Index: $index, ProductIndex: $productIndex');
-                   return RepaintBoundary(
-                     child: Container(
-                       decoration: BoxDecoration(
-                         color: Colors.white,
-                         borderRadius: BorderRadius.circular(12),
-                         boxShadow: [
-                           BoxShadow(
-                             color: Colors.black.withOpacity(0.1),
-                             blurRadius: 4,
-                             offset: const Offset(0, 2),
-                           ),
-                         ],
-                       ),
-                       child: ClipRRect(
-                         borderRadius: BorderRadius.circular(12),
-                         child: const NativeAdWidget(),
-                       ),
-                     ),
-                   );
-                 }
-                
-                // Eğer ürün indeksi geçerli aralıkta ise ürün göster
-                if (productIndex < vm.products.length) {
-                  final product = vm.products[productIndex];
+                if (index < vm.products.length) {
+                  final product = vm.products[index];
                   
                   // Kullanıcının kendi ürünü olup olmadığını kontrol et
                   bool isOwnProduct = false;
@@ -290,16 +244,15 @@ class _HomeViewState extends State<HomeView> {
                   
                   return ProductCard(
                     product: product,
-                    heroTag: 'home_product_${product.id}_$productIndex',
+                    heroTag: 'home_product_${product.id}_$index',
                     hideFavoriteIcon: isOwnProduct, // Kullanıcının kendi ürünü ise favori ikonunu gizle
                   );
                 }
                 
                 // Geçersiz indeks için boş widget
-                Logger.debug('🚫 HomeView - Geçersiz indeks: $index');
                 return const SizedBox.shrink();
               },
-              childCount: totalItems,
+              childCount: vm.products.length,
             ),
           ),
         );
@@ -396,6 +349,8 @@ class _HomeViewState extends State<HomeView> {
     return SliverToBoxAdapter(
       child: Consumer<ProductViewModel>(
         builder: (context, vm, child) {
+          Logger.info('📊 HomeView - Loading indicator: isLoadingMore=${vm.isLoadingMore}, hasMore=${vm.hasMore}');
+          
           return vm.isLoadingMore
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),

@@ -136,9 +136,6 @@ class AdMobService {
     try {
       Logger.info('🚀 AdMobService - Native reklam yükleniyor... (Deneme: $_retryCount)');
       
-      // Eğer eski reklam varsa temizle
-      await _disposeCurrentAd();
-      
       // Reklam yükleme işlemini arka planda yap
       await _loadAdInBackground();
       
@@ -153,9 +150,14 @@ class AdMobService {
   // Reklamın geçerli olup olmadığını kontrol et
   bool _isAdValid() {
     try {
-      return _nativeAd != null;
+      if (_nativeAd == null) return false;
+      
+      // Reklamın durumunu kontrol et - daha detaylı kontrol
+      if (!_isAdLoaded) return false;
+      
+      return true;
     } catch (e) {
-      Logger.error('❌ AdMobService - Reklam geçerlilik kontrolü hatası: $e');
+      Logger.error('❌ AdMobService - Reklam gecerlilik kontrolu hatasi: $e');
       return false;
     }
   }
@@ -163,34 +165,40 @@ class AdMobService {
   // Arka planda reklam yükleme
   Future<void> _loadAdInBackground() async {
     try {
+      // Eğer eski reklam varsa temizle
+      if (_nativeAd != null) {
+        await _disposeCurrentAd();
+      }
+
+      // Reklam oluştur
       _nativeAd = NativeAd(
         adUnitId: nativeAdUnitId,
         factoryId: 'listTile',
         request: const AdRequest(),
         listener: NativeAdListener(
           onAdLoaded: (ad) {
-            Logger.info('✅ AdMobService - Native reklam başarıyla yüklendi');
+            Logger.info('✅ AdMobService - Native reklam basariyla yuklendi');
             _isAdLoaded = true;
             _hasFailed = false;
             _retryCount = 0; // Başarılı yüklemede sayacı sıfırla
           },
           onAdFailedToLoad: (ad, error) {
-            Logger.error('❌ AdMobService - Native reklam yüklenemedi: ${error.message}');
+            Logger.error('❌ AdMobService - Native reklam yuklenemedi: ${error.message}');
             Logger.error('❌ AdMobService - Error code: ${error.code}');
             _handleLoadError();
             _safeDisposeAd(ad as NativeAd);
           },
           onAdClicked: (ad) {
-            Logger.info('👆 AdMobService - Native reklam tıklandı');
+            Logger.info('👆 AdMobService - Native reklam tiklandi');
           },
           onAdImpression: (ad) {
-            Logger.info('👁️ AdMobService - Native reklam gösterildi');
+            Logger.info('👁️ AdMobService - Native reklam gosterildi');
           },
           onAdOpened: (ad) {
-            Logger.info('🚪 AdMobService - Native reklam açıldı');
+            Logger.info('🚪 AdMobService - Native reklam acildi');
           },
           onAdClosed: (ad) {
-            Logger.info('🚪 AdMobService - Native reklam kapandı');
+            Logger.info('🚪 AdMobService - Native reklam kapandi');
           },
         ),
       );
@@ -199,12 +207,14 @@ class AdMobService {
       await _nativeAd!.load().timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          throw TimeoutException('Reklam yükleme zaman aşımı');
+          throw TimeoutException('Reklam yukleme zaman asimi');
         },
       );
       
     } catch (e) {
-      Logger.error('❌ AdMobService - Arka plan reklam yükleme hatası: $e');
+      Logger.error('❌ AdMobService - Arka plan reklam yukleme hatasi: $e');
+      // Hata durumunda reklamı temizle
+      await _disposeCurrentAd();
       rethrow;
     }
   }
@@ -254,20 +264,30 @@ class AdMobService {
 
   /// Native reklamın yüklenip yüklenmediğini kontrol et
   bool get isAdLoaded {
-    // Eğer nativeAd objesi varsa ama _isAdLoaded false ise, true döndür
-    if (_nativeAd != null && !_isAdLoaded && _isAdValid()) {
-      Logger.warning('⚠️ AdMobService - nativeAd mevcut ama _isAdLoaded false, düzeltiliyor...');
-      _isAdLoaded = true;
+    try {
+      // Eğer nativeAd objesi varsa ama _isAdLoaded false ise, true döndür
+      if (_nativeAd != null && !_isAdLoaded && _isAdValid()) {
+        Logger.warning('⚠️ AdMobService - nativeAd mevcut ama _isAdLoaded false, duzeltiliyor...');
+        _isAdLoaded = true;
+      }
+      return _isAdLoaded && _isAdValid();
+    } catch (e) {
+      Logger.error('❌ AdMobService - isAdLoaded getter hatasi: $e');
+      return false;
     }
-    return _isAdLoaded && _isAdValid();
   }
 
   /// Native reklamı al (güvenli)
   NativeAd? get nativeAd {
-    if (_nativeAd != null && _isAdValid()) {
-      return _nativeAd;
+    try {
+      if (_nativeAd != null && _isAdValid()) {
+        return _nativeAd;
+      }
+      return null;
+    } catch (e) {
+      Logger.error('❌ AdMobService - nativeAd getter hatası: $e');
+      return null;
     }
-    return null;
   }
 
   /// Reklamı temizle
