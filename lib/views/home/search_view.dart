@@ -290,11 +290,11 @@ class _SearchViewState extends State<SearchView> {
                               isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
                             }
                             
-                            // Debug log ekle
-                            Logger.debug('SearchView - Product: ${product.title} (ID: ${product.id}), isOwnProduct: $isOwnProduct, myProducts count: ${vm.myProducts.length}, ownerId: ${product.ownerId}');
-                            if (isOwnProduct) {
-                              Logger.debug('SearchView - This is user\'s own product, hiding favorite icon');
-                            }
+                            // Debug log sürekli tekrarlanmasını önlemek için kaldırıldı
+                            // Logger.debug('SearchView - Product: ${product.title} (ID: ${product.id}), isOwnProduct: $isOwnProduct, myProducts count: ${vm.myProducts.length}, ownerId: ${product.ownerId}');
+                            // if (isOwnProduct) {
+                            //   Logger.debug('SearchView - This is user\'s own product, hiding favorite icon');
+                            // }
                             
                             return ProductCard(
                               product: product,

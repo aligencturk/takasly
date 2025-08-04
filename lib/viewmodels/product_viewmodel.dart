@@ -121,6 +121,7 @@ class ProductViewModel extends ChangeNotifier {
 
     if (_isLoading || _isLoadingMore) {
       print('⚠️ ProductViewModel.loadAllProducts - already loading, returning');
+      print('⚠️ _isLoading: $_isLoading, _isLoadingMore: $_isLoadingMore');
       return;
     }
 
@@ -354,13 +355,23 @@ class ProductViewModel extends ChangeNotifier {
       '🔄 ProductViewModel - Current _products.length: ${_products.length}',
     );
     try {
+      // Loading state'leri sıfırla ve temizle
+      _isLoading = false;
+      _isLoadingMore = false;
+      _clearError();
+      
       // Sayfa numarasını sıfırla
       _currentPage = 1;
       _hasMore = true;
-      await Future.wait([loadCategories(), loadAllProducts(refresh: true)]);
+      
+      // Kategorileri yükle (eğer yoksa)
+      await loadCategories();
+      
+      // Ürünleri yeniden yükle
+      await loadAllProducts(refresh: true);
+      
       print('✅ ProductViewModel.refreshProducts completed');
       print('✅ ProductViewModel - Final _products.length: ${_products.length}');
-      notifyListeners(); // UI'ı güncelle
     } catch (e) {
       print('❌ refreshProducts error: $e');
       _errorMessage = 'Veri yenilenirken hata oluştu: $e';
@@ -1372,15 +1383,14 @@ class ProductViewModel extends ChangeNotifier {
     String? description,
     List<String>? images,
     String? categoryId,
-    String? condition,
-    String? brand,
-    String? model,
-    double? estimatedValue,
+    String? conditionId,
     List<String>? tradePreferences,
     String? cityId,
     String? cityTitle,
     String? districtId,
     String? districtTitle,
+    String? productLat,
+    String? productLong,
     bool? isShowContact,
   }) async {
     print('🔄 ProductViewModel.updateProduct called');
@@ -1390,10 +1400,8 @@ class ProductViewModel extends ChangeNotifier {
     print('  - description: $description');
     print('  - images count: ${images?.length ?? 0}');
     print('  - categoryId: $categoryId');
-    print('  - condition: $condition');
-    print('  - brand: $brand');
-    print('  - model: $model');
-    print('  - estimatedValue: $estimatedValue');
+    print('  - conditionId: $conditionId');
+
     print('  - tradePreferences: $tradePreferences');
     print('  - cityId: $cityId');
     print('  - cityTitle: $cityTitle');
@@ -1418,7 +1426,7 @@ class ProductViewModel extends ChangeNotifier {
       final userToken = await _authService.getToken();
       if (userToken?.isEmpty ?? true) {
         print('❌ User token is empty!');
-        _setError('Kullanıcı token\'ı bulunamadı');
+        _setError('Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.');
         _setLoading(false);
         return false;
       }
@@ -1429,7 +1437,15 @@ class ProductViewModel extends ChangeNotifier {
       // Null check for userToken
       if (userToken == null) {
         print('❌ User token is null');
-        _setError('Kullanıcı token\'ı bulunamadı');
+        _setError('Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.');
+        _setLoading(false);
+        return false;
+      }
+
+      // Token geçerliliğini kontrol et (basit kontrol)
+      if (userToken.length < 20) {
+        print('❌ User token is too short, likely invalid!');
+        _setError('Kullanıcı token\'ı geçersiz. Lütfen tekrar giriş yapın.');
         _setLoading(false);
         return false;
       }
@@ -1442,15 +1458,14 @@ class ProductViewModel extends ChangeNotifier {
         description: description,
         images: images,
         categoryId: categoryId,
-        condition: condition,
-        brand: brand,
-        model: model,
-        estimatedValue: estimatedValue,
+        conditionId: conditionId,
         tradePreferences: tradePreferences,
         cityId: cityId,
         cityTitle: cityTitle,
         districtId: districtId,
         districtTitle: districtTitle,
+        productLat: productLat,
+        productLong: productLong,
         isShowContact: isShowContact,
       );
 
@@ -1460,31 +1475,54 @@ class ProductViewModel extends ChangeNotifier {
       print('📊 Response data: ${response.data}');
 
       if (response.isSuccess) {
-        // API'den {"error": false, "200": "OK"} formatında yanıt geldiğinde data null olabilir
+        // API'den gelen yanıt kontrolü
         if (response.data != null) {
           final updatedProduct = response.data!;
           print('✅ Product updated successfully with data!');
           print('🆔 Updated Product ID: ${updatedProduct.id}');
           print('📝 Updated Product Title: ${updatedProduct.title}');
 
-          // Güncellenmiş ürünü listelerde güncelle
-          _updateProductInLists(updatedProduct);
+          // API'den dönen ürün verisi eksikse (sadece ID varsa), güncel veriyi çek
+          if (updatedProduct.title.isEmpty || updatedProduct.description.isEmpty) {
+            print('🔄 API returned incomplete product data, fetching full details...');
+            await _loadUpdatedProduct(productId);
+          } else {
+            // Güncellenmiş ürünü listelerde güncelle
+            _updateProductInLists(updatedProduct);
 
-          // Seçili ürünü güncelle
-          if (_selectedProduct?.id == productId) {
-            _selectedProduct = updatedProduct;
+            // Seçili ürünü güncelle
+            if (_selectedProduct?.id == productId) {
+              _selectedProduct = updatedProduct;
+            }
           }
         } else {
           print('✅ Product updated successfully (no data returned from API)');
-          // API'den ürün verisi dönmediğinde, mevcut ürün listesini yenile
-          print('🔄 Refreshing products to get updated data...');
-          await refreshProducts();
+          // API'den ürün verisi dönmediğinde, sadece o ürünü yeniden yükle
+          print('🔄 Loading updated product data...');
+          await _loadUpdatedProduct(productId);
         }
 
         _setLoading(false);
         return true;
       } else {
         print('❌ Product update failed: ${response.error}');
+        
+        // Token hatası kontrolü
+        if (response.error != null && 
+            (response.error!.contains('Geçersiz kullanıcı token') ||
+             response.error!.contains('Üye doğrulama bilgileri hatalı') ||
+             response.error!.contains('403') ||
+             response.error!.contains('Forbidden'))) {
+          print('🔐 Token error detected, redirecting to login...');
+          _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+          
+          // Kullanıcıyı logout yap
+          await _authService.logout();
+          
+          _setLoading(false);
+          return false;
+        }
+        
         _setError(response.error ?? 'Ürün güncellenemedi');
         _setLoading(false);
         return false;
@@ -1494,6 +1532,50 @@ class ProductViewModel extends ChangeNotifier {
       _setError('Ürün güncellenirken hata oluştu: $e');
       _setLoading(false);
       return false;
+    }
+  }
+
+  // Güncellenmiş ürünü yeniden yükle
+  Future<void> _loadUpdatedProduct(String productId) async {
+    print('🔄 _loadUpdatedProduct - Loading updated product: $productId');
+    try {
+      // Önce getProductById ile dene
+      var response = await _productService.getProductById(productId);
+      
+      // Eğer getProductById başarısız olursa, getProductDetail ile dene
+      if (!response.isSuccess || response.data == null) {
+        print('🔄 getProductById failed, trying getProductDetail...');
+        
+        // User token'ı al
+        final userToken = await _authService.getToken();
+        if (userToken != null && userToken.isNotEmpty) {
+          response = await _productService.getProductDetail(
+            userToken: userToken,
+            productId: productId,
+          );
+        }
+      }
+      
+      if (response.isSuccess && response.data != null) {
+        final updatedProduct = response.data!;
+        print('✅ _loadUpdatedProduct - Product loaded successfully');
+        print('📝 Loaded product title: ${updatedProduct.title}');
+        print('📝 Loaded product description: ${updatedProduct.description}');
+        _updateProductInLists(updatedProduct);
+        
+        // Seçili ürünü de güncelle
+        if (_selectedProduct?.id == productId) {
+          _selectedProduct = updatedProduct;
+        }
+      } else {
+        print('❌ _loadUpdatedProduct - Failed to load updated product: ${response.error}');
+        // Eğer ürün yüklenemezse, tüm listeyi yenile
+        await refreshProducts();
+      }
+    } catch (e) {
+      print('❌ _loadUpdatedProduct - Exception: $e');
+      // Hata durumunda tüm listeyi yenile
+      await refreshProducts();
     }
   }
 

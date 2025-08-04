@@ -37,6 +37,10 @@
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
 	
+	<!-- AdMob App ID -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	
 	<!-- Location Permissions -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Bu uygulama ürününüzün konumunu belirlemek için konum izninize ihtiyaç duyar.</string>

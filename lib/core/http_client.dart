@@ -463,6 +463,34 @@ class HttpClient {
         return ApiResponse<T>.error(errorMessage);
       }
 
+      // Özel durum: 403 statusCode'unda kullanıcıya görünür hata mesajı ver
+      if (response.statusCode == ApiConstants.forbidden) {
+        print('❌ 403 Status - Forbidden');
+        String errorMessage = ErrorMessages.unknownError;
+        if (response.body.isNotEmpty) {
+          try {
+            final data = json.decode(response.body);
+            print('❌ 403 - Parsed error data: $data');
+
+            // error_message field'ını öncelikle kontrol et
+            if (data['error_message'] != null &&
+                data['error_message'] is String) {
+              errorMessage = data['error_message'];
+            } else if (data['message'] != null && data['message'] is String) {
+              errorMessage = data['message'];
+            } else if (data['error'] != null && data['error'] is String) {
+              errorMessage = data['error'];
+            }
+
+            print('❌ 403 - Extracted error message: "$errorMessage"');
+          } catch (e) {
+            print('⚠️ 403 - Failed to parse error JSON: $e');
+            errorMessage = response.body; // Raw response'u göster
+          }
+        }
+        return ApiResponse<T>.error(errorMessage);
+      }
+
       // Özel durum: 410 ama response'da success:true varsa başarılı say
       if (response.statusCode == ApiConstants.gone) {
         try {
@@ -717,16 +745,37 @@ class HttpClient {
 
         // API response'unda success field'ını kontrol et
         // Bazı API'ler garip status code gönderebilir ama body'de success bilgisi doğru olur
-        final bool apiSuccess =
-            jsonData['success'] == true || jsonData['error'] == false;
+        final bool apiSuccess = jsonData['success'] == true;
+        
+        // Error message kontrolü - eğer error_message varsa başarısız
+        final bool hasErrorMessage = jsonData['error_message'] != null && 
+                                   jsonData['error_message'].toString().isNotEmpty;
+        
+        // 403 Forbidden kontrolü
+        final bool isForbidden = jsonData['403'] != null || response.statusCode == 403;
 
         print('📊 API Success check: $apiSuccess');
+        print('📊 Has Error Message: $hasErrorMessage');
+        print('📊 Is Forbidden: $isForbidden');
         print(
           '📊 Status Code Success check: ${response.statusCode >= 200 && response.statusCode < 300}',
         );
         print(
           '📊 410 Success check: ${response.statusCode == 410 && apiSuccess}',
         );
+
+        // Başarısız durumlar:
+        // 1. Error message varsa
+        // 2. 403 Forbidden varsa
+        // 3. Success false ise ve error message varsa
+        if (hasErrorMessage || isForbidden || (jsonData['success'] == false && hasErrorMessage)) {
+          print('❌ API Error detected - Has error message or forbidden');
+          final errorMessage = jsonData['error_message']?.toString() ?? 
+                             jsonData['message']?.toString() ?? 
+                             'Unknown error';
+          print('❌ Error message: $errorMessage');
+          return ApiResponse.error(errorMessage);
+        }
 
         if ((response.statusCode >= 200 && response.statusCode < 300) ||
             (response.statusCode == 410 && apiSuccess)) {
@@ -740,10 +789,12 @@ class HttpClient {
           print(
             '❌ API Error detected - Status: ${response.statusCode}, API Success: $apiSuccess',
           );
-          final errorMessage =
-              jsonData['message'] ?? jsonData['error'] ?? 'Unknown error';
+          final errorMessage = jsonData['error_message']?.toString() ?? 
+                             jsonData['message']?.toString() ?? 
+                             jsonData['error']?.toString() ?? 
+                             'Unknown error';
           print('❌ Error message: $errorMessage');
-          return ApiResponse.error(errorMessage.toString());
+          return ApiResponse.error(errorMessage);
         }
       } catch (e) {
         print('❌ JSON parsing error: $e');

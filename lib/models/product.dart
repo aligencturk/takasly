@@ -194,7 +194,6 @@ class Product {
     final categoryList = json['categoryList'] != null ? safeCategoryList(json['categoryList']) : null;
     final userId = safeString(json['userID'] ?? json['ownerId']);
     final categoryId = safeString(json['categoryID'] ?? json['categoryId']);
-    final conditionId = safeString(json['conditionID'] ?? json['conditionId']);
     final cityId = safeString(json['cityID'] ?? json['cityId']);
     final districtId = safeString(json['districtID'] ?? json['districtId']);
     final cityTitle = safeString(json['cityTitle']);

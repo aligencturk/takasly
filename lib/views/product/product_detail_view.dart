@@ -331,6 +331,7 @@ Takasly uygulamasından paylaşıldı.
                   controller: _scrollController,
                   children: [
                     _ImageCarousel(
+                      product: product,
                       images: product.images,
                       pageController: _pageController,
                       onPageChanged: (index) {
@@ -354,12 +355,14 @@ Takasly uygulamasından paylaşıldı.
 }
 
 class _ImageCarousel extends StatelessWidget {
+  final Product product;
   final List<String> images;
   final PageController pageController;
   final Function(int) onPageChanged;
   final int currentIndex;
 
   const _ImageCarousel({
+    required this.product,
     required this.images,
     required this.pageController,
     required this.onPageChanged,

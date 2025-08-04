@@ -77,11 +77,8 @@ class TradeCard extends StatelessWidget {
       return '';
     }
     
-    Logger.debug('Cache kontrolü: myProductID=${myProduct.productID}, theirProductID=${theirProduct.productID}', tag: 'TradeCard');
-    
-    // Cache key'i oluştur ve log'la
+    // Cache key'i oluştur
     final cacheKey = '${myProduct.productID}_${theirProduct.productID}';
-    Logger.debug('Cache key oluşturuldu: $cacheKey', tag: 'TradeCard');
     
     // Cache'den mesajı al
     final cachedStatus = tradeViewModel.getCachedTradeStatus(
@@ -89,19 +86,10 @@ class TradeCard extends StatelessWidget {
       theirProduct.productID
     );
     
-    Logger.debug('Cache sonucu: cachedStatus=${cachedStatus != null ? "mevcut" : "null"}', tag: 'TradeCard');
-    
     if (cachedStatus != null) {
-      Logger.debug('Cache içeriği: message="${cachedStatus.message}", showButtons=${cachedStatus.showButtons}', tag: 'TradeCard');
-      
       if (cachedStatus.message.isNotEmpty) {
-        Logger.debug('API mesajı kullanılıyor: ${cachedStatus.message}', tag: 'TradeCard');
         return cachedStatus.message;
-      } else {
-        Logger.debug('Cache\'de mesaj boş', tag: 'TradeCard');
       }
-    } else {
-      Logger.debug('Cache\'de veri bulunamadı', tag: 'TradeCard');
     }
     
     // Cache'de yoksa varsayılan mesaj
@@ -358,27 +346,9 @@ class TradeCard extends StatelessWidget {
     final isSender = trade.isConfirm == true;
     final isReceiver = trade.isConfirm == false;
     
-    Logger.debug('TradeCard build called - Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, isSender=$isSender, isReceiver=$isReceiver, currentUserId=$currentUserId, myProduct.userID=${trade.myProduct?.userID}, theirProduct.userID=${trade.theirProduct?.userID}, isConfirm=${trade.isConfirm}, showButtons=$showButtons', tag: 'TradeCard');
+    // Debug log'lar sürekli tekrarlanmasını önlemek için kaldırıldı
     
-    // Debug için ek kontroller
-    Logger.debug('isConfirm kontrolleri: isConfirm=${trade.isConfirm} (${trade.isConfirm.runtimeType}), isSender=$isSender, isReceiver=$isReceiver', tag: 'TradeCard');
-    Logger.debug('showButtons kontrolu: showButtons=$showButtons', tag: 'TradeCard');
-    
-    // Buton gösterme mantığını log'la
-    if (showButtons == true) {
-      Logger.info('Trade #${trade.offerID} icin butonlar gosteriliyor (showButtons=true, isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
-    } else if (showButtons == false) {
-      Logger.info('Trade #${trade.offerID} icin butonlar gizleniyor (showButtons=false, isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
-    } else {
-      Logger.info('Trade #${trade.offerID} icin showButtons null, eski mantik kullaniliyor (isSender=$isSender, isReceiver=$isReceiver)', tag: 'TradeCard');
-    }
-    
-    // Durum değiştirme butonu kontrolü
-    if (trade.statusID == 2) {
-      Logger.info('Trade #${trade.offerID} icin durum degistirme butonu gosterilecek (statusID=2: Onaylandi, showButtons: $showButtons)', tag: 'TradeCard');
-    } else if (trade.statusID == 1) {
-      Logger.info('Trade #${trade.offerID} icin onay/red butonlari kontrol ediliyor (statusID=1: Bekliyor, showButtons: $showButtons, isReceiver: $isReceiver, isSender: $isSender)', tag: 'TradeCard');
-    }
+    // Buton gösterme mantığı - log'lar sürekli tekrarlanmasını önlemek için kaldırıldı
 
     return Consumer<TradeViewModel>(
       builder: (context, tradeViewModel, child) {

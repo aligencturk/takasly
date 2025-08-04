@@ -403,13 +403,39 @@ class ProductService {
 
   Future<ApiResponse<Product>> getProductById(String productId) async {
     try {
-      final response = await _httpClient.get(
-        '${ApiConstants.products}/$productId',
-        fromJson: (json) => Product.fromJson(json),
+      // POST ile ürün detayını al (API POST istiyor)
+      final response = await _httpClient.postWithBasicAuth(
+        '${ApiConstants.getProductById}/$productId',
+        body: {'productID': int.tryParse(productId) ?? productId}, // Product ID'yi body'de gönder
+        useBasicAuth: true,
+        fromJson: (json) {
+          print('🔍 getProductById - Raw response: $json');
+          
+          // API response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            // Eğer data field'ı varsa ve içinde product varsa
+            if (json['data'] != null && json['data']['product'] != null) {
+              return Product.fromJson(json['data']['product']);
+            }
+            // Eğer direkt product data'sı varsa
+            if (json['product'] != null) {
+              return Product.fromJson(json['product']);
+            }
+            // Eğer response direkt product data'sı ise
+            try {
+              return Product.fromJson(json);
+            } catch (e) {
+              print('❌ getProductById - Failed to parse as Product: $e');
+              throw Exception('Ürün verisi parse edilemedi');
+            }
+          }
+          throw Exception('Geçersiz API yanıtı');
+        },
       );
 
       return response;
     } catch (e) {
+      print('❌ getProductById - Exception: $e');
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -1000,15 +1026,14 @@ class ProductService {
     String? description,
     List<String>? images,
     String? categoryId,
-    String? condition,
-    String? brand,
-    String? model,
-    double? estimatedValue,
+    String? conditionId,
     List<String>? tradePreferences,
     String? cityId,
     String? cityTitle,
     String? districtId,
     String? districtTitle,
+    String? productLat,
+    String? productLong,
     bool? isShowContact,
   }) async {
     print('🔄 ProductService.updateProduct called');
@@ -1019,10 +1044,7 @@ class ProductService {
     print('  - description: $description');
     print('  - images count: ${images?.length ?? 0}');
     print('  - categoryId: $categoryId');
-    print('  - condition: $condition');
-    print('  - brand: $brand');
-    print('  - model: $model');
-    print('  - estimatedValue: $estimatedValue');
+    print('  - conditionId: $conditionId');
     print('  - tradePreferences: $tradePreferences');
     print('  - cityId: $cityId');
     print('  - cityTitle: $cityTitle');
@@ -1047,41 +1069,137 @@ class ProductService {
         return ApiResponse.error('Kullanıcı ID\'si bulunamadı');
       }
 
-      // API body'sini hazırla
+      // API'nin beklediği form-data formatında body hazırla
       final body = <String, dynamic>{
         'userToken': userToken,
-        'productID': int.tryParse(productId) ?? productId, // API integer bekleyebilir
+        'productID': int.tryParse(productId) ?? productId,
       };
 
-      // Sadece null olmayan değerleri ekle
-      if (title != null) body['title'] = title;
-      if (description != null) body['description'] = description;
-      if (images != null && images.isNotEmpty) body['images'] = images;
-      if (categoryId != null) body['categoryId'] = categoryId;
-      if (condition != null) body['condition'] = condition;
-      if (brand != null) body['brand'] = brand;
-      if (model != null) body['model'] = model;
-      if (estimatedValue != null) body['estimatedValue'] = estimatedValue;
-      if (tradePreferences != null && tradePreferences.isNotEmpty) {
-        body['tradePreferences'] = tradePreferences;
+      // Zorunlu alanları kontrol et ve API'nin beklediği formatta gönder
+      if (title != null && title.isNotEmpty) {
+        body['productTitle'] = title;
+      } else {
+        print('❌ Product title is required!');
+        return ApiResponse.error('Ürün başlığı zorunludur');
       }
-      if (cityId != null) body['cityId'] = cityId;
-      if (cityTitle != null) body['cityTitle'] = cityTitle;
-      if (districtId != null) body['districtId'] = districtId;
-      if (districtTitle != null) body['districtTitle'] = districtTitle;
-      if (isShowContact != null) body['isShowContact'] = isShowContact;
 
-      print('🌐 Update Body: $body');
+      if (description != null && description.isNotEmpty) {
+        body['productDesc'] = description;
+      } else {
+        print('❌ Product description is required!');
+        return ApiResponse.error('Ürün açıklaması zorunludur');
+      }
 
-      // Yeni endpoint formatını kullan: service/user/product/userid/editProduct
+      if (categoryId != null && categoryId.isNotEmpty) {
+        body['categoryID'] = int.tryParse(categoryId) ?? categoryId;
+      } else {
+        print('❌ Category ID is required!');
+        return ApiResponse.error('Kategori seçimi zorunludur');
+      }
+
+      if (conditionId != null && conditionId.isNotEmpty) {
+        body['conditionID'] = int.tryParse(conditionId) ?? conditionId;
+      } else {
+        print('❌ Condition ID is required!');
+        return ApiResponse.error('Ürün durumu seçimi zorunludur');
+      }
+
+      // Konum bilgileri - API integer bekliyor
+      if (cityId != null && cityId.isNotEmpty) {
+        body['productCity'] = int.tryParse(cityId) ?? 35;
+      } else {
+        body['productCity'] = 35; // Varsayılan İzmir
+      }
+
+      if (districtId != null && districtId.isNotEmpty) {
+        body['productDistrict'] = int.tryParse(districtId) ?? 4158;
+      } else {
+        body['productDistrict'] = 4158; // Varsayılan ilçe
+      }
+
+      // Koordinat bilgileri - API string bekliyor
+      body['productLat'] = productLat ?? '38.4192'; // İzmir varsayılan enlem
+      body['productLong'] = productLong ?? '27.1287'; // İzmir varsayılan boylam
+
+      // İletişim bilgisi - API integer bekliyor (1 veya 0)
+      body['isShowContact'] = isShowContact == true ? 1 : 0;
+
+      // Takas edilecek ürün - API string bekliyor
+      if (tradePreferences != null && tradePreferences.isNotEmpty) {
+        body['tradeFor'] = tradePreferences.join(', ');
+      } else {
+        body['tradeFor'] = 'Takas edilebilir';
+      }
+
+      // Endpoint: service/user/product/{userId}/editProduct
       final endpoint = '${ApiConstants.editProduct}/$currentUserId/editProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       print('🌐 Full URL: $fullUrl');
 
-      // PUT metodunu basic auth ile kullan
-      final response = await _httpClient.putWithBasicAuth<Product?>(
+      // Form-data için fields hazırla - API'nin beklediği formatta
+      final fields = <String, String>{};
+      body.forEach((key, value) {
+        if (value != null) {
+          // API'nin beklediği formatta string'e çevir
+          if (value is int) {
+            fields[key] = value.toString();
+          } else if (value is String) {
+            fields[key] = value;
+          } else {
+            fields[key] = value.toString();
+          }
+        }
+      });
+
+      // Resimler için files hazırla (eğer varsa)
+      final files = <String, File>{};
+      final multipleFiles = <String, List<File>>{};
+      final newImageFiles = <File>[];
+
+      print('🌐 Update Body: $body');
+      print('📋 Form Fields: $fields');
+      print('📎 Files: ${files.keys.toList()}');
+      print('📎 Multiple Files: ${multipleFiles.keys.toList()}');
+      if (multipleFiles.isNotEmpty) {
+        multipleFiles.forEach((key, files) {
+          print('📎 $key: ${files.length} files');
+          for (int i = 0; i < files.length; i++) {
+            print('  - ${files[i].path.split('/').last}');
+          }
+        });
+      }
+      
+      if (images != null && images.isNotEmpty) {
+        for (int i = 0; i < images.length; i++) {
+          final imagePath = images[i];
+          // Eğer dosya yolu ise (yeni yüklenen resim) File objesi oluştur
+          if (imagePath.startsWith('/') || imagePath.contains('\\')) {
+            final file = File(imagePath);
+            if (await file.exists()) {
+              newImageFiles.add(file);
+              print('📸 Added new image file: ${file.path.split('/').last}');
+            }
+          }
+          // Eğer URL ise (mevcut resim) fields'a ekle
+          else if (imagePath.startsWith('http')) {
+            fields['existingImage[$i]'] = imagePath;
+            print('📸 Added existing image URL: ${imagePath.substring(0, 50)}...');
+          }
+        }
+        
+        // Yeni resimleri multipleFiles'a ekle
+        if (newImageFiles.isNotEmpty) {
+          multipleFiles['productimages'] = newImageFiles;
+          print('📸 Added ${newImageFiles.length} new image files to multipleFiles');
+        }
+      }
+
+      // Multipart form-data ile gönder
+      final response = await _httpClient.postMultipart<Product?>(
         endpoint,
-        body: body,
+        fields: fields,
+        files: files.isNotEmpty ? files : null,
+        multipleFiles: multipleFiles.isNotEmpty ? multipleFiles : null,
         fromJson: (json) {
           print('📥 ProductService.updateProduct - Raw response: $json');
           print('📥 ProductService.updateProduct - Response type: ${json.runtimeType}');
@@ -1099,7 +1217,6 @@ class ProductService {
               
               if (errorValue == false && statusValue == 'OK') {
                 print('✅ Success - Product updated successfully with special format');
-                // Bu durumda null döndürüyoruz çünkü API güncellenmiş ürün verisi döndürmüyor
                 return null;
               }
             }
@@ -1130,13 +1247,13 @@ class ProductService {
               return Product.fromJson(json);
             } catch (e) {
               print('❌ Failed to parse response as Product: $e');
-              print('! Success - Failed to parse JSON: Exception: Ürün güncellenirken yanıt formatı hatalı');
               throw Exception('Ürün güncellenirken yanıt formatı hatalı');
             }
           }
 
           throw Exception('Geçersiz API yanıtı');
         },
+        useBasicAuth: true,
       );
 
       print('📡 ProductService.updateProduct - Response received');

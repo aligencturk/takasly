@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/ad_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
@@ -16,6 +17,7 @@ import '../chat/chat_list_view.dart';
 import '../home/search_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
+import '../../widgets/native_ad_widget.dart';
 import '../../utils/logger.dart';
 
 
@@ -56,6 +58,10 @@ class _HomeViewState extends State<HomeView> {
       if (productViewModel.categories.isEmpty) {
         productViewModel.loadCategories();
       }
+      
+      // AdMob'u başlat
+      final adViewModel = Provider.of<AdViewModel>(context, listen: false);
+      adViewModel.initializeAdMob();
     });
   }
 
@@ -166,17 +172,17 @@ class _HomeViewState extends State<HomeView> {
           _buildFilterBar(),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
           const CategoryList(),
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
-          _buildProductGrid(),
-          _buildLoadingIndicator(),
+                     const SliverToBoxAdapter(child: SizedBox(height: 20)),
+           _buildProductGrid(),
+           _buildLoadingIndicator(),
         ],
       ),
     );
   }
 
   Widget _buildProductGrid() {
-    return Consumer<ProductViewModel>(
-      builder: (context, vm, child) {
+    return Consumer2<ProductViewModel, AdViewModel>(
+      builder: (context, vm, adVm, child) {
         if (vm.isLoading && vm.products.isEmpty) {
           return const SliverToBoxAdapter(child: ProductGridSkeleton());
         }
@@ -204,6 +210,12 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
+        // Ürün sayısını AdViewModel'e bildir
+        adVm.updateProductCount(vm.products.length);
+
+        // Her 4 üründe 1 reklam göstermek için toplam item sayısını hesapla
+        final int totalItems = vm.products.length + (vm.products.length ~/ 4);
+        
         return SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           sliver: SliverGrid(
@@ -215,32 +227,56 @@ class _HomeViewState extends State<HomeView> {
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                final product = vm.products[index];
-                // Kullanıcının kendi ürünü olup olmadığını kontrol et
-                // Eğer myProducts henüz yüklenmemişse, product.ownerId ile kontrol et
-                bool isOwnProduct = false;
-                if (vm.myProducts.isNotEmpty) {
-                  isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
-                } else {
-                  // myProducts henüz yüklenmemişse, product.ownerId ile kontrol et
-                  final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-                  final currentUserId = authViewModel.currentUser?.id;
-                  isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
+                // Her 4 üründen sonra reklam göster
+                // Grid'de her 5. pozisyon reklam olacak (4, 9, 14, 19, ...)
+                final int adPosition = (index ~/ 5) * 4 + 4; // 4, 9, 14, 19, ...
+                final int productIndex = index - (index ~/ 5); // Ürün indeksi
+                
+                // Eğer bu pozisyon reklam pozisyonu ise ve reklam yüklüyse
+                if (index == adPosition && adVm.shouldShowAdAt(productIndex) && adVm.isAdLoaded && adVm.nativeAd != null) {
+                  return Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: NativeAdWidget(
+                        nativeAd: adVm.nativeAd,
+                        height: 200,
+                      ),
+                    ),
+                  );
                 }
                 
-                // Debug log ekle
-                Logger.debug('HomeView - Product: ${product.title} (ID: ${product.id}), isOwnProduct: $isOwnProduct, myProducts count: ${vm.myProducts.length}, ownerId: ${product.ownerId}');
-                if (isOwnProduct) {
-                  Logger.debug('HomeView - This is user\'s own product, hiding favorite icon');
+                // Eğer ürün indeksi geçerli aralıkta ise ürün göster
+                if (productIndex < vm.products.length) {
+                  final product = vm.products[productIndex];
+                  
+                  // Kullanıcının kendi ürünü olup olmadığını kontrol et
+                  bool isOwnProduct = false;
+                  if (vm.myProducts.isNotEmpty) {
+                    isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
+                  } else {
+                    // myProducts henüz yüklenmemişse, product.ownerId ile kontrol et
+                    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+                    final currentUserId = authViewModel.currentUser?.id;
+                    isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
+                  }
+                  
+                  return ProductCard(
+                    product: product,
+                    heroTag: 'home_product_${product.id}_$productIndex',
+                    hideFavoriteIcon: isOwnProduct, // Kullanıcının kendi ürünü ise favori ikonunu gizle
+                  );
                 }
                 
-                return ProductCard(
-                  product: product,
-                  heroTag: 'home_product_${product.id}_$index',
-                  hideFavoriteIcon: isOwnProduct, // Kullanıcının kendi ürünü ise favori ikonunu gizle
-                );
+                // Geçersiz indeks için boş widget
+                return const SizedBox.shrink();
               },
-              childCount: vm.products.length,
+              childCount: totalItems,
             ),
           ),
         );
@@ -329,6 +365,8 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+
+
   Widget _buildLoadingIndicator() {
     return SliverToBoxAdapter(
       child: Consumer<ProductViewModel>(
@@ -347,6 +385,8 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
+
+
 
   void _showFilterBottomSheet(ProductViewModel vm) {
     if (vm.cities.isEmpty) {

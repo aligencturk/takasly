@@ -111,7 +111,6 @@ class _EditProductViewState extends State<EditProductView> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-
     _tradePreferencesController.dispose();
     super.dispose();
   }
@@ -925,12 +924,12 @@ class _EditProductViewState extends State<EditProductView> {
     try {
       final productViewModel = context.read<ProductViewModel>();
       
-      // Tüm resimleri birleştir (mevcut + yeni)
-      List<String> allImages = List.from(_existingImages);
+      // Resimleri ayır: mevcut resimler URL, yeni resimler dosya yolu
+      List<String> existingImageUrls = List.from(_existingImages);
+      List<String> newImagePaths = _newImages.map((file) => file.path).toList();
       
-      // Yeni resimler için URL'ler oluştur (gerçek uygulamada bunlar upload edilmeli)
-      // Şimdilik dosya yollarını string olarak ekleyelim
-      allImages.addAll(_newImages.map((file) => file.path));
+      // Tüm resimleri birleştir (mevcut URL'ler + yeni dosya yolları)
+      List<String> allImages = [...existingImageUrls, ...newImagePaths];
       
       // Trade preferences'ı liste haline getir
       List<String>? tradePreferences;
@@ -954,15 +953,8 @@ class _EditProductViewState extends State<EditProductView> {
         districtTitle = _selectedDistrictId;
       }
       
-      // Condition ID'sini name'e çevir
-      String? conditionName;
-      if (_selectedConditionId != null) {
-        final condition = productViewModel.conditions.firstWhere(
-          (c) => c.id == _selectedConditionId,
-          orElse: () => productViewModel.conditions.first,
-        );
-        conditionName = condition.name;
-      }
+             // Condition ID'sini direkt gönder
+       String? conditionId = _selectedConditionId;
 
       final success = await productViewModel.updateProduct(
         productId: widget.product.id,
@@ -970,15 +962,15 @@ class _EditProductViewState extends State<EditProductView> {
         description: _descriptionController.text.trim(),
         images: allImages.isNotEmpty ? allImages : null,
         categoryId: _selectedSubSubSubCategoryId ?? _selectedSubSubCategoryId ?? _selectedSubCategoryId ?? _selectedCategoryId,
-        condition: conditionName,
-        brand: null,
-        model: null,
-        estimatedValue: null,
+                 conditionId: conditionId,
+
         tradePreferences: tradePreferences,
         cityId: cityId,
         cityTitle: cityTitle,
         districtId: districtId,
         districtTitle: districtTitle,
+        productLat: widget.product.productLat,
+        productLong: widget.product.productLong,
         isShowContact: _isShowContact,
       );
 
@@ -991,12 +983,33 @@ class _EditProductViewState extends State<EditProductView> {
         );
         Navigator.of(context).pop(true); // Başarılı güncelleme sinyali gönder
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(productViewModel.errorMessage ?? 'İlan güncellenirken hata oluştu'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        final errorMessage = productViewModel.errorMessage ?? 'İlan güncellenirken hata oluştu';
+        
+        // Token hatası durumunda kullanıcıyı login sayfasına yönlendir
+        if (errorMessage.contains('token') || errorMessage.contains('giriş')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          
+          // Kısa bir gecikme sonrası login sayfasına yönlendir
+          Future.delayed(const Duration(seconds: 2), () {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/login',
+              (route) => false,
+            );
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
