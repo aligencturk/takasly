@@ -375,16 +375,119 @@ class HomeAppBar extends StatelessWidget {
       pinned: false,
       floating: false,
       expandedHeight: 60,
-      centerTitle: true,
+      centerTitle: false, // Logo'yu sola yaslamak için false yapıyoruz
       title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-         
-          const SizedBox(width: 8),
+          // Sol taraf - Logo
           Image.asset(
             'assets/icons/icontext.png',
             width: 120,
             height: 120,
-            
+          ),
+          
+          // Sağ taraf - Bildirimler ve Favoriler ikonları
+          Row(
+            children: [
+              // Bildirimler ikonu
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    Logger.debug('Bildirimler ikonuna tıklandı');
+                    // TODO: Bildirimler sayfasına yönlendirme
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Bildirimler yakında eklenecek'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: Stack(
+                    children: [
+                      Icon(
+                        FontAwesomeIcons.bell,
+                        size: 18,
+                        color: Colors.grey[700],
+                      ),
+                      // Bildirim sayısı badge'i (gelecekte dinamik olacak)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '3',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              // Favoriler ikonu
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    Logger.debug('Favoriler ikonuna tıklandı');
+                    // TradeView'a favoriler sekmesi ile yönlendir
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TradeView(initialTabIndex: 1), // 1 = Favoriler sekmesi
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    FontAwesomeIcons.heart,
+                    size: 18,
+                    color: Colors.grey[700],
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),

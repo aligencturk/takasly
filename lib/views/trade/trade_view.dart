@@ -20,7 +20,12 @@ import 'trade_detail_view.dart';
 import '../product/product_detail_view.dart';
 
 class TradeView extends StatefulWidget {
-  const TradeView({super.key});
+  final int initialTabIndex;
+  
+  const TradeView({
+    super.key,
+    this.initialTabIndex = 0, // Varsayılan olarak ilk tab (Takaslar)
+  });
 
   @override
   State<TradeView> createState() => _TradeViewState();
@@ -42,7 +47,11 @@ class _TradeViewState extends State<TradeView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2, 
+      vsync: this,
+      initialIndex: widget.initialTabIndex, // Başlangıç tab'ını ayarla
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
