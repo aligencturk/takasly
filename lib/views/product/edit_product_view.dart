@@ -144,7 +144,11 @@ class _EditProductViewState extends State<EditProductView> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _titleController,
-                    decoration: const InputDecoration(labelText: 'İlan Başlığı'),
+                    decoration: const InputDecoration(
+                      labelText: 'İlan Başlığı',
+                      counterText: '',
+                    ),
+                    maxLength: 20,
                     validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
                   ),
                   const SizedBox(height: 16),
