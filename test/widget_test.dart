@@ -13,7 +13,7 @@ import 'package:takasly/main.dart';
 void main() {
   testWidgets('Takasly app builds correctly', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const TakaslyApp());
+    await tester.pumpWidget(const MyApp());
 
     // Verify that our app builds without errors
     expect(find.byType(MaterialApp), findsOneWidget);

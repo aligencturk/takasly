@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../utils/logger.dart';
 
@@ -19,28 +21,49 @@ class AdMobService {
   bool _isInitialized = false;
   NativeAd? _nativeAd;
   bool _isAdLoaded = false;
-  bool _hasFailed = false; // Hata durumunu takip etmek için
+  bool _hasFailed = false;
+  bool _isLoading = false;
+  Timer? _retryTimer;
+  int _retryCount = 0;
+  static const int _maxRetries = 3;
+  static const Duration _retryDelay = Duration(seconds: 5);
 
   /// AdMob'u başlat
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      Logger.debug('ℹ️ AdMobService - AdMob zaten başlatılmış');
+      return;
+    }
 
     try {
-      Logger.info('🚀 AdMob başlatılıyor...');
+      Logger.info('🚀 AdMobService - AdMob başlatılıyor...');
       
-      await MobileAds.instance.initialize();
+      // UI thread'i bloklamamak için compute kullan
+      await compute(_initializeAdMobInBackground, null);
       
       // Test modunu etkinleştir (sadece debug modda)
       if (kDebugMode) {
-        MobileAds.instance.updateRequestConfiguration(
+        Logger.info('🔧 AdMobService - Debug modda test cihazları ayarlanıyor...');
+        await MobileAds.instance.updateRequestConfiguration(
           RequestConfiguration(testDeviceIds: ['EMULATOR']),
         );
       }
 
       _isInitialized = true;
-      Logger.info('✅ AdMob başarıyla başlatıldı');
+      Logger.info('✅ AdMobService - AdMob başarıyla başlatıldı');
     } catch (e) {
-      Logger.error('❌ AdMob başlatılırken hata: $e');
+      Logger.error('❌ AdMobService - AdMob başlatılırken hata: $e');
+      _isInitialized = false;
+    }
+  }
+
+  // Arka planda AdMob başlatma
+  static Future<void> _initializeAdMobInBackground(void _) async {
+    try {
+      await MobileAds.instance.initialize();
+    } catch (e) {
+      Logger.error('❌ AdMobService - Arka plan başlatma hatası: $e');
+      rethrow;
     }
   }
 
@@ -64,75 +87,172 @@ class AdMobService {
     return _androidNativeAdUnitId; // Default
   }
 
-  /// Native reklam yükle
+  /// Native reklam yükle (performans optimizasyonlu)
   Future<void> loadNativeAd() async {
     if (!_isInitialized) {
+      Logger.info('🔄 AdMobService - AdMob başlatılmamış, başlatılıyor...');
       await initialize();
     }
 
-    // Eğer daha önce hata aldıysak, tekrar deneme
-    if (_hasFailed) {
+    // Eğer zaten yükleniyorsa, bekle
+    if (_isLoading) {
+      Logger.debug('🔄 AdMobService - Reklam zaten yükleniyor, bekle...');
       return;
     }
 
+    // Eğer daha önce hata aldıysak ve maksimum deneme sayısına ulaştıysak, tekrar deneme
+    if (_hasFailed && _retryCount >= _maxRetries) {
+      Logger.warning('⚠️ AdMobService - Maksimum deneme sayısına ulaşıldı, reklam yüklenmeyecek');
+      return;
+    }
+
+    // Eğer reklam zaten yüklüyse, yeni reklam yükleme
+    if (_isAdLoaded && _nativeAd != null) {
+      Logger.debug('ℹ️ AdMobService - Reklam zaten yüklü');
+      return;
+    }
+
+    _isLoading = true;
+    _retryCount++;
+
     try {
-      Logger.info('🚀 Native reklam yükleniyor... AdUnitId: $nativeAdUnitId, FactoryId: listTile');
+      Logger.info('🚀 AdMobService - Native reklam yükleniyor... (Deneme: $_retryCount)');
       
+      // Eğer eski reklam varsa temizle
+      await _disposeCurrentAd();
+      
+      // Reklam yükleme işlemini arka planda yap
+      await _loadAdInBackground();
+      
+    } catch (e) {
+      Logger.error('❌ AdMobService - Native reklam yüklenirken hata: $e');
+      _handleLoadError();
+    } finally {
+      _isLoading = false;
+    }
+  }
+
+  // Arka planda reklam yükleme
+  Future<void> _loadAdInBackground() async {
+    try {
       _nativeAd = NativeAd(
         adUnitId: nativeAdUnitId,
-        factoryId: 'listTile', // Her iki platform için aynı factory ID kullan
+        factoryId: 'listTile',
         request: const AdRequest(),
         listener: NativeAdListener(
           onAdLoaded: (ad) {
-            Logger.info('✅ Native reklam başarıyla yüklendi');
+            Logger.info('✅ AdMobService - Native reklam başarıyla yüklendi');
             _isAdLoaded = true;
-            _hasFailed = false; // Başarılı yüklemede hata durumunu sıfırla
+            _hasFailed = false;
+            _retryCount = 0; // Başarılı yüklemede sayacı sıfırla
           },
           onAdFailedToLoad: (ad, error) {
-            Logger.error('❌ Native reklam yüklenemedi: ${error.message}');
-            _isAdLoaded = false;
-            _hasFailed = true; // Hata durumunu işaretle
+            Logger.error('❌ AdMobService - Native reklam yüklenemedi: ${error.message}');
+            Logger.error('❌ AdMobService - Error code: ${error.code}');
+            _handleLoadError();
             ad.dispose();
           },
           onAdClicked: (ad) {
-            Logger.info('👆 Native reklam tıklandı');
+            Logger.info('👆 AdMobService - Native reklam tıklandı');
           },
           onAdImpression: (ad) {
-            Logger.info('👁️ Native reklam gösterildi');
+            Logger.info('👁️ AdMobService - Native reklam gösterildi');
+          },
+          onAdOpened: (ad) {
+            Logger.info('🚪 AdMobService - Native reklam açıldı');
+          },
+          onAdClosed: (ad) {
+            Logger.info('🚪 AdMobService - Native reklam kapandı');
           },
         ),
       );
 
-      await _nativeAd!.load();
+      // Reklam yükleme işlemini UI thread'i bloklamayacak şekilde yap
+      await _nativeAd!.load().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Reklam yükleme zaman aşımı');
+        },
+      );
+      
     } catch (e) {
-      Logger.error('❌ Native reklam yüklenirken hata: $e');
+      Logger.error('❌ AdMobService - Arka plan reklam yükleme hatası: $e');
+      rethrow;
+    }
+  }
+
+  // Hata durumunu işle
+  void _handleLoadError() {
+    _isAdLoaded = false;
+    _hasFailed = true;
+    
+    // Hata durumunda reklamı temizle
+    _disposeCurrentAd();
+    
+    // Eğer maksimum deneme sayısına ulaşmadıysak, tekrar dene
+    if (_retryCount < _maxRetries) {
+      Logger.info('🔄 AdMobService - $_retryDelay sonra tekrar denenecek...');
+      _retryTimer?.cancel();
+      _retryTimer = Timer(_retryDelay, () {
+        if (!_isLoading) {
+          loadNativeAd();
+        }
+      });
+    }
+  }
+
+  // Mevcut reklamı temizle
+  Future<void> _disposeCurrentAd() async {
+    if (_nativeAd != null) {
+      Logger.debug('🧹 AdMobService - Eski reklam temizleniyor...');
+      try {
+        _nativeAd!.dispose();
+      } catch (e) {
+        Logger.error('❌ AdMobService - Reklam temizleme hatası: $e');
+      }
+      _nativeAd = null;
       _isAdLoaded = false;
-      _hasFailed = true; // Hata durumunu işaretle
     }
   }
 
   /// Native reklamın yüklenip yüklenmediğini kontrol et
-  bool get isAdLoaded => _isAdLoaded;
+  bool get isAdLoaded {
+    // Eğer nativeAd objesi varsa ama _isAdLoaded false ise, true döndür
+    if (_nativeAd != null && !_isAdLoaded) {
+      Logger.warning('⚠️ AdMobService - nativeAd mevcut ama _isAdLoaded false, düzeltiliyor...');
+      _isAdLoaded = true;
+    }
+    return _isAdLoaded;
+  }
 
   /// Native reklamı al
   NativeAd? get nativeAd => _nativeAd;
 
   /// Reklamı temizle
   void dispose() {
-    _nativeAd?.dispose();
-    _nativeAd = null;
-    _isAdLoaded = false;
+    Logger.debug('🧹 AdMobService - Reklam temizleniyor...');
+    _retryTimer?.cancel();
+    _disposeCurrentAd();
   }
 
   /// Yeni reklam yükle (mevcut reklamı temizleyip)
   Future<void> reloadAd() async {
-    dispose();
-    _hasFailed = false; // Hata durumunu sıfırla
+    Logger.info('🔄 AdMobService - Reklam yeniden yükleniyor...');
+    _retryTimer?.cancel();
+    _retryCount = 0;
+    _hasFailed = false;
+    await _disposeCurrentAd();
     await loadNativeAd();
   }
 
   /// Hata durumunu sıfırla (yeniden deneme için)
   void resetFailedState() {
+    Logger.info('🔄 AdMobService - Hata durumu sıfırlanıyor...');
+    _retryTimer?.cancel();
     _hasFailed = false;
+    _retryCount = 0;
   }
+
+  /// Yükleme durumunu kontrol et
+  bool get isLoading => _isLoading;
 } 

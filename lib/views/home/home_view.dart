@@ -59,9 +59,11 @@ class _HomeViewState extends State<HomeView> {
         productViewModel.loadCategories();
       }
       
-      // AdMob'u başlat
-      final adViewModel = Provider.of<AdViewModel>(context, listen: false);
-      adViewModel.initializeAdMob();
+      // AdMob'u arka planda başlat (UI'ı bloklamasın)
+      Future.microtask(() {
+        final adViewModel = Provider.of<AdViewModel>(context, listen: false);
+        adViewModel.initializeAdMob();
+      });
     });
   }
 
@@ -172,9 +174,9 @@ class _HomeViewState extends State<HomeView> {
           _buildFilterBar(),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
           const CategoryList(),
-                     const SliverToBoxAdapter(child: SizedBox(height: 20)),
-           _buildProductGrid(),
-           _buildLoadingIndicator(),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          _buildProductGrid(),
+          _buildLoadingIndicator(),
         ],
       ),
     );
@@ -216,6 +218,9 @@ class _HomeViewState extends State<HomeView> {
         // Her 4 üründe 1 reklam göstermek için toplam item sayısını hesapla
         final int totalItems = vm.products.length + (vm.products.length ~/ 4);
         
+        Logger.debug('📊 HomeView - Toplam ürün: ${vm.products.length}, Toplam item: $totalItems');
+        Logger.debug('📊 HomeView - Reklam durumu: isAdLoaded=${adVm.isAdLoaded}');
+        
         return SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           sliver: SliverGrid(
@@ -227,29 +232,39 @@ class _HomeViewState extends State<HomeView> {
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                // Her 4 üründen sonra reklam göster
-                // Grid'de her 5. pozisyon reklam olacak (4, 9, 14, 19, ...)
-                final int adPosition = (index ~/ 5) * 4 + 4; // 4, 9, 14, 19, ...
-                final int productIndex = index - (index ~/ 5); // Ürün indeksi
+                // Her 4 üründen sonra reklam göster (4, 8, 12, 16, ...)
+                final int adFrequency = 4;
+                final int adCount = index ~/ (adFrequency + 1); // Kaç tane reklam geçti
+                final int productIndex = index - adCount; // Gerçek ürün indeksi
                 
-                // Eğer bu pozisyon reklam pozisyonu ise ve reklam yüklüyse
-                if (index == adPosition && adVm.shouldShowAdAt(productIndex) && adVm.isAdLoaded && adVm.nativeAd != null) {
-                  return Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[200]!),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: NativeAdWidget(
-                        nativeAd: adVm.nativeAd,
-                        height: 200,
-                      ),
-                    ),
-                  );
-                }
+                // Bu pozisyon reklam pozisyonu mu?
+                final bool isAdPosition = (index + 1) % (adFrequency + 1) == 0;
+                
+                Logger.debug('🎯 HomeView - Index: $index, ProductIndex: $productIndex, isAdPosition: $isAdPosition');
+                
+                                 // Eğer bu pozisyon reklam pozisyonu ise ve reklam yüklüyse
+                 if (isAdPosition && adVm.isAdLoaded) {
+                   Logger.info('✅ HomeView - Reklam gösteriliyor. Index: $index, ProductIndex: $productIndex');
+                   return RepaintBoundary(
+                     child: Container(
+                       decoration: BoxDecoration(
+                         color: Colors.white,
+                         borderRadius: BorderRadius.circular(12),
+                         boxShadow: [
+                           BoxShadow(
+                             color: Colors.black.withOpacity(0.1),
+                             blurRadius: 4,
+                             offset: const Offset(0, 2),
+                           ),
+                         ],
+                       ),
+                       child: ClipRRect(
+                         borderRadius: BorderRadius.circular(12),
+                         child: const NativeAdWidget(),
+                       ),
+                     ),
+                   );
+                 }
                 
                 // Eğer ürün indeksi geçerli aralıkta ise ürün göster
                 if (productIndex < vm.products.length) {
@@ -274,6 +289,7 @@ class _HomeViewState extends State<HomeView> {
                 }
                 
                 // Geçersiz indeks için boş widget
+                Logger.debug('🚫 HomeView - Geçersiz indeks: $index');
                 return const SizedBox.shrink();
               },
               childCount: totalItems,
@@ -364,6 +380,8 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
+
+
 
 
 
