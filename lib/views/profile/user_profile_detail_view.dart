@@ -98,95 +98,91 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _viewModel,
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
-          title: Text(
-            _viewModel.profileDetail?.userFullname?.isNotEmpty == true 
-                ? _viewModel.profileDetail!.userFullname 
-                : 'Kullanıcı',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              color: Colors.black87,
-            ),
-          ),
-          actions: [
-            // Şikayet butonu
-            IconButton(
-              icon: const Icon(Icons.report_problem_outlined),
-              onPressed: () => _showReportDialog(),
-              tooltip: 'Kullanıcıyı Şikayet Et',
-            ),
-          ],
-        ),
-        body: Consumer<UserProfileDetailViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.isLoading) {
-              return const LoadingWidget();
-            }
-
-            if (viewModel.hasError) {
-              return custom_error.CustomErrorWidget(
-                message: viewModel.errorMessage,
-                onRetry: _loadProfileDetail,
-              );
-            }
-
-            if (!viewModel.hasData) {
-              return const Center(
-                child: Text('Profil bilgisi bulunamadı'),
-              );
-            }
-
-            final profile = viewModel.profileDetail!;
-            
-            return RefreshIndicator(
-              onRefresh: () => _viewModel.refreshProfileDetail(
-                userToken: widget.userToken,
-                userId: widget.userId,
+      child: Consumer<UserProfileDetailViewModel>(
+        builder: (context, viewModel, child) {
+          return Scaffold(
+            backgroundColor: Colors.grey[50],
+            appBar: AppBar(
+              elevation: 0,
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black87,
+              title: Text(
+                viewModel.profileDetail?.userFullname?.isNotEmpty == true 
+                    ? viewModel.profileDetail!.userFullname 
+                    : 'Kullanıcı',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  color: Colors.black87,
+                ),
               ),
-              child: Column(
-                children: [
-                  _buildProfileHeader(profile),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    color: Colors.white,
-                    child: _tabController != null ? TabBar(
-                      controller: _tabController!,
-                      labelColor: AppTheme.primary,
-                      unselectedLabelColor: Colors.grey[600],
-                      indicatorColor: AppTheme.primary,
-                      indicatorWeight: 2,
-                      tabs: const [
-                        Tab(
-                          icon: Icon(Icons.inventory_2_outlined, size: 20),
-                          text: 'İlanlar',
-                        ),
-                        Tab(
-                          icon: Icon(Icons.rate_review_outlined, size: 20),
-                          text: 'Yorumlar',
-                        ),
-                      ],
-                    ) : const SizedBox.shrink(),
-                  ),
-                  Expanded(
-                    child: _tabController != null ? TabBarView(
-                      controller: _tabController!,
-                      children: [
-                        _buildProductsTab(profile),
-                        _buildReviewsTab(profile),
-                      ],
-                    ) : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+              actions: [
+                // Şikayet butonu
+                IconButton(
+                  icon: const Icon(Icons.report_problem_outlined),
+                  onPressed: () => _showReportDialog(),
+                  tooltip: 'Kullanıcıyı Şikayet Et',
+                ),
+              ],
+            ),
+            body: viewModel.isLoading
+                ? const LoadingWidget()
+                : viewModel.hasError
+                    ? custom_error.CustomErrorWidget(
+                        message: viewModel.errorMessage,
+                        onRetry: _loadProfileDetail,
+                      )
+                    : !viewModel.hasData
+                        ? const Center(
+                            child: Text('Profil bilgisi bulunamadı'),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () => _viewModel.refreshProfileDetail(
+                              userToken: widget.userToken,
+                              userId: widget.userId,
+                            ),
+                            child: Column(
+                              children: [
+                                _buildProfileHeader(viewModel.profileDetail!),
+                                Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                                  color: Colors.white,
+                                  child: _tabController != null
+                                      ? TabBar(
+                                          controller: _tabController!,
+                                          labelColor: AppTheme.primary,
+                                          unselectedLabelColor: Colors.grey[600],
+                                          indicatorColor: AppTheme.primary,
+                                          indicatorWeight: 2,
+                                          tabs: const [
+                                            Tab(
+                                              icon: Icon(Icons.inventory_2_outlined, size: 20),
+                                              text: 'İlanlar',
+                                            ),
+                                            Tab(
+                                              icon: Icon(Icons.rate_review_outlined, size: 20),
+                                              text: 'Yorumlar',
+                                            ),
+                                          ],
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                                Expanded(
+                                  child: _tabController != null
+                                      ? TabBarView(
+                                          controller: _tabController!,
+                                          children: [
+                                            _buildProductsTab(viewModel.profileDetail!),
+                                            _buildReviewsTab(viewModel.profileDetail!),
+                                          ],
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                              ],
+                            ),
+                          ),
+          );
+        },
       ),
     );
   }
