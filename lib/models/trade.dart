@@ -1091,7 +1091,7 @@ class CheckTradeStatusData {
   final bool isReceiver;
   final bool showButtons;
   final String message;
-  final String statusID;
+  final int statusID;
 
   const CheckTradeStatusData({
     required this.success,
@@ -1109,7 +1109,7 @@ class CheckTradeStatusData {
       isReceiver: json['isReceiver'] as bool? ?? false,
       showButtons: json['showButtons'] as bool? ?? false,
       message: json['message'] as String? ?? '',
-      statusID: json['statusID'] as String? ?? '',
+      statusID: int.tryParse(json['statusID']?.toString() ?? '0') ?? 0,
     );
   }
 

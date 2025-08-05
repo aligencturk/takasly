@@ -146,6 +146,7 @@ class _TradeViewState extends State<TradeView>
           ]);
           
           // Takaslar yüklendikten sonra her trade için showButtons değerini kontrol et
+          Logger.info('🔍 Takaslar yüklendi, showButtons değerleri kontrol ediliyor...', tag: 'TradeView');
           await _loadShowButtonsForTrades(tradeViewModel);
         }
         
@@ -418,12 +419,48 @@ class _TradeViewState extends State<TradeView>
                     // TradeViewModel'den güncel trade bilgisini al
                     final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID) ?? trade;
                     
+                    // Debug: Tüm trade'lerin durumunu log'la
+                    Logger.info('🔍 Trade #${updatedTrade.offerID} render ediliyor:', tag: 'TradeView');
+                    Logger.info('  • statusID: ${updatedTrade.statusID}', tag: 'TradeView');
+                    Logger.info('  • statusTitle: "${updatedTrade.statusTitle}"', tag: 'TradeView');
+                    Logger.info('  • isConfirm: ${updatedTrade.isConfirm}', tag: 'TradeView');
+                    Logger.info('  • showButtons: ${_tradeShowButtonsMap[updatedTrade.offerID]}', tag: 'TradeView');
+                    
+                    // Buton gösterme koşullarını kontrol et
+                    bool shouldShowButtons = false;
+                    
+                    // API'den gelen showButtons değeri true ise butonları göster (statusID'den bağımsız)
+                    if (_tradeShowButtonsMap[updatedTrade.offerID] == true) {
+                      shouldShowButtons = true;
+                      Logger.info('✅ Trade #${updatedTrade.offerID} için showButtons=true, butonlar gösterilecek', tag: 'TradeView');
+                    }
+                    // StatusID=1 (Beklemede) olan trade'ler için ek kontrol
+                    else if (updatedTrade.statusID == 1) {
+                      // isConfirm=false ise (alıcı ise) butonları göster
+                      if (updatedTrade.isConfirm == false) {
+                        shouldShowButtons = true;
+                        Logger.info('✅ Trade #${updatedTrade.offerID} için isConfirm=false (alıcı), butonlar gösterilecek', tag: 'TradeView');
+                      }
+                      else {
+                        Logger.info('❌ Trade #${updatedTrade.offerID} için butonlar gösterilmeyecek', tag: 'TradeView');
+                      }
+                    } else {
+                      Logger.info('❌ Trade #${updatedTrade.offerID} statusID=${updatedTrade.statusID} ve showButtons=false olduğu için butonlar gösterilmeyecek', tag: 'TradeView');
+                    }
+                    
+                    // Ürün bilgilerini kontrol et
+                    final myProduct = _getMyProduct(updatedTrade);
+                    final theirProduct = _getTheirProduct(updatedTrade);
+                    Logger.info('  • MyProductID: ${myProduct?.productID}', tag: 'TradeView');
+                    Logger.info('  • TheirProductID: ${theirProduct?.productID}', tag: 'TradeView');
+                    Logger.info('  • ShouldShowButtons: $shouldShowButtons', tag: 'TradeView');
+                    
                     return Container(
                       margin: EdgeInsets.only(bottom: 12),
                       child: TradeCard(
                         trade: updatedTrade,
                         currentUserId: tradeViewModel.currentUserId,
-                        showButtons: _tradeShowButtonsMap[updatedTrade.offerID], // API'den gelen showButtons değeri
+                        showButtons: shouldShowButtons ? true : _tradeShowButtonsMap[updatedTrade.offerID], // Buton gösterme mantığını düzelt
                         onTap: () {
                           // Takas detayına git
                           Logger.info('Takas detayına gidiliyor: ${updatedTrade.offerID}', tag: 'TradeView');
@@ -1927,9 +1964,18 @@ class _TradeViewState extends State<TradeView>
             
             if (response != null && response.data != null) {
               final showButtons = response.data!.showButtons;
+              final statusID = response.data!.statusID;
+              final message = response.data!.message;
+              final isSender = response.data!.isSender;
+              final isReceiver = response.data!.isReceiver;
+              
               _tradeShowButtonsMap[trade.offerID] = showButtons;
               
-              Logger.info('✅ Trade #${trade.offerID} showButtons değeri: $showButtons', tag: 'TradeView');
+              Logger.info('✅ Trade #${trade.offerID} showButtons değeri: $showButtons, statusID: $statusID', tag: 'TradeView');
+              Logger.info('  • API Message: "$message"', tag: 'TradeView');
+              Logger.info('  • isSender: $isSender, isReceiver: $isReceiver', tag: 'TradeView');
+              Logger.info('  • Trade statusID: ${trade.statusID}, Trade statusTitle: "${trade.statusTitle}"', tag: 'TradeView');
+              Logger.info('  • Trade isConfirm: ${trade.isConfirm}', tag: 'TradeView');
             } else {
               Logger.warning('⚠️ Trade #${trade.offerID} için showButtons değeri alınamadı', tag: 'TradeView');
               // Varsayılan olarak false ata
@@ -2178,6 +2224,9 @@ class _TradeViewState extends State<TradeView>
     for (int i = 0; i < trades.length; i++) {
       final trade = trades[i];
       final showButtons = _tradeShowButtonsMap[trade.offerID];
+      final myProduct = _getMyProduct(trade);
+      final theirProduct = _getTheirProduct(trade);
+      
       debugInfo += '📋 Trade #${i + 1}:\n';
       debugInfo += '  • OfferID: ${trade.offerID}\n';
       debugInfo += '  • StatusID: ${trade.statusID}\n';
@@ -2185,6 +2234,13 @@ class _TradeViewState extends State<TradeView>
       debugInfo += '  • CancelDesc: "${trade.cancelDesc}"\n';
       debugInfo += '  • isConfirm: ${trade.isConfirm}\n';
       debugInfo += '  • showButtons: $showButtons\n';
+      debugInfo += '  • MyProductID: ${myProduct?.productID}\n';
+      debugInfo += '  • TheirProductID: ${theirProduct?.productID}\n';
+      
+      // Buton gösterme koşullarını kontrol et
+      final shouldShowButtons = trade.statusID == 1 && 
+          (showButtons == true || (showButtons == null && trade.isConfirm == false));
+      debugInfo += '  • ShouldShowButtons: $shouldShowButtons\n';
       debugInfo += '\n';
     }
     

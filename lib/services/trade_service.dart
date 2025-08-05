@@ -518,7 +518,9 @@ class TradeService {
 
       if (response.isSuccess) {
         final data = response.data?.data;
-        Logger.info('Takas kontrolü başarılı: success=${data?.success}, isSender=${data?.isSender}, isReceiver=${data?.isReceiver}, showButtons=${data?.showButtons}, message=${data?.message}', tag: _tag);
+        Logger.info('Takas kontrolü başarılı: success=${data?.success}, isSender=${data?.isSender}, isReceiver=${data?.isReceiver}, showButtons=${data?.showButtons}, statusID=${data?.statusID}, message=${data?.message}', tag: _tag);
+        
+
       } else {
         Logger.error('Takas kontrolü hatası: ${response.error}', tag: _tag);
       }

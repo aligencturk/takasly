@@ -453,20 +453,48 @@ class TradeCard extends StatelessWidget {
                       // Basit takas tamamlama butonu (statusID=3 - Kargoya Verildi)
                       else if (trade.statusID == 3)
                         _buildCompleteTradeButton(context)
-                      // Onay bekleyen takaslar için onay/red butonları (statusID=1)
+                      // Onay/red butonları (showButtons=true ise herhangi bir statusID için)
+                      else if (showButtons == true) ...[
+                        // Debug bilgilerini log'la
+                        Builder(
+                          builder: (context) {
+                            Logger.debug('🔍 TradeCard buton gösterme kontrolü (showButtons=true):', tag: 'TradeCard');
+                            Logger.debug('  • statusID: ${trade.statusID}', tag: 'TradeCard');
+                            Logger.debug('  • isConfirm: ${trade.isConfirm}', tag: 'TradeCard');
+                            Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
+                            Logger.debug('  • isSender: $isSender', tag: 'TradeCard');
+                            Logger.debug('  • isReceiver: $isReceiver', tag: 'TradeCard');
+                            return Container(); // Boş container döndür
+                          },
+                        ),
+                        // Butonları göster
+                        _buildActionButtons(context)
+                      ]
+                      // Eski mantık - sadece statusID=1 için (geriye uyumluluk)
                       else if (trade.statusID == 1) ...[
-                        // API'den showButtons değeri gelmişse, sadece true olduğunda butonları göster
+                        // Debug bilgilerini log'la (sadece statusID=1 olanlar için)
+                        Builder(
+                          builder: (context) {
+                            Logger.debug('🔍 TradeCard buton gösterme kontrolü (statusID=1):', tag: 'TradeCard');
+                            Logger.debug('  • statusID: ${trade.statusID}', tag: 'TradeCard');
+                            Logger.debug('  • isConfirm: ${trade.isConfirm}', tag: 'TradeCard');
+                            Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
+                            Logger.debug('  • isSender: $isSender', tag: 'TradeCard');
+                            Logger.debug('  • isReceiver: $isReceiver', tag: 'TradeCard');
+                            return Container(); // Boş container döndür
+                          },
+                        ),
+                        // Buton gösterme mantığını düzelt
                         if (showButtons == true)
                           _buildActionButtons(context)
-                        // API'den showButtons false gelmişse, API mesajını göster
                         else if (showButtons == false)
                           _buildApiMessageWidget(context, tradeViewModel)
-                        // API'den showButtons değeri gelmemişse (null), eski mantığı kullan
                         else if (showButtons == null && isReceiver)
                           _buildActionButtons(context)
-                        // API'den showButtons null gelmişse ve gönderen ise, mesaj göster
                         else if (showButtons == null && isSender)
-                          _buildApiMessageWidget(context, tradeViewModel),
+                          _buildApiMessageWidget(context, tradeViewModel)
+                        else
+                          _buildApiMessageWidget(context, tradeViewModel)
                       ],
                     ],
                   ),
