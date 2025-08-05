@@ -7,7 +7,10 @@ import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../models/user_profile_detail.dart';
+import '../../models/product.dart';
+import '../../models/user.dart';
 import '../../widgets/report_dialog.dart';
+import '../../widgets/product_card.dart';
 import '../../views/product/product_detail_view.dart';
 import '../../utils/logger.dart';
 
@@ -351,6 +354,63 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     );
   }
 
+  // ProfileProduct'ı Product'a dönüştüren yardımcı fonksiyon
+  Product _convertProfileProductToProduct(ProfileProduct profileProduct) {
+    // Kategori nesnesini oluştur
+    final category = Category(
+      id: '0', // ProfileProduct'ta categoryId yok
+      name: profileProduct.categoryName ?? 'Kategori',
+      icon: '',
+      isActive: true,
+      order: 0,
+    );
+
+    // Kullanıcı nesnesini oluştur
+    final owner = User(
+      id: '0', // ProfileProduct'ta userID yok
+      name: 'Kullanıcı',
+      firstName: '',
+      lastName: '',
+      email: '',
+      isVerified: false,
+      isOnline: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    return Product(
+      id: profileProduct.productID.toString(),
+      title: profileProduct.title.isNotEmpty ? profileProduct.title : 'İsimsiz Ürün',
+      description: profileProduct.description ?? '',
+      images: profileProduct.mainImage != null && profileProduct.mainImage!.isNotEmpty 
+          ? [profileProduct.mainImage!] 
+          : [],
+      categoryId: '0', // ProfileProduct'ta categoryId yok
+      catname: profileProduct.categoryName ?? '',
+      category: category,
+      condition: profileProduct.condition ?? '',
+      brand: profileProduct.brand,
+      model: profileProduct.model,
+      estimatedValue: profileProduct.estimatedValue,
+      ownerId: '0', // ProfileProduct'ta userID yok
+      owner: owner,
+      tradePreferences: [],
+      status: ProductStatus.active,
+      cityId: '0', // ProfileProduct'ta cityId yok
+      cityTitle: profileProduct.cityTitle ?? '',
+      districtId: '0', // ProfileProduct'ta districtId yok
+      districtTitle: profileProduct.districtTitle ?? '',
+      createdAt: profileProduct.createdAt ?? DateTime.now(),
+      updatedAt: profileProduct.createdAt ?? DateTime.now(),
+      // Yeni API alanları
+      isFavorite: profileProduct.isFavorite,
+      isSponsor: profileProduct.isSponsor,
+      isTrade: profileProduct.isTrade,
+      productCode: profileProduct.productCode,
+      favoriteCount: profileProduct.favoriteCount,
+    );
+  }
+
   Widget _buildProductsTab(UserProfileDetail profile) {
     if (profile.products.isEmpty) {
       return Container(
@@ -370,238 +430,36 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       padding: const EdgeInsets.all(5),
       color: Colors.white,
       child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 0.62,
+          childAspectRatio: 0.7, // ProductCard için uygun oran
         ),
         itemCount: profile.products.length,
         itemBuilder: (context, index) {
-          final product = profile.products[index];
-          return _buildProductCard(product);
+          final profileProduct = profile.products[index];
+          final product = _convertProfileProductToProduct(profileProduct);
+          return ProductCard(
+            product: product,
+            heroTag: 'user_profile_product_${product.id}_$index',
+            hideFavoriteIcon: false, // Kullanıcı profilinde favori ikonunu göster
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailView(productId: product.id),
+                ),
+              );
+            },
+          );
         },
       ),
     );
   }
 
-  Widget _buildProductCard(ProfileProduct product) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailView(productId: product.productID.toString()),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[200]!),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Ürün resmi
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
-                  ),
-                ),
-                child: product.mainImage != null && product.mainImage!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
-                        ),
-                        child: Image.network(
-                          product.mainImage!,
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            Logger.warning('Product image failed to load: ${product.mainImage}', tag: 'UserProfileDetailView');
-                            return _buildProductImagePlaceholder();
-                          },
-                        ),
-                      )
-                    : _buildProductImagePlaceholder(),
-              ),
-            ),
-            
-            // Ürün bilgileri
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                                         // Ürün başlığı
-                     Text(
-                       product.title.isNotEmpty ? product.title : 'İsimsiz Ürün',
-                       style: const TextStyle(
-                         fontSize: 14,
-                         fontWeight: FontWeight.w600,
-                         color: Colors.black87,
-                         height: 1.2,
-                       ),
-                       maxLines: 2,
-                       overflow: TextOverflow.ellipsis,
-                     ),
-                     const SizedBox(height: 4),
-                     
-                     // Kategori ve durum bilgisi
-                     if (product.categoryName != null && product.categoryName!.isNotEmpty) ...[
-                       Row(
-                         children: [
-                           if (product.categoryName != null) ...[
-                             Icon(
-                               Icons.category_outlined,
-                               size: 12,
-                               color: Colors.grey[500],
-                             ),
-                             const SizedBox(width: 2),
-                             Expanded(
-                               child: Text(
-                                 product.categoryName!,
-                                 style: TextStyle(
-                                   fontSize: 11,
-                                   color: Colors.grey[600],
-                                   fontWeight: FontWeight.w500,
-                                 ),
-                                 maxLines: 1,
-                                 overflow: TextOverflow.ellipsis,
-                               ),
-                             ),
-                           ],
-                         ],
-                       ),
-                       const SizedBox(height: 4),
-                     ],
-                     
-                     // Konum bilgisi
-                     if (product.cityTitle != null || product.districtTitle != null) ...[
-                       Row(
-                         children: [
-                           Icon(
-                             Icons.location_on_outlined,
-                             size: 12,
-                             color: Colors.grey[500],
-                           ),
-                           const SizedBox(width: 2),
-                           Expanded(
-                             child: Text(
-                               [product.districtTitle, product.cityTitle]
-                                   .where((e) => e != null && e.isNotEmpty)
-                                   .join(', '),
-                               style: TextStyle(
-                                 fontSize: 10,
-                                 color: Colors.grey[600],
-                                 fontWeight: FontWeight.w400,
-                               ),
-                               maxLines: 1,
-                               overflow: TextOverflow.ellipsis,
-                             ),
-                           ),
-                         ],
-                       ),
-                       const SizedBox(height: 4),
-                     ],
-                     
-                     // Alt bilgiler
-                     Row(
-                       children: [
-                         // Favori ikonu ve sayısı
-                         if (product.isFavorite || (product.favoriteCount != null && product.favoriteCount! > 0)) ...[
-                           Row(
-                             children: [
-                               Icon(
-                                 Icons.favorite,
-                                 color: product.isFavorite ? Colors.red : Colors.grey[400],
-                                 size: 12,
-                               ),
-                               if (product.favoriteCount != null && product.favoriteCount! > 0) ...[
-                                 const SizedBox(width: 2),
-                                 Text(
-                                   '${product.favoriteCount}',
-                                   style: TextStyle(
-                                     fontSize: 10,
-                                     color: Colors.grey[600],
-                                     fontWeight: FontWeight.w500,
-                                   ),
-                                 ),
-                               ],
-                             ],
-                           ),
-                           const SizedBox(width: 6),
-                         ],
-                         
-                         // Takas ikonu
-                         if (product.isTrade == true) ...[
-                           Icon(
-                             Icons.swap_horiz,
-                             size: 12,
-                             color: AppTheme.primary,
-                           ),
-                           const SizedBox(width: 6),
-                         ],
-                         
-                         // Sponsor ikonu
-                         if (product.isSponsor == true) ...[
-                           Icon(
-                             Icons.star,
-                             size: 12,
-                             color: Colors.amber,
-                           ),
-                           const SizedBox(width: 6),
-                         ],
-                         
-                         // Ürün kodu (sadece varsa göster)
-                         if (product.productCode != null && product.productCode!.isNotEmpty) ...[
-                           Expanded(
-                             child: Text(
-                               'Kod: ${product.productCode}',
-                               style: TextStyle(
-                                 fontSize: 10,
-                                 color: Colors.grey[600],
-                                 fontWeight: FontWeight.w400,
-                               ),
-                             ),
-                           ),
-                         ] else ...[
-                           // Boş alan - sağ tarafta boşluk bırak
-                           const Expanded(child: SizedBox()),
-                         ],
-                       ],
-                     ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildReviewsTab(UserProfileDetail profile) {
     if (profile.reviews.isEmpty) {
@@ -874,38 +732,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     );
   }
 
-  Widget _buildProductImagePlaceholder() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(8),
-          topRight: Radius.circular(8),
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inventory_2_outlined,
-              size: 32,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Resim Yok',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey[500],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Color _getConditionColor(String condition) {
     switch (condition.toLowerCase()) {
