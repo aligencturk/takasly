@@ -15,7 +15,7 @@ class TradeViewModel extends ChangeNotifier {
   List<Trade> _cancelledTrades = [];
   Trade? _selectedTrade;
   Map<String, int> _statistics = {};
-  List<TradeStatusModel> _tradeStatuses = [];
+
   List<DeliveryType> _deliveryTypes = [];
   List<UserTrade> _userTrades = [];
   String? _currentUserId;
@@ -50,7 +50,7 @@ class TradeViewModel extends ChangeNotifier {
   List<Trade> get cancelledTrades => _cancelledTrades;
   Trade? get selectedTrade => _selectedTrade;
   Map<String, int> get statistics => _statistics;
-  List<TradeStatusModel> get tradeStatuses => _tradeStatuses;
+
   List<DeliveryType> get deliveryTypes => _deliveryTypes;
   List<UserTrade> get userTrades => _userTrades;
   
@@ -77,9 +77,6 @@ class TradeViewModel extends ChangeNotifier {
 
   Future<void> loadInitialData() async {
     Logger.info('TradeViewModel başlatılıyor...', tag: 'TradeViewModel');
-    
-    // Takas durumlarını yükle
-    await loadTradeStatuses();
     
     // Teslimat türlerini yükle
     await loadDeliveryTypes();
@@ -506,56 +503,7 @@ class TradeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Takas durumlarını yükle
-  Future<void> loadTradeStatuses() async {
-    _setLoading(true);
-    _clearError();
-    
-    try {
-      Logger.info('Takas durumları yükleniyor...', tag: 'TradeViewModel');
-      
-      final response = await _tradeService.getTradeStatuses();
 
-      if (response.isSuccess && response.data != null) {
-        _tradeStatuses = response.data!.data?.statuses ?? [];
-        Logger.info('Takas durumları başarıyla yüklendi: ${_tradeStatuses.length} durum', tag: 'TradeViewModel');
-        
-        // Debug: API'den gelen durumları logla
-        for (var status in _tradeStatuses) {
-          Logger.info('Durum ID: ${status.statusID}, Başlık: ${status.statusTitle}', tag: 'TradeViewModel');
-        }
-        
-        notifyListeners();
-      } else {
-        final errorMsg = response.error ?? ErrorMessages.unknownError;
-        Logger.error('Takas durumları yükleme hatası: $errorMsg', tag: 'TradeViewModel');
-        _setError(errorMsg);
-      }
-    } catch (e) {
-      Logger.error('Takas durumları exception: $e', tag: 'TradeViewModel');
-      _setError(ErrorMessages.unknownError);
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  /// Status ID'ye göre status title'ı getir
-  String getStatusTitleById(int statusId) {
-    final status = _tradeStatuses.firstWhere(
-      (s) => s.statusID == statusId,
-      orElse: () => const TradeStatusModel(statusID: 0, statusTitle: 'Bilinmeyen'),
-    );
-    return status.statusTitle;
-  }
-
-  /// Status title'a göre status ID'yi getir
-  int getStatusIdByTitle(String statusTitle) {
-    final status = _tradeStatuses.firstWhere(
-      (s) => s.statusTitle == statusTitle,
-      orElse: () => const TradeStatusModel(statusID: 0, statusTitle: 'Bilinmeyen'),
-    );
-    return status.statusID;
-  }
 
   /// Teslimat türlerini yükle
   Future<void> loadDeliveryTypes() async {

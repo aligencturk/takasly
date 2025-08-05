@@ -32,16 +32,7 @@ class TradeCard extends StatelessWidget {
   });
 
   String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
-    // API'den gelen durumları kullanmak için TradeViewModel'e erişim sağla
-    if (tradeViewModel != null && tradeViewModel.tradeStatuses.isNotEmpty) {
-      final status = tradeViewModel.tradeStatuses.firstWhere(
-        (s) => s.statusID == statusId,
-        orElse: () => const TradeStatusModel(statusID: 0, statusTitle: 'Bilinmiyor'),
-      );
-      return status.statusTitle;
-    }
-    
-    // Fallback olarak sabit değerler
+    // Sabit değerler kullan
     switch (statusId) {
       case 1:
         return 'Beklemede';
@@ -453,11 +444,8 @@ class TradeCard extends StatelessWidget {
                       // Alt kısım - Aksiyon butonları
                       // API'den gelen showButtons değerine göre butonları göster
                       
-                      // Onaylanmış takaslar için durum değiştirme butonu (statusID=2)
-                      if (trade.statusID == 2)
-                        _buildStatusChangeButton(context)
                       // Teslim edildi durumu için yorum butonu (statusID=4)
-                      else if (trade.statusID == 4)
+                      if (trade.statusID == 4)
                         _buildReviewButton(context)
                       // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
                       else if (trade.statusID == 5 && (trade.hasReview != true))
@@ -650,32 +638,7 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChangeButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () => _changeStatus(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          child: const Text(
-            'Durum Değiştir',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildReviewButton(BuildContext context) {
     // Buton metnini duruma göre ayarla
@@ -765,13 +728,7 @@ class TradeCard extends StatelessWidget {
     }
   }
 
-  void _changeStatus(BuildContext context) {
-          Logger.info('Trade durumu değiştiriliyor...', tag: 'TradeCard');
-    
-    if (onStatusChange != null) {
-      onStatusChange!(trade.statusID);
-    }
-  }
+
 
   void _completeTradeWithReview(BuildContext context) {
           Logger.info('Trade değerlendiriliyor...', tag: 'TradeCard');

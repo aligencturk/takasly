@@ -65,7 +65,6 @@ class ApiConstants {
   static const String checkTradeStatus = '/service/user/product/checkTradeStatus';
   static const String tradeDetail = '/service/user/product'; // {offerId}/tradeDetail eklenecek
   static const String userTrades = '/service/user/product'; // {userId}/tradeList eklenecek
-  static const String tradeStatuses = '/service/general/general/tradeStatuses';
   static const String deliveryTypes = '/service/general/general/deliveryTypes';
   
   // Report Service Endpoints

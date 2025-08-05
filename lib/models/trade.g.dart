@@ -128,45 +128,9 @@ StartTradeData _$StartTradeDataFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$StartTradeDataToJson(StartTradeData instance) =>
     <String, dynamic>{'message': instance.message};
 
-TradeStatusModel _$TradeStatusModelFromJson(Map<String, dynamic> json) =>
-    TradeStatusModel(
-      statusID: (json['statusID'] as num).toInt(),
-      statusTitle: json['statusTitle'] as String,
-    );
 
-Map<String, dynamic> _$TradeStatusModelToJson(TradeStatusModel instance) =>
-    <String, dynamic>{
-      'statusID': instance.statusID,
-      'statusTitle': instance.statusTitle,
-    };
 
-TradeStatusesResponse _$TradeStatusesResponseFromJson(
-  Map<String, dynamic> json,
-) => TradeStatusesResponse(
-  error: json['error'] as bool,
-  success: json['success'] as bool,
-  data: json['data'] == null
-      ? null
-      : TradeStatusesData.fromJson(json['data'] as Map<String, dynamic>),
-);
 
-Map<String, dynamic> _$TradeStatusesResponseToJson(
-  TradeStatusesResponse instance,
-) => <String, dynamic>{
-  'error': instance.error,
-  'success': instance.success,
-  'data': instance.data,
-};
-
-TradeStatusesData _$TradeStatusesDataFromJson(Map<String, dynamic> json) =>
-    TradeStatusesData(
-      statuses: (json['statuses'] as List<dynamic>?)
-          ?.map((e) => TradeStatusModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
-
-Map<String, dynamic> _$TradeStatusesDataToJson(TradeStatusesData instance) =>
-    <String, dynamic>{'statuses': instance.statuses};
 
 DeliveryType _$DeliveryTypeFromJson(Map<String, dynamic> json) => DeliveryType(
   deliveryID: (json['deliveryID'] as num).toInt(),
