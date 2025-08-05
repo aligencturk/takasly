@@ -186,33 +186,6 @@ class _ProfileViewState extends State<ProfileView>
     );
   }
 
-  Widget _buildTabBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      color: Colors.white,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: AppTheme.primary,
-        unselectedLabelColor: Colors.grey[600],
-        indicatorColor: AppTheme.primary,
-        indicatorWeight: 2,
-        tabs: const [
-          Tab(
-            icon: Icon(Icons.inventory_2_outlined, size: 20),
-            text: 'İlanlarım',
-          ),
-          Tab(
-            icon: Icon(Icons.rate_review_outlined, size: 20),
-            text: 'Yorumlar',
-          ),
-          Tab(
-            icon: Icon(Icons.rate_review, size: 20),
-            text: 'Değerlendirmelerim',
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProductsTab(User user) {
     return Consumer<ProductViewModel>(
@@ -553,7 +526,7 @@ class _ProfileViewState extends State<ProfileView>
                 ),
                 child: review.reviewerImage != null && review.reviewerImage!.isNotEmpty
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(100),
                         child: Image.network(
                           review.reviewerImage!,
                           width: 40,
@@ -827,7 +800,9 @@ class _ProfileViewState extends State<ProfileView>
                   color: Colors.grey[100],
                 ),
                 child: user.avatar != null
-                    ? Image.network(
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: Image.network(
                         user.avatar!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
@@ -840,7 +815,8 @@ class _ProfileViewState extends State<ProfileView>
                             ),
                           );
                         },
-                      )
+                      ),
+                    )
                     : Container(
                         color: Colors.grey[100],
                         child: const Icon(

@@ -413,7 +413,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
       password = '151281';
     } else {
       email = 'ridvan.dasdelen@gmail.com';
-      password = '123';
+      password = '123a';
     }
 
     Logger.info('Test login başlatılıyor: $testUser ($email)', tag: 'LoginView');

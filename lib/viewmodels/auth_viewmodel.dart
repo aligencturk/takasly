@@ -209,36 +209,45 @@ class AuthViewModel extends ChangeNotifier {
     required bool policy,
     required bool kvkk,
   }) async {
+    Logger.debug('🚀 AuthViewModel.register başlatılıyor...', tag: 'AuthViewModel');
+    Logger.debug('📝 Parametreler: firstName=$firstName, lastName=$lastName, email=$email, phone=$phone', tag: 'AuthViewModel');
+    
     if (firstName.trim().isEmpty ||
         lastName.trim().isEmpty ||
         email.trim().isEmpty ||
         password.trim().isEmpty ||
         phone.trim().isEmpty) {
+      Logger.warning('❌ Boş alan hatası', tag: 'AuthViewModel');
       _setError(ErrorMessages.fieldRequired);
       return false;
     }
 
     if (!_isValidEmail(email)) {
+      Logger.warning('❌ Geçersiz email formatı: $email', tag: 'AuthViewModel');
       _setError(ErrorMessages.invalidEmail);
       return false;
     }
 
     if (firstName.length > AppConstants.maxUsernameLength) {
+      Logger.warning('❌ İsim çok uzun: ${firstName.length}', tag: 'AuthViewModel');
       _setError('İsim çok uzun');
       return false;
     }
 
     if (lastName.length > AppConstants.maxUsernameLength) {
+      Logger.warning('❌ Soyisim çok uzun: ${lastName.length}', tag: 'AuthViewModel');
       _setError('Soyisim çok uzun');
       return false;
     }
 
     if (!policy) {
+      Logger.warning('❌ Gizlilik politikası kabul edilmedi', tag: 'AuthViewModel');
       _setError('Gizlilik politikasını kabul etmelisiniz');
       return false;
     }
 
     if (!kvkk) {
+      Logger.warning('❌ KVKK metni kabul edilmedi', tag: 'AuthViewModel');
       _setError('KVKK metnini kabul etmelisiniz');
       return false;
     }
@@ -247,6 +256,8 @@ class AuthViewModel extends ChangeNotifier {
     _clearError();
 
     try {
+      Logger.debug('📡 AuthService.register çağrılıyor...', tag: 'AuthViewModel');
+      
       final response = await _authService.register(
         firstName: firstName,
         lastName: lastName,
@@ -257,17 +268,26 @@ class AuthViewModel extends ChangeNotifier {
         kvkk: kvkk,
       );
 
+      Logger.debug('📥 AuthService response alındı', tag: 'AuthViewModel');
+      Logger.debug('📊 Response isSuccess: ${response.isSuccess}', tag: 'AuthViewModel');
+      Logger.debug('📊 Response data: ${response.data}', tag: 'AuthViewModel');
+      Logger.debug('📊 Response error: ${response.error}', tag: 'AuthViewModel');
+
       if (response.isSuccess && response.data != null) {
+        Logger.info('✅ Register başarılı, user data alındı', tag: 'AuthViewModel');
         _currentUser = response.data;
         _isLoggedIn = true;
         _setLoading(false);
         return true;
       } else {
+        Logger.error('❌ Register başarısız', tag: 'AuthViewModel');
+        Logger.error('❌ Error message: ${response.error}', tag: 'AuthViewModel');
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
+      Logger.error('💥 Register exception: $e', tag: 'AuthViewModel', error: e);
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;

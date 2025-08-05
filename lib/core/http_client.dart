@@ -400,20 +400,41 @@ class HttpClient {
           } catch (e) {
             print('⚠️ 410 - Failed to parse JSON: $e');
             print('⚠️ 410 - Raw response body: "${response.body}"');
-            // JSON parse edilemiyorsa, fromJson fonksiyonu varsa boş data ile çağır
-            if (fromJson != null) {
-              try {
-                // Boş bir Map ile fromJson'u çağır
-                final result = fromJson({});
-                print('⚠️ 410 - Returning empty fromJson result: $result');
-                return ApiResponse<T>.success(result);
-              } catch (e2) {
-                print('⚠️ 410 - fromJson failed with empty data: $e2');
+            
+            // JSON parse edilemiyorsa, response body'yi kontrol et
+            if (response.body.contains('success') || 
+                response.body.contains('true') ||
+                response.body.contains('ok')) {
+              print('✅ 410 - Response contains success indicators, treating as success');
+              if (fromJson != null) {
+                try {
+                  // Boş bir Map ile fromJson'u çağır
+                  final result = fromJson({});
+                  print('✅ 410 - Returning empty fromJson result: $result');
+                  return ApiResponse<T>.success(result);
+                } catch (e2) {
+                  print('⚠️ 410 - fromJson failed with empty data: $e2');
+                  return ApiResponse<T>.success(null);
+                }
+              } else {
                 return ApiResponse<T>.success(null);
               }
             } else {
-              print('⚠️ 410 - Returning null due to JSON parse error');
-              return ApiResponse<T>.success(null);
+              // JSON parse edilemiyorsa, fromJson fonksiyonu varsa boş data ile çağır
+              if (fromJson != null) {
+                try {
+                  // Boş bir Map ile fromJson'u çağır
+                  final result = fromJson({});
+                  print('⚠️ 410 - Returning empty fromJson result: $result');
+                  return ApiResponse<T>.success(result);
+                } catch (e2) {
+                  print('⚠️ 410 - fromJson failed with empty data: $e2');
+                  return ApiResponse<T>.success(null);
+                }
+              } else {
+                print('⚠️ 410 - Returning null due to JSON parse error');
+                return ApiResponse<T>.success(null);
+              }
             }
           }
         } else {
@@ -422,7 +443,7 @@ class HttpClient {
             try {
               // Boş bir Map ile fromJson'u çağır
               final result = fromJson({});
-              print('⚠️ 410 - Returning empty fromJson result: $result');
+              print('✅ 410 - Returning empty fromJson result: $result');
               return ApiResponse<T>.success(result);
             } catch (e) {
               print('⚠️ 410 - fromJson failed with empty data: $e');

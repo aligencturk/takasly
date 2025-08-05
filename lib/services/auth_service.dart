@@ -158,9 +158,7 @@ class AuthService {
       final platform = await _getPlatform();
 
       Logger.info('📝 REGISTER ATTEMPT: $email');
-      Logger.debug(
-        '📤 Register Request Body: {"userFirstname": "$firstName", "userLastname": "$lastName", "userEmail": "$email", "userPhone": "$phone", "userPassword": "$password", "version": "1.0", "platform": "$platform", "policy": $policy, "kvkk": $kvkk}',
-      );
+      Logger.debug('📤 Register Request Body: {"userFirstname": "$firstName", "userLastname": "$lastName", "userEmail": "$email", "userPhone": "$phone", "userPassword": "$password", "version": "1.0", "platform": "$platform", "policy": $policy, "kvkk": $kvkk}');
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.register,
@@ -211,6 +209,7 @@ class AuthService {
               token: userData['token'], // Token'ı User nesnesine dahil et
             );
 
+            Logger.debug('✅ User objesi oluşturuldu: ${user.id} - ${user.name}');
             return {
               'user': user,
               'token': userData['token'] ?? '', // Register'da token olmayabilir

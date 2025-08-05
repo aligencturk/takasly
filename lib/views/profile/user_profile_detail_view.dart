@@ -89,8 +89,8 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
           elevation: 0,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black87,
-          title: const Text(
-            'Kullanıcı Profili',
+          title: Text(
+            '${_viewModel.profileDetail?.userFullname}',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -189,15 +189,19 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(100),
                   color: Colors.grey[100],
                 ),
                 child: profile.userImage != null && profile.userImage!.isNotEmpty
-                    ? Image.network(
+                      ? ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: Image.network(
                         profile.userImage!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return _buildAvatarPlaceholder(profile.userFullname);
                         },
+                        ),
                       )
                     : _buildAvatarPlaceholder(profile.userFullname),
               ),
@@ -466,7 +470,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                      const SizedBox(height: 4),
                      
                      // Kategori ve durum bilgisi
-                     if (product.categoryName != null || product.condition != null) ...[
+                     if (product.categoryName != null && product.categoryName!.isNotEmpty) ...[
                        Row(
                          children: [
                            if (product.categoryName != null) ...[
@@ -486,24 +490,6 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                                  ),
                                  maxLines: 1,
                                  overflow: TextOverflow.ellipsis,
-                               ),
-                             ),
-                           ],
-                           if (product.condition != null) ...[
-                             const SizedBox(width: 4),
-                             Container(
-                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                               decoration: BoxDecoration(
-                                 color: _getConditionColor(product.condition!).withOpacity(0.1),
-                                 borderRadius: BorderRadius.circular(4),
-                               ),
-                               child: Text(
-                                 product.condition!,
-                                 style: TextStyle(
-                                   fontSize: 9,
-                                   color: _getConditionColor(product.condition!),
-                                   fontWeight: FontWeight.w600,
-                                 ),
                                ),
                              ),
                            ],
@@ -730,15 +716,15 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
             children: [
               // Yorum yapan kişinin fotoğrafı
               Container(
-                width: 40,
-                height: 40,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: review.reviewerImage != null && review.reviewerImage!.isNotEmpty
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(100),
                         child: Image.network(
                           review.reviewerImage!,
                           width: 40,
