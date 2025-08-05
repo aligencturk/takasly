@@ -150,11 +150,19 @@ class NotificationViewModel extends ChangeNotifier {
     return getNotificationsByType('trade_completed');
   }
 
-  /// Okunmamış bildirim sayısını alır (gelecekte implement edilebilir)
+  /// Okunmamış bildirim sayısını alır
   int get unreadCount {
     // Şimdilik tüm bildirimleri okunmamış sayıyoruz
     // Gelecekte notification model'ine isRead field'ı eklenebilir
     return _notifications.length;
+  }
+
+  /// Bildirimleri okundu olarak işaretler (badge'i sıfırlar)
+  void markAllAsRead() {
+    // Şimdilik sadece bildirimleri temizliyoruz
+    // Gelecekte API'ye bildirimleri okundu olarak işaretleme isteği gönderilebilir
+    _notifications.clear();
+    notifyListeners();
   }
 
   /// State management methods

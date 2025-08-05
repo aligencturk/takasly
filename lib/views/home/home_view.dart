@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/notification_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
@@ -57,6 +58,12 @@ class _HomeViewState extends State<HomeView> {
       if (productViewModel.categories.isEmpty) {
         productViewModel.loadCategories();
       }
+      
+      // Bildirimleri arka planda yükle
+      final notificationViewModel = Provider.of<NotificationViewModel>(context, listen: false);
+      Future.microtask(() {
+        notificationViewModel.loadNotifications();
+      });
       
 
     });
@@ -159,7 +166,7 @@ class _HomeViewState extends State<HomeView> {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) async {
-          if (index == 2) {
+          if (index == 4) { // İlan Ekle butonu artık index 4'te
             final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const AddProductView()),
@@ -197,13 +204,11 @@ class _HomeViewState extends State<HomeView> {
       case 1:
         return const ChatListView();
       case 2:
-        return const Center(child: Text('Boş Sayfa'));
-      case 3:
-        return const NotificationListView();
-      case 4:
         return const TradeView();
-      case 5:
+      case 3:
         return const ProfileView();
+      case 4:
+        return const Center(child: Text('Boş Sayfa')); // İlan Ekle butonu için boş sayfa
       default:
         return _buildHomeTab();
     }
@@ -439,6 +444,14 @@ class HomeAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    
+    // Responsive boyutlar
+    final iconSize = screenWidth < 360 ? 16.0 : 18.0;
+    final containerSize = screenWidth < 360 ? 36.0 : 40.0;
+    final badgeSize = screenWidth < 360 ? 10.0 : 12.0;
+    final badgeFontSize = screenWidth < 360 ? 6.0 : 8.0;
     return SliverAppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -452,8 +465,8 @@ class HomeAppBar extends StatelessWidget {
           // Sol taraf - Logo
           Image.asset(
             'assets/icons/icontext.png',
-            width: 120,
-            height: 120,
+            width: screenWidth < 360 ? 100 : 120,
+            height: screenWidth < 360 ? 100 : 120,
           ),
           
           // Sağ taraf - Bildirimler ve Favoriler ikonları
@@ -461,8 +474,8 @@ class HomeAppBar extends StatelessWidget {
             children: [
               // Bildirimler ikonu
               Container(
-                width: 40,
-                height: 40,
+                width: containerSize,
+                height: containerSize,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(20),
@@ -477,6 +490,10 @@ class HomeAppBar extends StatelessWidget {
                 child: IconButton(
                   onPressed: () {
                     Logger.debug('Bildirimler ikonuna tıklandı');
+                    // Bildirimleri okundu olarak işaretle
+                    final notificationViewModel = Provider.of<NotificationViewModel>(context, listen: false);
+                    notificationViewModel.markAllAsRead();
+                    
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -488,32 +505,39 @@ class HomeAppBar extends StatelessWidget {
                     children: [
                       Icon(
                         FontAwesomeIcons.bell,
-                        size: 18,
+                        size: iconSize,
                         color: Colors.grey[700],
                       ),
-                      // Bildirim sayısı badge'i (gelecekte dinamik olacak)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '3',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                                             // Bildirim sayısı badge'i - dinamik
+                                                Consumer<NotificationViewModel>(
+                           builder: (context, notificationViewModel, child) {
+                             final notificationCount = notificationViewModel.unreadCount ?? 0;
+                           return notificationCount > 0
+                               ? Positioned(
+                                   right: 0,
+                                   top: 0,
+                                   child: Container(
+                                     width: notificationCount > 9 ? badgeSize + 2 : badgeSize,
+                                     height: notificationCount > 9 ? badgeSize + 2 : badgeSize,
+                                     decoration: const BoxDecoration(
+                                       color: Colors.red,
+                                       shape: BoxShape.circle,
+                                     ),
+                                     child: Center(
+                                       child: Text(
+                                         notificationCount > 9 ? '9+' : notificationCount.toString(),
+                                         style: TextStyle(
+                                           color: Colors.white,
+                                           fontSize: notificationCount > 9 ? badgeFontSize - 1 : badgeFontSize,
+                                           fontWeight: FontWeight.bold,
+                                         ),
+                                       ),
+                                     ),
+                                   ),
+                                 )
+                               : const SizedBox.shrink();
+                         },
+                       ),
                     ],
                   ),
                   padding: EdgeInsets.zero,
@@ -524,8 +548,8 @@ class HomeAppBar extends StatelessWidget {
               
               // Favoriler ikonu
               Container(
-                width: 40,
-                height: 40,
+                width: containerSize,
+                height: containerSize,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(20),
@@ -550,7 +574,7 @@ class HomeAppBar extends StatelessWidget {
                   },
                   icon: Icon(
                     FontAwesomeIcons.heart,
-                    size: 18,
+                    size: iconSize,
                     color: Colors.grey[700],
                   ),
                   padding: EdgeInsets.zero,

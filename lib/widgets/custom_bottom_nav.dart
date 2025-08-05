@@ -35,9 +35,8 @@ class CustomBottomNav extends StatelessWidget {
               _buildNavItem(0, FontAwesomeIcons.house, FontAwesomeIcons.house, 'Ana Sayfa'),
               _buildNavItem(1, FontAwesomeIcons.comments, FontAwesomeIcons.comments, 'Sohbet'),
               _buildCenterTradeButton(),
-              _buildNavItem(3, FontAwesomeIcons.bell, FontAwesomeIcons.bell, 'Bildirimler'),
-              _buildNavItem(4, FontAwesomeIcons.list, FontAwesomeIcons.list, 'Takaslarım'),
-              _buildNavItem(5, FontAwesomeIcons.user, FontAwesomeIcons.user, 'Hesap'),
+              _buildNavItem(2, FontAwesomeIcons.list, FontAwesomeIcons.list, 'Takaslarım'),
+              _buildNavItem(3, FontAwesomeIcons.user, FontAwesomeIcons.user, 'Hesap'),
             ],
           ),
         ),
@@ -84,7 +83,7 @@ class CustomBottomNav extends StatelessWidget {
 
   /// Ortadaki butonun yarısı dışarıda (üstte) olacak şekilde, nav bar'ın üst sınırından taşacak şekilde konumlandırılmış hali
   Widget _buildCenterTradeButton() {
-    final isActive = currentIndex == 2;
+    final isActive = currentIndex == 4; // İlan Ekle butonu artık index 4'te
 
     return Column(
       children: [
@@ -94,7 +93,7 @@ class CustomBottomNav extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => onTap(2),
+              onTap: () => onTap(4), // İlan Ekle butonu için index 4
               borderRadius: BorderRadius.circular(25),
               splashColor: Colors.white.withOpacity(0.3),
               highlightColor: Colors.white.withOpacity(0.1),

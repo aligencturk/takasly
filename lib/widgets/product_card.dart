@@ -270,14 +270,14 @@ class ProductCard extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(
-                  left: screenWidth < 360 ? 4 : 8, 
-                  top: screenWidth < 360 ? 6 : 12, 
-                  bottom: screenWidth < 360 ? 4 : 6,
-                  right: screenWidth < 360 ? 4 : 8,
+                  left: screenWidth < 360 ? 6 : 10, 
+                  top: screenWidth < 360 ? 8 : 14, 
+                  bottom: screenWidth < 360 ? 6 : 8,
+                  right: screenWidth < 360 ? 6 : 10,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     // Kategori
                     Flexible(
@@ -288,12 +288,14 @@ class ProductCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.1,
                           fontSize: categoryFontSize,
-                          height: 1.1, // Line height'ı azalt
+                          height: 0.7, // Line height'ı artırdım
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    // Kategori ile başlık arası boşluk
+                    SizedBox(height: screenWidth < 360 ? 4 : 6),
                     // Başlık
                     Flexible(
                       flex: 2,
@@ -302,12 +304,14 @@ class ProductCard extends StatelessWidget {
                         style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w500,
                           fontSize: titleFontSize,
-                          height: 1.2, // Line height'ı azalt
+                          height: 1.4, // Line height'ı daha da artırdım
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    // Başlık ile konum arası boşluk
+                    SizedBox(height: screenWidth < 360 ? 4 : 6),
                     // Konum
                     Flexible(
                       child: Row(
@@ -330,7 +334,7 @@ class ProductCard extends StatelessWidget {
                                   style: textTheme.bodySmall?.copyWith(
                                     color: Colors.grey[500],
                                     fontSize: locationFontSize,
-                                    height: 1.1, // Line height'ı azalt
+                                    height: 1.2, // Line height'ı artırdım
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
