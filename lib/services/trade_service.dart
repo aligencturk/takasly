@@ -551,6 +551,41 @@ class TradeService {
     }
   }
 
+  /// Basit takas tamamlama endpoint'i (sadece userToken ve offerID)
+  Future<ApiResponse<TradeCompleteSimpleResponse>> completeTradeSimple({
+    required String userToken,
+    required int offerID,
+  }) async {
+    try {
+      Logger.info('Basit takas tamamlama isteği gönderiliyor... OfferID: $offerID', tag: _tag);
+      
+      final request = TradeCompleteSimpleRequest(
+        userToken: userToken,
+        offerID: offerID,
+      );
+
+      Logger.debug('Basit takas tamamlama request: ${request.toJson()}', tag: _tag);
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.tradeComplete,
+        body: request.toJson(),
+        fromJson: (json) => TradeCompleteSimpleResponse.fromJson(json),
+        useBasicAuth: true,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Basit takas tamamlama başarılı: ${response.data?.data?.message}', tag: _tag);
+      } else {
+        Logger.error('Basit takas tamamlama hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Basit takas tamamlama exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
   /// Takas detayı getir
   Future<ApiResponse<TradeDetail>> getTradeDetail({
     required String userToken,

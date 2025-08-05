@@ -1203,3 +1203,75 @@ class CheckTradeStatusData {
     return 'CheckTradeStatusData(success: $success, isSender: $isSender, isReceiver: $isReceiver, showButtons: $showButtons, statusID: $statusID, message: $message)';
   }
 } 
+
+/// Basit takas tamamlama request modeli (sadece userToken ve offerID)
+class TradeCompleteSimpleRequest {
+  final String userToken;
+  final int offerID;
+
+  const TradeCompleteSimpleRequest({
+    required this.userToken,
+    required this.offerID,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'userToken': userToken,
+    'offerID': offerID,
+  };
+
+  @override
+  String toString() {
+    return 'TradeCompleteSimpleRequest(offerID: $offerID)';
+  }
+}
+
+/// Basit takas tamamlama response modeli
+class TradeCompleteSimpleResponse {
+  final bool error;
+  final bool success;
+  final TradeCompleteSimpleData? data;
+  final String? status410;
+
+  const TradeCompleteSimpleResponse({
+    required this.error,
+    required this.success,
+    this.data,
+    this.status410,
+  });
+
+  factory TradeCompleteSimpleResponse.fromJson(Map<String, dynamic> json) {
+    return TradeCompleteSimpleResponse(
+      error: json['error'] as bool? ?? false,
+      success: json['success'] as bool? ?? false,
+      data: json['data'] != null 
+          ? TradeCompleteSimpleData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+      status410: json['410'] as String?,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TradeCompleteSimpleResponse(error: $error, success: $success, message: ${data?.message})';
+  }
+}
+
+/// Basit takas tamamlama data modeli
+class TradeCompleteSimpleData {
+  final String message;
+
+  const TradeCompleteSimpleData({
+    required this.message,
+  });
+
+  factory TradeCompleteSimpleData.fromJson(Map<String, dynamic> json) {
+    return TradeCompleteSimpleData(
+      message: json['message'] as String? ?? '',
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TradeCompleteSimpleData(message: $message)';
+  }
+} 

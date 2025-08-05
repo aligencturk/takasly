@@ -449,6 +449,10 @@ class _TradeViewState extends State<TradeView>
                           // Yorum yapma dialog'unu göster
                           _showTradeCompleteDialog(trade);
                         },
+                        onCompleteSimple: (trade) {
+                          // Basit takas tamamlama işlemini yap
+                          _completeTradeSimple(trade);
+                        },
                         onStatusChange: (newStatusId) async {
                           Logger.info('TradeCard onStatusChange çağrıldı: $newStatusId', tag: 'TradeView');
                           
@@ -2354,6 +2358,86 @@ class _TradeViewState extends State<TradeView>
       Logger.info('Takas kontrolu tamamlandi', tag: 'TradeView');
     } catch (e) {
       Logger.error('Takas kontrolu sirasinda genel hata: $e', tag: 'TradeView');
+    }
+  }
+
+  /// Basit takas tamamlama işlemi (sadece userToken ve offerID)
+  Future<bool> _completeTradeSimple(UserTrade trade) async {
+    try {
+      final tradeViewModel = _tradeViewModel;
+      
+      if (tradeViewModel == null) {
+        Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+        return false;
+      }
+      
+      final userService = UserService();
+      final userToken = await userService.getUserToken();
+      
+      if (userToken == null) {
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(content: Text('Kullanıcı token\'i bulunamadı')),
+          );
+        }
+        return false;
+      }
+
+      Logger.info('Basit takas tamamlama işlemi başlatılıyor... Trade #${trade.offerID}', tag: 'TradeView');
+
+      final success = await tradeViewModel.completeTradeSimple(
+        userToken: userToken,
+        offerID: trade.offerID,
+      );
+
+      if (success) {
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Takas başarıyla tamamlandı'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+        
+        // Takasları yeniden yükle
+        final userId = await _authService.getCurrentUserId();
+        if (userId != null && tradeViewModel != null) {
+          await tradeViewModel.loadUserTrades(int.parse(userId));
+          Logger.info('✅ TradeViewModel manuel olarak yenilendi (completeTradeSimple)', tag: 'TradeView');
+        }
+        return true;
+      } else {
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanırken hata oluştu'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
+      }
+    } catch (e) {
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
+          SnackBar(
+            content: Text('Takas tamamlanırken hata oluştu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
     }
   }
 

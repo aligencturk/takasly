@@ -885,6 +885,45 @@ class TradeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Basit takas tamamlama metodu (sadece userToken ve offerID)
+  Future<bool> completeTradeSimple({
+    required String userToken,
+    required int offerID,
+  }) async {
+    Logger.info('Basit takas tamamlama işlemi başlatılıyor... OfferID: $offerID', tag: 'TradeViewModel');
+    
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _tradeService.completeTradeSimple(
+        userToken: userToken,
+        offerID: offerID,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('Basit takas tamamlama başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
+        
+        // Başarılı işlem sonrası kullanıcı takaslarını yenile
+        await _refreshUserTrades();
+        
+        _setLoading(false);
+        return true;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Basit takas tamamlama hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Basit takas tamamlama exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
   /// Takas kontrolü metodu
   Future<CheckTradeStatusResponse?> checkTradeStatus({
     required String userToken,
