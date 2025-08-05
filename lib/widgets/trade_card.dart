@@ -167,6 +167,8 @@ class TradeCard extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -468,9 +470,9 @@ class TradeCard extends StatelessWidget {
                         // API'den showButtons değeri gelmişse, sadece true olduğunda butonları göster
                         if (showButtons == true)
                           _buildActionButtons(context)
-                        // API'den showButtons false gelmişse, hiçbir buton gösterme
+                        // API'den showButtons false gelmişse, API mesajını göster
                         else if (showButtons == false)
-                          Container() // Boş container, hiçbir şey gösterme
+                          _buildApiMessageWidget(context, tradeViewModel)
                         // API'den showButtons değeri gelmemişse (null), eski mantığı kullan
                         else if (showButtons == null && isReceiver)
                           _buildActionButtons(context)

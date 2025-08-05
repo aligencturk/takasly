@@ -1150,6 +1150,8 @@ class _ProductInfoState extends State<_ProductInfo> {
     Logger.debug('Product Detail - userImage: ${product.userImage}', tag: 'ProductDetail');
     Logger.debug('Product Detail - userFullname: ${product.userFullname}', tag: 'ProductDetail');
     Logger.debug('Product Detail - userName: $userName', tag: 'ProductDetail');
+    Logger.debug('Product Detail - profilePhoto: ${product.profilePhoto}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - Using profile photo: ${product.profilePhoto ?? product.userImage ?? owner?.avatar}', tag: 'ProductDetail');
     Logger.debug('Product Detail - owner.avatar: ${owner?.avatar}', tag: 'ProductDetail');
     Logger.debug('Product Detail - owner.name: ${owner?.name}', tag: 'ProductDetail');
     Logger.debug('Product Detail - owner.id: ${owner?.id}', tag: 'ProductDetail');
@@ -1267,10 +1269,11 @@ class _ProductInfoState extends State<_ProductInfo> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: (product.userImage != null && product.userImage!.isNotEmpty) ||
+                  child: (product.profilePhoto != null && product.profilePhoto!.isNotEmpty) ||
+                         (product.userImage != null && product.userImage!.isNotEmpty) ||
                          (owner?.avatar != null && owner!.avatar!.isNotEmpty)
                       ? CachedNetworkImage(
-                          imageUrl: product.userImage ?? owner?.avatar ?? '',
+                          imageUrl: product.profilePhoto ?? product.userImage ?? owner?.avatar ?? '',
                           width: 32,
                           height: 32,
                           fit: BoxFit.cover,

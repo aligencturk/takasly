@@ -57,6 +57,7 @@ class Product {
   final String? productLong;
   final String? productCode;
   final int? favoriteCount;
+  final String? profilePhoto;
 
   const Product({
     required this.id,
@@ -109,6 +110,7 @@ class Product {
     this.productLong,
     this.productCode,
     this.favoriteCount,
+    this.profilePhoto,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -218,6 +220,7 @@ class Product {
     final isTrade = json['isTrade'] as bool?;
     final productCode = json['productCode'] != null ? safeString(json['productCode']) : null;
     final favoriteCount = json['favoriteCount'] as int?;
+    final profilePhoto = json['profilePhoto'] != null ? safeString(json['profilePhoto']) : null;
 
     // Ana resim ve galeri resimlerini birleştir
     final allImages = <String>[];
@@ -319,6 +322,7 @@ class Product {
       productLong: productLong,
       productCode: productCode,
       favoriteCount: favoriteCount,
+      profilePhoto: profilePhoto,
     );
   }
   Map<String, dynamic> toJson() {
@@ -370,6 +374,7 @@ class Product {
     String? userFirstname,
     String? userLastname,
     String? userPhone,
+    String? userImage,
     String? proView,
     bool? isShowContact,
     bool? isFavorite,
@@ -379,6 +384,7 @@ class Product {
     String? productLong,
     String? productCode,
     int? favoriteCount,
+    String? profilePhoto,
   }) {
     return Product(
       id: id ?? this.id,
@@ -421,6 +427,7 @@ class Product {
       userFirstname: userFirstname ?? this.userFirstname,
       userLastname: userLastname ?? this.userLastname,
       userPhone: userPhone ?? this.userPhone,
+      userImage: userImage ?? this.userImage,
       proView: proView ?? this.proView,
       isShowContact: isShowContact ?? this.isShowContact,
       isFavorite: isFavorite ?? this.isFavorite,
@@ -430,6 +437,7 @@ class Product {
       productLong: productLong ?? this.productLong,
       productCode: productCode ?? this.productCode,
       favoriteCount: favoriteCount ?? this.favoriteCount,
+      profilePhoto: profilePhoto ?? this.profilePhoto,
     );
   }
 

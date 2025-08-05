@@ -708,7 +708,7 @@ class _TradeViewState extends State<TradeView>
         if (mounted && _scaffoldMessenger != null) {
           _scaffoldMessenger!.showSnackBar(
             SnackBar(
-              content: Text(tradeViewModel.errorMessage ?? 'Bir hata oluştu'),
+              content: Text(tradeViewModel.errorMessage ?? 'Durum guncellenirken hata olustu'),
               backgroundColor: Colors.red,
             ),
           );
@@ -2208,6 +2208,7 @@ class _TradeViewState extends State<TradeView>
         final userToken = await userService.getUserToken();
         
         if (userToken == null || userToken.isEmpty) {
+          Logger.debug('UserToken bulunamadı, takas kontrolü yapılamıyor', tag: 'TradeView');
           return;
         }
 
@@ -2217,8 +2218,11 @@ class _TradeViewState extends State<TradeView>
         ).toList();
         
         if (tradesToCheck.isEmpty) {
+          Logger.debug('Kontrol edilecek onay bekleyen takas bulunamadı', tag: 'TradeView');
           return;
         }
+
+        Logger.info('🔄 ${tradesToCheck.length} adet onay bekleyen takas için kontrol yapılıyor...', tag: 'TradeView');
 
         // Her trade için takas kontrolü yap (paralel olarak, daha hızlı)
         final futures = tradesToCheck.map((trade) async {
@@ -2233,6 +2237,15 @@ class _TradeViewState extends State<TradeView>
               return;
             }
             
+            // Cache'de zaten kontrol edilmiş mi kontrol et
+            final cachedStatus = tradeViewModel.getCachedTradeStatus(senderProductID, receiverProductID);
+            
+            if (cachedStatus != null) {
+              Logger.debug('Trade #${trade.offerID} için cache\'de veri mevcut, API çağrısı yapılmıyor', tag: 'TradeView');
+              _tradeShowButtonsMap[trade.offerID] = cachedStatus.showButtons;
+              return;
+            }
+            
             final checkResult = await tradeViewModel.checkTradeStatus(
               userToken: userToken,
               senderProductID: senderProductID,
@@ -2243,7 +2256,7 @@ class _TradeViewState extends State<TradeView>
               final data = checkResult.data!;
               _tradeShowButtonsMap[trade.offerID] = data.showButtons;
               
-              Logger.debug('Trade #${trade.offerID} kontrolü tamamlandı: showButtons=${data.showButtons}, message="${data.message}"', tag: 'TradeView');
+              Logger.info('✅ Trade #${trade.offerID} kontrolü tamamlandı: showButtons=${data.showButtons}, message="${data.message}"', tag: 'TradeView');
               
               // UI'ı güncelle (mounted kontrolü ile)
               if (mounted) {
@@ -2251,6 +2264,8 @@ class _TradeViewState extends State<TradeView>
                   // UI'ı yenile
                 });
               }
+            } else {
+              Logger.warning('⚠️ Trade #${trade.offerID} kontrolü başarısız', tag: 'TradeView');
             }
           } catch (e) {
             Logger.error('Trade #${trade.offerID} kontrolünde hata: $e', tag: 'TradeView');
@@ -2258,9 +2273,10 @@ class _TradeViewState extends State<TradeView>
         });
 
         await Future.wait(futures);
+        Logger.info('✅ Tüm takas kontrolleri tamamlandı', tag: 'TradeView');
         
       } catch (e) {
-        // Genel hata durumunda sessizce devam et
+        Logger.error('Arka plan takas kontrolü genel hatası: $e', tag: 'TradeView');
       }
     });
   }
@@ -2278,10 +2294,10 @@ class _TradeViewState extends State<TradeView>
         return;
       }
 
-      // Bekleyen ve onaylanmış takasları filtrele (API kontrolü için)
-              final tradesToCheck = tradeViewModel.userTrades.where((trade) => 
-          trade.statusID == 1 || trade.statusID == 2 // Onay Bekliyor veya Takas Başlatıldı
-        ).toList();
+      // Sadece onay bekleyen ve takas başlatılmış takasları filtrele (API kontrolü için)
+      final tradesToCheck = tradeViewModel.userTrades.where((trade) => 
+        trade.statusID == 1 || trade.statusID == 2 // Onay Bekliyor veya Takas Başlatıldı
+      ).toList();
       
       if (tradesToCheck.isEmpty) {
         Logger.info('Kontrol edilecek takas bulunamadi, kontrol yapilmiyor', tag: 'TradeView');
@@ -2333,7 +2349,7 @@ class _TradeViewState extends State<TradeView>
               Logger.info('✅ Trade #${trade.offerID} icin butonlar gosterilecek (API: showButtons=true, StatusID: ${trade.statusID})', tag: 'TradeView');
             } else {
               // Eğer alıcı ise ve onay bekleyen takas ise butonlar gösterilecek
-              final isReceiver = trade.isConfirm == 0;
+              final isReceiver = trade.isConfirm == false;
               if (trade.statusID == 1 && isReceiver) {
                 Logger.info('✅ Trade #${trade.offerID} icin butonlar gosterilecek (API: showButtons=false ama alici ve onay bekleyen takas, StatusID: ${trade.statusID})', tag: 'TradeView');
               } else {
