@@ -28,6 +28,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   String? _selectedCityId;
   List<District> _districts = [];
   bool _isLoadingDistricts = false;
+  
+  // Akordiyon durumları
+  bool _isCategoryExpanded = false;
+  bool _isConditionExpanded = false;
+  bool _isLocationExpanded = false;
+  bool _isSortExpanded = false;
 
   @override
   void initState() {
@@ -39,6 +45,16 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     if (_selectedCityId != null && _selectedCityId!.isNotEmpty) {
       _loadDistricts(_selectedCityId!);
     }
+    
+    // Aktif filtreler varsa ilgili bölümleri aç
+    _initializeExpandedSections();
+  }
+
+  void _initializeExpandedSections() {
+    if (_tempFilter.categoryId != null) _isCategoryExpanded = true;
+    if (_tempFilter.conditionIds.isNotEmpty) _isConditionExpanded = true;
+    if (_tempFilter.cityId != null || _tempFilter.districtId != null) _isLocationExpanded = true;
+    if (_tempFilter.sortType != 'default') _isSortExpanded = true;
   }
 
   Future<void> _loadDistricts(String cityId) async {
@@ -110,15 +126,38 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCategoryFilter(),
-                  const SizedBox(height: 24),
-                  _buildConditionFilter(),
-                  const SizedBox(height: 24),
-                  _buildLocationFilter(),
-                  const SizedBox(height: 24),
-                  _buildSortFilter(),
+                  _buildAccordionSection(
+                    title: 'Kategori',
+                    isExpanded: _isCategoryExpanded,
+                    onToggle: () => setState(() => _isCategoryExpanded = !_isCategoryExpanded),
+                    content: _buildCategoryFilter(),
+                    hasActiveFilter: _tempFilter.categoryId != null,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildAccordionSection(
+                    title: 'Ürün Durumu',
+                    isExpanded: _isConditionExpanded,
+                    onToggle: () => setState(() => _isConditionExpanded = !_isConditionExpanded),
+                    content: _buildConditionFilter(),
+                    hasActiveFilter: _tempFilter.conditionIds.isNotEmpty,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildAccordionSection(
+                    title: 'Konum',
+                    isExpanded: _isLocationExpanded,
+                    onToggle: () => setState(() => _isLocationExpanded = !_isLocationExpanded),
+                    content: _buildLocationFilter(),
+                    hasActiveFilter: _tempFilter.cityId != null || _tempFilter.districtId != null,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildAccordionSection(
+                    title: 'Sıralama',
+                    isExpanded: _isSortExpanded,
+                    onToggle: () => setState(() => _isSortExpanded = !_isSortExpanded),
+                    content: _buildSortFilter(),
+                    hasActiveFilter: _tempFilter.sortType != 'default',
+                  ),
                 ],
               ),
             ),
@@ -158,6 +197,92 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     );
   }
 
+  Widget _buildAccordionSection({
+    required String title,
+    required bool isExpanded,
+    required VoidCallback onToggle,
+    required Widget content,
+    required bool hasActiveFilter,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: hasActiveFilter ? AppTheme.primary : Colors.grey.shade200,
+          width: hasActiveFilter ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header
+          InkWell(
+            onTap: onToggle,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: hasActiveFilter ? AppTheme.primary : Colors.grey.shade800,
+                          ),
+                        ),
+                        if (hasActiveFilter) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'Aktif',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: hasActiveFilter ? AppTheme.primary : Colors.grey.shade600,
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Content
+          if (isExpanded)
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: content,
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryFilter() {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
@@ -165,43 +290,33 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           return const SizedBox.shrink();
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            const Text(
-              'Kategori',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            // Tümü seçeneği
+            _buildFilterChip(
+              label: 'Tümü',
+              isSelected: _tempFilter.categoryId == null,
+              onTap: () {
+                setState(() {
+                  _tempFilter = _tempFilter.copyWith(categoryId: null);
+                });
+              },
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                // Tümü seçeneği
-                _buildFilterChip(
-                  label: 'Tümü',
-                  isSelected: _tempFilter.categoryId == null,
-                  onTap: () {
-                    setState(() {
-                      _tempFilter = _tempFilter.copyWith(categoryId: null);
-                    });
-                  },
-                ),
-                // Kategoriler
-                ...vm.categories.map(
-                  (category) => _buildFilterChip(
-                    label: category.name,
-                    isSelected: _tempFilter.categoryId == category.id,
-                    onTap: () {
-                      setState(() {
-                        _tempFilter = _tempFilter.copyWith(
-                          categoryId: category.id,
-                        );
-                      });
-                    },
-                  ),
-                ),
-              ],
+            // Kategoriler
+            ...vm.categories.map(
+              (category) => _buildFilterChip(
+                label: category.name,
+                isSelected: _tempFilter.categoryId == category.id,
+                onTap: () {
+                  setState(() {
+                    _tempFilter = _tempFilter.copyWith(
+                      categoryId: category.id,
+                    );
+                  });
+                },
+              ),
             ),
           ],
         );
@@ -216,43 +331,33 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           return const SizedBox.shrink();
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Ürün Durumu',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: vm.conditions.map((condition) {
-                final isSelected = _tempFilter.conditionIds.contains(
-                  condition.id,
-                );
-                return _buildFilterChip(
-                  label: condition.name,
-                  isSelected: isSelected,
-                  onTap: () {
-                    setState(() {
-                      final newConditionIds = List<String>.from(
-                        _tempFilter.conditionIds,
-                      );
-                      if (isSelected) {
-                        newConditionIds.remove(condition.id);
-                      } else {
-                        newConditionIds.add(condition.id);
-                      }
-                      _tempFilter = _tempFilter.copyWith(
-                        conditionIds: newConditionIds,
-                      );
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-          ],
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: vm.conditions.map((condition) {
+            final isSelected = _tempFilter.conditionIds.contains(
+              condition.id,
+            );
+            return _buildFilterChip(
+              label: condition.name,
+              isSelected: isSelected,
+              onTap: () {
+                setState(() {
+                  final newConditionIds = List<String>.from(
+                    _tempFilter.conditionIds,
+                  );
+                  if (isSelected) {
+                    newConditionIds.remove(condition.id);
+                  } else {
+                    newConditionIds.add(condition.id);
+                  }
+                  _tempFilter = _tempFilter.copyWith(
+                    conditionIds: newConditionIds,
+                  );
+                });
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -262,14 +367,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Konum',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-
             // Şehir Dropdown
             DropdownButtonFormField<String>(
               value: vm.cities.any((city) => city.id == _selectedCityId) 
@@ -374,13 +472,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
   Widget _buildSortFilter() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Sıralama',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -602,6 +694,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       _tempFilter = const ProductFilter();
       _selectedCityId = null;
       _districts.clear();
+      _isCategoryExpanded = false;
+      _isConditionExpanded = false;
+      _isLocationExpanded = false;
+      _isSortExpanded = false;
     });
   }
 

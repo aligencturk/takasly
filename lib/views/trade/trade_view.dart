@@ -119,6 +119,12 @@ class _TradeViewState extends State<TradeView>
             Logger.info('✅ Favoriler zaten yüklü, tekrar yüklenmiyor', tag: 'TradeView');
           }
           
+          // Kategoriler yüklenmemişse yükle (kategori adları için gerekli)
+          if (productViewModel.categories.isEmpty) {
+            Logger.info('🏷️ Kategoriler yükleniyor...', tag: 'TradeView');
+            await productViewModel.loadCategories();
+          }
+          
           // Takas verilerini arka planda yükle (UI'ı bloklamasın)
           _loadTradeDataInBackground(tradeViewModel, userId);
           
@@ -134,6 +140,10 @@ class _TradeViewState extends State<TradeView>
             // Favorileri yükle (eğer yüklenmemişse)
             productViewModel.favoriteProducts.isEmpty 
                 ? productViewModel.loadFavoriteProducts() 
+                : Future.value(),
+            // Kategorileri yükle (eğer yüklenmemişse)
+            productViewModel.categories.isEmpty 
+                ? productViewModel.loadCategories() 
                 : Future.value(),
           ]);
           
@@ -945,8 +955,8 @@ class _TradeViewState extends State<TradeView>
                   children: [
                     // Animated Container
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: 100,
+                      height: 100,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -1086,8 +1096,8 @@ class _TradeViewState extends State<TradeView>
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.7,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.62,
                 ),
                 itemCount: productViewModel.favoriteProducts.length,
                 itemBuilder: (context, index) {

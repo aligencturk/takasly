@@ -563,6 +563,12 @@ class ProductViewModel extends ChangeNotifier {
     _clearFavoriteError();
 
     try {
+      // Önce kategorileri yükle (kategori adları için gerekli)
+      if (_categories.isEmpty) {
+        Logger.info('🏷️ Kategoriler yükleniyor (favoriler için)...', tag: 'ProductViewModel');
+        await loadCategories();
+      }
+      
       Logger.info('🌐 ProductViewModel.loadFavoriteProducts - Calling productService.getFavoriteProducts()', tag: 'ProductViewModel');
       final response = await _productService.getFavoriteProducts();
       

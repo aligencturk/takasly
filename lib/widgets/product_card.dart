@@ -23,6 +23,14 @@ class ProductCard extends StatelessWidget {
   });
 
   String _getCategoryDisplayName(Product product, BuildContext context) {
+    // Debug bilgileri
+    print('🔍 ProductCard._getCategoryDisplayName - Product ID: ${product.id}');
+    print('🔍 ProductCard._getCategoryDisplayName - categoryId: ${product.categoryId}');
+    print('🔍 ProductCard._getCategoryDisplayName - mainCategoryName: ${product.mainCategoryName}');
+    print('🔍 ProductCard._getCategoryDisplayName - parentCategoryName: ${product.parentCategoryName}');
+    print('🔍 ProductCard._getCategoryDisplayName - subCategoryName: ${product.subCategoryName}');
+    print('🔍 ProductCard._getCategoryDisplayName - catname: ${product.catname}');
+    
     // 3 katmanlı kategori sisteminde öncelik sırası:
     // 1. Ana kategori adı (mainCategoryName)
     if (product.mainCategoryName != null &&
@@ -30,6 +38,7 @@ class ProductCard extends StatelessWidget {
         product.mainCategoryName != 'null' &&
         product.mainCategoryName != 'Kategori' &&
         product.mainCategoryName != 'Kategori Yok') {
+      print('✅ ProductCard._getCategoryDisplayName - Using mainCategoryName: ${product.mainCategoryName}');
       return product.mainCategoryName!;
     }
 
@@ -39,6 +48,7 @@ class ProductCard extends StatelessWidget {
         product.parentCategoryName != 'null' &&
         product.parentCategoryName != 'Kategori' &&
         product.parentCategoryName != 'Kategori Yok') {
+      print('✅ ProductCard._getCategoryDisplayName - Using parentCategoryName: ${product.parentCategoryName}');
       return product.parentCategoryName!;
     }
 
@@ -48,6 +58,7 @@ class ProductCard extends StatelessWidget {
         product.subCategoryName != 'null' &&
         product.subCategoryName != 'Kategori' &&
         product.subCategoryName != 'Kategori Yok') {
+      print('✅ ProductCard._getCategoryDisplayName - Using subCategoryName: ${product.subCategoryName}');
       return product.subCategoryName!;
     }
 
@@ -55,6 +66,7 @@ class ProductCard extends StatelessWidget {
     if (product.catname.isNotEmpty &&
         product.catname != 'null' &&
         product.catname != 'Kategori') {
+      print('✅ ProductCard._getCategoryDisplayName - Using catname: ${product.catname}');
       return product.catname;
     }
 
@@ -63,6 +75,7 @@ class ProductCard extends StatelessWidget {
         product.category.name.isNotEmpty &&
         product.category.name != 'Kategori' &&
         product.category.name != 'Kategori Yok') {
+      print('✅ ProductCard._getCategoryDisplayName - Using category.name: ${product.category.name}');
       return product.category.name;
     }
 
@@ -70,15 +83,20 @@ class ProductCard extends StatelessWidget {
     final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
     final categoryName = productViewModel.getCategoryNameById(product.categoryId);
     if (categoryName != 'Kategori Yok') {
+      print('✅ ProductCard._getCategoryDisplayName - Using ProductViewModel category: $categoryName');
       return categoryName;
     }
+    
+    // 7. Eğer hiçbir kategori bulunamazsa, en azından "Kategori" yazısını göster
+    print('⚠️ ProductCard._getCategoryDisplayName - No category found, returning "Kategori"');
+    return 'Kategori';
 
-    // 7. Kategori ID'sini göster
+    // 8. Kategori ID'sini göster
     if (product.categoryId.isNotEmpty) {
       return 'Kategori ${product.categoryId}';
     }
 
-    return 'Kategori Yok';
+    return 'Kategori';
   }
 
   @override
@@ -108,8 +126,8 @@ class ProductCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Resim
-            Expanded(
-              flex: 5,
+            Container(
+              height: 200, // Resim yüksekliği
               child: Stack(
                 children: [
                   Builder(
@@ -128,7 +146,7 @@ class ProductCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.grey[50],
                             borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(8),
+                              top: Radius.circular(1),
                             ),
                           ),
                           child: Center(
@@ -156,12 +174,13 @@ class ProductCard extends StatelessWidget {
                       
                       return ClipRRect(
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(8),
+                          top: Radius.circular(3),
                         ),
-                                                   child: CachedNetworkImage(
+                           child: CachedNetworkImage(
                            imageUrl: imageUrl,
                            fit: BoxFit.cover,
-                           width: double.infinity,
+                           height: 300,
+                           width: 300,
                           placeholder: (context, url) => Shimmer.fromColors(
                             baseColor: Colors.grey[200]!,
                             highlightColor: Colors.grey[100]!,
@@ -262,10 +281,10 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             // Bilgiler
-            Expanded(
-              flex: 4,
+            Container(
+              height: 107, // Bilgiler yüksekliği
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.only(left: 10,  top: 15, bottom: 5),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -280,14 +299,15 @@ class ProductCard extends StatelessWidget {
                         style: textTheme.bodySmall?.copyWith(
                           color: AppTheme.primary, // Debug için kırmızı renk
                           fontWeight: FontWeight.w600, // Daha kalın font
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.1,
                           fontSize: 12, // Daha büyük font boyutu
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // Başlık
+                    // Başlık 
+
                     Text(
                       product.title,
                       style: textTheme.titleSmall?.copyWith(
@@ -298,6 +318,7 @@ class ProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     // Konum
+         
                     Row(
                       children: [
                         Icon(

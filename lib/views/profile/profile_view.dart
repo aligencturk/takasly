@@ -261,16 +261,16 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.all(5),
           color: Colors.white,
           child: GridView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.75,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 0.62,
             ),
             itemCount: productViewModel.myProducts.length,
             itemBuilder: (context, index) {
