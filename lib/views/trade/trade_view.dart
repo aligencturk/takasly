@@ -436,10 +436,10 @@ class _TradeViewState extends State<TradeView>
                     }
                     // StatusID=1 (Beklemede) olan trade'ler için ek kontrol
                     else if (updatedTrade.statusID == 1) {
-                      // isConfirm=false ise (alıcı ise) butonları göster
-                      if (updatedTrade.isConfirm == false) {
+                      // isConfirm null ise (henüz karar vermemişse) butonları göster
+                      if (updatedTrade.isConfirm == null) {
                         shouldShowButtons = true;
-                        Logger.info('✅ Trade #${updatedTrade.offerID} için isConfirm=false (alıcı), butonlar gösterilecek', tag: 'TradeView');
+                        Logger.info('✅ Trade #${updatedTrade.offerID} için isConfirm=null (henüz karar vermemiş), butonlar gösterilecek', tag: 'TradeView');
                       }
                       else {
                         Logger.info('❌ Trade #${updatedTrade.offerID} için butonlar gösterilmeyecek', tag: 'TradeView');
@@ -907,50 +907,26 @@ class _TradeViewState extends State<TradeView>
     }
   }
 
-  /// isConfirm alanına göre benim ürünümü belirle
+  /// Benim ürünümü belirle (myProduct her zaman benim ürünüm)
   TradeProduct? _getMyProduct(UserTrade trade) {
-    // isConfirm: true -> Gönderen (sender), myProduct kullanıcının ürünü
-    // isConfirm: false -> Alıcı (receiver), theirProduct kullanıcının ürünü
-    if (trade.isConfirm == true) {
-      return trade.myProduct; // Gönderen ise myProduct benim ürünüm
-    } else if (trade.isConfirm == false) {
-      return trade.theirProduct; // Alıcı ise theirProduct benim ürünüm
-    }
-    // isConfirm null ise varsayılan olarak myProduct'ı kullan
+    // myProduct her zaman benim ürünüm
     return trade.myProduct;
   }
 
-  /// isConfirm alanına göre karşı tarafın ürününü belirle
+  /// Karşı tarafın ürününü belirle (theirProduct her zaman karşı tarafın ürünü)
   TradeProduct? _getTheirProduct(UserTrade trade) {
-    // isConfirm: true -> Gönderen (sender), theirProduct karşı tarafın ürünü
-    // isConfirm: false -> Alıcı (receiver), myProduct karşı tarafın ürünü
-    if (trade.isConfirm == true) {
-      return trade.theirProduct; // Gönderen ise theirProduct karşı tarafın ürünü
-    } else if (trade.isConfirm == false) {
-      return trade.myProduct; // Alıcı ise myProduct karşı tarafın ürünü
-    }
-    // isConfirm null ise varsayılan olarak theirProduct'ı kullan
+    // theirProduct her zaman karşı tarafın ürünü
     return trade.theirProduct;
   }
 
-  /// isConfirm alanına göre benim ürünümün etiketini belirle
+  /// Benim ürünümün etiketini belirle
   String _getMyProductLabel(UserTrade trade) {
-    if (trade.isConfirm == true) {
-      return 'Benim Ürünüm (Gönderen)';
-    } else if (trade.isConfirm == false) {
-      return 'Benim Ürünüm (Alıcı)';
-    }
     return 'Benim Ürünüm';
   }
 
-  /// isConfirm alanına göre karşı tarafın ürününün etiketini belirle
+  /// Karşı tarafın ürününün etiketini belirle
   String _getTheirProductLabel(UserTrade trade) {
-    if (trade.isConfirm == true) {
-      return 'Karşı Taraf (Alıcı)';
-    } else if (trade.isConfirm == false) {
-      return 'Karşı Taraf (Gönderen)';
-    }
-    return 'Karşı Taraf';
+    return 'Karşı Tarafın Ürünü';
   }
 
   Widget _buildFavoritesTab() {

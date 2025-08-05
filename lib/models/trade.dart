@@ -528,13 +528,15 @@ class UserTrade {
   final String? meetingLocation;
   final String createdAt;
   final String? completedAt;
-  final int? isConfirm; // 1: Mevcut kullanıcı teklifi gönderen, 0: Mevcut kullanıcı teklifi alan, null: Belirsiz
+  final int? isConfirm; // 1: Kullanıcı onayladı, 0: Kullanıcı reddetti, null: Belirsiz
   final TradeProduct? myProduct;
   final TradeProduct? theirProduct;
   final String? cancelDesc; // Reddetme sebebi (API'den cancelDesc olarak geliyor)
   final int? rating; // Yorum puanı
   final String? comment; // Yorum metni
   final bool? hasReview; // Yorum yapılıp yapılmadığı
+  final int senderStatusID; // Gönderen durumu
+  final int receiverStatusID; // Alıcı durumu
 
   const UserTrade({
     required this.offerID,
@@ -551,6 +553,8 @@ class UserTrade {
     this.rating,
     this.comment,
     this.hasReview,
+    required this.senderStatusID,
+    required this.receiverStatusID,
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {
@@ -639,6 +643,8 @@ class UserTrade {
         myProduct: myProduct,
         theirProduct: theirProduct,
         cancelDesc: cancelDesc,
+        senderStatusID: senderStatusID,
+        receiverStatusID: receiverStatusID,
       );
       
       print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, statusID=$statusID, statusTitle="$statusTitle"');
@@ -652,6 +658,8 @@ class UserTrade {
         statusID: json['statusID'] as int? ?? 0,
         statusTitle: json['statusTitle'] as String? ?? 'Bilinmeyen',
         deliveryType: json['deliveryType'] as String? ?? 'Bilinmeyen',
+        senderStatusID: json['senderStatusID'] as int? ?? 0,
+        receiverStatusID: json['receiverStatusID'] as int? ?? 0,
         meetingLocation: json['meetingLocation'] as String?,
         createdAt: json['createdAt'] as String? ?? '',
         completedAt: json['completedAt'] as String?,
@@ -1103,11 +1111,23 @@ class CheckTradeStatusData {
   });
 
   factory CheckTradeStatusData.fromJson(Map<String, dynamic> json) {
+    // showButtons API'den 1/0 olarak geliyor, bool'a çeviriyoruz
+    bool showButtonsValue = false;
+    if (json['showButtons'] != null) {
+      if (json['showButtons'] is int) {
+        showButtonsValue = json['showButtons'] == 1;
+      } else if (json['showButtons'] is bool) {
+        showButtonsValue = json['showButtons'] as bool;
+      } else if (json['showButtons'] is String) {
+        showButtonsValue = json['showButtons'] == '1';
+      }
+    }
+    
     return CheckTradeStatusData(
       success: json['success'] as bool? ?? false,
       isSender: json['isSender'] as bool? ?? false,
       isReceiver: json['isReceiver'] as bool? ?? false,
-      showButtons: json['showButtons'] as bool? ?? false,
+      showButtons: showButtonsValue,
       message: json['message'] as String? ?? '',
       statusID: int.tryParse(json['statusID']?.toString() ?? '0') ?? 0,
     );

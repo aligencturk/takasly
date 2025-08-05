@@ -128,10 +128,6 @@ StartTradeData _$StartTradeDataFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$StartTradeDataToJson(StartTradeData instance) =>
     <String, dynamic>{'message': instance.message};
 
-
-
-
-
 DeliveryType _$DeliveryTypeFromJson(Map<String, dynamic> json) => DeliveryType(
   deliveryID: (json['deliveryID'] as num).toInt(),
   deliveryTitle: json['deliveryTitle'] as String,
@@ -249,6 +245,8 @@ UserTrade _$UserTradeFromJson(Map<String, dynamic> json) => UserTrade(
   rating: (json['rating'] as num?)?.toInt(),
   comment: json['comment'] as String?,
   hasReview: json['hasReview'] as bool?,
+  senderStatusID: (json['senderStatusID'] as num).toInt(),
+  receiverStatusID: (json['receiverStatusID'] as num).toInt(),
 );
 
 Map<String, dynamic> _$UserTradeToJson(UserTrade instance) => <String, dynamic>{
@@ -266,6 +264,8 @@ Map<String, dynamic> _$UserTradeToJson(UserTrade instance) => <String, dynamic>{
   'rating': instance.rating,
   'comment': instance.comment,
   'hasReview': instance.hasReview,
+  'senderStatusID': instance.senderStatusID,
+  'receiverStatusID': instance.receiverStatusID,
 };
 
 TradeProduct _$TradeProductFromJson(Map<String, dynamic> json) => TradeProduct(

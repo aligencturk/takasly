@@ -629,7 +629,7 @@ class TradeViewModel extends ChangeNotifier {
           
           // Yüklenen takasların detaylarını log'la
           for (var trade in _userTrades) {
-            Logger.info('📋 Yüklenen Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, cancelDesc="${trade.cancelDesc}"', tag: 'TradeViewModel');
+            Logger.info('📋 Yüklenen Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, cancelDesc="${trade.cancelDesc}", senderStatusID=${trade.senderStatusID}, receiverStatusID=${trade.receiverStatusID}', tag: 'TradeViewModel');
           }
         } else {
           // 410 durumunda data null olabilir, boş liste kullan

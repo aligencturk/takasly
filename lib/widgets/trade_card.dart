@@ -275,59 +275,25 @@ class TradeCard extends StatelessWidget {
     }
   }
 
-  /// isConfirm alanına göre benim ürünümü belirle
+  /// Benim ürünümü belirle (myProduct her zaman benim ürünüm)
   TradeProduct? _getMyProduct() {
-    // isConfirm: true -> Gönderen (sender), myProduct kullanıcının ürünü
-    // isConfirm: false -> Alıcı (receiver), myProduct kullanıcının ürünü
-    TradeProduct? result;
-    if (trade.isConfirm == true) {
-      result = trade.myProduct; // Gönderen ise myProduct benim ürünüm
-    } else if (trade.isConfirm == false) {
-      result = trade.theirProduct; // Alıcı ise myProduct benim ürünüm
-    } else {
-      // isConfirm null ise varsayılan olarak myProduct'ı kullan
-      result = trade.myProduct;
-    }
-    
-                                Logger.debug('_getMyProduct: isConfirm=${trade.isConfirm}', tag: 'TradeCard');
-    return result;
+    // myProduct her zaman benim ürünüm
+    return trade.myProduct;
   }
 
-  /// isConfirm alanına göre karşı tarafın ürününü belirle
+  /// Karşı tarafın ürününü belirle (theirProduct her zaman karşı tarafın ürünü)
   TradeProduct? _getTheirProduct() {
-    // isConfirm: true -> Gönderen (sender), theirProduct karşı tarafın ürünü
-    // isConfirm: false -> Alıcı (receiver), myProduct karşı tarafın ürünü
-    TradeProduct? result;
-    if (trade.isConfirm == true) {
-      result = trade.theirProduct; // Gönderen ise theirProduct karşı tarafın ürünü
-    } else if (trade.isConfirm == false) {
-      result = trade.myProduct; // Alıcı ise myProduct karşı tarafın ürünü
-    } else {
-      // isConfirm null ise varsayılan olarak theirProduct'ı kullan
-      result = trade.theirProduct;
-    }
-    
-                                Logger.debug('_getTheirProduct: isConfirm=${trade.isConfirm}', tag: 'TradeCard');
-    return result;
+    // theirProduct her zaman karşı tarafın ürünü
+    return trade.theirProduct;
   }
 
-  /// isConfirm alanına göre benim ürünümün etiketini belirle
+  /// Benim ürünümün etiketini belirle
   String _getMyProductLabel() {
-    if (trade.isConfirm == true) {
-      return 'Benim Ürünüm (Gönderen)';
-    } else if (trade.isConfirm == false) {
-      return 'Benim Ürünüm (Alıcı)';
-    }
     return 'Benim Ürünüm';
   }
 
-  /// isConfirm alanına göre karşı tarafın ürününün etiketini belirle
+  /// Karşı tarafın ürününün etiketini belirle
   String _getTheirProductLabel() {
-    if (trade.isConfirm == true) {
-      return 'Karşı Tarafın Ürünü (Alıcı)';
-    } else if (trade.isConfirm == false) {
-      return 'Karşı Tarafın Ürünü (Gönderen)';
-    }
     return 'Karşı Tarafın Ürünü';
   }
 
@@ -335,11 +301,12 @@ class TradeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     
-    // isConfirm alanına göre gönderen/alıcı belirleme
-    // isConfirm: true -> Gönderen (sender)
-    // isConfirm: false -> Alıcı (receiver)
-    final isSender = trade.isConfirm == true;
-    final isReceiver = trade.isConfirm == false;
+    // isConfirm artık kullanıcının onay/red kararını belirtiyor
+    // isConfirm: 1 -> Kullanıcı onayladı
+    // isConfirm: 0 -> Kullanıcı reddetti
+    // isConfirm: null -> Henüz karar vermedi
+    final hasConfirmed = trade.isConfirm == 1;
+    final hasRejected = trade.isConfirm == 0;
     
     // Debug log'lar sürekli tekrarlanmasını önlemek için kaldırıldı
     
@@ -462,8 +429,8 @@ class TradeCard extends StatelessWidget {
                             Logger.debug('  • statusID: ${trade.statusID}', tag: 'TradeCard');
                             Logger.debug('  • isConfirm: ${trade.isConfirm}', tag: 'TradeCard');
                             Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
-                            Logger.debug('  • isSender: $isSender', tag: 'TradeCard');
-                            Logger.debug('  • isReceiver: $isReceiver', tag: 'TradeCard');
+                            Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
+                            Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
                             return Container(); // Boş container döndür
                           },
                         ),
@@ -479,8 +446,8 @@ class TradeCard extends StatelessWidget {
                             Logger.debug('  • statusID: ${trade.statusID}', tag: 'TradeCard');
                             Logger.debug('  • isConfirm: ${trade.isConfirm}', tag: 'TradeCard');
                             Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
-                            Logger.debug('  • isSender: $isSender', tag: 'TradeCard');
-                            Logger.debug('  • isReceiver: $isReceiver', tag: 'TradeCard');
+                            Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
+                            Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
                             return Container(); // Boş container döndür
                           },
                         ),
@@ -489,9 +456,9 @@ class TradeCard extends StatelessWidget {
                           _buildActionButtons(context)
                         else if (showButtons == false)
                           _buildApiMessageWidget(context, tradeViewModel)
-                        else if (showButtons == null && isReceiver)
+                        else if (showButtons == null && !hasConfirmed && !hasRejected)
                           _buildActionButtons(context)
-                        else if (showButtons == null && isSender)
+                        else if (showButtons == null && (hasConfirmed || hasRejected))
                           _buildApiMessageWidget(context, tradeViewModel)
                         else
                           _buildApiMessageWidget(context, tradeViewModel)
