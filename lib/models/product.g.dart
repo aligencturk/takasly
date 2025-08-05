@@ -6,7 +6,64 @@ part of 'product.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-
+Product _$ProductFromJson(Map<String, dynamic> json) => Product(
+  id: json['id'] as String,
+  title: json['title'] as String,
+  description: json['description'] as String,
+  images: (json['images'] as List<dynamic>).map((e) => e as String).toList(),
+  categoryId: json['categoryId'] as String,
+  catname: json['catname'] as String,
+  category: Category.fromJson(json['category'] as Map<String, dynamic>),
+  parentCategoryId: json['parentCategoryId'] as String?,
+  parentCategoryName: json['parentCategoryName'] as String?,
+  grandParentCategoryId: json['grandParentCategoryId'] as String?,
+  grandParentCategoryName: json['grandParentCategoryName'] as String?,
+  mainCategoryId: json['mainCategoryId'] as String?,
+  mainCategoryName: json['mainCategoryName'] as String?,
+  subCategoryId: json['subCategoryId'] as String?,
+  subCategoryName: json['subCategoryName'] as String?,
+  condition: json['condition'] as String,
+  brand: json['brand'] as String?,
+  model: json['model'] as String?,
+  estimatedValue: (json['estimatedValue'] as num?)?.toDouble(),
+  ownerId: json['ownerId'] as String,
+  owner: User.fromJson(json['owner'] as Map<String, dynamic>),
+  tradePreferences: (json['tradePreferences'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  status: $enumDecode(_$ProductStatusEnumMap, json['status']),
+  cityId: json['cityId'] as String,
+  cityTitle: json['cityTitle'] as String,
+  districtId: json['districtId'] as String,
+  districtTitle: json['districtTitle'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  expiresAt: json['expiresAt'] == null
+      ? null
+      : DateTime.parse(json['expiresAt'] as String),
+  productImage: json['productImage'] as String?,
+  productGallery: (json['productGallery'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  productCondition: json['productCondition'] as String?,
+  tradeFor: json['tradeFor'] as String?,
+  categoryList: (json['categoryList'] as List<dynamic>?)
+      ?.map((e) => Category.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  userFullname: json['userFullname'] as String?,
+  userFirstname: json['userFirstname'] as String?,
+  userLastname: json['userLastname'] as String?,
+  userPhone: json['userPhone'] as String?,
+  proView: json['proView'] as String?,
+  isShowContact: json['isShowContact'] as bool?,
+  isFavorite: json['isFavorite'] as bool?,
+  isSponsor: json['isSponsor'] as bool?,
+  isTrade: json['isTrade'] as bool?,
+  productLat: json['productLat'] as String?,
+  productLong: json['productLong'] as String?,
+  productCode: json['productCode'] as String?,
+  favoriteCount: (json['favoriteCount'] as num?)?.toInt(),
+);
 
 Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'id': instance.id,

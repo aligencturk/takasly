@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import '../utils/logger.dart';
 
 part 'user_profile_detail.g.dart';
 
@@ -30,13 +31,22 @@ class UserProfileDetail {
 
   factory UserProfileDetail.fromJson(Map<String, dynamic> json) {
     try {
+      // API'den gelen farklı field isimlerini kontrol et
+      final isApproved = json['isApproved'] ?? 
+                        json['userApproved'] ?? 
+                        json['verified'] ?? 
+                        json['isVerified'] ?? 
+                        false;
+      
+      Logger.debug('🔍 UserProfileDetail.fromJson - isApproved: $isApproved', tag: 'UserProfileDetail');
+      
       return UserProfileDetail(
-        userID: json['userID'] ?? 0,
-        userFullname: json['userFullname'] ?? '',
-        userImage: json['userImage'],
-        memberSince: json['memberSince'] ?? '',
-        averageRating: (json['averageRating'] ?? 0.0).toDouble(),
-        totalReviews: json['totalReviews'] ?? 0,
+        userID: json['userID'] ?? json['id'] ?? 0,
+        userFullname: json['userFullname'] ?? json['fullName'] ?? json['name'] ?? '',
+        userImage: json['userImage'] ?? json['profileImage'] ?? json['avatar'],
+        memberSince: json['memberSince'] ?? json['createdAt'] ?? '',
+        averageRating: (json['averageRating'] ?? json['rating'] ?? 0.0).toDouble(),
+        totalReviews: json['totalReviews'] ?? json['reviewCount'] ?? 0,
         products: (json['products'] as List<dynamic>?)
                 ?.map((e) => ProfileProduct.fromJson(e as Map<String, dynamic>))
                 .toList() ??
@@ -49,10 +59,10 @@ class UserProfileDetail {
                 ?.map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
-        isApproved: json['isApproved'] ?? false,
+        isApproved: isApproved,
       );
     } catch (e) {
-      print('⚠️ UserProfileDetail.fromJson - Parse error: $e');
+      Logger.error('⚠️ UserProfileDetail.fromJson - Parse error: $e', tag: 'UserProfileDetail');
       return UserProfileDetail(
         userID: 0,
         userFullname: 'Kullanıcı',

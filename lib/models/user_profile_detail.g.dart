@@ -46,6 +46,21 @@ ProfileProduct _$ProfileProductFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String,
       mainImage: json['mainImage'] as String?,
       isFavorite: json['isFavorite'] as bool,
+      description: json['description'] as String?,
+      categoryName: json['categoryName'] as String?,
+      condition: json['condition'] as String?,
+      brand: json['brand'] as String?,
+      model: json['model'] as String?,
+      estimatedValue: (json['estimatedValue'] as num?)?.toDouble(),
+      cityTitle: json['cityTitle'] as String?,
+      districtTitle: json['districtTitle'] as String?,
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
+      productCode: json['productCode'] as String?,
+      favoriteCount: (json['favoriteCount'] as num?)?.toInt(),
+      isTrade: json['isTrade'] as bool?,
+      isSponsor: json['isSponsor'] as bool?,
     );
 
 Map<String, dynamic> _$ProfileProductToJson(ProfileProduct instance) =>
@@ -54,6 +69,19 @@ Map<String, dynamic> _$ProfileProductToJson(ProfileProduct instance) =>
       'title': instance.title,
       'mainImage': instance.mainImage,
       'isFavorite': instance.isFavorite,
+      'description': instance.description,
+      'categoryName': instance.categoryName,
+      'condition': instance.condition,
+      'brand': instance.brand,
+      'model': instance.model,
+      'estimatedValue': instance.estimatedValue,
+      'cityTitle': instance.cityTitle,
+      'districtTitle': instance.districtTitle,
+      'createdAt': instance.createdAt?.toIso8601String(),
+      'productCode': instance.productCode,
+      'favoriteCount': instance.favoriteCount,
+      'isTrade': instance.isTrade,
+      'isSponsor': instance.isSponsor,
     };
 
 ProfileReview _$ProfileReviewFromJson(Map<String, dynamic> json) =>

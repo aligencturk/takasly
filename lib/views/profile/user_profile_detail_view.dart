@@ -286,7 +286,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                              ),
                              const SizedBox(width: 4),
                              Text(
-                               'Doğrulanmamış',
+                               "${profile.isApproved ? ' Doğrulanmamış' : 'Doğrulanmış'}",
                                style: TextStyle(
                                  fontSize: 11,
                                  fontWeight: FontWeight.w500,
@@ -362,17 +362,17 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(5),
       color: Colors.white,
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.75,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.62,
         ),
         itemCount: profile.products.length,
         itemBuilder: (context, index) {

@@ -171,6 +171,11 @@ class _RegisterFormState extends State<_RegisterForm> {
     }
 
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    
+    Logger.debug('🚀 Kayıt işlemi başlatılıyor...', tag: 'RegisterView');
+    Logger.debug('📧 Email: ${_emailController.text.trim()}', tag: 'RegisterView');
+    Logger.debug('📱 Telefon: ${_phoneController.text.trim()}', tag: 'RegisterView');
+    
     final success = await authViewModel.register(
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
@@ -181,45 +186,51 @@ class _RegisterFormState extends State<_RegisterForm> {
       kvkk: _acceptKvkk,
     );
 
+    Logger.debug('📊 Kayıt sonucu: $success', tag: 'RegisterView');
+    Logger.debug('❌ AuthViewModel error: ${authViewModel.errorMessage}', tag: 'RegisterView');
+    Logger.debug('👤 Current user: ${authViewModel.currentUser?.name}', tag: 'RegisterView');
+
     if (mounted) {
       if (success) {
         // Kayıt başarılıysa önce doğrulama kodu gönder ve codeToken al
-        Logger.debug('Kayıt başarılı, doğrulama kodu gönderiliyor...', tag: 'RegisterView');
+        Logger.debug('✅ Kayıt başarılı, doğrulama kodu gönderiliyor...', tag: 'RegisterView');
         
         // Önce email ile deneyelim
         var resendResponse = await authViewModel.resendEmailVerificationCode(
           email: _emailController.text.trim(),
         );
         
+        Logger.debug('📧 Email ile resend response: $resendResponse', tag: 'RegisterView');
+        
         // Eğer başarısız olursa, token ile deneyelim
         if (resendResponse == null) {
-          Logger.debug('Email ile resend başarısız, token ile deneyelim...', tag: 'RegisterView');
+          Logger.debug('⚠️ Email ile resend başarısız, token ile deneyelim...', tag: 'RegisterView');
           
           final user = authViewModel.currentUser;
-          Logger.debug('Current user: ${user?.name}', tag: 'RegisterView');
-          Logger.debug('User token: ${user?.token?.substring(0, 10)}...', tag: 'RegisterView');
+          Logger.debug('👤 Current user: ${user?.name}', tag: 'RegisterView');
+          Logger.debug('🔑 User token: ${user?.token?.substring(0, 10)}...', tag: 'RegisterView');
           
           if (user != null && user.token != null && user.token!.isNotEmpty) {
             resendResponse = await authViewModel.resendEmailVerificationCodeWithToken(
               userToken: user.token!,
             );
-            Logger.debug('Token ile resend response: $resendResponse', tag: 'RegisterView');
+            Logger.debug('🔑 Token ile resend response: $resendResponse', tag: 'RegisterView');
           } else {
-            Logger.warning('User token bulunamadı', tag: 'RegisterView');
+            Logger.warning('⚠️ User token bulunamadı', tag: 'RegisterView');
           }
         }
         
-        Logger.debug('Resend response: $resendResponse', tag: 'RegisterView');
-        Logger.debug('AuthViewModel error: ${authViewModel.errorMessage}', tag: 'RegisterView');
+        Logger.debug('📊 Final resend response: $resendResponse', tag: 'RegisterView');
+        Logger.debug('❌ AuthViewModel error: ${authViewModel.errorMessage}', tag: 'RegisterView');
         
         String codeToken = 'temp_code_token';
         
         if (resendResponse != null && resendResponse.containsKey('codeToken')) {
           codeToken = resendResponse['codeToken'].toString();
-          Logger.debug('Gerçek codeToken alındı: ${codeToken.substring(0, 10)}...', tag: 'RegisterView');
+          Logger.debug('✅ Gerçek codeToken alındı: ${codeToken.substring(0, 10)}...', tag: 'RegisterView');
         } else {
-          Logger.warning('codeToken alınamadı, geçici değer kullanılıyor', tag: 'RegisterView');
-          Logger.debug('ResendResponse keys: ${resendResponse?.keys.toList()}', tag: 'RegisterView');
+          Logger.warning('⚠️ codeToken alınamadı, geçici değer kullanılıyor', tag: 'RegisterView');
+          Logger.debug('📋 ResendResponse keys: ${resendResponse?.keys.toList()}', tag: 'RegisterView');
         }
         
         Navigator.of(context).pushReplacementNamed(
@@ -230,9 +241,16 @@ class _RegisterFormState extends State<_RegisterForm> {
           },
         );
       } else {
-        _showErrorSnackBar(
-          authViewModel.errorMessage ?? 'Kayıt başarısız oldu.',
-        );
+        // Hata mesajını daha detaylı göster
+        String errorMessage = authViewModel.errorMessage ?? 'Kayıt başarısız oldu.';
+        Logger.error('❌ Kayıt hatası: $errorMessage', tag: 'RegisterView');
+        
+        // Eğer "Bilinmeyen bir hata oluştu" ise daha açıklayıcı mesaj ver
+        if (errorMessage == 'Bilinmeyen bir hata oluştu') {
+          errorMessage = 'Kayıt işlemi sırasında bir sorun oluştu. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.';
+        }
+        
+        _showErrorSnackBar(errorMessage);
       }
     }
   }

@@ -141,7 +141,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         return;
       }
       
-      // Eğer trade'de yoksa, ürün mesajlarını kontrol et
+      // Eğer trade'de ürün yoksa, ürün mesajlarını kontrol et
       final chatViewModel = context.read<ChatViewModel>();
       final productMsgs = chatViewModel.messages.where(
         (m) => m.type == MessageType.product && m.product != null,
@@ -173,6 +173,11 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     if (_isDisposed) return;
     
     try {
+      // Eğer chat'in üst kısmında zaten bir ürün varsa (trade'den gelen), mesajlardan ürün alma
+      if (_chatProduct != null) {
+        return;
+      }
+      
       final chatViewModel = context.read<ChatViewModel>();
       final productMsgs = chatViewModel.messages.where(
         (m) => m.type == MessageType.product && m.product != null,
@@ -819,9 +824,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       // Mesaj gönderildi flag'ini set et
       _hasMessageSent = true;
       
-      // Chat'e ait ürün bilgisini güncelle
-      _chatProduct = product;
-      if (!_isDisposed) setState(() {});
+      // Chat'e ait ürün bilgisini güncelleme kaldırıldı - bu chat'in üst kısmındaki ürün kartının değişmesine neden oluyordu
+      // _chatProduct = product;
+      // if (!_isDisposed) setState(() {});
       
       // Ürün mesajı gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -846,9 +851,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         senderId: authViewModel.currentUser!.id,
       );
       
-      // Chat'e ait ürün bilgisini güncelle
-      _chatProduct = product;
-      if (!_isDisposed) setState(() {});
+      // Chat'e ait ürün bilgisini güncelleme kaldırıldı - bu chat'in üst kısmındaki ürün kartının değişmesine neden oluyordu
+      // _chatProduct = product;
+      // if (!_isDisposed) setState(() {});
       
       // Sonra seçilen mesajı gönder
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -1050,9 +1055,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           Expanded(
             child: Consumer<ChatViewModel>(
               builder: (context, chatViewModel, child) {
-                // Mesajlar yüklendiğinde ürün bilgisini güncelle
+                // Mesajlar yüklendiğinde ürün bilgisini güncelle (sadece chat'in üst kısmında ürün yoksa)
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!_isDisposed) {
+                  if (!_isDisposed && _chatProduct == null) {
                     _updateChatProductFromMessages();
                   }
                 });
