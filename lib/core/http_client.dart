@@ -11,6 +11,7 @@ class HttpClient {
   HttpClient._internal();
 
   static const Duration _timeout = Duration(seconds: 30);
+  static bool _isHandlingForbiddenError = false; // 403 hata kontrolü için
 
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
@@ -29,6 +30,13 @@ class HttpClient {
   }
 
   Future<void> _handleUnauthorized() async {
+    // Eğer zaten işlem yapılıyorsa çık
+    if (_isHandlingForbiddenError) {
+      print('⚠️ HttpClient: 401 error handler already running, skipping...');
+      return;
+    }
+    
+    _isHandlingForbiddenError = true;
     print('🚨 401 Unauthorized - Clearing user data and forcing logout');
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -41,10 +49,23 @@ class HttpClient {
       ErrorHandlerService.handleUnauthorizedError(null);
     } catch (e) {
       print('❌ Error clearing user data: $e');
+    } finally {
+      // İşlem tamamlandıktan sonra flag'i sıfırla
+      Future.delayed(const Duration(seconds: 3), () {
+        _isHandlingForbiddenError = false;
+        print('✅ HttpClient: 401 error handler flag reset');
+      });
     }
   }
 
   Future<void> _handleForbidden() async {
+    // Eğer zaten işlem yapılıyorsa çık
+    if (_isHandlingForbiddenError) {
+      print('⚠️ HttpClient: 403 error handler already running, skipping...');
+      return;
+    }
+    
+    _isHandlingForbiddenError = true;
     print('🚨 403 Forbidden - Clearing user data and forcing logout');
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -57,6 +78,12 @@ class HttpClient {
       ErrorHandlerService.handleForbiddenError(null);
     } catch (e) {
       print('❌ Error clearing user data for 403: $e');
+    } finally {
+      // İşlem tamamlandıktan sonra flag'i sıfırla
+      Future.delayed(const Duration(seconds: 3), () {
+        _isHandlingForbiddenError = false;
+        print('✅ HttpClient: 403 error handler flag reset');
+      });
     }
   }
 

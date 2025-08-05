@@ -12,9 +12,19 @@ class ErrorHandlerService {
 
   // Global navigator key
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  
+  // Sonsuz döngüyü önlemek için flag
+  static bool _isHandlingForbiddenError = false;
 
   // 403 hatası durumunda otomatik logout ve login'e yönlendirme
   static void handleForbiddenError(BuildContext? context) {
+    // Eğer zaten işlem yapılıyorsa çık
+    if (_isHandlingForbiddenError) {
+      Logger.warning('⚠️ 403 error handler already running, skipping...');
+      return;
+    }
+    
+    _isHandlingForbiddenError = true;
     Logger.warning('🚨 Global 403 Forbidden error handler triggered');
     
     try {
@@ -66,6 +76,12 @@ class ErrorHandlerService {
       }
     } catch (e) {
       Logger.error('❌ Error in global 403 handler: $e', error: e);
+    } finally {
+      // İşlem tamamlandıktan sonra flag'i sıfırla
+      Future.delayed(const Duration(seconds: 2), () {
+        _isHandlingForbiddenError = false;
+        Logger.info('✅ 403 error handler flag reset');
+      });
     }
   }
 
@@ -84,6 +100,13 @@ class ErrorHandlerService {
 
   // 401 hatası durumunda otomatik logout ve login'e yönlendirme
   static void handleUnauthorizedError(BuildContext? context) {
+    // Eğer zaten işlem yapılıyorsa çık
+    if (_isHandlingForbiddenError) {
+      Logger.warning('⚠️ Unauthorized error handler already running, skipping...');
+      return;
+    }
+    
+    _isHandlingForbiddenError = true;
     Logger.warning('🚨 Global 401 Unauthorized error handler triggered');
     
     try {
@@ -110,6 +133,12 @@ class ErrorHandlerService {
       }
     } catch (e) {
       Logger.error('❌ Error in global 401 handler: $e', error: e);
+    } finally {
+      // İşlem tamamlandıktan sonra flag'i sıfırla
+      Future.delayed(const Duration(seconds: 2), () {
+        _isHandlingForbiddenError = false;
+        Logger.info('✅ Unauthorized error handler flag reset');
+      });
     }
   }
 } 

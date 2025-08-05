@@ -7,6 +7,7 @@ import 'package:takasly/views/auth/login_view.dart';
 import 'package:takasly/viewmodels/auth_viewmodel.dart';
 import 'package:video_player/video_player.dart';
 import 'package:takasly/utils/logger.dart';
+import 'package:takasly/core/constants.dart';
 
 class SplashVideoPage extends StatefulWidget {
   @override
@@ -76,8 +77,55 @@ Future<void> _checkAuthAndNavigate() async {
       }
     }
     
-    // Normal durum veya hot restart'ta giriş yapılmamışsa login'e yönlendir
-    Logger.info('🔒 SplashView - Navigating to login (normal startup or no valid session)');
+    // Normal başlangıç durumunda da otomatik giriş kontrolü yap
+    Logger.info('🔍 SplashView - Checking for existing login session...');
+    
+    // SharedPreferences'dan token ve user ID kontrolü yap
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(AppConstants.userTokenKey);
+    final userId = prefs.getString(AppConstants.userIdKey);
+    final userData = prefs.getString(AppConstants.userDataKey);
+    
+    Logger.info('🔍 SplashView - Token: ${token?.substring(0, token.length > 10 ? 10 : token.length)}..., UserID: $userId, UserData: ${userData?.length ?? 0} chars');
+    
+    // Eğer geçerli token ve user data varsa otomatik giriş yap
+    if (token != null && token.isNotEmpty && 
+        userId != null && userId.isNotEmpty && userId != '0' &&
+        userData != null && userData.isNotEmpty) {
+      
+      Logger.info('✅ SplashView - Valid session found, attempting auto-login...');
+      
+      try {
+        // AuthViewModel'i güncelle
+        await authViewModel.enableHotRestartAutoLogin();
+        
+        // Kullanıcı bilgilerini yükle
+        final isLoggedIn = await authViewModel.isLoggedInAsync;
+        
+        if (isLoggedIn && authViewModel.currentUser != null && authViewModel.currentUser!.id.isNotEmpty) {
+          Logger.info('✅ SplashView - Auto-login successful, navigating to home');
+          
+          if (!mounted) {
+            Logger.warning('⚠️ SplashView - Widget is no longer mounted after auto-login');
+            return;
+          }
+          
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomeView()),
+          );
+          return;
+        } else {
+          Logger.warning('⚠️ SplashView - Auto-login failed, user data invalid');
+        }
+      } catch (e) {
+        Logger.error('❌ SplashView - Auto-login error: $e', error: e);
+      }
+    } else {
+      Logger.info('❌ SplashView - No valid session found');
+    }
+    
+    // Otomatik giriş başarısızsa veya geçerli session yoksa login'e yönlendir
+    Logger.info('🔒 SplashView - Navigating to login (no valid session or auto-login failed)');
     
     // Widget'ın hala aktif olup olmadığını kontrol et
     if (!mounted) {
@@ -111,14 +159,14 @@ Future<bool> _checkIfHotRestart() async {
   try {
     // SharedPreferences'dan bir flag kontrol et
     final prefs = await SharedPreferences.getInstance();
-    final lastAppStart = prefs.getInt('last_app_start') ?? 0;
+    final lastAppStart = prefs.getInt(AppConstants.lastAppStartKey) ?? 0;
     final currentTime = DateTime.now().millisecondsSinceEpoch;
     
     // Eğer son uygulama başlatma zamanı 10 saniye içindeyse hot restart olabilir
     final isHotRestart = (currentTime - lastAppStart) < 10000; // 10 saniye
     
     // Şimdiki zamanı kaydet
-    await prefs.setInt('last_app_start', currentTime);
+    await prefs.setInt(AppConstants.lastAppStartKey, currentTime);
     
     Logger.info('🔍 SplashView - Hot restart check: $isHotRestart (time diff: ${currentTime - lastAppStart}ms)');
     

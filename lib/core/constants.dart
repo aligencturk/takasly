@@ -100,6 +100,7 @@ class AppConstants {
   static const String userTokenKey = 'user_token';
   static const String userIdKey = 'user_id';
   static const String userDataKey = 'user_data';
+  static const String lastAppStartKey = 'last_app_start';
 
   // Validation
   static const int minPasswordLength = 6;

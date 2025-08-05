@@ -6,6 +6,7 @@ import '../services/firebase_chat_service.dart';
 import '../core/constants.dart';
 import 'product_viewmodel.dart';
 import '../utils/logger.dart';
+import '../services/error_handler_service.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -18,6 +19,7 @@ class AuthViewModel extends ChangeNotifier {
   String? _errorMessage;
   bool _isInitialized = false; // Hot reload kontrolü için
   bool _isHotRestart = false; // Hot restart kontrolü için
+  bool _isHandlingForbiddenError = false; // 403 hata kontrolü için
 
   // ProductViewModel referansını ayarla
   void setProductViewModel(ProductViewModel productViewModel) {
@@ -747,6 +749,13 @@ class AuthViewModel extends ChangeNotifier {
 
   // 403 hatası durumunda otomatik logout
   Future<void> handleForbiddenError() async {
+    // Eğer zaten işlem yapılıyorsa çık
+    if (_isHandlingForbiddenError) {
+      Logger.warning('⚠️ AuthViewModel: 403 error handler already running, skipping...');
+      return;
+    }
+    
+    _isHandlingForbiddenError = true;
     Logger.warning('🚨 403 Forbidden error detected - Auto logout');
     
     // Token'ı temizle
@@ -765,6 +774,20 @@ class AuthViewModel extends ChangeNotifier {
     _isInitialized = false;
     _clearError();
     notifyListeners();
+    
+    // Global error handler'ı çağır
+    try {
+      ErrorHandlerService.handleForbiddenError(null);
+      Logger.info('✅ Global error handler called for 403 error');
+    } catch (e) {
+      Logger.error('❌ Error calling global error handler: $e', error: e);
+    }
+    
+    // İşlem tamamlandıktan sonra flag'i sıfırla
+    Future.delayed(const Duration(seconds: 3), () {
+      _isHandlingForbiddenError = false;
+      Logger.info('✅ AuthViewModel: 403 error handler flag reset');
+    });
   }
 
   bool _isValidEmail(String email) {

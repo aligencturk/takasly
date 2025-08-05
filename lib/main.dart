@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'core/app_theme.dart';
 import 'core/constants.dart';
 import 'services/cache_service.dart';
+import 'services/error_handler_service.dart';
 import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/product_viewmodel.dart';
 import 'viewmodels/trade_viewmodel.dart';
@@ -119,6 +120,7 @@ class MyApp extends StatelessWidget {
          title: AppConstants.appName,
          debugShowCheckedModeBanner: false,
          theme: AppTheme.lightTheme,
+         navigatorKey: ErrorHandlerService.navigatorKey, // Navigator key ekle
          home: SplashVideoPage(),
                    routes: {
             '/home': (context) => const HomeView(),
