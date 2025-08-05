@@ -14,6 +14,7 @@ import '../product/add_product_view.dart';
 import '../trade/trade_view.dart';
 import '../chat/chat_list_view.dart';
 import '../home/search_view.dart';
+import '../notifications/notification_list_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
@@ -154,8 +155,10 @@ class _HomeViewState extends State<HomeView> {
       case 2:
         return const Center(child: Text('Boş Sayfa'));
       case 3:
-        return const TradeView();
+        return const NotificationListView();
       case 4:
+        return const TradeView();
+      case 5:
         return const ProfileView();
       default:
         return _buildHomeTab();
@@ -430,11 +433,10 @@ class HomeAppBar extends StatelessWidget {
                 child: IconButton(
                   onPressed: () {
                     Logger.debug('Bildirimler ikonuna tıklandı');
-                    // TODO: Bildirimler sayfasına yönlendirme
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Bildirimler yakında eklenecek'),
-                        duration: Duration(seconds: 2),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationListView(),
                       ),
                     );
                   },

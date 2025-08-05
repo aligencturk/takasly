@@ -17,6 +17,7 @@ import 'viewmodels/user_viewmodel.dart';
 import 'viewmodels/ad_viewmodel.dart';
 import 'viewmodels/report_viewmodel.dart';
 import 'viewmodels/user_profile_detail_viewmodel.dart';
+import 'viewmodels/notification_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/home/home_view.dart';
 import 'views/auth/login_view.dart';
@@ -36,6 +37,7 @@ import 'views/trade/trade_detail_view.dart';
 import 'views/trade/start_trade_view.dart';
 import 'views/chat/chat_list_view.dart';
 import 'views/chat/chat_detail_view.dart';
+import 'views/notifications/notification_list_view.dart';
 import 'utils/logger.dart';
 
 
@@ -115,6 +117,7 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => ReportViewModel()),
         ChangeNotifierProvider(create: (_) => UserProfileDetailViewModel()),
+        ChangeNotifierProvider(create: (_) => NotificationViewModel()),
       ],
              child: MaterialApp(
          title: AppConstants.appName,
@@ -133,6 +136,7 @@ class MyApp extends StatelessWidget {
             '/change-password': (context) => const ChangePasswordView(),
             '/trade': (context) => const TradeView(),
             '/chat-list': (context) => const ChatListView(),
+            '/notifications': (context) => const NotificationListView(),
           },
           onGenerateRoute: (settings) {
             Logger.info('🔄 Route oluşturuluyor: ${settings.name}');
