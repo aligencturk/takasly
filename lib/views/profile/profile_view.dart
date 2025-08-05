@@ -834,9 +834,6 @@ class _ProfileViewState extends State<ProfileView>
               Container(
                 width: 72,
                 height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                ),
                 child: user.avatar != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(100),
@@ -845,22 +842,38 @@ class _ProfileViewState extends State<ProfileView>
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            color: Colors.grey[100],
-                            child: const Icon(
-                              Icons.person,
-                              size: 36,
-                              color: Colors.grey,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary,
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: Center(
+                              child: Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           );
                         },
                       ),
                     )
                     : Container(
-                        color: Colors.grey[100],
-                        child: const Icon(
-                          Icons.person,
-                          size: 36,
-                          color: Colors.grey,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Center(
+                          child: Text(
+                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
               ),
