@@ -538,6 +538,12 @@ class ProductService {
               (json['410'] == 'Gone' || json['success'] == true)) {
             final productJson = json['data']?['product'];
             if (productJson != null) {
+              print('🔍 Product Detail - productJson: $productJson');
+              print('🔍 Product Detail - productJson keys: ${productJson.keys.toList()}');
+              print('🔍 Product Detail - userImage field: ${productJson['userImage']}');
+              print('🔍 Product Detail - userAvatar field: ${productJson['userAvatar']}');
+              print('🔍 Product Detail - profileImage field: ${productJson['profileImage']}');
+              print('🔍 Product Detail - avatar field: ${productJson['avatar']}');
               // Yeni API yanıtını Product modeline dönüştür
               return Product.fromJson(productJson);
             }

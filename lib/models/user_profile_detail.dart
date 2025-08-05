@@ -40,9 +40,23 @@ class UserProfileDetail {
       
       Logger.debug('🔍 UserProfileDetail.fromJson - isApproved: $isApproved', tag: 'UserProfileDetail');
       
+      // Kullanıcı adını düzgün şekilde parse et
+      String userFullname = '';
+      if (json['userFullname'] != null && json['userFullname'].toString().isNotEmpty && json['userFullname'].toString() != 'null') {
+        userFullname = json['userFullname'].toString();
+      } else if (json['fullName'] != null && json['fullName'].toString().isNotEmpty && json['fullName'].toString() != 'null') {
+        userFullname = json['fullName'].toString();
+      } else if (json['name'] != null && json['name'].toString().isNotEmpty && json['name'].toString() != 'null') {
+        userFullname = json['name'].toString();
+      } else if (json['firstName'] != null && json['lastName'] != null) {
+        userFullname = '${json['firstName']} ${json['lastName']}'.trim();
+      }
+      
+      Logger.debug('🔍 UserProfileDetail.fromJson - userFullname: $userFullname', tag: 'UserProfileDetail');
+      
       return UserProfileDetail(
         userID: json['userID'] ?? json['id'] ?? 0,
-        userFullname: json['userFullname'] ?? json['fullName'] ?? json['name'] ?? '',
+        userFullname: userFullname,
         userImage: json['userImage'] ?? json['profileImage'] ?? json['avatar'],
         memberSince: json['memberSince'] ?? json['createdAt'] ?? '',
         averageRating: (json['averageRating'] ?? json['rating'] ?? 0.0).toDouble(),
@@ -128,6 +142,7 @@ class ProfileProduct {
   final bool isFavorite;
   // Ek alanlar - endpoint'ten gelen veriler
   final String? description;
+  final String? categoryId; // Kategori ID'si eklendi
   final String? categoryName;
   final String? condition;
   final String? brand;
@@ -147,6 +162,7 @@ class ProfileProduct {
     this.mainImage,
     required this.isFavorite,
     this.description,
+    this.categoryId,
     this.categoryName,
     this.condition,
     this.brand,
@@ -163,13 +179,59 @@ class ProfileProduct {
 
   factory ProfileProduct.fromJson(Map<String, dynamic> json) {
     try {
+      Logger.debug('🔍 ProfileProduct.fromJson - Raw JSON: $json', tag: 'ProfileProduct');
+      Logger.debug('🔍 ProfileProduct.fromJson - Available keys: ${json.keys.toList()}', tag: 'ProfileProduct');
+      
+      // Kategori ID'sini parse et
+      String? categoryId;
+      Logger.debug('🔍 ProfileProduct.fromJson - Checking categoryId fields...', tag: 'ProfileProduct');
+      Logger.debug('🔍 ProfileProduct.fromJson - categoryId: ${json['categoryId']}', tag: 'ProfileProduct');
+      Logger.debug('🔍 ProfileProduct.fromJson - category_id: ${json['category_id']}', tag: 'ProfileProduct');
+      Logger.debug('🔍 ProfileProduct.fromJson - catId: ${json['catId']}', tag: 'ProfileProduct');
+      
+      if (json['categoryId'] != null && json['categoryId'].toString().isNotEmpty && json['categoryId'].toString() != 'null') {
+        categoryId = json['categoryId'].toString();
+        Logger.debug('🔍 ProfileProduct.fromJson - Using categoryId: $categoryId', tag: 'ProfileProduct');
+      } else if (json['category_id'] != null && json['category_id'].toString().isNotEmpty && json['category_id'].toString() != 'null') {
+        categoryId = json['category_id'].toString();
+        Logger.debug('🔍 ProfileProduct.fromJson - Using category_id: $categoryId', tag: 'ProfileProduct');
+      } else if (json['catId'] != null && json['catId'].toString().isNotEmpty && json['catId'].toString() != 'null') {
+        categoryId = json['catId'].toString();
+        Logger.debug('🔍 ProfileProduct.fromJson - Using catId: $categoryId', tag: 'ProfileProduct');
+      } else {
+        Logger.debug('🔍 ProfileProduct.fromJson - No valid categoryId found', tag: 'ProfileProduct');
+      }
+      
+      // Kategori adını düzgün şekilde parse et
+      String? categoryName;
+      Logger.debug('🔍 ProfileProduct.fromJson - Checking categoryName fields...', tag: 'ProfileProduct');
+      Logger.debug('🔍 ProfileProduct.fromJson - categoryName: ${json['categoryName']}', tag: 'ProfileProduct');
+      Logger.debug('🔍 ProfileProduct.fromJson - catname: ${json['catname']}', tag: 'ProfileProduct');
+      Logger.debug('🔍 ProfileProduct.fromJson - category: ${json['category']}', tag: 'ProfileProduct');
+      
+      if (json['categoryName'] != null && json['categoryName'].toString().isNotEmpty && json['categoryName'].toString() != 'null') {
+        categoryName = json['categoryName'].toString();
+        Logger.debug('🔍 ProfileProduct.fromJson - Using categoryName: $categoryName', tag: 'ProfileProduct');
+      } else if (json['catname'] != null && json['catname'].toString().isNotEmpty && json['catname'].toString() != 'null') {
+        categoryName = json['catname'].toString();
+        Logger.debug('🔍 ProfileProduct.fromJson - Using catname: $categoryName', tag: 'ProfileProduct');
+      } else if (json['category'] != null && json['category'].toString().isNotEmpty && json['category'].toString() != 'null') {
+        categoryName = json['category'].toString();
+        Logger.debug('🔍 ProfileProduct.fromJson - Using category: $categoryName', tag: 'ProfileProduct');
+      } else {
+        Logger.debug('🔍 ProfileProduct.fromJson - No valid categoryName found', tag: 'ProfileProduct');
+      }
+      
+      Logger.debug('🔍 ProfileProduct.fromJson - Final categoryId: $categoryId, categoryName: $categoryName', tag: 'ProfileProduct');
+      
       return ProfileProduct(
         productID: json['productID'] ?? json['id'] ?? 0,
         title: json['productTitle'] ?? json['title'] ?? '',
         mainImage: json['productImage'] ?? json['mainImage'] ?? json['image'],
         isFavorite: json['isFavorite'] ?? false,
         description: json['productDesc'] ?? json['description'],
-        categoryName: json['categoryName'] ?? json['catname'] ?? json['category'],
+        categoryId: categoryId,
+        categoryName: categoryName,
         condition: json['productCondition'] ?? json['condition'],
         brand: json['brand'],
         model: json['model'],
@@ -183,7 +245,7 @@ class ProfileProduct {
         isSponsor: json['isSponsor'] ?? json['sponsor'],
       );
     } catch (e) {
-      print('⚠️ ProfileProduct.fromJson - Parse error: $e');
+      Logger.error('⚠️ ProfileProduct.fromJson - Parse error: $e', tag: 'ProfileProduct');
       return ProfileProduct(
         productID: 0,
         title: 'Ürün',
@@ -200,6 +262,7 @@ class ProfileProduct {
     String? mainImage,
     bool? isFavorite,
     String? description,
+    String? categoryId,
     String? categoryName,
     String? condition,
     String? brand,
@@ -219,6 +282,7 @@ class ProfileProduct {
       mainImage: mainImage ?? this.mainImage,
       isFavorite: isFavorite ?? this.isFavorite,
       description: description ?? this.description,
+      categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
       condition: condition ?? this.condition,
       brand: brand ?? this.brand,

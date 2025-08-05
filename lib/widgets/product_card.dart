@@ -25,6 +25,12 @@ class ProductCard extends StatelessWidget {
   });
 
   String _getCategoryDisplayName(Product product, BuildContext context) {
+    // Debug: Kategori bilgilerini logla
+    Logger.debug('🔍 ProductCard._getCategoryDisplayName - Product: ${product.title}', tag: 'ProductCard');
+    Logger.debug('🔍 ProductCard._getCategoryDisplayName - categoryId: ${product.categoryId}', tag: 'ProductCard');
+    Logger.debug('🔍 ProductCard._getCategoryDisplayName - catname: ${product.catname}', tag: 'ProductCard');
+    Logger.debug('🔍 ProductCard._getCategoryDisplayName - category.name: ${product.category?.name}', tag: 'ProductCard');
+    
     // 3 katmanlı kategori sisteminde öncelik sırası:
     // 1. Ana kategori adı (mainCategoryName)
     if (product.mainCategoryName != null &&
@@ -32,6 +38,7 @@ class ProductCard extends StatelessWidget {
         product.mainCategoryName != 'null' &&
         product.mainCategoryName != 'Kategori' &&
         product.mainCategoryName != 'Kategori Yok') {
+      Logger.debug('🔍 ProductCard._getCategoryDisplayName - Using mainCategoryName: ${product.mainCategoryName}', tag: 'ProductCard');
       return product.mainCategoryName!;
     }
 
@@ -41,6 +48,7 @@ class ProductCard extends StatelessWidget {
         product.parentCategoryName != 'null' &&
         product.parentCategoryName != 'Kategori' &&
         product.parentCategoryName != 'Kategori Yok') {
+      Logger.debug('🔍 ProductCard._getCategoryDisplayName - Using parentCategoryName: ${product.parentCategoryName}', tag: 'ProductCard');
       return product.parentCategoryName!;
     }
 
@@ -50,6 +58,7 @@ class ProductCard extends StatelessWidget {
         product.subCategoryName != 'null' &&
         product.subCategoryName != 'Kategori' &&
         product.subCategoryName != 'Kategori Yok') {
+      Logger.debug('🔍 ProductCard._getCategoryDisplayName - Using subCategoryName: ${product.subCategoryName}', tag: 'ProductCard');
       return product.subCategoryName!;
     }
 
@@ -57,6 +66,7 @@ class ProductCard extends StatelessWidget {
     if (product.catname.isNotEmpty &&
         product.catname != 'null' &&
         product.catname != 'Kategori') {
+      Logger.debug('🔍 ProductCard._getCategoryDisplayName - Using catname: ${product.catname}', tag: 'ProductCard');
       return product.catname;
     }
 
@@ -65,6 +75,7 @@ class ProductCard extends StatelessWidget {
         product.category.name.isNotEmpty &&
         product.category.name != 'Kategori' &&
         product.category.name != 'Kategori Yok') {
+      Logger.debug('🔍 ProductCard._getCategoryDisplayName - Using category.name: ${product.category.name}', tag: 'ProductCard');
       return product.category.name;
     }
 
@@ -72,10 +83,12 @@ class ProductCard extends StatelessWidget {
     final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
     final categoryName = productViewModel.getCategoryNameById(product.categoryId);
     if (categoryName != 'Kategori Yok') {
+      Logger.debug('🔍 ProductCard._getCategoryDisplayName - Using ProductViewModel category: $categoryName', tag: 'ProductCard');
       return categoryName;
     }
     
     // 7. Eğer hiçbir kategori bulunamazsa, en azından "Kategori" yazısını göster
+    Logger.debug('🔍 ProductCard._getCategoryDisplayName - No valid category found, using default: Kategori', tag: 'ProductCard');
     return 'Kategori';
   }
 

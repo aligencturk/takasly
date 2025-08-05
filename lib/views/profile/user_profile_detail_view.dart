@@ -49,6 +49,18 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       userToken: widget.userToken,
       userId: widget.userId,
     );
+    
+    // Debug: Profil detaylarını logla
+    if (_viewModel.profileDetail != null) {
+      Logger.debug('Profile loaded - userFullname: ${_viewModel.profileDetail!.userFullname}', tag: 'UserProfileDetailView');
+      Logger.debug('Profile loaded - products count: ${_viewModel.profileDetail!.products.length}', tag: 'UserProfileDetailView');
+      
+      // İlk ürünün kategori bilgisini logla
+      if (_viewModel.profileDetail!.products.isNotEmpty) {
+        final firstProduct = _viewModel.profileDetail!.products.first;
+        Logger.debug('First product - categoryId: ${firstProduct.categoryId}, categoryName: ${firstProduct.categoryName}', tag: 'UserProfileDetailView');
+      }
+    }
   }
 
   void _showReportDialog() {
@@ -93,7 +105,9 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
           backgroundColor: Colors.white,
           foregroundColor: Colors.black87,
           title: Text(
-            '${_viewModel.profileDetail?.userFullname}',
+            _viewModel.profileDetail?.userFullname?.isNotEmpty == true 
+                ? _viewModel.profileDetail!.userFullname 
+                : 'Kullanıcı',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -245,7 +259,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                 children: [
                   Flexible(
                     child: Text(
-                      profile.userFullname,
+                      profile.userFullname.isNotEmpty ? profile.userFullname : 'Kullanıcı',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -356,10 +370,30 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
 
   // ProfileProduct'ı Product'a dönüştüren yardımcı fonksiyon
   Product _convertProfileProductToProduct(ProfileProduct profileProduct) {
+    // Kategori ID'sini al
+    String categoryId = '0';
+    if (profileProduct.categoryId != null && 
+        profileProduct.categoryId!.isNotEmpty && 
+        profileProduct.categoryId != 'null' &&
+        profileProduct.categoryId != '0') {
+      categoryId = profileProduct.categoryId!;
+    }
+    
+    // Kategori adını düzgün şekilde al
+    String categoryName = 'Kategori';
+    if (profileProduct.categoryName != null && 
+        profileProduct.categoryName!.isNotEmpty && 
+        profileProduct.categoryName != 'null' &&
+        profileProduct.categoryName != 'Kategori') {
+      categoryName = profileProduct.categoryName!;
+    }
+    
+    Logger.debug('Converting product: ${profileProduct.title} - CategoryId: $categoryId - Original category: ${profileProduct.categoryName} - Final category: $categoryName', tag: 'UserProfileDetailView');
+    
     // Kategori nesnesini oluştur
     final category = Category(
-      id: '0', // ProfileProduct'ta categoryId yok
-      name: profileProduct.categoryName ?? 'Kategori',
+      id: categoryId,
+      name: categoryName,
       icon: '',
       isActive: true,
       order: 0,
@@ -385,8 +419,8 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       images: profileProduct.mainImage != null && profileProduct.mainImage!.isNotEmpty 
           ? [profileProduct.mainImage!] 
           : [],
-      categoryId: '0', // ProfileProduct'ta categoryId yok
-      catname: profileProduct.categoryName ?? '',
+      categoryId: categoryId,
+      catname: categoryName,
       category: category,
       condition: profileProduct.condition ?? '',
       brand: profileProduct.brand,

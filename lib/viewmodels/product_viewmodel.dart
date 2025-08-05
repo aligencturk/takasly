@@ -1902,6 +1902,12 @@ class ProductViewModel extends ChangeNotifier {
       print('📊 Response success: ${response.isSuccess}');
       print('📊 Response error: ${response.error}');
       print('📊 Response data: ${response.data?.title ?? 'null'}');
+      if (response.data != null) {
+        print('📊 Response data.userImage: ${response.data!.userImage}');
+        print('📊 Response data.userFullname: ${response.data!.userFullname}');
+        print('📊 Response data.owner?.avatar: ${response.data!.owner?.avatar}');
+        print('📊 Response data.owner?.name: ${response.data!.owner?.name}');
+      }
       
       if (response.isSuccess && response.data != null) {
         _selectedProduct = response.data;

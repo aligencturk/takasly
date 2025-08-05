@@ -1119,6 +1119,22 @@ class _ProductInfoState extends State<_ProductInfo> {
     );
   }
 
+  Widget _buildAvatarPlaceholder(String userName) {
+    return Container(
+      color: Colors.grey[100],
+      child: Center(
+        child: Text(
+          userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+          style: const TextStyle(
+            color: AppTheme.primary,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildUserSummary(BuildContext context, Product product) {
     // Yeni API'den gelen kullanıcı bilgilerini kullan
     final userName = product.userFullname ?? product.owner?.name ?? 'Bilinmeyen Kullanıcı';
@@ -1129,6 +1145,14 @@ class _ProductInfoState extends State<_ProductInfo> {
     Logger.debug('Product Detail - isShowContact: ${product.isShowContact}', tag: 'ProductDetail');
     Logger.debug('Product Detail - userPhone: $userPhone', tag: 'ProductDetail');
     Logger.debug('Product Detail - userPhone isNotEmpty: ${userPhone?.isNotEmpty}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - owner: ${owner?.id} - ${owner?.name}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - owner.avatar: ${owner?.avatar}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - userImage: ${product.userImage}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - userFullname: ${product.userFullname}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - userName: $userName', tag: 'ProductDetail');
+    Logger.debug('Product Detail - owner.avatar: ${owner?.avatar}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - owner.name: ${owner?.name}', tag: 'ProductDetail');
+    Logger.debug('Product Detail - owner.id: ${owner?.id}', tag: 'ProductDetail');
     
     if (owner == null && product.userFullname == null) {
       return Container(
@@ -1241,51 +1265,20 @@ class _ProductInfoState extends State<_ProductInfo> {
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: owner.avatar != null && owner.avatar!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: CachedNetworkImage(
-                          imageUrl: owner.avatar!,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: (product.userImage != null && product.userImage!.isNotEmpty) ||
+                         (owner?.avatar != null && owner!.avatar!.isNotEmpty)
+                      ? CachedNetworkImage(
+                          imageUrl: product.userImage ?? owner?.avatar ?? '',
                           width: 32,
                           height: 32,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey[100],
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.grey,
-                              size: 16,
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey[100],
-                            child: Center(
-                              child: Text(
-                                userName.isNotEmpty
-                                    ? userName[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(
-                                  color: AppTheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          userName.isNotEmpty
-                              ? userName[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                            color: AppTheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
+                          placeholder: (context, url) => _buildAvatarPlaceholder(userName),
+                          errorWidget: (context, url, error) => _buildAvatarPlaceholder(userName),
+                        )
+                      : _buildAvatarPlaceholder(userName),
+                ),
               ),
               const SizedBox(width: 8),
               // Kullanıcı Bilgileri - Kompakt tasarım

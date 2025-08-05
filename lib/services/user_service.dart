@@ -834,11 +834,50 @@ class UserService {
                 _updateTokenInBackground(newToken);
               }
               
+              // Products array'ini detaylı logla
+              if (dataField.containsKey('products') && dataField['products'] is List) {
+                final products = dataField['products'] as List;
+                print('🔍 Get Profile Detail - Products count: ${products.length}');
+                for (int i = 0; i < products.length && i < 3; i++) {
+                  final product = products[i];
+                  print('🔍 Product $i: $product');
+                  if (product is Map<String, dynamic>) {
+                    print('🔍 Product $i keys: ${product.keys.toList()}');
+                    print('🔍 Product $i categoryId: ${product['categoryId']}');
+                    print('🔍 Product $i category_id: ${product['category_id']}');
+                    print('🔍 Product $i catId: ${product['catId']}');
+                    print('🔍 Product $i categoryName: ${product['categoryName']}');
+                    print('🔍 Product $i catname: ${product['catname']}');
+                    print('🔍 Product $i category: ${product['category']}');
+                  }
+                }
+              }
+              
               return UserProfileDetail.fromJson(dataField);
             }
             // Eğer direkt profil detayları gelirse
             else if (json.containsKey('userID') || json.containsKey('userFullname')) {
               print('🔍 Get Profile Detail - Direct profile data format detected');
+              
+              // Products array'ini detaylı logla
+              if (json.containsKey('products') && json['products'] is List) {
+                final products = json['products'] as List;
+                print('🔍 Get Profile Detail - Products count: ${products.length}');
+                for (int i = 0; i < products.length && i < 3; i++) {
+                  final product = products[i];
+                  print('🔍 Product $i: $product');
+                  if (product is Map<String, dynamic>) {
+                    print('🔍 Product $i keys: ${product.keys.toList()}');
+                    print('🔍 Product $i categoryId: ${product['categoryId']}');
+                    print('🔍 Product $i category_id: ${product['category_id']}');
+                    print('🔍 Product $i catId: ${product['catId']}');
+                    print('🔍 Product $i categoryName: ${product['categoryName']}');
+                    print('🔍 Product $i catname: ${product['catname']}');
+                    print('🔍 Product $i category: ${product['category']}');
+                  }
+                }
+              }
+              
               return UserProfileDetail.fromJson(json);
             } else {
               print('⚠️ Get Profile Detail - Unexpected response format');

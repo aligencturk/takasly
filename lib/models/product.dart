@@ -47,6 +47,7 @@ class Product {
   final String? userFirstname;
   final String? userLastname;
   final String? userPhone;
+  final String? userImage;
   final String? proView;
   final bool? isShowContact;
   final bool? isFavorite;
@@ -98,6 +99,7 @@ class Product {
     this.userFirstname,
     this.userLastname,
     this.userPhone,
+    this.userImage,
     this.proView,
     this.isShowContact,
     this.isFavorite,
@@ -204,6 +206,10 @@ class Product {
     final userFirstname = json['userFirstname'] != null ? safeString(json['userFirstname']) : null;
     final userLastname = json['userLastname'] != null ? safeString(json['userLastname']) : null;
     final userPhone = json['userPhone'] != null ? safeString(json['userPhone']) : null;
+    final userImage = json['userImage'] != null ? safeString(json['userImage']) : 
+                     json['userAvatar'] != null ? safeString(json['userAvatar']) :
+                     json['profileImage'] != null ? safeString(json['profileImage']) :
+                     json['avatar'] != null ? safeString(json['avatar']) : null;
     final createdAt = parseDateTime(json['createdAt']);
     final proView = json['proView'] != null ? safeString(json['proView']) : null;
     final isShowContact = json['isShowContact'] as bool?;
@@ -303,6 +309,7 @@ class Product {
       userFirstname: userFirstname,
       userLastname: userLastname,
       userPhone: userPhone,
+      userImage: userImage,
       proView: proView,
       isShowContact: isShowContact,
       isFavorite: isFavorite,
