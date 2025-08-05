@@ -93,6 +93,50 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
+  double _calculateChildAspectRatio(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    
+    // Responsive aspect ratio hesaplama
+    if (screenWidth < 360) {
+      return 0.75; // Küçük ekranlar için daha yüksek oran
+    } else if (screenWidth < 400) {
+      return 0.72; // Orta-küçük ekranlar
+    } else if (screenWidth < 600) {
+      return 0.7; // Orta ekranlar
+    } else {
+      return 0.68; // Büyük ekranlar için daha düşük oran
+    }
+  }
+
+  double _calculateGridSpacing(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    
+    // Responsive grid spacing hesaplama
+    if (screenWidth < 360) {
+      return 6.0; // Küçük ekranlar için daha az spacing
+    } else if (screenWidth < 400) {
+      return 8.0; // Orta-küçük ekranlar
+    } else {
+      return 10.0; // Normal ve büyük ekranlar
+    }
+  }
+
+  double _calculateHorizontalPadding(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    
+    // Responsive horizontal padding hesaplama
+    if (screenWidth < 360) {
+      return 12.0; // Küçük ekranlar için daha az padding
+    } else if (screenWidth < 400) {
+      return 16.0; // Orta-küçük ekranlar
+    } else {
+      return 20.0; // Normal ve büyük ekranlar
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,13 +265,13 @@ class _HomeViewState extends State<HomeView> {
         Logger.info('📊 HomeView - Toplam ürün: ${vm.products.length}, Toplam item: ${vm.products.length}, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}');
         
         return SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: _calculateHorizontalPadding(context)),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 0.6,
+              crossAxisSpacing: _calculateGridSpacing(context),
+              mainAxisSpacing: _calculateGridSpacing(context),
+              childAspectRatio: _calculateChildAspectRatio(context),
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
@@ -268,7 +312,7 @@ class _HomeViewState extends State<HomeView> {
       child: Consumer<ProductViewModel>(
         builder: (context, vm, child) {
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            margin: EdgeInsets.symmetric(horizontal: _calculateHorizontalPadding(context)),
             child: Row(
               children: [
                 // Arama butonu
