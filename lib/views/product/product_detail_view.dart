@@ -873,6 +873,7 @@ class _ProductInfoState extends State<_ProductInfo> {
               initialZoom: 15,
               interactionOptions: const InteractionOptions(
                 enableMultiFingerGestureRace: false,
+                flags: InteractiveFlag.pinchMove,
               ),
             ),
             children: [
