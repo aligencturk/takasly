@@ -23,7 +23,7 @@ class StartTradeView extends StatefulWidget {
 
 class _StartTradeViewState extends State<StartTradeView> {
   Product? _selectedSenderProduct;
-  int _selectedDeliveryType = 1; // Varsayılan: Kargolanacak
+  int _selectedDeliveryType = 1; // Varsayılan: Elden Teslim
   final TextEditingController _meetingLocationController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
   final AuthService _authService = AuthService();
@@ -133,7 +133,7 @@ class _StartTradeViewState extends State<StartTradeView> {
                 SizedBox(height: 24),
                 
                 // Buluşma yeri (sadece elden teslim için)
-                if (_selectedDeliveryType == 2) ...[
+                if (_selectedDeliveryType == 1) ...[
                   _buildMeetingLocationSection(),
                   SizedBox(height: 24),
                 ],
@@ -693,11 +693,9 @@ class _StartTradeViewState extends State<StartTradeView> {
 
   IconData _getDeliveryTypeIcon(int deliveryId) {
     switch (deliveryId) {
-      case 1: // Kargolanacak
-        return Icons.local_shipping_outlined;
-      case 2: // Elden Teslim
+      case 1: // Elden Teslim
         return Icons.people_outline;
-      case 3: // Kapıya Teslim
+      case 2: // Kapıya Teslim
         return Icons.home_outlined;
       default:
         return Icons.local_shipping_outlined;
@@ -902,7 +900,7 @@ class _StartTradeViewState extends State<StartTradeView> {
       return;
     }
 
-    if (_selectedDeliveryType == 2 && _meetingLocationController.text.trim().isEmpty) {
+    if (_selectedDeliveryType == 1 && _meetingLocationController.text.trim().isEmpty) {
       _showError('Elden teslim için buluşma yeri zorunludur');
       return;
     }
@@ -929,7 +927,7 @@ class _StartTradeViewState extends State<StartTradeView> {
         senderProductID: int.parse(_selectedSenderProduct!.id),
         receiverProductID: int.parse(widget.receiverProduct.id),
         deliveryTypeID: _selectedDeliveryType,
-        meetingLocation: _selectedDeliveryType == 2 
+        meetingLocation: _selectedDeliveryType == 1 
             ? _meetingLocationController.text.trim() 
             : null,
       );
