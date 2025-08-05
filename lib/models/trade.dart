@@ -1275,3 +1275,81 @@ class TradeCompleteSimpleData {
     return 'TradeCompleteSimpleData(message: $message)';
   }
 } 
+
+/// Takas değerlendirme request modeli
+class TradeReviewRequest {
+  final String userToken;
+  final int offerID;
+  final int rating;
+  final String? comment; // Opsiyonel
+
+  const TradeReviewRequest({
+    required this.userToken,
+    required this.offerID,
+    required this.rating,
+    this.comment,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'userToken': userToken,
+    'offerID': offerID,
+    'rating': rating,
+    if (comment != null && comment!.isNotEmpty) 'comment': comment,
+  };
+
+  @override
+  String toString() {
+    return 'TradeReviewRequest(offerID: $offerID, rating: $rating, comment: $comment)';
+  }
+}
+
+/// Takas değerlendirme response modeli
+class TradeReviewResponse {
+  final bool error;
+  final bool success;
+  final TradeReviewData? data;
+  final String? status410;
+
+  const TradeReviewResponse({
+    required this.error,
+    required this.success,
+    this.data,
+    this.status410,
+  });
+
+  factory TradeReviewResponse.fromJson(Map<String, dynamic> json) {
+    return TradeReviewResponse(
+      error: json['error'] as bool? ?? false,
+      success: json['success'] as bool? ?? false,
+      data: json['data'] != null 
+          ? TradeReviewData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+      status410: json['410'] as String?,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TradeReviewResponse(error: $error, success: $success, message: ${data?.message})';
+  }
+}
+
+/// Takas değerlendirme data modeli
+class TradeReviewData {
+  final String message;
+
+  const TradeReviewData({
+    required this.message,
+  });
+
+  factory TradeReviewData.fromJson(Map<String, dynamic> json) {
+    return TradeReviewData(
+      message: json['message'] as String? ?? '',
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TradeReviewData(message: $message)';
+  }
+} 

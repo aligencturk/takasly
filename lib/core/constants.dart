@@ -59,6 +59,7 @@ class ApiConstants {
   // Trade Service Endpoints
   static const String startTrade = '/service/user/product/startTrade';
   static const String tradeComplete = '/service/user/product/tradeComplete';
+  static const String tradeReview = '/service/user/product/tradeReview';
   static const String confirmTrade = '/service/user/product/confirmTrade';
   static const String updateTradeStatus = '/service/user/product/updateTradeStatus';
   static const String checkTradeStatus = '/service/user/product/checkTradeStatus';

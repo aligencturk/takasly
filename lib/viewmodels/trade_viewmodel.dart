@@ -924,6 +924,49 @@ class TradeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Takas değerlendirme metodu
+  Future<bool> reviewTrade({
+    required String userToken,
+    required int offerID,
+    required int rating,
+    String? comment,
+  }) async {
+    Logger.info('Takas değerlendirme işlemi başlatılıyor... OfferID: $offerID, Rating: $rating', tag: 'TradeViewModel');
+    
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _tradeService.reviewTrade(
+        userToken: userToken,
+        offerID: offerID,
+        rating: rating,
+        comment: comment,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('Takas değerlendirme başarılı: ${response.data!.data?.message}', tag: 'TradeViewModel');
+        
+        // Başarılı işlem sonrası kullanıcı takaslarını yenile
+        await _refreshUserTrades();
+        
+        _setLoading(false);
+        return true;
+      } else {
+        final errorMsg = response.error ?? ErrorMessages.unknownError;
+        Logger.error('Takas değerlendirme hatası: $errorMsg', tag: 'TradeViewModel');
+        _setError(errorMsg);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Takas değerlendirme exception: $e', tag: 'TradeViewModel');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
   /// Takas kontrolü metodu
   Future<CheckTradeStatusResponse?> checkTradeStatus({
     required String userToken,

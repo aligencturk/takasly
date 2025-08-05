@@ -2441,7 +2441,7 @@ class _TradeViewState extends State<TradeView>
     }
   }
 
-  /// Takas tamamlandığında yorum ve yıldız ile birlikte tamamla
+  /// Takas değerlendirme işlemi (yeni tradeReview endpoint'i ile)
   Future<bool> _completeTradeWithReview(UserTrade trade, int rating, String comment) async {
     try {
       final tradeViewModel = _tradeViewModel;
@@ -2456,41 +2456,18 @@ class _TradeViewState extends State<TradeView>
       if (userToken == null) {
         if (mounted && _scaffoldMessenger != null) {
           _scaffoldMessenger!.showSnackBar(
-            SnackBar(content: Text('Kullanici token\'i bulunamadi')),
+            SnackBar(content: Text('Kullanıcı token\'i bulunamadı')),
           );
         }
         return false;
       }
 
-      Logger.info('Yorum ve puan gönderiliyor... Trade #${trade.offerID}, Rating: $rating, Comment: $comment', tag: 'TradeView');
+      Logger.info('Takas değerlendirme gönderiliyor... Trade #${trade.offerID}, Rating: $rating, Comment: $comment', tag: 'TradeView');
 
-      // Karsi tarafin kullanici ID'sini bul
-      int? toUserID;
-      final myProduct = _getMyProduct(trade);
-      final theirProduct = _getTheirProduct(trade);
-      
-      if (myProduct != null && theirProduct != null) {
-        // Karsi tarafin urununun sahibi
-        toUserID = theirProduct.userID;
-      } else if (theirProduct != null) {
-        toUserID = theirProduct.userID;
-      }
-
-      if (toUserID == null) {
-        if (mounted && _scaffoldMessenger != null) {
-          _scaffoldMessenger!.showSnackBar(
-            SnackBar(content: Text('Karsi taraf bilgisi bulunamadi')),
-          );
-        }
-        return false;
-      }
-
-      // StatusID=5 için sadece yorum gönder, takası tekrar tamamlama
-      final success = await tradeViewModel.completeTradeWithReview(
+      // Yeni tradeReview endpoint'ini kullan
+      final success = await tradeViewModel.reviewTrade(
         userToken: userToken,
         offerID: trade.offerID,
-        statusID: trade.statusID, // Mevcut durumu koru
-        toUserID: toUserID,
         rating: rating,
         comment: comment,
       );
@@ -2503,7 +2480,7 @@ class _TradeViewState extends State<TradeView>
                 children: [
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Takas basariyla tamamlandi ve yorum gonderildi'),
+                  Text('Takas değerlendirmesi başarıyla gönderildi'),
                 ],
               ),
               backgroundColor: Colors.green,
@@ -2534,7 +2511,7 @@ class _TradeViewState extends State<TradeView>
         if (mounted && _scaffoldMessenger != null) {
           _scaffoldMessenger!.showSnackBar(
             SnackBar(
-              content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanirken hata olustu'),
+              content: Text(tradeViewModel.errorMessage ?? 'Takas değerlendirmesi gönderilirken hata oluştu'),
               backgroundColor: Colors.red,
             ),
           );

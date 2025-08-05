@@ -635,4 +635,43 @@ class TradeService {
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
+
+  /// Takas değerlendirme endpoint'i
+  Future<ApiResponse<TradeReviewResponse>> reviewTrade({
+    required String userToken,
+    required int offerID,
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      Logger.info('Takas değerlendirme isteği gönderiliyor... OfferID: $offerID, Rating: $rating', tag: _tag);
+      
+      final request = TradeReviewRequest(
+        userToken: userToken,
+        offerID: offerID,
+        rating: rating,
+        comment: comment,
+      );
+
+      Logger.debug('Takas değerlendirme request: ${request.toJson()}', tag: _tag);
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.tradeReview,
+        body: request.toJson(),
+        fromJson: (json) => TradeReviewResponse.fromJson(json),
+        useBasicAuth: true,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Takas değerlendirme başarılı: ${response.data?.data?.message}', tag: _tag);
+      } else {
+        Logger.error('Takas değerlendirme hatası: ${response.error}', tag: _tag);
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Takas değerlendirme exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 } 
