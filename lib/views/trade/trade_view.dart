@@ -145,7 +145,8 @@ class _TradeViewState extends State<TradeView>
                 : Future.value(),
           ]);
           
-
+          // Takaslar yüklendikten sonra her trade için showButtons değerini kontrol et
+          await _loadShowButtonsForTrades(tradeViewModel);
         }
         
       } catch (e) {
@@ -423,8 +424,6 @@ class _TradeViewState extends State<TradeView>
                         trade: updatedTrade,
                         currentUserId: tradeViewModel.currentUserId,
                         showButtons: _tradeShowButtonsMap[updatedTrade.offerID], // API'den gelen showButtons değeri
-                        // Debug: showButtons değerini log'la
-                        // showButtons: _tradeShowButtonsMap[updatedTrade.offerID],
                         onTap: () {
                           // Takas detayına git
                           Logger.info('Takas detayına gidiliyor: ${updatedTrade.offerID}', tag: 'TradeView');
@@ -526,6 +525,9 @@ class _TradeViewState extends State<TradeView>
                                   ),
                                 );
                               }
+                              
+                              // Durum değişikliği sonrası showButtons değerlerini güncelle
+                              await _updateShowButtonsForTrade(updatedTrade);
                             } else {
                               Logger.error('Trade #${updatedTrade.offerID} durumu güncellenemedi', tag: 'TradeView');
                               if (mounted && _scaffoldMessenger != null) {
@@ -1852,6 +1854,111 @@ class _TradeViewState extends State<TradeView>
     }
   }
 
+  /// Belirli bir trade için showButtons değerini güncelle
+  Future<void> _updateShowButtonsForTrade(UserTrade trade) async {
+    try {
+      Logger.info('🔄 Trade #${trade.offerID} için showButtons değeri güncelleniyor...', tag: 'TradeView');
+      
+      final userToken = await _authService.getToken();
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('UserToken bulunamadı, showButtons güncellenemiyor', tag: 'TradeView');
+        return;
+      }
+      
+      final myProduct = _getMyProduct(trade);
+      final theirProduct = _getTheirProduct(trade);
+      
+      if (myProduct != null && theirProduct != null) {
+        final response = await _tradeViewModel?.checkTradeStatus(
+          userToken: userToken,
+          senderProductID: myProduct.productID,
+          receiverProductID: theirProduct.productID,
+        );
+        
+        if (response != null && response.data != null) {
+          final showButtons = response.data!.showButtons;
+          _tradeShowButtonsMap[trade.offerID] = showButtons;
+          
+          Logger.info('✅ Trade #${trade.offerID} showButtons değeri güncellendi: $showButtons', tag: 'TradeView');
+          
+          // UI'ı güncelle
+          if (mounted) {
+            setState(() {});
+          }
+        } else {
+          Logger.warning('⚠️ Trade #${trade.offerID} için showButtons değeri güncellenemedi', tag: 'TradeView');
+        }
+      } else {
+        Logger.warning('⚠️ Trade #${trade.offerID} için ürün bilgileri eksik, showButtons güncellenemiyor', tag: 'TradeView');
+      }
+    } catch (e) {
+      Logger.error('❌ Trade #${trade.offerID} showButtons güncelleme hatası: $e', tag: 'TradeView');
+    }
+  }
+
+  /// Her trade için showButtons değerini kontrol et ve cache'e kaydet
+  Future<void> _loadShowButtonsForTrades(TradeViewModel tradeViewModel) async {
+    try {
+      Logger.info('🔍 Trade\'ler için showButtons değerleri kontrol ediliyor...', tag: 'TradeView');
+      
+      final userToken = await _authService.getToken();
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('UserToken bulunamadı, showButtons kontrolü yapılamıyor', tag: 'TradeView');
+        return;
+      }
+      
+      final trades = tradeViewModel.userTrades;
+      Logger.info('📊 ${trades.length} adet trade için showButtons kontrolü başlatılıyor', tag: 'TradeView');
+      
+      // Her trade için showButtons değerini kontrol et
+      for (final trade in trades) {
+        final myProduct = _getMyProduct(trade);
+        final theirProduct = _getTheirProduct(trade);
+        
+        if (myProduct != null && theirProduct != null) {
+          try {
+            Logger.info('🔍 Trade #${trade.offerID} için showButtons kontrolü: MyProductID=${myProduct.productID}, TheirProductID=${theirProduct.productID}', tag: 'TradeView');
+            
+            final response = await tradeViewModel.checkTradeStatus(
+              userToken: userToken,
+              senderProductID: myProduct.productID,
+              receiverProductID: theirProduct.productID,
+            );
+            
+            if (response != null && response.data != null) {
+              final showButtons = response.data!.showButtons;
+              _tradeShowButtonsMap[trade.offerID] = showButtons;
+              
+              Logger.info('✅ Trade #${trade.offerID} showButtons değeri: $showButtons', tag: 'TradeView');
+            } else {
+              Logger.warning('⚠️ Trade #${trade.offerID} için showButtons değeri alınamadı', tag: 'TradeView');
+              // Varsayılan olarak false ata
+              _tradeShowButtonsMap[trade.offerID] = false;
+            }
+          } catch (e) {
+            Logger.error('❌ Trade #${trade.offerID} showButtons kontrolü hatası: $e', tag: 'TradeView');
+            // Hata durumunda varsayılan olarak false ata
+            _tradeShowButtonsMap[trade.offerID] = false;
+          }
+        } else {
+          Logger.warning('⚠️ Trade #${trade.offerID} için ürün bilgileri eksik, showButtons kontrolü yapılamıyor', tag: 'TradeView');
+          // Ürün bilgileri eksikse varsayılan olarak false ata
+          _tradeShowButtonsMap[trade.offerID] = false;
+        }
+      }
+      
+      Logger.info('✅ Tüm trade\'ler için showButtons değerleri kontrol edildi', tag: 'TradeView');
+      
+      // UI'ı güncelle
+      if (mounted) {
+        setState(() {});
+      }
+      
+    } catch (e) {
+      Logger.error('❌ showButtons kontrolü genel hatası: $e', tag: 'TradeView');
+    }
+  }
+
   /// Takas verilerini arka planda yükle (UI'ı bloklamasın)
   void _loadTradeDataInBackground(TradeViewModel tradeViewModel, String userId) {
     // Arka planda çalıştır, UI'ı bloklamasın
@@ -1866,7 +1973,8 @@ class _TradeViewState extends State<TradeView>
         
         Logger.info('✅ Takas verileri arka planda yüklendi', tag: 'TradeView');
         
-
+        // Arka planda showButtons değerlerini de kontrol et
+        await _loadShowButtonsForTrades(tradeViewModel);
         
       } catch (e) {
         Logger.error('Arka plan takas veri yükleme hatası: $e', tag: 'TradeView');
@@ -1933,6 +2041,9 @@ class _TradeViewState extends State<TradeView>
           await tradeViewModel.loadUserTrades(int.parse(userId));
           Logger.info('✅ TradeViewModel manuel olarak yenilendi (completeTradeSimple)', tag: 'TradeView');
         }
+        
+        // Takas tamamlama sonrası showButtons değerini güncelle
+        await _updateShowButtonsForTrade(trade);
         return true;
       } else {
         if (mounted && _scaffoldMessenger != null) {
@@ -2023,6 +2134,9 @@ class _TradeViewState extends State<TradeView>
             Logger.warning('⚠️ Guncellenmis trade bulunamadi (completeTradeWithReview): #${trade.offerID}', tag: 'TradeView');
           }
         }
+        
+        // Takas değerlendirme sonrası showButtons değerini güncelle
+        await _updateShowButtonsForTrade(trade);
         return true;
       } else {
         if (mounted && _scaffoldMessenger != null) {
@@ -2063,12 +2177,14 @@ class _TradeViewState extends State<TradeView>
     
     for (int i = 0; i < trades.length; i++) {
       final trade = trades[i];
+      final showButtons = _tradeShowButtonsMap[trade.offerID];
       debugInfo += '📋 Trade #${i + 1}:\n';
       debugInfo += '  • OfferID: ${trade.offerID}\n';
       debugInfo += '  • StatusID: ${trade.statusID}\n';
       debugInfo += '  • StatusTitle: ${trade.statusTitle}\n';
       debugInfo += '  • CancelDesc: "${trade.cancelDesc}"\n';
       debugInfo += '  • isConfirm: ${trade.isConfirm}\n';
+      debugInfo += '  • showButtons: $showButtons\n';
       debugInfo += '\n';
     }
     
@@ -2216,6 +2332,9 @@ class _TradeViewState extends State<TradeView>
         if (userId != null && tradeViewModel != null) {
           await tradeViewModel.loadUserTrades(int.parse(userId));
         }
+        
+        // Reddetme sonrası showButtons değerini güncelle
+        await _updateShowButtonsForTrade(trade);
       } else {
         if (mounted && _scaffoldMessenger != null) {
           _scaffoldMessenger!.showSnackBar(
