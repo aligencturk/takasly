@@ -111,6 +111,50 @@ class _ProfileViewState extends State<ProfileView>
     super.dispose();
   }
 
+  double _calculateChildAspectRatio(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    
+    // Responsive aspect ratio hesaplama
+    if (screenWidth < 360) {
+      return 0.75; // Küçük ekranlar için daha yüksek oran
+    } else if (screenWidth < 400) {
+      return 0.72; // Orta-küçük ekranlar
+    } else if (screenWidth < 600) {
+      return 0.7; // Orta ekranlar
+    } else {
+      return 0.68; // Büyük ekranlar için daha düşük oran
+    }
+  }
+
+  double _calculateGridSpacing(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    
+    // Responsive grid spacing hesaplama
+    if (screenWidth < 360) {
+      return 6.0; // Küçük ekranlar için daha az spacing
+    } else if (screenWidth < 400) {
+      return 8.0; // Orta-küçük ekranlar
+    } else {
+      return 10.0; // Normal ve büyük ekranlar
+    }
+  }
+
+  double _calculateHorizontalPadding(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    
+    // Responsive horizontal padding hesaplama
+    if (screenWidth < 360) {
+      return 12.0; // Küçük ekranlar için daha az padding
+    } else if (screenWidth < 400) {
+      return 16.0; // Orta-küçük ekranlar
+    } else {
+      return 20.0; // Normal ve büyük ekranlar
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -234,40 +278,35 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 10),
+          margin: EdgeInsets.symmetric(horizontal: _calculateHorizontalPadding(context)),
           padding: const EdgeInsets.all(5),
           color: Colors.white,
           child: GridView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 0.62,
+              crossAxisSpacing: _calculateGridSpacing(context),
+              mainAxisSpacing: _calculateGridSpacing(context),
+              childAspectRatio: _calculateChildAspectRatio(context),
             ),
             itemCount: productViewModel.myProducts.length,
             itemBuilder: (context, index) {
               final product = productViewModel.myProducts[index];
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: Stack(
-                  children: [
-                    ProductCard(
-                      product: product,
-                      heroTag: 'profile_my_product_${product.id}_$index',
-                      hideFavoriteIcon: true, // Kullanıcının kendi ilanlarında favori ikonunu gizle
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProductDetailView(productId: product.id),
-                          ),
-                        );
-                      },
-                    ),
+              return Stack(
+                children: [
+                  ProductCard(
+                    product: product,
+                    heroTag: 'profile_my_product_${product.id}_$index',
+                    hideFavoriteIcon: true, // Kullanıcının kendi ilanlarında favori ikonunu gizle
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProductDetailView(productId: product.id),
+                        ),
+                      );
+                    },
+                  ),
                     // İlanı Güncelle butonu (sol üst)
                     Positioned(
                       top: 7,
@@ -333,9 +372,8 @@ class _ProfileViewState extends State<ProfileView>
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               );
             },
           ),

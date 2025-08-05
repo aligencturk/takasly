@@ -13,6 +13,7 @@ class ProductCard extends StatelessWidget {
   final VoidCallback? onTap;
   final String? heroTag;
   final bool hideFavoriteIcon;
+  final bool isProfileView;
 
   const ProductCard({
     super.key,
@@ -20,6 +21,7 @@ class ProductCard extends StatelessWidget {
     this.onTap,
     this.heroTag,
     this.hideFavoriteIcon = false,
+    this.isProfileView = false,
   });
 
   String _getCategoryDisplayName(Product product, BuildContext context) {
@@ -294,8 +296,8 @@ class ProductCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // Kategori ile başlık arası boşluk
-                    SizedBox(height: screenWidth < 360 ? 4 : 6),
+                                         // Kategori ile başlık arası boşluk
+                     SizedBox(height: screenWidth < 360 ? 4 : 6),
                     // Başlık
                     Flexible(
                       flex: 2,
@@ -310,41 +312,41 @@ class ProductCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // Başlık ile konum arası boşluk
-                    SizedBox(height: screenWidth < 360 ? 4 : 6),
-                    // Konum
-                    Flexible(
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined, 
-                            size: screenWidth < 360 ? 8 : 10, 
-                            color: Colors.grey[500],
-                          ),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Builder(
-                              builder: (context) {
-                                final cityTitle = product.cityTitle.isNotEmpty ? product.cityTitle : 'Şehir belirtilmemiş';
-                                final districtTitle = product.districtTitle.isNotEmpty ? product.districtTitle : 'İlçe belirtilmemiş';
-                                final locationText = '$cityTitle/$districtTitle';
-                                
-                                return Text(
-                                  locationText,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey[500],
-                                    fontSize: locationFontSize,
-                                    height: 1.2, // Line height'ı artırdım
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                                         // Başlık ile konum arası boşluk
+                     SizedBox(height: screenWidth < 360 ? 4 : 6),
+                     // Konum
+                     Flexible(
+                       child: Row(
+                         children: [
+                           Icon(
+                             Icons.location_on_outlined, 
+                             size: screenWidth < 360 ? 8 : 10, 
+                             color: Colors.grey[500],
+                           ),
+                           const SizedBox(width: 2),
+                           Expanded(
+                             child: Builder(
+                               builder: (context) {
+                                 final cityTitle = product.cityTitle.isNotEmpty ? product.cityTitle : 'Şehir belirtilmemiş';
+                                 final districtTitle = product.districtTitle.isNotEmpty ? product.districtTitle : 'İlçe belirtilmemiş';
+                                 final locationText = '$cityTitle/$districtTitle';
+                                 
+                                 return Text(
+                                   locationText,
+                                   style: textTheme.bodySmall?.copyWith(
+                                     color: Colors.grey[500],
+                                     fontSize: locationFontSize,
+                                     height: 1.0,
+                                   ),
+                                   maxLines: 1,
+                                   overflow: TextOverflow.ellipsis,
+                                 );
+                               },
+                             ),
+                           ),
+                         ],
+                       ),
+                     ),
                   ],
                 ),
               ),
