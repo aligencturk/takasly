@@ -747,7 +747,6 @@ class _ProductInfoState extends State<_ProductInfo> {
                 _InfoRow('Favori :', 'Bu ilanı ${widget.product.favoriteCount} kişi favoriledi'),
               
               // 3. Teknik bilgiler (alt sırada)
-              _InfoRow('İlan No :', widget.product.id),
               if (widget.product.productCode != null && widget.product.productCode!.isNotEmpty)
                 _InfoRow('İlan Kodu :', widget.product.productCode!),
             ],
