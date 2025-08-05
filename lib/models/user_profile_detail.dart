@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import '../utils/logger.dart';
+import 'product.dart';
 
 part 'user_profile_detail.g.dart';
 
@@ -155,6 +156,7 @@ class ProfileProduct {
   final int? favoriteCount;
   final bool? isTrade;
   final bool? isSponsor;
+  final List<Category>? categoryList;
 
   const ProfileProduct({
     required this.productID,
@@ -175,6 +177,7 @@ class ProfileProduct {
     this.favoriteCount,
     this.isTrade,
     this.isSponsor,
+    this.categoryList,
   });
 
   factory ProfileProduct.fromJson(Map<String, dynamic> json) {
@@ -224,6 +227,26 @@ class ProfileProduct {
       
       Logger.debug('🔍 ProfileProduct.fromJson - Final categoryId: $categoryId, categoryName: $categoryName', tag: 'ProfileProduct');
       
+      // CategoryList'i parse et
+      List<Category>? categoryList;
+      if (json['categoryList'] != null && json['categoryList'] is List) {
+        try {
+          categoryList = (json['categoryList'] as List).map((catJson) {
+            return Category(
+              id: catJson['catID']?.toString() ?? '0',
+              name: catJson['catName']?.toString() ?? 'Kategori',
+              icon: '',
+              isActive: true,
+              order: 0,
+            );
+          }).toList();
+          Logger.debug('🔍 ProfileProduct.fromJson - categoryList parsed: ${categoryList.length} categories', tag: 'ProfileProduct');
+        } catch (e) {
+          Logger.error('⚠️ ProfileProduct.fromJson - categoryList parse error: $e', tag: 'ProfileProduct');
+          categoryList = null;
+        }
+      }
+      
       return ProfileProduct(
         productID: json['productID'] ?? json['id'] ?? 0,
         title: json['productTitle'] ?? json['title'] ?? '',
@@ -243,6 +266,7 @@ class ProfileProduct {
         favoriteCount: json['favoriteCount'] ?? json['favorites'],
         isTrade: json['isTrade'] ?? json['trade'],
         isSponsor: json['isSponsor'] ?? json['sponsor'],
+        categoryList: categoryList,
       );
     } catch (e) {
       Logger.error('⚠️ ProfileProduct.fromJson - Parse error: $e', tag: 'ProfileProduct');
@@ -275,6 +299,7 @@ class ProfileProduct {
     int? favoriteCount,
     bool? isTrade,
     bool? isSponsor,
+    List<Category>? categoryList,
   }) {
     return ProfileProduct(
       productID: productID ?? this.productID,
@@ -295,6 +320,7 @@ class ProfileProduct {
       favoriteCount: favoriteCount ?? this.favoriteCount,
       isTrade: isTrade ?? this.isTrade,
       isSponsor: isSponsor ?? this.isSponsor,
+      categoryList: categoryList ?? this.categoryList,
     );
   }
 

@@ -375,25 +375,35 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       categoryId = profileProduct.categoryId!;
     }
     
-    // Kategori adını düzgün şekilde al
+    // Kategori adını düzgün şekilde al - öncelik sırası: categoryList > categoryName > default
     String categoryName = 'Kategori';
-    if (profileProduct.categoryName != null && 
+    
+    // Önce categoryList'i kontrol et (yeni API)
+    if (profileProduct.categoryList != null && profileProduct.categoryList!.isNotEmpty) {
+      categoryName = profileProduct.categoryList!.map((cat) => cat.name).join(' > ');
+      Logger.debug('Converting product: ${profileProduct.title} - Using categoryList: $categoryName', tag: 'UserProfileDetailView');
+    } else if (profileProduct.categoryName != null && 
         profileProduct.categoryName!.isNotEmpty && 
         profileProduct.categoryName != 'null' &&
         profileProduct.categoryName != 'Kategori') {
       categoryName = profileProduct.categoryName!;
+      Logger.debug('Converting product: ${profileProduct.title} - Using categoryName: $categoryName', tag: 'UserProfileDetailView');
+    } else {
+      Logger.debug('Converting product: ${profileProduct.title} - Using default category: $categoryName', tag: 'UserProfileDetailView');
     }
     
-    Logger.debug('Converting product: ${profileProduct.title} - CategoryId: $categoryId - Original category: ${profileProduct.categoryName} - Final category: $categoryName', tag: 'UserProfileDetailView');
+    Logger.debug('Converting product: ${profileProduct.title} - CategoryId: $categoryId - Final category: $categoryName', tag: 'UserProfileDetailView');
     
-    // Kategori nesnesini oluştur
-    final category = Category(
-      id: categoryId,
-      name: categoryName,
-      icon: '',
-      isActive: true,
-      order: 0,
-    );
+    // Kategori nesnesini oluştur - categoryList'ten ilk kategoriyi kullan
+    final category = profileProduct.categoryList != null && profileProduct.categoryList!.isNotEmpty
+        ? profileProduct.categoryList!.first
+        : Category(
+            id: categoryId,
+            name: categoryName,
+            icon: '',
+            isActive: true,
+            order: 0,
+          );
 
     // Kullanıcı nesnesini oluştur
     final owner = User(
@@ -438,6 +448,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       isTrade: profileProduct.isTrade,
       productCode: profileProduct.productCode,
       favoriteCount: profileProduct.favoriteCount,
+      categoryList: profileProduct.categoryList,
     );
   }
 

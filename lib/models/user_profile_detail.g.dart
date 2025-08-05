@@ -62,6 +62,9 @@ ProfileProduct _$ProfileProductFromJson(Map<String, dynamic> json) =>
       favoriteCount: (json['favoriteCount'] as num?)?.toInt(),
       isTrade: json['isTrade'] as bool?,
       isSponsor: json['isSponsor'] as bool?,
+      categoryList: (json['categoryList'] as List<dynamic>?)
+          ?.map((e) => Category.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$ProfileProductToJson(ProfileProduct instance) =>
@@ -84,6 +87,7 @@ Map<String, dynamic> _$ProfileProductToJson(ProfileProduct instance) =>
       'favoriteCount': instance.favoriteCount,
       'isTrade': instance.isTrade,
       'isSponsor': instance.isSponsor,
+      'categoryList': instance.categoryList,
     };
 
 ProfileReview _$ProfileReviewFromJson(Map<String, dynamic> json) =>
