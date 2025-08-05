@@ -24,8 +24,7 @@ class ProductCard extends StatelessWidget {
 
   String _getCategoryDisplayName(Product product, BuildContext context) {
     // Debug bilgileri
-    print('🔍 ProductCard._getCategoryDisplayName - Product ID: ${product.id}');
-    print('🔍 ProductCard._getCategoryDisplayName - categoryId: ${product.categoryId}');
+    // ID bilgileri kaldırıldı
     print('🔍 ProductCard._getCategoryDisplayName - mainCategoryName: ${product.mainCategoryName}');
     print('🔍 ProductCard._getCategoryDisplayName - parentCategoryName: ${product.parentCategoryName}');
     print('🔍 ProductCard._getCategoryDisplayName - subCategoryName: ${product.subCategoryName}');
@@ -91,12 +90,7 @@ class ProductCard extends StatelessWidget {
     print('⚠️ ProductCard._getCategoryDisplayName - No category found, returning "Kategori"');
     return 'Kategori';
 
-    // 8. Kategori ID'sini göster
-    if (product.categoryId.isNotEmpty) {
-      return 'Kategori ${product.categoryId}';
-    }
-
-    return 'Kategori';
+   
   }
 
   @override

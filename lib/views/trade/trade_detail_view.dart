@@ -516,13 +516,7 @@ class _TradeDetailViewState extends State<TradeDetailView> {
                         fontSize: 13,
                       ),
                     ),
-                    Text(
-                      'ID: ${participant.userID}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                        fontSize: 11,
-                      ),
-                    ),
+                    // ID bilgisi kaldırıldı
                   ],
                 ),
               ),

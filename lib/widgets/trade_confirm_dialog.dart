@@ -222,13 +222,7 @@ class _TradeConfirmDialogState extends State<TradeConfirmDialog> {
                       ),
                     ],
                     const SizedBox(height: 4),
-                    Text(
-                      'Offer ID: ${widget.offerID}',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    ),
+                    // Offer ID kaldırıldı
                   ],
                 ),
               ),

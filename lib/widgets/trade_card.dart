@@ -294,7 +294,7 @@ class TradeCard extends StatelessWidget {
       result = trade.myProduct;
     }
     
-    Logger.debug('_getMyProduct: isConfirm=${trade.isConfirm}, result.productID=${result?.productID}', tag: 'TradeCard');
+                                Logger.debug('_getMyProduct: isConfirm=${trade.isConfirm}', tag: 'TradeCard');
     return result;
   }
 
@@ -312,7 +312,7 @@ class TradeCard extends StatelessWidget {
       result = trade.theirProduct;
     }
     
-    Logger.debug('_getTheirProduct: isConfirm=${trade.isConfirm}, result.productID=${result?.productID}', tag: 'TradeCard');
+                                Logger.debug('_getTheirProduct: isConfirm=${trade.isConfirm}', tag: 'TradeCard');
     return result;
   }
 
@@ -429,13 +429,7 @@ class TradeCard extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          Text(
-                            '#${trade.offerID}',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
+                          // Takas numarası kaldırıldı
                         ],
                       ),
                       
@@ -443,8 +437,7 @@ class TradeCard extends StatelessWidget {
                       if ((trade.statusID == 3 || trade.statusID == 8) && trade.cancelDesc?.isNotEmpty == true) ...[
                         Builder(
                           builder: (context) {
-                            Logger.debug('🔍 Reddetme sebebi widget\'ı gösteriliyor - statusID: ${trade.statusID}, cancelDesc: "${trade.cancelDesc}"', tag: 'TradeCard');
-                            Logger.debug('🔍 Trade objesi: offerID=${trade.offerID}, statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeCard');
+                            Logger.debug('🔍 Reddetme sebebi widget\'ı gösteriliyor', tag: 'TradeCard');
                             Logger.debug('🔍 cancelDesc null mu?: ${trade.cancelDesc == null}', tag: 'TradeCard');
                             Logger.debug('🔍 cancelDesc boş mu?: ${trade.cancelDesc?.isEmpty}', tag: 'TradeCard');
                             Logger.debug('🔍 cancelDesc uzunluğu: ${trade.cancelDesc?.length}', tag: 'TradeCard');
@@ -715,7 +708,7 @@ class TradeCard extends StatelessWidget {
   }
 
   void _confirmTrade(BuildContext context) {
-    Logger.info('Trade #${trade.offerID} onaylanıyor...', tag: 'TradeCard');
+          Logger.info('Trade onaylanıyor...', tag: 'TradeCard');
     
     // Bu metod sadece buton gösterimi için, gerçek işlem TradeView'da yapılıyor
     // Burada sadece log atıyoruz
@@ -727,7 +720,7 @@ class TradeCard extends StatelessWidget {
   }
 
   void _rejectTrade(BuildContext context) {
-    Logger.info('Trade #${trade.offerID} reddediliyor...', tag: 'TradeCard');
+          Logger.info('Trade reddediliyor...', tag: 'TradeCard');
     
     // Eğer onReject callback'i varsa onu kullan (reddetme sebebi dialog'u için)
     if (onReject != null) {
@@ -739,7 +732,7 @@ class TradeCard extends StatelessWidget {
   }
 
   void _changeStatus(BuildContext context) {
-    Logger.info('Trade #${trade.offerID} durumu değiştiriliyor...', tag: 'TradeCard');
+          Logger.info('Trade durumu değiştiriliyor...', tag: 'TradeCard');
     
     if (onStatusChange != null) {
       onStatusChange!(trade.statusID);
@@ -747,7 +740,7 @@ class TradeCard extends StatelessWidget {
   }
 
   void _completeTradeWithReview(BuildContext context) {
-    Logger.info('Trade #${trade.offerID} değerlendiriliyor... StatusID: ${trade.statusID}', tag: 'TradeCard');
+          Logger.info('Trade değerlendiriliyor...', tag: 'TradeCard');
     
     // Bu metod sadece buton gösterimi için, gerçek işlem TradeView'da yapılıyor
     // Burada sadece log atıyoruz
