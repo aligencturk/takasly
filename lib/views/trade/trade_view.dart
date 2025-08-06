@@ -1926,10 +1926,10 @@ class _TradeViewState extends State<TradeView>
             }
           } else if (currentUserStatusID == 5) {
             dialogTitle = 'Yorum Yap';
-            dialogSubtitle = 'Takasınız tamamlandı! Karşı tarafa yorum ve puan verin.';
+            dialogSubtitle = 'Takasınız tamamlandı!';
           } else {
             dialogTitle = 'Takas Tamamlandı';
-            dialogSubtitle = 'Takasınızı tamamladınız! Karşı tarafa yorum ve puan verin.';
+            dialogSubtitle = 'Takasınızı tamamladınız!';
           }
           
           return AlertDialog(
@@ -2564,7 +2564,7 @@ class _TradeViewState extends State<TradeView>
                   children: [
                     Icon(Icons.check_circle, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Takasınız tamamlandı! Karşı tarafın takası tamamlamasını bekliyorsunuz.'),
+                    Text('Takasınız tamamlandı!'),
                   ],
                 ),
                 backgroundColor: Colors.green,
