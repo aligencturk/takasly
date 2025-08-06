@@ -90,14 +90,51 @@ class TradeCard extends StatelessWidget {
 
   /// "Puan Ver" butonunun gösterilip gösterilmeyeceğini belirle
   bool _shouldShowReviewButton() {
+    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    final currentUserStatusID = _getCurrentUserStatusID();
+    
+    // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
+    final senderCompleted = trade.senderStatusID >= 4;
+    final receiverCompleted = trade.receiverStatusID >= 4;
+    final bothCompleted = senderCompleted && receiverCompleted;
+    
+    Logger.debug('🔍 Trade #${trade.offerID} - Review button check:', tag: 'TradeCard');
+    Logger.debug('  • currentUserStatusID: $currentUserStatusID', tag: 'TradeCard');
+    Logger.debug('  • senderStatusID: ${trade.senderStatusID}, receiverStatusID: ${trade.receiverStatusID}', tag: 'TradeCard');
+    Logger.debug('  • bothCompleted: $bothCompleted', tag: 'TradeCard');
+    Logger.debug('  • canGiveReview: ${trade.canGiveReview}', tag: 'TradeCard');
+    Logger.debug('  • hasReview: ${trade.hasReview}', tag: 'TradeCard');
+    Logger.debug('  • rating: ${trade.rating}', tag: 'TradeCard');
+    Logger.debug('  • comment: ${trade.comment}', tag: 'TradeCard');
+    
     // API'den gelen canGiveReview değerini kontrol et
-    // API zaten değerlendirme kontrolünü yapıyor, tekrar yorum yapılmasına izin vermiyor
     if (trade.canGiveReview == true) {
       Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=true, buton gösterilecek', tag: 'TradeCard');
       return true;
     }
     
+    // Eğer canGiveReview false ise veya null ise, manuel kontrol yap
+    // StatusID=4 veya 5 durumunda ve her iki taraf da tamamladıysa yorum yapılabilir
+    if ((currentUserStatusID == 4 || currentUserStatusID == 5) && bothCompleted) {
+      // Daha önce yorum yapılmamışsa buton göster
+      // hasReview, rating veya comment varsa yorum yapılmış demektir
+      final hasReviewData = trade.hasReview == true || 
+                           (trade.rating != null && trade.rating! > 0) || 
+                           (trade.comment != null && trade.comment!.isNotEmpty);
+      
+      if (!hasReviewData) {
+        Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=false ama manuel kontrol geçti, buton gösterilecek', tag: 'TradeCard');
+        Logger.debug('🔍 Trade #${trade.offerID} - hasReviewData: $hasReviewData', tag: 'TradeCard');
+        return true;
+      } else {
+        Logger.debug('🔍 Trade #${trade.offerID} - Daha önce yorum yapılmış, buton gösterilmeyecek', tag: 'TradeCard');
+        Logger.debug('🔍 Trade #${trade.offerID} - hasReview: ${trade.hasReview}, rating: ${trade.rating}, comment: ${trade.comment}', tag: 'TradeCard');
+        return false;
+      }
+    }
+    
     Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=false, buton gösterilmeyecek', tag: 'TradeCard');
+    Logger.debug('🔍 Trade #${trade.offerID} - currentStatusID=$currentUserStatusID, bothCompleted=$bothCompleted', tag: 'TradeCard');
     return false;
   }
 
@@ -617,10 +654,18 @@ class TradeCard extends StatelessWidget {
                           final shouldShowReview = _shouldShowReviewButton();
                           Logger.debug('🔍 Trade #${trade.offerID} - Review button check: currentStatusID=$currentStatusID, shouldShowReview=$shouldShowReview', tag: 'TradeCard');
                           Logger.debug('🔍 Trade #${trade.offerID} - Trade data: hasReview=${trade.hasReview}, rating=${trade.rating}, comment=${trade.comment}', tag: 'TradeCard');
+                          Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=${trade.canGiveReview}', tag: 'TradeCard');
                           
+                          // Yorum butonu gösterilme koşulları:
+                          // 1. StatusID=4 veya 5 olmalı
+                          // 2. shouldShowReview true olmalı (canGiveReview=true veya manuel kontrol geçmeli)
+                          // 3. Daha önce yorum yapılmamış olmalı
                           if ((currentStatusID == 4 || currentStatusID == 5) && shouldShowReview) {
+                            Logger.debug('🔍 Trade #${trade.offerID} - Review button gösteriliyor!', tag: 'TradeCard');
                             return _buildReviewButton(context);
                           }
+                          
+                          Logger.debug('🔍 Trade #${trade.offerID} - Review button gösterilmiyor. currentStatusID=$currentStatusID, shouldShowReview=$shouldShowReview, hasReview=${trade.hasReview}', tag: 'TradeCard');
                           return Container();
                         },
                       ),

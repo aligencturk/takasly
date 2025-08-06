@@ -516,7 +516,18 @@ class _TradeViewState extends State<TradeView>
                         onReview: (UserTrade trade, int rating, String comment) async {
                           // Puan Ver butonu tıklandığında yorum yapma işlemini gerçekleştir
                           Logger.info('Puan Ver butonu tıklandı - Trade #${trade.offerID}, Rating: $rating, Comment: $comment', tag: 'TradeView');
-                          await _reviewTrade(trade, rating, comment);
+                          final success = await _reviewTrade(trade, rating, comment);
+                          
+                          // Başarılı yorum sonrası takasları yeniden yükle
+                          if (success && _currentUserId != null && _tradeViewModel != null) {
+                            Logger.info('🔄 Yorum sonrası takaslar yeniden yükleniyor...', tag: 'TradeView');
+                            await _tradeViewModel!.loadUserTrades(int.parse(_currentUserId!));
+                            
+                            // UI'ı güncelle
+                            if (mounted) {
+                              setState(() {});
+                            }
+                          }
                         },
                         onCompleteSimple: (trade) {
                           // Takası Tamamla butonu tıklandığında takas tamamlama dialog'unu göster
@@ -716,7 +727,18 @@ class _TradeViewState extends State<TradeView>
       onReview: (UserTrade trade, int rating, String comment) async {
         // Puan Ver butonu tıklandığında yorum yapma işlemini gerçekleştir
         Logger.info('Puan Ver butonu tıklandı - Trade #${trade.offerID}, Rating: $rating, Comment: $comment', tag: 'TradeView');
-        await _reviewTrade(trade, rating, comment);
+        final success = await _reviewTrade(trade, rating, comment);
+        
+        // Başarılı yorum sonrası takasları yeniden yükle
+        if (success && _currentUserId != null && _tradeViewModel != null) {
+          Logger.info('🔄 Yorum sonrası takaslar yeniden yükleniyor...', tag: 'TradeView');
+          await _tradeViewModel!.loadUserTrades(int.parse(_currentUserId!));
+          
+          // UI'ı güncelle
+          if (mounted) {
+            setState(() {});
+          }
+        }
       },
       onCompleteSimple: (trade) {
         // Takası Tamamla butonu tıklandığında takas tamamlama dialog'unu göster
