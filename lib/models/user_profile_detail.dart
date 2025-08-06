@@ -55,7 +55,7 @@ class UserProfileDetail {
       
       Logger.debug('🔍 UserProfileDetail.fromJson - userFullname: $userFullname', tag: 'UserProfileDetail');
       
-      return UserProfileDetail(
+      final result = UserProfileDetail(
         userID: json['userID'] ?? json['id'] ?? 0,
         userFullname: userFullname,
         userImage: json['userImage'] ?? json['profileImage'] ?? json['avatar'],
@@ -71,11 +71,32 @@ class UserProfileDetail {
                 .toList() ??
             [],
         myReviews: (json['myReviews'] as List<dynamic>?)
-                ?.map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
+                ?.map((e) {
+                  Logger.debug('🔍 UserProfileDetail.fromJson - Parsing myReview: $e', tag: 'UserProfileDetail');
+                  return ProfileReview.fromJson(e as Map<String, dynamic>);
+                })
                 .toList() ??
             [],
         isApproved: isApproved,
       );
+      
+      // Debug logları ekle
+      Logger.debug('🔍 UserProfileDetail.fromJson - Parsed successfully', tag: 'UserProfileDetail');
+      Logger.debug('🔍 UserProfileDetail.fromJson - User: $userFullname (ID: ${json['userID'] ?? json['id'] ?? 0})', tag: 'UserProfileDetail');
+      Logger.debug('🔍 UserProfileDetail.fromJson - MyReviews count: ${(json['myReviews'] as List<dynamic>?)?.length ?? 0}', tag: 'UserProfileDetail');
+      Logger.debug('🔍 UserProfileDetail.fromJson - Reviews count: ${(json['reviews'] as List<dynamic>?)?.length ?? 0}', tag: 'UserProfileDetail');
+      Logger.debug('🔍 UserProfileDetail.fromJson - Products count: ${(json['products'] as List<dynamic>?)?.length ?? 0}', tag: 'UserProfileDetail');
+      
+      // MyReviews detaylarını logla
+      final myReviewsList = json['myReviews'] as List<dynamic>?;
+      if (myReviewsList != null) {
+        for (int i = 0; i < myReviewsList.length; i++) {
+          final reviewJson = myReviewsList[i] as Map<String, dynamic>;
+          Logger.debug('🔍 UserProfileDetail.fromJson - MyReview $i: ID=${reviewJson['reviewID']}, Rating=${reviewJson['rating']}, Comment="${reviewJson['comment']}"', tag: 'UserProfileDetail');
+        }
+      }
+      
+      return result;
     } catch (e) {
       Logger.error('⚠️ UserProfileDetail.fromJson - Parse error: $e', tag: 'UserProfileDetail');
       return UserProfileDetail(
@@ -342,7 +363,9 @@ class ProfileProduct {
 @JsonSerializable()
 class ProfileReview {
   final int reviewID;
+  @JsonKey(name: 'revieweeName', defaultValue: '')
   final String reviewerName;
+  @JsonKey(name: 'revieweeImage')
   final String? reviewerImage;
   final int rating;
   final String comment;
@@ -359,16 +382,64 @@ class ProfileReview {
 
   factory ProfileReview.fromJson(Map<String, dynamic> json) {
     try {
-      return ProfileReview(
-        reviewID: json['reviewID'] ?? 0,
-        reviewerName: json['reviewerName'] ?? '',
-        reviewerImage: json['reviewerImage'],
-        rating: json['rating'] ?? 0,
-        comment: json['comment'] ?? '',
-        reviewDate: json['reviewDate'] ?? '',
+      Logger.debug('🔍 ProfileReview.fromJson - Parsing: $json', tag: 'ProfileReview');
+      Logger.debug('🔍 ProfileReview.fromJson - Available keys: ${json.keys.toList()}', tag: 'ProfileReview');
+      
+      // API'den gelen farklı field isimlerini kontrol et
+      final reviewID = json['reviewID'] ?? json['id'] ?? 0;
+      final rating = json['rating'] ?? 0;
+      final comment = json['comment'] ?? '';
+      final reviewDate = json['reviewDate'] ?? json['date'] ?? '';
+      
+      // Reviewer name için farklı field isimlerini kontrol et
+      String reviewerName = '';
+      if (json['revieweeName'] != null && json['revieweeName'].toString().isNotEmpty && json['revieweeName'].toString() != 'null') {
+        reviewerName = json['revieweeName'].toString();
+        Logger.debug('🔍 ProfileReview.fromJson - Using revieweeName: $reviewerName', tag: 'ProfileReview');
+      } else if (json['reviewerName'] != null && json['reviewerName'].toString().isNotEmpty && json['reviewerName'].toString() != 'null') {
+        reviewerName = json['reviewerName'].toString();
+        Logger.debug('🔍 ProfileReview.fromJson - Using reviewerName: $reviewerName', tag: 'ProfileReview');
+      } else if (json['name'] != null && json['name'].toString().isNotEmpty && json['name'].toString() != 'null') {
+        reviewerName = json['name'].toString();
+        Logger.debug('🔍 ProfileReview.fromJson - Using name: $reviewerName', tag: 'ProfileReview');
+      } else if (json['userName'] != null && json['userName'].toString().isNotEmpty && json['userName'].toString() != 'null') {
+        reviewerName = json['userName'].toString();
+        Logger.debug('🔍 ProfileReview.fromJson - Using userName: $reviewerName', tag: 'ProfileReview');
+      } else {
+        Logger.warning('⚠️ ProfileReview.fromJson - No valid reviewer name found', tag: 'ProfileReview');
+        reviewerName = 'Kullanıcı';
+      }
+      
+      // Reviewer image için farklı field isimlerini kontrol et
+      String? reviewerImage;
+      if (json['revieweeImage'] != null && json['revieweeImage'].toString().isNotEmpty && json['revieweeImage'].toString() != 'null') {
+        reviewerImage = json['revieweeImage'].toString();
+        Logger.debug('🔍 ProfileReview.fromJson - Using revieweeImage: $reviewerImage', tag: 'ProfileReview');
+      } else if (json['reviewerImage'] != null && json['reviewerImage'].toString().isNotEmpty && json['reviewerImage'].toString() != 'null') {
+        reviewerImage = json['reviewerImage'].toString();
+        Logger.debug('🔍 ProfileReview.fromJson - Using reviewerImage: $reviewerImage', tag: 'ProfileReview');
+      } else if (json['image'] != null && json['image'].toString().isNotEmpty && json['image'].toString() != 'null') {
+        reviewerImage = json['image'].toString();
+        Logger.debug('🔍 ProfileReview.fromJson - Using image: $reviewerImage', tag: 'ProfileReview');
+      } else if (json['avatar'] != null && json['avatar'].toString().isNotEmpty && json['avatar'].toString() != 'null') {
+        reviewerImage = json['avatar'].toString();
+        Logger.debug('🔍 ProfileReview.fromJson - Using avatar: $reviewerImage', tag: 'ProfileReview');
+      }
+      
+      final result = ProfileReview(
+        reviewID: reviewID,
+        reviewerName: reviewerName,
+        reviewerImage: reviewerImage,
+        rating: rating,
+        comment: comment,
+        reviewDate: reviewDate,
       );
+      
+      Logger.debug('🔍 ProfileReview.fromJson - Parsed successfully: ID=${result.reviewID}, Name="${result.reviewerName}", Rating=${result.rating}, Comment="${result.comment}"', tag: 'ProfileReview');
+      
+      return result;
     } catch (e) {
-      print('⚠️ ProfileReview.fromJson - Parse error: $e');
+      Logger.error('⚠️ ProfileReview.fromJson - Parse error: $e', tag: 'ProfileReview');
       return ProfileReview(
         reviewID: 0,
         reviewerName: 'Kullanıcı',

@@ -41,6 +41,15 @@ class UserProfileDetailViewModel extends ChangeNotifier {
         _profileDetail = response.data;
         Logger.debug('✅ Profile detail loaded successfully', tag: _tag);
         Logger.debug('📊 User: ${_profileDetail!.userFullname}, Rating: ${_profileDetail!.averageRating}', tag: _tag);
+        Logger.debug('📊 MyReviews count: ${_profileDetail!.myReviews.length}', tag: _tag);
+        Logger.debug('📊 Reviews count: ${_profileDetail!.reviews.length}', tag: _tag);
+        Logger.debug('📊 Products count: ${_profileDetail!.products.length}', tag: _tag);
+        
+        // MyReviews detaylarını logla
+        for (int i = 0; i < _profileDetail!.myReviews.length; i++) {
+          final review = _profileDetail!.myReviews[i];
+          Logger.debug('📊 MyReview $i: ID=${review.reviewID}, Rating=${review.rating}, Comment="${review.comment}"', tag: _tag);
+        }
       } else {
         _setError(response.error ?? 'Profil detayları yüklenemedi');
         Logger.error('❌ Failed to load profile detail: ${response.error}', tag: _tag);

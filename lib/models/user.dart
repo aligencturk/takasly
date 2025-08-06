@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'user_profile_detail.dart';
 
 part 'user.g.dart';
 
@@ -20,6 +21,7 @@ class User {
   final String? gender; // Erkek, Kadın, Belirtilmemiş
   final String? token; // Kullanıcı token'ı
   final bool? isShowContact; // Telefon numarasının görünürlüğü
+  final List<ProfileReview> myReviews; // Kullanıcının yaptığı değerlendirmeler
 
   const User({
     required this.id,
@@ -38,6 +40,7 @@ class User {
     this.gender,
     this.token,
     this.isShowContact,
+    this.myReviews = const [],
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -142,6 +145,25 @@ class User {
       return null;
     }
 
+    // myReviews alanını parse et
+    List<ProfileReview> parseMyReviews(dynamic value) {
+      if (value is List) {
+        return value.map((item) {
+          if (item is Map<String, dynamic>) {
+            return ProfileReview.fromJson(item);
+          }
+          return ProfileReview(
+            reviewID: 0,
+            reviewerName: 'Kullanıcı',
+            rating: 0,
+            comment: '',
+            reviewDate: '',
+          );
+        }).toList();
+      }
+      return [];
+    }
+
     return User(
       id: getId(json),
       name: getName(json),
@@ -164,6 +186,7 @@ class User {
               json['userGender'] != null ? safeString(json['userGender']) : null,
       token: json['token'] != null ? safeString(json['token']) : null,
       isShowContact: json['isShowContact'] != null ? safeBool(json['isShowContact']) : true,
+      myReviews: parseMyReviews(json['myReviews']),
     );
   }
   Map<String, dynamic> toJson() {
@@ -194,6 +217,7 @@ class User {
     String? gender,
     String? token,
     bool? isShowContact,
+    List<ProfileReview>? myReviews,
   }) {
     return User(
       id: id ?? this.id,
@@ -212,6 +236,7 @@ class User {
       gender: gender ?? this.gender,
       token: token ?? this.token,
       isShowContact: isShowContact ?? this.isShowContact,
+      myReviews: myReviews ?? this.myReviews,
     );
   }
 

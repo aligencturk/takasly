@@ -93,8 +93,8 @@ Map<String, dynamic> _$ProfileProductToJson(ProfileProduct instance) =>
 ProfileReview _$ProfileReviewFromJson(Map<String, dynamic> json) =>
     ProfileReview(
       reviewID: (json['reviewID'] as num).toInt(),
-      reviewerName: json['reviewerName'] as String,
-      reviewerImage: json['reviewerImage'] as String?,
+      reviewerName: json['revieweeName'] as String? ?? '',
+      reviewerImage: json['revieweeImage'] as String?,
       rating: (json['rating'] as num).toInt(),
       comment: json['comment'] as String,
       reviewDate: json['reviewDate'] as String,
@@ -103,8 +103,8 @@ ProfileReview _$ProfileReviewFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$ProfileReviewToJson(ProfileReview instance) =>
     <String, dynamic>{
       'reviewID': instance.reviewID,
-      'reviewerName': instance.reviewerName,
-      'reviewerImage': instance.reviewerImage,
+      'revieweeName': instance.reviewerName,
+      'revieweeImage': instance.reviewerImage,
       'rating': instance.rating,
       'comment': instance.comment,
       'reviewDate': instance.reviewDate,

@@ -551,6 +551,7 @@ class UserService {
                   userDataToTransform['userGender'] ??
                   userDataToTransform['gender'],
               'token': userToken, // Token'ı User modeline ekle
+              'myReviews': userDataToTransform['myReviews'] ?? [], // Kullanıcının yaptığı değerlendirmeler
             };
 
             print('🔍 Get Profile - Transformed data: $transformedData');
@@ -853,6 +854,39 @@ class UserService {
                 }
               }
               
+              // Reviews array'ini detaylı logla
+              if (dataField.containsKey('reviews') && dataField['reviews'] is List) {
+                final reviews = dataField['reviews'] as List;
+                print('🔍 Get Profile Detail - Reviews count: ${reviews.length}');
+                for (int i = 0; i < reviews.length && i < 3; i++) {
+                  final review = reviews[i];
+                  print('🔍 Review $i: $review');
+                }
+              }
+              
+              // MyReviews array'ini detaylı logla
+              if (dataField.containsKey('myReviews') && dataField['myReviews'] is List) {
+                final myReviews = dataField['myReviews'] as List;
+                print('🔍 Get Profile Detail - MyReviews count: ${myReviews.length}');
+                print('🔍 Get Profile Detail - MyReviews raw data: $myReviews');
+                for (int i = 0; i < myReviews.length && i < 3; i++) {
+                  final review = myReviews[i];
+                  print('🔍 MyReview $i: $review');
+                  if (review is Map<String, dynamic>) {
+                    print('🔍 MyReview $i keys: ${review.keys.toList()}');
+                    print('🔍 MyReview $i reviewID: ${review['reviewID']}');
+                    print('🔍 MyReview $i revieweeName: ${review['revieweeName']}');
+                    print('🔍 MyReview $i revieweeImage: ${review['revieweeImage']}');
+                    print('🔍 MyReview $i rating: ${review['rating']}');
+                    print('🔍 MyReview $i comment: ${review['comment']}');
+                    print('🔍 MyReview $i reviewDate: ${review['reviewDate']}');
+                  }
+                }
+              } else {
+                print('⚠️ Get Profile Detail - myReviews field not found or not a list');
+                print('⚠️ Get Profile Detail - Available keys: ${dataField.keys.toList()}');
+              }
+              
               return UserProfileDetail.fromJson(dataField);
             }
             // Eğer direkt profil detayları gelirse
@@ -876,6 +910,39 @@ class UserService {
                     print('🔍 Product $i category: ${product['category']}');
                   }
                 }
+              }
+              
+              // Reviews array'ini detaylı logla
+              if (json.containsKey('reviews') && json['reviews'] is List) {
+                final reviews = json['reviews'] as List;
+                print('🔍 Get Profile Detail - Reviews count: ${reviews.length}');
+                for (int i = 0; i < reviews.length && i < 3; i++) {
+                  final review = reviews[i];
+                  print('🔍 Review $i: $review');
+                }
+              }
+              
+              // MyReviews array'ini detaylı logla
+              if (json.containsKey('myReviews') && json['myReviews'] is List) {
+                final myReviews = json['myReviews'] as List;
+                print('🔍 Get Profile Detail - MyReviews count: ${myReviews.length}');
+                print('🔍 Get Profile Detail - MyReviews raw data: $myReviews');
+                for (int i = 0; i < myReviews.length && i < 3; i++) {
+                  final review = myReviews[i];
+                  print('🔍 MyReview $i: $review');
+                  if (review is Map<String, dynamic>) {
+                    print('🔍 MyReview $i keys: ${review.keys.toList()}');
+                    print('🔍 MyReview $i reviewID: ${review['reviewID']}');
+                    print('🔍 MyReview $i revieweeName: ${review['revieweeName']}');
+                    print('🔍 MyReview $i revieweeImage: ${review['revieweeImage']}');
+                    print('🔍 MyReview $i rating: ${review['rating']}');
+                    print('🔍 MyReview $i comment: ${review['comment']}');
+                    print('🔍 MyReview $i reviewDate: ${review['reviewDate']}');
+                  }
+                }
+              } else {
+                print('⚠️ Get Profile Detail - myReviews field not found or not a list');
+                print('⚠️ Get Profile Detail - Available keys: ${json.keys.toList()}');
               }
               
               return UserProfileDetail.fromJson(json);
@@ -1000,6 +1067,7 @@ class UserService {
               'gender':
                   userDataToTransform['userGender'] ??
                   userDataToTransform['gender'],
+              'myReviews': userDataToTransform['myReviews'] ?? [], // Kullanıcının yaptığı değerlendirmeler
             };
 
             print('🔍 Get User By ID - Transformed data: $transformedData');

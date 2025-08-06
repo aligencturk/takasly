@@ -25,6 +25,11 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
   gender: json['gender'] as String?,
   token: json['token'] as String?,
   isShowContact: json['isShowContact'] as bool?,
+  myReviews:
+      (json['myReviews'] as List<dynamic>?)
+          ?.map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -44,4 +49,5 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'gender': instance.gender,
   'token': instance.token,
   'isShowContact': instance.isShowContact,
+  'myReviews': instance.myReviews,
 };

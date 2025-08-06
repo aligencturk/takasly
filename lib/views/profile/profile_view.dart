@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/user.dart';
 import 'package:takasly/models/product.dart';
+import 'package:takasly/models/user_profile_detail.dart';
 import 'package:takasly/viewmodels/auth_viewmodel.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/viewmodels/user_viewmodel.dart';
@@ -92,16 +93,61 @@ class _ProfileViewState extends State<ProfileView>
   Future<void> _loadUserProfileDetail(int userId) async {
     if (!mounted) return;
     
+    Logger.info('👤 ProfileView - _loadUserProfileDetail - Starting for user ID: $userId');
+    
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
     final profileDetailViewModel = Provider.of<UserProfileDetailViewModel>(context, listen: false);
     final userToken = userViewModel.currentUser?.token;
     
+    Logger.debug('👤 ProfileView - _loadUserProfileDetail - User token: ${userToken?.substring(0, 10)}...');
+    
     if (userToken != null) {
       profileDetailViewModel.setUserToken(userToken);
+      Logger.info('👤 ProfileView - _loadUserProfileDetail - Loading profile detail...');
+      
       await profileDetailViewModel.loadProfileDetail(
         userToken: userToken,
         userId: userId,
       );
+      
+      Logger.info('👤 ProfileView - _loadUserProfileDetail - Profile detail loading completed');
+      Logger.debug('👤 ProfileView - _loadUserProfileDetail - Has data: ${profileDetailViewModel.hasData}');
+      Logger.debug('👤 ProfileView - _loadUserProfileDetail - Has error: ${profileDetailViewModel.hasError}');
+      Logger.debug('👤 ProfileView - _loadUserProfileDetail - Error message: ${profileDetailViewModel.errorMessage}');
+      
+      if (profileDetailViewModel.hasData && profileDetailViewModel.profileDetail != null) {
+        final profile = profileDetailViewModel.profileDetail!;
+        Logger.info('👤 ProfileView - _loadUserProfileDetail - Profile loaded successfully');
+        Logger.debug('👤 ProfileView - _loadUserProfileDetail - User: ${profile.userFullname}');
+        Logger.debug('👤 ProfileView - _loadUserProfileDetail - MyReviews count: ${profile.myReviews.length}');
+        Logger.debug('👤 ProfileView - _loadUserProfileDetail - Reviews count: ${profile.reviews.length}');
+        
+        // MyReviews detaylarını daha detaylı logla
+        if (profile.myReviews.isEmpty) {
+          Logger.warning('⚠️ ProfileView - _loadUserProfileDetail - MyReviews array is empty!');
+          Logger.debug('👤 ProfileView - _loadUserProfileDetail - This might indicate:');
+          Logger.debug('👤 ProfileView - _loadUserProfileDetail - 1. User has not made any reviews yet');
+          Logger.debug('👤 ProfileView - _loadUserProfileDetail - 2. API is not returning myReviews field');
+          Logger.debug('👤 ProfileView - _loadUserProfileDetail - 3. Field name mismatch in API response');
+        } else {
+          Logger.info('👤 ProfileView - _loadUserProfileDetail - MyReviews found:');
+          for (int i = 0; i < profile.myReviews.length; i++) {
+            final review = profile.myReviews[i];
+            Logger.debug('👤 ProfileView - _loadUserProfileDetail - MyReview $i: ID=${review.reviewID}, Name="${review.reviewerName}", Rating=${review.rating}, Comment="${review.comment}"');
+          }
+        }
+        
+        // Reviews detaylarını da logla
+        if (profile.reviews.isNotEmpty) {
+          Logger.info('👤 ProfileView - _loadUserProfileDetail - Reviews found:');
+          for (int i = 0; i < profile.reviews.length; i++) {
+            final review = profile.reviews[i];
+            Logger.debug('👤 ProfileView - _loadUserProfileDetail - Review $i: ID=${review.reviewID}, Name="${review.reviewerName}", Rating=${review.rating}, Comment="${review.comment}"');
+          }
+        }
+      }
+    } else {
+      Logger.error('❌ ProfileView - _loadUserProfileDetail - User token is null');
     }
   }
 
@@ -655,9 +701,21 @@ class _ProfileViewState extends State<ProfileView>
   }
 
   Widget _buildMyReviewsTab() {
-    return Consumer<UserProfileDetailViewModel>(
-      builder: (context, profileDetailVm, child) {
+    return Consumer2<UserViewModel, UserProfileDetailViewModel>(
+      builder: (context, userVm, profileDetailVm, child) {
+        // Debug logları ekle
+        Logger.debug('👤 ProfileView - _buildMyReviewsTab - State: isLoading=${profileDetailVm.isLoading}, hasError=${profileDetailVm.hasError}, hasData=${profileDetailVm.hasData}');
+        
+        // Önce User modelindeki myReviews'i kontrol et
+        final user = userVm.currentUser;
+        if (user != null && user.myReviews.isNotEmpty) {
+          Logger.debug('👤 ProfileView - _buildMyReviewsTab - Found myReviews in User model: ${user.myReviews.length}');
+          return _buildMyReviewsContent(user.myReviews, 'User Model');
+        }
+        
+        // Eğer User modelinde yoksa UserProfileDetailViewModel'i kullan
         if (profileDetailVm.isLoading) {
+          Logger.debug('👤 ProfileView - _buildMyReviewsTab - Loading state');
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(40.0),
@@ -667,6 +725,7 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         if (profileDetailVm.hasError) {
+          Logger.debug('👤 ProfileView - _buildMyReviewsTab - Error state: ${profileDetailVm.errorMessage}');
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(40.0),
@@ -706,6 +765,7 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         if (!profileDetailVm.hasData || profileDetailVm.profileDetail == null) {
+          Logger.debug('👤 ProfileView - _buildMyReviewsTab - No data available');
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(40.0),
@@ -720,54 +780,73 @@ class _ProfileViewState extends State<ProfileView>
 
         final profile = profileDetailVm.profileDetail!;
         
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              // Değerlendirme sayısı
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
-                color: Colors.white,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildReviewStatItem(
-                      icon: Icons.rate_review,
-                      value: profile.myReviews.length.toString(),
-                      label: 'Yaptığınız Değerlendirme',
-                      color: AppTheme.primary,
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Değerlendirmeler listesi
-              if (profile.myReviews.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  color: Colors.white,
-                  child: Column(
-                    children: profile.myReviews.map((review) => _buildReviewItem(review)).toList(),
-                  ),
-                )
-              else
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(40.0),
-                  color: Colors.white,
-                  child: _buildEmptyTab(
-                    icon: Icons.rate_review_outlined,
-                    title: 'Henüz Değerlendirme Yapmamışsınız',
-                    subtitle: 'Henüz hiç değerlendirme yapmamışsınız.',
-                  ),
-                ),
-            ],
-          ),
-        );
+        // Profile detaylarını logla
+        Logger.debug('👤 ProfileView - _buildMyReviewsTab - Profile loaded');
+        Logger.debug('👤 ProfileView - _buildMyReviewsTab - User: ${profile.userFullname} (ID: ${profile.userID})');
+        Logger.debug('👤 ProfileView - _buildMyReviewsTab - MyReviews count: ${profile.myReviews.length}');
+        Logger.debug('👤 ProfileView - _buildMyReviewsTab - Reviews count: ${profile.reviews.length}');
+        Logger.debug('👤 ProfileView - _buildMyReviewsTab - Products count: ${profile.products.length}');
+        
+        // MyReviews detaylarını logla
+        for (int i = 0; i < profile.myReviews.length; i++) {
+          final review = profile.myReviews[i];
+          Logger.debug('👤 ProfileView - _buildMyReviewsTab - MyReview $i: ID=${review.reviewID}, Rating=${review.rating}, Comment="${review.comment}"');
+        }
+        
+        return _buildMyReviewsContent(profile.myReviews, 'Profile Detail');
       },
+    );
+  }
+
+  Widget _buildMyReviewsContent(List<dynamic> myReviews, String source) {
+    Logger.debug('👤 ProfileView - _buildMyReviewsContent - Building content from $source with ${myReviews.length} reviews');
+    
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          // Değerlendirme sayısı
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(20),
+            color: Colors.white,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildReviewStatItem(
+                  icon: Icons.rate_review,
+                  value: myReviews.length.toString(),
+                  label: 'Yaptığınız Değerlendirme',
+                  color: AppTheme.primary,
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Değerlendirmeler listesi
+          if (myReviews.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              color: Colors.white,
+              child: Column(
+                children: myReviews.map((review) => _buildReviewItem(review)).toList(),
+              ),
+            )
+          else
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(40.0),
+              color: Colors.white,
+              child: _buildEmptyTab(
+                icon: Icons.rate_review_outlined,
+                title: 'Henüz Değerlendirme Yapmamışsınız',
+                subtitle: 'Henüz hiç değerlendirme yapmamışsınız.',
+              ),
+            ),
+        ],
+      ),
     );
   }
 
