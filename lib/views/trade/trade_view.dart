@@ -465,6 +465,11 @@ class _TradeViewState extends State<TradeView>
                       else {
                         Logger.info('❌ Trade #${updatedTrade.offerID} için butonlar gösterilmeyecek', tag: 'TradeView');
                       }
+                    }
+                    // StatusID=2 (Onaylandı) olan trade'ler için "Takası Tamamla" butonu göster
+                    else if (currentUserStatusID == 2) {
+                      shouldShowButtons = false; // Onay/red butonları gösterilmez, sadece "Takası Tamamla" butonu TradeCard'da gösterilir
+                      Logger.info('✅ Trade #${updatedTrade.offerID} için statusID=2, "Takası Tamamla" butonu TradeCard\'da gösterilecek', tag: 'TradeView');
                     } else {
                       Logger.info('❌ Trade #${updatedTrade.offerID} statusID=$currentUserStatusID ve showButtons=false olduğu için butonlar gösterilmeyecek', tag: 'TradeView');
                     }
@@ -504,8 +509,8 @@ class _TradeViewState extends State<TradeView>
                           _showTradeCompleteDialog(trade);
                         },
                         onCompleteSimple: (trade) {
-                          // Basit takas tamamlama işlemini yap
-                          _completeTradeSimple(trade);
+                          // Takası Tamamla butonu tıklandığında tradeReview endpoint'ini çağır
+                          _showTradeCompleteDialog(trade);
                         },
                         onStatusChange: (newStatusId) async {
                           Logger.info('TradeCard onStatusChange çağrıldı: $newStatusId', tag: 'TradeView');
@@ -724,6 +729,21 @@ class _TradeViewState extends State<TradeView>
           offerID: trade.offerID,
           isConfirm: true,
         );
+        
+        // Onaylama başarılıysa, takas durumunu güncelle ve "Takası Tamamla" butonunu göster
+        if (success) {
+          Logger.info('Trade #${trade.offerID} onaylandı, durum güncelleniyor...', tag: 'TradeView');
+          
+          // Takasları yeniden yükle
+          final userId = await _authService.getCurrentUserId();
+          if (userId != null && tradeViewModel != null) {
+            await tradeViewModel.loadUserTrades(int.parse(userId));
+            Logger.info('✅ TradeViewModel yenilendi (onaylama sonrası)', tag: 'TradeView');
+          }
+          
+          // showButtons değerini güncelle
+          await _updateShowButtonsForTrade(trade);
+        }
       } else if (statusId == 3) {
         // Reddetme işlemi - artık onReject callback'i ile yapılıyor
         Logger.info('Trade #${trade.offerID} reddetme işlemi onReject callback\'i ile yapılacak', tag: 'TradeView');
@@ -1671,7 +1691,10 @@ class _TradeViewState extends State<TradeView>
             currentUserStatusID = trade.receiverStatusID;
           }
           
-          if (currentUserStatusID == 4) {
+          if (currentUserStatusID == 2) {
+            dialogTitle = 'Takası Tamamla';
+            dialogSubtitle = 'Takasınızı tamamlamak için karşı tarafa yorum ve puan verin. Bu işlem takasınızı sonlandıracaktır.';
+          } else if (currentUserStatusID == 4) {
             dialogTitle = 'Teslim Edildi / Alındı';
             dialogSubtitle = 'Ürün teslim edildi! Karşı tarafa yorum ve puan verin.';
           } else if (currentUserStatusID == 5) {
@@ -1776,24 +1799,56 @@ class _TradeViewState extends State<TradeView>
                     return;
                   }
                   
-                  Navigator.pop(context);
-                  Logger.info('Dialog kapatıldı - Rating: $rating, Comment: ${commentController.text.trim()}', tag: 'TradeView');
+                  // StatusID=2 durumunda ek uyarı göster
+                  if (currentUserStatusID == 2) {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text('Takası Tamamla'),
+                        content: Text('Bu işlem takasınızı sonlandıracaktır. Devam etmek istediğinizden emin misiniz?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text('İptal'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF10B981),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: Text('Evet, Tamamla'),
+                          ),
+                        ],
+                      ),
+                    );
+                    
+                    if (confirmed != true) {
+                      return;
+                    }
+                                                                                                                                                                                                                                                                                      }
+                    
+                    Navigator.pop(context);
+                    Logger.info('Dialog kapatıldı - Rating: $rating, Comment: ${commentController.text.trim()}, StatusID: $currentUserStatusID', tag: 'TradeView');
                   final success = await _completeTradeWithReview(trade, rating.toInt(), commentController.text.trim());
                   if (success) {
                     // Başarılı işlem sonrası ek işlemler gerekebilir
                     Logger.info('Takas tamamlama ve yorum gönderme başarılı', tag: 'TradeView');
                     
-                                    // Kullanıcı takaslarını yenile
-                if (_currentUserId != null && _tradeViewModel != null) {
-                  await _tradeViewModel!.loadUserTrades(int.parse(_currentUserId!));
-                }
+                    // Kullanıcı takaslarını yenile
+                    if (_currentUserId != null && _tradeViewModel != null) {
+                      await _tradeViewModel!.loadUserTrades(int.parse(_currentUserId!));
+                    }
+                    
+                    // showButtons değerlerini güncelle
+                    await _updateShowButtonsForTrade(trade);
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF10B981),
                   foregroundColor: Colors.white,
                 ),
-                child: Text('Tamamla'),
+                child: Text(currentUserStatusID == 2 ? 'Takası Tamamla' : 'Tamamla'),
               ),
             ],
           );
@@ -1924,9 +1979,17 @@ class _TradeViewState extends State<TradeView>
         
         if (response != null && response.data != null) {
           final showButtons = response.data!.showButtons;
-          _tradeShowButtonsMap[trade.offerID] = showButtons;
+          final statusID = response.data!.statusID;
           
-          Logger.info('✅ Trade #${trade.offerID} showButtons değeri güncellendi: $showButtons', tag: 'TradeView');
+          // StatusID=2 (Onaylandı) durumunda showButtons değerini true yap
+          if (statusID == 2) {
+            Logger.info('🔄 Trade #${trade.offerID} statusID=2 (Onaylandı), showButtons değeri true olarak güncelleniyor', tag: 'TradeView');
+            _tradeShowButtonsMap[trade.offerID] = true;
+          } else {
+            _tradeShowButtonsMap[trade.offerID] = showButtons;
+          }
+          
+          Logger.info('✅ Trade #${trade.offerID} showButtons değeri güncellendi: ${_tradeShowButtonsMap[trade.offerID]}', tag: 'TradeView');
           
           // UI'ı güncelle
           if (mounted) {
@@ -1987,6 +2050,12 @@ class _TradeViewState extends State<TradeView>
               Logger.info('  • Trade senderStatusID: ${trade.senderStatusID}, receiverStatusID: ${trade.receiverStatusID}', tag: 'TradeView');
               Logger.info('  • Trade senderStatusTitle: "${trade.senderStatusTitle}", receiverStatusTitle: "${trade.receiverStatusTitle}"', tag: 'TradeView');
               Logger.info('  • Trade isSenderConfirm: ${trade.isSenderConfirm}, isReceiverConfirm: ${trade.isReceiverConfirm}', tag: 'TradeView');
+              
+              // StatusID=2 (Onaylandı) durumunda showButtons değerini true yap
+              if (statusID == 2) {
+                Logger.info('🔄 Trade #${trade.offerID} statusID=2 (Onaylandı), showButtons değeri true olarak güncelleniyor', tag: 'TradeView');
+                _tradeShowButtonsMap[trade.offerID] = true;
+              }
             } else {
               Logger.warning('⚠️ Trade #${trade.offerID} için showButtons değeri alınamadı', tag: 'TradeView');
               // Varsayılan olarak false ata
@@ -2147,7 +2216,20 @@ class _TradeViewState extends State<TradeView>
         return false;
       }
 
-      Logger.info('Takas değerlendirme gönderiliyor... Trade #${trade.offerID}, Rating: $rating, Comment: $comment', tag: 'TradeView');
+      // Mevcut kullanıcının durumunu belirle
+      final currentUserId = _tradeViewModel?.currentUserId ?? '0';
+      final currentUserIdInt = int.tryParse(currentUserId) ?? 0;
+      int currentUserStatusID;
+      
+      if (currentUserIdInt == trade.senderUserID) {
+        currentUserStatusID = trade.senderStatusID;
+      } else if (currentUserIdInt == trade.receiverUserID) {
+        currentUserStatusID = trade.receiverStatusID;
+      } else {
+        currentUserStatusID = trade.receiverStatusID;
+      }
+      
+      Logger.info('Takas değerlendirme gönderiliyor... Trade #${trade.offerID}, Rating: $rating, Comment: $comment, StatusID: $currentUserStatusID', tag: 'TradeView');
 
       // Yeni tradeReview endpoint'ini kullan
       final success = await tradeViewModel.reviewTrade(
@@ -2159,13 +2241,20 @@ class _TradeViewState extends State<TradeView>
 
       if (success) {
         if (mounted && _scaffoldMessenger != null) {
+          String successMessage;
+          if (currentUserStatusID == 2) {
+            successMessage = 'Takas başarıyla tamamlandı ve değerlendirildi';
+          } else {
+            successMessage = 'Takas değerlendirmesi başarıyla gönderildi';
+          }
+          
           _scaffoldMessenger!.showSnackBar(
             SnackBar(
               content: Row(
                 children: [
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Takas değerlendirmesi başarıyla gönderildi'),
+                  Text(successMessage),
                 ],
               ),
               backgroundColor: Colors.green,
@@ -2194,6 +2283,17 @@ class _TradeViewState extends State<TradeView>
         
         // Takas değerlendirme sonrası showButtons değerini güncelle
         await _updateShowButtonsForTrade(trade);
+        
+        // StatusID=2 durumunda takas tamamlandıktan sonra durumu güncelle
+        if (currentUserStatusID == 2) {
+          Logger.info('🔄 Trade #${trade.offerID} statusID=2 durumunda tamamlandı, durum güncelleniyor...', tag: 'TradeView');
+          
+          // Takasları tekrar yükle
+          if (userId != null && tradeViewModel != null) {
+            await tradeViewModel.loadUserTrades(int.parse(userId));
+            Logger.info('✅ TradeViewModel yenilendi (statusID=2 tamamlama sonrası)', tag: 'TradeView');
+          }
+        }
         return true;
       } else {
         if (mounted && _scaffoldMessenger != null) {

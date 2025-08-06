@@ -466,17 +466,20 @@ class TradeCard extends StatelessWidget {
                       ],
                       
                       // Alt kısım - Aksiyon butonları
-                      // API'den gelen showButtons değerine göre butonları göster
+                      // YENİ MANTIK: Kullanıcı takası onayladıktan sonra (statusID=2) "Takası Tamamla" butonu göster
                       
-                                             // Teslim edildi durumu için yorum butonu (statusID=4)
-                       if (_getCurrentUserStatusID() == 4)
-                         _buildReviewButton(context)
-                       // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
-                       else if (_getCurrentUserStatusID() == 5 && (trade.hasReview != true))
-                         _buildReviewButton(context)
-                       // Basit takas tamamlama butonu (statusID=3 - Kargoya Verildi)
-                       else if (_getCurrentUserStatusID() == 3)
-                         _buildCompleteTradeButton(context)
+                      // Takası Tamamla butonu (statusID=2 - Onaylandı durumu)
+                      if (_getCurrentUserStatusID() == 2)
+                        _buildCompleteTradeButton(context)
+                      // Teslim edildi durumu için yorum butonu (statusID=4)
+                      else if (_getCurrentUserStatusID() == 4)
+                        _buildReviewButton(context)
+                      // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
+                      else if (_getCurrentUserStatusID() == 5 && (trade.hasReview != true))
+                        _buildReviewButton(context)
+                      // Basit takas tamamlama butonu (statusID=3 - Kargoya Verildi)
+                      else if (_getCurrentUserStatusID() == 3)
+                        _buildCompleteTradeButton(context)
                       // Onay/red butonları (showButtons=true ise herhangi bir statusID için)
                       else if (showButtons == true) ...[
                                                  // Debug bilgilerini log'la
