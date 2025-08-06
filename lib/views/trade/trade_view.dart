@@ -194,16 +194,6 @@ class _TradeViewState extends State<TradeView>
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          // Debug butonu - geçici
-          IconButton(
-            icon: Icon(Icons.bug_report, color: AppTheme.textPrimary),
-            onPressed: () {
-              _showDebugInfo();
-            },
-            tooltip: 'Debug Bilgisi',
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primary,
