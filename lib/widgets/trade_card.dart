@@ -107,30 +107,36 @@ class TradeCard extends StatelessWidget {
     Logger.debug('  • rating: ${trade.rating}', tag: 'TradeCard');
     Logger.debug('  • comment: ${trade.comment}', tag: 'TradeCard');
     
+    // Önce değerlendirme yapılıp yapılmadığını kontrol et
+    // hasReview, rating veya comment varsa değerlendirme yapılmış demektir
+    final hasReviewData = trade.hasReview == true || 
+                         (trade.rating != null && trade.rating! > 0) || 
+                         (trade.comment != null && trade.comment!.isNotEmpty);
+    
+    if (hasReviewData) {
+      Logger.debug('🔍 Trade #${trade.offerID} - Daha önce değerlendirme yapılmış, buton gösterilmeyecek', tag: 'TradeCard');
+      Logger.debug('🔍 Trade #${trade.offerID} - hasReview: ${trade.hasReview}, rating: ${trade.rating}, comment: ${trade.comment}', tag: 'TradeCard');
+      return false;
+    }
+    
     // API'den gelen canGiveReview değerini kontrol et
     if (trade.canGiveReview == true) {
-      Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=true, buton gösterilecek', tag: 'TradeCard');
+      Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=true ve değerlendirme yapılmamış, buton gösterilecek', tag: 'TradeCard');
       return true;
     }
     
     // Eğer canGiveReview false ise veya null ise, manuel kontrol yap
-    // StatusID=4 veya 5 durumunda ve her iki taraf da tamamladıysa yorum yapılabilir
-    if ((currentUserStatusID == 4 || currentUserStatusID == 5) && bothCompleted) {
-      // Daha önce yorum yapılmamışsa buton göster
-      // hasReview, rating veya comment varsa yorum yapılmış demektir
-      final hasReviewData = trade.hasReview == true || 
-                           (trade.rating != null && trade.rating! > 0) || 
-                           (trade.comment != null && trade.comment!.isNotEmpty);
-      
-      if (!hasReviewData) {
-        Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=false ama manuel kontrol geçti, buton gösterilecek', tag: 'TradeCard');
-        Logger.debug('🔍 Trade #${trade.offerID} - hasReviewData: $hasReviewData', tag: 'TradeCard');
-        return true;
-      } else {
-        Logger.debug('🔍 Trade #${trade.offerID} - Daha önce yorum yapılmış, buton gösterilmeyecek', tag: 'TradeCard');
-        Logger.debug('🔍 Trade #${trade.offerID} - hasReview: ${trade.hasReview}, rating: ${trade.rating}, comment: ${trade.comment}', tag: 'TradeCard');
-        return false;
-      }
+    // StatusID=5 (Tamamlandı) durumunda ve her iki taraf da tamamladıysa yorum yapılabilir
+    // StatusID=4 durumunda sadece karşı taraf henüz tamamlamamışsa yorum yapılabilir
+    if (currentUserStatusID == 5 && bothCompleted) {
+      Logger.debug('🔍 Trade #${trade.offerID} - StatusID=5 ve her iki taraf tamamladı, değerlendirme yapılabilir', tag: 'TradeCard');
+      return true;
+    }
+    
+    // StatusID=4 durumunda sadece karşı taraf henüz tamamlamamışsa değerlendirme yapılabilir
+    if (currentUserStatusID == 4 && !bothCompleted) {
+      Logger.debug('🔍 Trade #${trade.offerID} - StatusID=4 ama karşı taraf henüz tamamlamadı, değerlendirme yapılamaz', tag: 'TradeCard');
+      return false;
     }
     
     Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=false, buton gösterilmeyecek', tag: 'TradeCard');
@@ -1083,4 +1089,4 @@ class TradeCard extends StatelessWidget {
       Logger.warning('onCompleteSimple callback tanımlanmamış!', tag: 'TradeCard');
     }
   }
-} 
+}
