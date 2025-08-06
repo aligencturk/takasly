@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/notification_viewmodel.dart';
-import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/filter_bottom_sheet.dart';
@@ -101,47 +100,15 @@ class _HomeViewState extends State<HomeView> {
   }
 
   double _calculateChildAspectRatio(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final screenWidth = screenSize.width;
-    
-    // Responsive aspect ratio hesaplama
-    if (screenWidth < 360) {
-      return 0.75; // Küçük ekranlar için daha yüksek oran
-    } else if (screenWidth < 400) {
-      return 0.72; // Orta-küçük ekranlar
-    } else if (screenWidth < 600) {
-      return 0.7; // Orta ekranlar
-    } else {
-      return 0.68; // Büyük ekranlar için daha düşük oran
-    }
+    return 0.7; // Tüm cihazlarda sabit oran
   }
 
   double _calculateGridSpacing(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final screenWidth = screenSize.width;
-    
-    // Responsive grid spacing hesaplama
-    if (screenWidth < 360) {
-      return 6.0; // Küçük ekranlar için daha az spacing
-    } else if (screenWidth < 400) {
-      return 8.0; // Orta-küçük ekranlar
-    } else {
-      return 10.0; // Normal ve büyük ekranlar
-    }
+    return 10.0; // Tüm cihazlarda sabit spacing
   }
 
   double _calculateHorizontalPadding(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final screenWidth = screenSize.width;
-    
-    // Responsive horizontal padding hesaplama
-    if (screenWidth < 360) {
-      return 12.0; // Küçük ekranlar için daha az padding
-    } else if (screenWidth < 400) {
-      return 16.0; // Orta-küçük ekranlar
-    } else {
-      return 20.0; // Normal ve büyük ekranlar
-    }
+    return 20.0; // Tüm cihazlarda sabit padding
   }
 
   @override
@@ -511,7 +478,7 @@ class HomeAppBar extends StatelessWidget {
                                              // Bildirim sayısı badge'i - dinamik
                                                 Consumer<NotificationViewModel>(
                            builder: (context, notificationViewModel, child) {
-                             final notificationCount = notificationViewModel.unreadCount ?? 0;
+                             final notificationCount = notificationViewModel.unreadCount;
                            return notificationCount > 0
                                ? Positioned(
                                    right: 0,

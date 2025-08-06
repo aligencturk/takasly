@@ -147,7 +147,7 @@ class _EditProductViewState extends State<EditProductView> {
                       labelText: 'İlan Başlığı',
                       counterText: '',
                     ),
-                    maxLength: 20,
+                    maxLength: 40,
                     validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
                   ),
                   const SizedBox(height: 16),

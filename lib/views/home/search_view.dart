@@ -7,7 +7,6 @@ import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/skeletons/product_grid_skeleton.dart';
-import '../../utils/logger.dart';
 
 class SearchView extends StatefulWidget {
   const SearchView({super.key});
@@ -268,12 +267,12 @@ class _SearchViewState extends State<SearchView> {
                       // Ürün grid'i
                       Expanded(
                         child: GridView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            childAspectRatio: 0.6,
+                            crossAxisSpacing: 10.0,
+                            mainAxisSpacing: 10.0,
+                            childAspectRatio: 0.7,
                           ),
                           itemCount: vm.products.length,
                           itemBuilder: (context, index) {

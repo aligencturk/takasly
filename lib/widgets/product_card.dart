@@ -29,7 +29,7 @@ class ProductCard extends StatelessWidget {
     Logger.debug('🔍 ProductCard._getCategoryDisplayName - Product: ${product.title}', tag: 'ProductCard');
     Logger.debug('🔍 ProductCard._getCategoryDisplayName - categoryId: ${product.categoryId}', tag: 'ProductCard');
     Logger.debug('🔍 ProductCard._getCategoryDisplayName - catname: ${product.catname}', tag: 'ProductCard');
-    Logger.debug('🔍 ProductCard._getCategoryDisplayName - category.name: ${product.category?.name}', tag: 'ProductCard');
+    Logger.debug('🔍 ProductCard._getCategoryDisplayName - category.name: ${product.category.name}', tag: 'ProductCard');
     
     // 3 katmanlı kategori sisteminde öncelik sırası:
     // 1. Ana kategori adı (mainCategoryName)
@@ -71,8 +71,7 @@ class ProductCard extends StatelessWidget {
     }
 
     // 5. Category nesnesinin name alanı
-    if (product.category != null &&
-        product.category.name.isNotEmpty &&
+    if (product.category.name.isNotEmpty &&
         product.category.name != 'Kategori' &&
         product.category.name != 'Kategori Yok') {
       Logger.debug('🔍 ProductCard._getCategoryDisplayName - Using category.name: ${product.category.name}', tag: 'ProductCard');
@@ -119,7 +118,7 @@ class ProductCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(screenWidth < 360 ? 6 : 8),
           border: Border.all(
-            color: const Color.fromARGB(255, 209, 209, 209)!,
+            color: const Color.fromARGB(255, 209, 209, 209),
             width: 1,
           ),
         ),
@@ -292,74 +291,69 @@ class ProductCard extends StatelessWidget {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Kategori
-                    Flexible(
-                      child: Text(
-                        _getCategoryDisplayName(product, context),
-                        style: textTheme.bodySmall?.copyWith(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.1,
-                          fontSize: categoryFontSize,
-                          height: 0.7, // Line height'ı artırdım
+                    // Üst: Kategori ve başlık
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Kategori
+                        Text(
+                          _getCategoryDisplayName(product, context),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.1,
+                            fontSize: categoryFontSize,
+                            height: 0.7,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                                         // Kategori ile başlık arası boşluk
-                     SizedBox(height: screenWidth < 360 ? 4 : 6),
-                    // Başlık
-                    Flexible(
-                      flex: 2,
-                      child: Text(
-                        product.title,
-                        style: textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          fontSize: titleFontSize,
-                          height: 1.4, // Line height'ı daha da artırdım
+                        SizedBox(height: screenWidth < 360 ? 4 : 6),
+                        // Başlık
+                        Text(
+                          product.title,
+                          style: textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                            fontSize: titleFontSize,
+                            height: 1.4,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      ],
                     ),
-                                         // Başlık ile konum arası boşluk
-                     SizedBox(height: screenWidth < 360 ? 4 : 6),
-                     // Konum
-                     Flexible(
-                       child: Row(
-                         children: [
-                           Icon(
-                             Icons.location_on_outlined, 
-                             size: screenWidth < 360 ? 8 : 10, 
-                             color: Colors.grey[500],
-                           ),
-                           const SizedBox(width: 2),
-                           Expanded(
-                             child: Builder(
-                               builder: (context) {
-                                 final cityTitle = product.cityTitle.isNotEmpty ? product.cityTitle : 'Şehir belirtilmemiş';
-                                 final districtTitle = product.districtTitle.isNotEmpty ? product.districtTitle : 'İlçe belirtilmemiş';
-                                 final locationText = '$cityTitle/$districtTitle';
-                                 
-                                 return Text(
-                                   locationText,
-                                   style: textTheme.bodySmall?.copyWith(
-                                     color: Colors.grey[500],
-                                     fontSize: locationFontSize,
-                                     height: 1.0,
-                                   ),
-                                   maxLines: 1,
-                                   overflow: TextOverflow.ellipsis,
-                                 );
-                               },
-                             ),
-                           ),
-                         ],
-                       ),
-                     ),
+                    // Alt: Konum
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: screenWidth < 360 ? 8 : 10,
+                          color: Colors.grey[500],
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              final cityTitle = product.cityTitle.isNotEmpty ? product.cityTitle : 'Şehir belirtilmemiş';
+                              final districtTitle = product.districtTitle.isNotEmpty ? product.districtTitle : 'İlçe belirtilmemiş';
+                              final locationText = '$cityTitle/$districtTitle';
+                              return Text(
+                                locationText,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey[500],
+                                  fontSize: locationFontSize,
+                                  height: 1.0,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
