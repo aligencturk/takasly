@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/trade.dart';
 import 'package:takasly/viewmodels/trade_viewmodel.dart';
-import 'package:takasly/services/user_service.dart';
+
 import 'package:takasly/utils/logger.dart';
 
 class TradeCard extends StatelessWidget {
@@ -31,6 +31,63 @@ class TradeCard extends StatelessWidget {
     this.onCompleteSimple, // Basit takas tamamlama için callback
   });
 
+  /// Mevcut kullanıcının durumunu belirle
+  int _getCurrentUserStatusID() {
+    // currentUserId'yi constructor'dan al
+    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    
+    if (currentUserId == trade.senderUserID) {
+      return trade.senderStatusID; // Gönderen ise sender durumu
+    } else if (currentUserId == trade.receiverUserID) {
+      return trade.receiverStatusID; // Alıcı ise receiver durumu
+    }
+    
+    // Varsayılan olarak receiver durumunu döndür
+    return trade.receiverStatusID;
+  }
+
+  /// Mevcut kullanıcının durum başlığını belirle
+  String _getCurrentUserStatusTitle() {
+    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    
+    if (currentUserId == trade.senderUserID) {
+      return trade.senderStatusTitle; // Gönderen ise sender durumu
+    } else if (currentUserId == trade.receiverUserID) {
+      return trade.receiverStatusTitle; // Alıcı ise receiver durumu
+    }
+    
+    // Varsayılan olarak receiver durumunu döndür
+    return trade.receiverStatusTitle;
+  }
+
+  /// Mevcut kullanıcının reddetme sebebini belirle
+  String? _getCurrentUserCancelDesc() {
+    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    
+    if (currentUserId == trade.senderUserID) {
+      return trade.senderCancelDesc; // Gönderen ise sender reddetme sebebi
+    } else if (currentUserId == trade.receiverUserID) {
+      return trade.receiverCancelDesc; // Alıcı ise receiver reddetme sebebi
+    }
+    
+    // Varsayılan olarak receiver reddetme sebebini döndür
+    return trade.receiverCancelDesc;
+  }
+
+  /// Mevcut kullanıcının onay durumunu belirle
+  bool _getCurrentUserConfirmStatus() {
+    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    
+    if (currentUserId == trade.senderUserID) {
+      return trade.isSenderConfirm; // Gönderen ise sender onay durumu
+    } else if (currentUserId == trade.receiverUserID) {
+      return trade.isReceiverConfirm; // Alıcı ise receiver onay durumu
+    }
+    
+    // Varsayılan olarak receiver onay durumunu döndür
+    return trade.isReceiverConfirm;
+  }
+
   String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
     // Sabit değerler kullan
     switch (statusId) {
@@ -47,7 +104,7 @@ class TradeCard extends StatelessWidget {
       case 6:
         return 'Beklemede';
       case 7:
-        return 'İptal Edildi';
+        return 'Reddedildi'; // 7 artık "Reddedildi" olarak değiştirildi
       case 8:
         return 'Reddedildi';
       default:
@@ -170,18 +227,21 @@ class TradeCard extends StatelessWidget {
 
   /// Reddetme sebebini gösteren widget
   Widget _buildRejectionReasonWidget(BuildContext context) {
-    Logger.debug('🔍 _buildRejectionReasonWidget çağrıldı - statusID: ${trade.statusID}, cancelDesc: "${trade.cancelDesc}"', tag: 'TradeCard');
-    Logger.debug('🔍 cancelDesc tipi: ${trade.cancelDesc.runtimeType}', tag: 'TradeCard');
-    Logger.debug('🔍 cancelDesc == null: ${trade.cancelDesc == null}', tag: 'TradeCard');
-    Logger.debug('🔍 cancelDesc.isEmpty: ${trade.cancelDesc?.isEmpty}', tag: 'TradeCard');
-    Logger.debug('🔍 cancelDesc.trim().isEmpty: ${trade.cancelDesc?.trim().isEmpty}', tag: 'TradeCard');
+    final currentStatusID = _getCurrentUserStatusID();
+    final currentCancelDesc = _getCurrentUserCancelDesc();
     
-    if (trade.cancelDesc == null || trade.cancelDesc!.isEmpty || trade.cancelDesc!.trim().isEmpty) {
+    Logger.debug('🔍 _buildRejectionReasonWidget çağrıldı - statusID: $currentStatusID, cancelDesc: "$currentCancelDesc"', tag: 'TradeCard');
+    Logger.debug('🔍 cancelDesc tipi: ${currentCancelDesc.runtimeType}', tag: 'TradeCard');
+    Logger.debug('🔍 cancelDesc == null: ${currentCancelDesc == null}', tag: 'TradeCard');
+    Logger.debug('🔍 cancelDesc.isEmpty: ${currentCancelDesc?.isEmpty}', tag: 'TradeCard');
+    Logger.debug('🔍 cancelDesc.trim().isEmpty: ${currentCancelDesc?.trim().isEmpty}', tag: 'TradeCard');
+    
+    if (currentCancelDesc == null || currentCancelDesc.isEmpty || currentCancelDesc.trim().isEmpty) {
       Logger.debug('❌ Reddetme sebebi null, boş veya sadece boşluk, widget gösterilmeyecek', tag: 'TradeCard');
       return Container(); // Reddetme sebebi yoksa boş container döndür
     }
     
-    Logger.debug('✅ Reddetme sebebi gösteriliyor: "${trade.cancelDesc}"', tag: 'TradeCard');
+    Logger.debug('✅ Reddetme sebebi gösteriliyor: "$currentCancelDesc"', tag: 'TradeCard');
     
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -213,13 +273,13 @@ class TradeCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    trade.cancelDesc!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.red[700],
-                      fontSize: 12,
-                    ),
-                  ),
+                                     Text(
+                     currentCancelDesc!,
+                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                       color: Colors.red[700],
+                       fontSize: 12,
+                     ),
+                   ),
                 ],
               ),
             ),
@@ -301,12 +361,9 @@ class TradeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     
-    // isConfirm artık kullanıcının onay/red kararını belirtiyor
-    // isConfirm: 1 -> Kullanıcı onayladı
-    // isConfirm: 0 -> Kullanıcı reddetti
-    // isConfirm: null -> Henüz karar vermedi
-    final hasConfirmed = trade.isConfirm == 1;
-    final hasRejected = trade.isConfirm == 0;
+         // Mevcut kullanıcının onay durumunu belirle
+     final hasConfirmed = _getCurrentUserConfirmStatus();
+     final hasRejected = !_getCurrentUserConfirmStatus() && (_getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8);
     
     // Debug log'lar sürekli tekrarlanmasını önlemek için kaldırıldı
     
@@ -373,36 +430,36 @@ class TradeCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       
-                      // Orta kısım - Takas durumu
-                      Row(
-                        children: [
-                          Icon(
-                            _getStatusIcon(trade.statusID),
-                            color: _getStatusColor(trade.statusID),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _getStatusText(trade.statusID, tradeViewModel: tradeViewModel),
-                            style: textTheme.bodySmall?.copyWith(
-                              color: _getStatusColor(trade.statusID),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
+                                             // Orta kısım - Takas durumu
+                       Row(
+                         children: [
+                           Icon(
+                             _getStatusIcon(_getCurrentUserStatusID()),
+                             color: _getStatusColor(_getCurrentUserStatusID()),
+                             size: 16,
+                           ),
+                           const SizedBox(width: 6),
+                           Text(
+                             _getCurrentUserStatusTitle(),
+                             style: textTheme.bodySmall?.copyWith(
+                               color: _getStatusColor(_getCurrentUserStatusID()),
+                               fontWeight: FontWeight.w600,
+                               fontSize: 13,
+                             ),
+                           ),
                           const Spacer(),
                           // Takas numarası kaldırıldı
                         ],
                       ),
                       
-                      // Reddetme sebebi gösterimi (statusID=3 veya 8 ise)
-                      if ((trade.statusID == 3 || trade.statusID == 8) && trade.cancelDesc?.isNotEmpty == true) ...[
+                                             // Reddetme sebebi gösterimi (statusID=3, 7 veya 8 ise)
+                       if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true) ...[
                         Builder(
                           builder: (context) {
                             Logger.debug('🔍 Reddetme sebebi widget\'ı gösteriliyor', tag: 'TradeCard');
-                            Logger.debug('🔍 cancelDesc null mu?: ${trade.cancelDesc == null}', tag: 'TradeCard');
-                            Logger.debug('🔍 cancelDesc boş mu?: ${trade.cancelDesc?.isEmpty}', tag: 'TradeCard');
-                            Logger.debug('🔍 cancelDesc uzunluğu: ${trade.cancelDesc?.length}', tag: 'TradeCard');
+                            Logger.debug('🔍 cancelDesc null mu?: ${_getCurrentUserCancelDesc() == null}', tag: 'TradeCard');
+                            Logger.debug('🔍 cancelDesc boş mu?: ${_getCurrentUserCancelDesc()?.isEmpty}', tag: 'TradeCard');
+                            Logger.debug('🔍 cancelDesc uzunluğu: ${_getCurrentUserCancelDesc()?.length}', tag: 'TradeCard');
                             return _buildRejectionReasonWidget(context);
                           },
                         ),
@@ -411,46 +468,46 @@ class TradeCard extends StatelessWidget {
                       // Alt kısım - Aksiyon butonları
                       // API'den gelen showButtons değerine göre butonları göster
                       
-                      // Teslim edildi durumu için yorum butonu (statusID=4)
-                      if (trade.statusID == 4)
-                        _buildReviewButton(context)
-                      // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
-                      else if (trade.statusID == 5 && (trade.hasReview != true))
-                        _buildReviewButton(context)
-                      // Basit takas tamamlama butonu (statusID=3 - Kargoya Verildi)
-                      else if (trade.statusID == 3)
-                        _buildCompleteTradeButton(context)
+                                             // Teslim edildi durumu için yorum butonu (statusID=4)
+                       if (_getCurrentUserStatusID() == 4)
+                         _buildReviewButton(context)
+                       // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
+                       else if (_getCurrentUserStatusID() == 5 && (trade.hasReview != true))
+                         _buildReviewButton(context)
+                       // Basit takas tamamlama butonu (statusID=3 - Kargoya Verildi)
+                       else if (_getCurrentUserStatusID() == 3)
+                         _buildCompleteTradeButton(context)
                       // Onay/red butonları (showButtons=true ise herhangi bir statusID için)
                       else if (showButtons == true) ...[
-                        // Debug bilgilerini log'la
-                        Builder(
-                          builder: (context) {
-                            Logger.debug('🔍 TradeCard buton gösterme kontrolü (showButtons=true):', tag: 'TradeCard');
-                            Logger.debug('  • statusID: ${trade.statusID}', tag: 'TradeCard');
-                            Logger.debug('  • isConfirm: ${trade.isConfirm}', tag: 'TradeCard');
-                            Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
-                            Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
-                            Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
-                            return Container(); // Boş container döndür
-                          },
-                        ),
+                                                 // Debug bilgilerini log'la
+                         Builder(
+                           builder: (context) {
+                             Logger.debug('🔍 TradeCard buton gösterme kontrolü (showButtons=true):', tag: 'TradeCard');
+                             Logger.debug('  • statusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
+                             Logger.debug('  • isConfirm: ${_getCurrentUserConfirmStatus()}', tag: 'TradeCard');
+                             Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
+                             Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
+                             Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
+                             return Container(); // Boş container döndür
+                           },
+                         ),
                         // Butonları göster
                         _buildActionButtons(context)
                       ]
-                      // Eski mantık - sadece statusID=1 için (geriye uyumluluk)
-                      else if (trade.statusID == 1) ...[
-                        // Debug bilgilerini log'la (sadece statusID=1 olanlar için)
-                        Builder(
-                          builder: (context) {
-                            Logger.debug('🔍 TradeCard buton gösterme kontrolü (statusID=1):', tag: 'TradeCard');
-                            Logger.debug('  • statusID: ${trade.statusID}', tag: 'TradeCard');
-                            Logger.debug('  • isConfirm: ${trade.isConfirm}', tag: 'TradeCard');
-                            Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
-                            Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
-                            Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
-                            return Container(); // Boş container döndür
-                          },
-                        ),
+                                             // Eski mantık - sadece statusID=1 için (geriye uyumluluk)
+                       else if (_getCurrentUserStatusID() == 1) ...[
+                         // Debug bilgilerini log'la (sadece statusID=1 olanlar için)
+                         Builder(
+                           builder: (context) {
+                             Logger.debug('🔍 TradeCard buton gösterme kontrolü (statusID=1):', tag: 'TradeCard');
+                             Logger.debug('  • statusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
+                             Logger.debug('  • isConfirm: ${_getCurrentUserConfirmStatus()}', tag: 'TradeCard');
+                             Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
+                             Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
+                             Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
+                             return Container(); // Boş container döndür
+                           },
+                         ),
                         // Buton gösterme mantığını düzelt
                         if (showButtons == true)
                           _buildActionButtons(context)
@@ -638,9 +695,9 @@ class TradeCard extends StatelessWidget {
   Widget _buildReviewButton(BuildContext context) {
     // Buton metnini duruma göre ayarla
     String buttonText;
-    if (trade.statusID == 4) {
+    if (_getCurrentUserStatusID() == 4) {
       buttonText = 'Takası Tamamla ve Değerlendir';
-    } else if (trade.statusID == 5) {
+    } else if (_getCurrentUserStatusID() == 5) {
       buttonText = 'Yorum Yap';
     } else {
       buttonText = 'Değerlendir';

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
+
 import '../../viewmodels/trade_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
-import '../../viewmodels/auth_viewmodel.dart';
+
 import '../../services/auth_service.dart';
 import '../../services/user_service.dart';
 import '../../models/trade.dart';
-import '../../widgets/loading_widget.dart';
+
 import '../../widgets/error_widget.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/trade_card.dart';
@@ -421,10 +421,31 @@ class _TradeViewState extends State<TradeView>
                     
                     // Debug: Tüm trade'lerin durumunu log'la
                     Logger.info('🔍 Trade #${updatedTrade.offerID} render ediliyor:', tag: 'TradeView');
-                    Logger.info('  • statusID: ${updatedTrade.statusID}', tag: 'TradeView');
-                    Logger.info('  • statusTitle: "${updatedTrade.statusTitle}"', tag: 'TradeView');
-                    Logger.info('  • isConfirm: ${updatedTrade.isConfirm}', tag: 'TradeView');
+                    Logger.info('  • senderStatusID: ${updatedTrade.senderStatusID}', tag: 'TradeView');
+                    Logger.info('  • receiverStatusID: ${updatedTrade.receiverStatusID}', tag: 'TradeView');
+                    Logger.info('  • senderStatusTitle: "${updatedTrade.senderStatusTitle}"', tag: 'TradeView');
+                    Logger.info('  • receiverStatusTitle: "${updatedTrade.receiverStatusTitle}"', tag: 'TradeView');
+                    Logger.info('  • isSenderConfirm: ${updatedTrade.isSenderConfirm}', tag: 'TradeView');
+                    Logger.info('  • isReceiverConfirm: ${updatedTrade.isReceiverConfirm}', tag: 'TradeView');
                     Logger.info('  • showButtons: ${_tradeShowButtonsMap[updatedTrade.offerID]}', tag: 'TradeView');
+                    
+                    // Mevcut kullanıcının durumunu belirle
+                    final currentUserId = tradeViewModel.currentUserId;
+                    int currentUserStatusID;
+                    bool currentUserConfirmStatus;
+                    
+                    final currentUserIdInt = int.tryParse(currentUserId ?? '0') ?? 0;
+                    if (currentUserIdInt == updatedTrade.senderUserID) {
+                      currentUserStatusID = updatedTrade.senderStatusID;
+                      currentUserConfirmStatus = updatedTrade.isSenderConfirm;
+                    } else if (currentUserIdInt == updatedTrade.receiverUserID) {
+                      currentUserStatusID = updatedTrade.receiverStatusID;
+                      currentUserConfirmStatus = updatedTrade.isReceiverConfirm;
+                    } else {
+                      // Varsayılan olarak receiver durumunu kullan
+                      currentUserStatusID = updatedTrade.receiverStatusID;
+                      currentUserConfirmStatus = updatedTrade.isReceiverConfirm;
+                    }
                     
                     // Buton gösterme koşullarını kontrol et
                     bool shouldShowButtons = false;
@@ -435,17 +456,17 @@ class _TradeViewState extends State<TradeView>
                       Logger.info('✅ Trade #${updatedTrade.offerID} için showButtons=true, butonlar gösterilecek', tag: 'TradeView');
                     }
                     // StatusID=1 (Beklemede) olan trade'ler için ek kontrol
-                    else if (updatedTrade.statusID == 1) {
-                      // isConfirm null ise (henüz karar vermemişse) butonları göster
-                      if (updatedTrade.isConfirm == null) {
+                    else if (currentUserStatusID == 1) {
+                      // Henüz onaylanmamışsa butonları göster
+                      if (!currentUserConfirmStatus) {
                         shouldShowButtons = true;
-                        Logger.info('✅ Trade #${updatedTrade.offerID} için isConfirm=null (henüz karar vermemiş), butonlar gösterilecek', tag: 'TradeView');
+                        Logger.info('✅ Trade #${updatedTrade.offerID} için henüz onaylanmamış, butonlar gösterilecek', tag: 'TradeView');
                       }
                       else {
                         Logger.info('❌ Trade #${updatedTrade.offerID} için butonlar gösterilmeyecek', tag: 'TradeView');
                       }
                     } else {
-                      Logger.info('❌ Trade #${updatedTrade.offerID} statusID=${updatedTrade.statusID} ve showButtons=false olduğu için butonlar gösterilmeyecek', tag: 'TradeView');
+                      Logger.info('❌ Trade #${updatedTrade.offerID} statusID=$currentUserStatusID ve showButtons=false olduğu için butonlar gösterilmeyecek', tag: 'TradeView');
                     }
                     
                     // Ürün bilgilerini kontrol et
@@ -459,7 +480,7 @@ class _TradeViewState extends State<TradeView>
                       margin: EdgeInsets.only(bottom: 12),
                       child: TradeCard(
                         trade: updatedTrade,
-                        currentUserId: tradeViewModel.currentUserId,
+                        currentUserId: currentUserId.toString(),
                         showButtons: shouldShowButtons ? true : _tradeShowButtonsMap[updatedTrade.offerID], // Buton gösterme mantığını düzelt
                         onTap: () {
                           // Takas detayına git
@@ -1637,10 +1658,23 @@ class _TradeViewState extends State<TradeView>
           String dialogTitle;
           String dialogSubtitle;
           
-          if (trade.statusID == 4) {
+          // Mevcut kullanıcının durumunu belirle
+          final currentUserId = _tradeViewModel?.currentUserId ?? '0';
+          final currentUserIdInt = int.tryParse(currentUserId) ?? 0;
+          int currentUserStatusID;
+          
+          if (currentUserIdInt == trade.senderUserID) {
+            currentUserStatusID = trade.senderStatusID;
+          } else if (currentUserIdInt == trade.receiverUserID) {
+            currentUserStatusID = trade.receiverStatusID;
+          } else {
+            currentUserStatusID = trade.receiverStatusID;
+          }
+          
+          if (currentUserStatusID == 4) {
             dialogTitle = 'Teslim Edildi / Alındı';
             dialogSubtitle = 'Ürün teslim edildi! Karşı tarafa yorum ve puan verin.';
-          } else if (trade.statusID == 5) {
+          } else if (currentUserStatusID == 5) {
             dialogTitle = 'Yorum Yap';
             dialogSubtitle = 'Takasınız tamamlandı! Karşı tarafa yorum ve puan verin.';
           } else {
@@ -1947,11 +1981,12 @@ class _TradeViewState extends State<TradeView>
               
               _tradeShowButtonsMap[trade.offerID] = showButtons;
               
-              Logger.info('✅ Trade #${trade.offerID} showButtons değeri: $showButtons, statusID: $statusID', tag: 'TradeView');
+              Logger.info('✅ Trade #${trade.offerID} showButtons değeri: $showButtons', tag: 'TradeView');
               Logger.info('  • API Message: "$message"', tag: 'TradeView');
               Logger.info('  • isSender: $isSender, isReceiver: $isReceiver', tag: 'TradeView');
-              Logger.info('  • Trade statusID: ${trade.statusID}, Trade statusTitle: "${trade.statusTitle}"', tag: 'TradeView');
-              Logger.info('  • Trade isConfirm: ${trade.isConfirm}', tag: 'TradeView');
+              Logger.info('  • Trade senderStatusID: ${trade.senderStatusID}, receiverStatusID: ${trade.receiverStatusID}', tag: 'TradeView');
+              Logger.info('  • Trade senderStatusTitle: "${trade.senderStatusTitle}", receiverStatusTitle: "${trade.receiverStatusTitle}"', tag: 'TradeView');
+              Logger.info('  • Trade isSenderConfirm: ${trade.isSenderConfirm}, isReceiverConfirm: ${trade.isReceiverConfirm}', tag: 'TradeView');
             } else {
               Logger.warning('⚠️ Trade #${trade.offerID} için showButtons değeri alınamadı', tag: 'TradeView');
               // Varsayılan olarak false ata
@@ -2151,7 +2186,7 @@ class _TradeViewState extends State<TradeView>
           // Yenilenen trade'i kontrol et
           final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID);
           if (updatedTrade != null) {
-            Logger.info('✅ Guncellenmis trade bulundu (completeTradeWithReview): #${updatedTrade.offerID}, statusID=${updatedTrade.statusID}', tag: 'TradeView');
+            Logger.info('✅ Guncellenmis trade bulundu (completeTradeWithReview): #${updatedTrade.offerID}, senderStatusID=${updatedTrade.senderStatusID}, receiverStatusID=${updatedTrade.receiverStatusID}', tag: 'TradeView');
           } else {
             Logger.warning('⚠️ Guncellenmis trade bulunamadi (completeTradeWithReview): #${trade.offerID}', tag: 'TradeView');
           }
@@ -2205,17 +2240,37 @@ class _TradeViewState extends State<TradeView>
       
       debugInfo += '📋 Trade #${i + 1}:\n';
       debugInfo += '  • OfferID: ${trade.offerID}\n';
-      debugInfo += '  • StatusID: ${trade.statusID}\n';
-      debugInfo += '  • StatusTitle: ${trade.statusTitle}\n';
-      debugInfo += '  • CancelDesc: "${trade.cancelDesc}"\n';
-      debugInfo += '  • isConfirm: ${trade.isConfirm}\n';
+      debugInfo += '  • SenderStatusID: ${trade.senderStatusID}\n';
+      debugInfo += '  • ReceiverStatusID: ${trade.receiverStatusID}\n';
+      debugInfo += '  • SenderStatusTitle: ${trade.senderStatusTitle}\n';
+      debugInfo += '  • ReceiverStatusTitle: ${trade.receiverStatusTitle}\n';
+      debugInfo += '  • SenderCancelDesc: "${trade.senderCancelDesc}"\n';
+      debugInfo += '  • ReceiverCancelDesc: "${trade.receiverCancelDesc}"\n';
+      debugInfo += '  • isSenderConfirm: ${trade.isSenderConfirm}\n';
+      debugInfo += '  • isReceiverConfirm: ${trade.isReceiverConfirm}\n';
       debugInfo += '  • showButtons: $showButtons\n';
       debugInfo += '  • MyProductID: ${myProduct?.productID}\n';
       debugInfo += '  • TheirProductID: ${theirProduct?.productID}\n';
       
       // Buton gösterme koşullarını kontrol et
-      final shouldShowButtons = trade.statusID == 1 && 
-          (showButtons == true || (showButtons == null && trade.isConfirm == false));
+      final currentUserId = _tradeViewModel?.currentUserId ?? '0';
+      final currentUserIdInt = int.tryParse(currentUserId) ?? 0;
+      int currentUserStatusID;
+      bool currentUserConfirmStatus;
+      
+      if (currentUserIdInt == trade.senderUserID) {
+        currentUserStatusID = trade.senderStatusID;
+        currentUserConfirmStatus = trade.isSenderConfirm;
+      } else if (currentUserIdInt == trade.receiverUserID) {
+        currentUserStatusID = trade.receiverStatusID;
+        currentUserConfirmStatus = trade.isReceiverConfirm;
+      } else {
+        currentUserStatusID = trade.receiverStatusID;
+        currentUserConfirmStatus = trade.isReceiverConfirm;
+      }
+      
+      final shouldShowButtons = currentUserStatusID == 1 && 
+          (showButtons == true || (showButtons == null && !currentUserConfirmStatus));
       debugInfo += '  • ShouldShowButtons: $shouldShowButtons\n';
       debugInfo += '\n';
     }

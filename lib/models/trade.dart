@@ -522,39 +522,51 @@ class TradeCompleteData {
 @JsonSerializable()
 class UserTrade {
   final int offerID;
-  final int statusID;
-  final String statusTitle;
+  final int senderUserID;
+  final int receiverUserID;
+  final int senderStatusID;
+  final int receiverStatusID;
+  final String senderStatusTitle;
+  final String receiverStatusTitle;
   final String deliveryType;
   final String? meetingLocation;
   final String createdAt;
   final String? completedAt;
-  final int? isConfirm; // 1: Kullanıcı onayladı, 0: Kullanıcı reddetti, null: Belirsiz
+  final String? senderCancelDesc;
+  final String? receiverCancelDesc;
+  final bool isSenderConfirm;
+  final bool isReceiverConfirm;
+  final bool isTradeConfirm;
+  final bool isTradeStart;
   final TradeProduct? myProduct;
   final TradeProduct? theirProduct;
-  final String? cancelDesc; // Reddetme sebebi (API'den cancelDesc olarak geliyor)
   final int? rating; // Yorum puanı
   final String? comment; // Yorum metni
   final bool? hasReview; // Yorum yapılıp yapılmadığı
-  final int senderStatusID; // Gönderen durumu
-  final int receiverStatusID; // Alıcı durumu
 
   const UserTrade({
     required this.offerID,
-    required this.statusID,
-    required this.statusTitle,
+    required this.senderUserID,
+    required this.receiverUserID,
+    required this.senderStatusID,
+    required this.receiverStatusID,
+    required this.senderStatusTitle,
+    required this.receiverStatusTitle,
     required this.deliveryType,
     this.meetingLocation,
     required this.createdAt,
     this.completedAt,
-    this.isConfirm,
+    this.senderCancelDesc,
+    this.receiverCancelDesc,
+    required this.isSenderConfirm,
+    required this.isReceiverConfirm,
+    required this.isTradeConfirm,
+    required this.isTradeStart,
     this.myProduct,
     this.theirProduct,
-    this.cancelDesc,
     this.rating,
     this.comment,
     this.hasReview,
-    required this.senderStatusID,
-    required this.receiverStatusID,
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {
@@ -573,45 +585,26 @@ class UserTrade {
       final meetingLocation = json['meetingLocation'] as String?;
       final createdAt = json['createdAt'] as String? ?? '';
       final completedAt = json['completedAt'] as String?;
-      // isConfirm alanını güvenli şekilde parse et
-      final isConfirm = _parseIsConfirm(json['isConfirm']);
-      
-      // Mevcut kullanıcının ID'sini al (AuthService'den)
-      // Bu değer TradeViewModel'de set edilecek
-      final currentUserId = json['currentUserId'] as int? ?? 0;
-      
-      // Mevcut kullanıcının sender mı receiver mı olduğunu belirle
-      bool isSender = false;
-      bool isReceiver = false;
-      int statusID = 0;
-      String statusTitle = '';
-      
-      if (currentUserId > 0) {
-        if (currentUserId == senderUserID) {
-          isSender = true;
-          statusID = senderStatusID;
-          statusTitle = senderStatusTitle;
-        } else if (currentUserId == receiverUserID) {
-          isReceiver = true;
-          statusID = receiverStatusID;
-          statusTitle = receiverStatusTitle;
-        }
-      }
-      
-      // Eğer currentUserId belirlenemezse, varsayılan olarak sender durumunu kullan
-      if (statusID == 0) {
-        statusID = senderStatusID;
-        statusTitle = senderStatusTitle;
-      }
-      
-      // myProduct güvenli parse
+      final senderCancelDesc = json['senderCancelDesc'] as String?;
+      final receiverCancelDesc = json['receiverCancelDesc'] as String?;
+      final isSenderConfirm = json['isSenderConfirm'] as bool? ?? false;
+      final isReceiverConfirm = json['isReceiverConfirm'] as bool? ?? false;
+      final isTradeConfirm = json['isTradeConfirm'] as bool? ?? false;
+             final isTradeStart = json['isTradeStart'] as bool? ?? false;
+       
+       // rating, comment ve hasReview alanlarını parse et
+       final rating = json['rating'] as int?;
+       final comment = json['comment'] as String?;
+       final hasReview = json['hasReview'] as bool?;
+       
+       // myProduct güvenli parse
       TradeProduct? myProduct;
       try {
         if (json['myProduct'] != null) {
           myProduct = TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>);
         }
       } catch (e) {
-        // Logger.debug('⚠️ UserTrade.fromJson - myProduct parse error: $e', tag: 'Trade');
+        print('⚠️ UserTrade.fromJson - myProduct parse error: $e');
         myProduct = null;
       }
       
@@ -626,28 +619,32 @@ class UserTrade {
         theirProduct = null;
       }
       
-      final cancelDesc = json['cancelDesc'] as String?;
-      print('🔍 UserTrade.fromJson - cancelDesc: "$cancelDesc"');
-      print('🔍 UserTrade.fromJson - JSON keys: ${json.keys.toList()}');
-      print('🔍 UserTrade.fromJson - JSON contains cancelDesc: ${json.containsKey('cancelDesc')}');
-      
       final userTrade = UserTrade(
         offerID: offerID,
-        statusID: statusID,
-        statusTitle: statusTitle,
+        senderUserID: senderUserID,
+        receiverUserID: receiverUserID,
+        senderStatusID: senderStatusID,
+        receiverStatusID: receiverStatusID,
+        senderStatusTitle: senderStatusTitle,
+        receiverStatusTitle: receiverStatusTitle,
         deliveryType: deliveryType,
         meetingLocation: meetingLocation,
         createdAt: createdAt,
         completedAt: completedAt,
-        isConfirm: isConfirm,
-        myProduct: myProduct,
-        theirProduct: theirProduct,
-        cancelDesc: cancelDesc,
-        senderStatusID: senderStatusID,
-        receiverStatusID: receiverStatusID,
+        senderCancelDesc: senderCancelDesc,
+        receiverCancelDesc: receiverCancelDesc,
+        isSenderConfirm: isSenderConfirm,
+        isReceiverConfirm: isReceiverConfirm,
+                 isTradeConfirm: isTradeConfirm,
+         isTradeStart: isTradeStart,
+         myProduct: myProduct,
+         theirProduct: theirProduct,
+         rating: rating,
+         comment: comment,
+         hasReview: hasReview,
       );
       
-      print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, statusID=$statusID, statusTitle="$statusTitle"');
+      print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, senderStatusID=$senderStatusID, receiverStatusID=$receiverStatusID');
       return userTrade;
     } catch (e) {
       // JSON parse hatası durumunda varsayılan değerlerle oluştur
@@ -655,34 +652,54 @@ class UserTrade {
       print('⚠️ JSON data: $json');
       return UserTrade(
         offerID: json['offerID'] as int? ?? 0,
-        statusID: json['statusID'] as int? ?? 0,
-        statusTitle: json['statusTitle'] as String? ?? 'Bilinmeyen',
-        deliveryType: json['deliveryType'] as String? ?? 'Bilinmeyen',
+        senderUserID: json['senderUserID'] as int? ?? 0,
+        receiverUserID: json['receiverUserID'] as int? ?? 0,
         senderStatusID: json['senderStatusID'] as int? ?? 0,
         receiverStatusID: json['receiverStatusID'] as int? ?? 0,
+        senderStatusTitle: json['senderStatusTitle'] as String? ?? 'Bilinmeyen',
+        receiverStatusTitle: json['receiverStatusTitle'] as String? ?? 'Bilinmeyen',
+        deliveryType: json['deliveryType'] as String? ?? 'Bilinmeyen',
         meetingLocation: json['meetingLocation'] as String?,
         createdAt: json['createdAt'] as String? ?? '',
         completedAt: json['completedAt'] as String?,
-        isConfirm: _parseIsConfirm(json['isConfirm']),
-        myProduct: null,
-        theirProduct: null,
-        cancelDesc: json['cancelDesc'] as String?,
+        senderCancelDesc: json['senderCancelDesc'] as String?,
+        receiverCancelDesc: json['receiverCancelDesc'] as String?,
+        isSenderConfirm: json['isSenderConfirm'] as bool? ?? false,
+        isReceiverConfirm: json['isReceiverConfirm'] as bool? ?? false,
+                 isTradeConfirm: json['isTradeConfirm'] as bool? ?? false,
+         isTradeStart: json['isTradeStart'] as bool? ?? false,
+         myProduct: null,
+         theirProduct: null,
+         rating: json['rating'] as int?,
+         comment: json['comment'] as String?,
+         hasReview: json['hasReview'] as bool?,
       );
     }
   }
 
   Map<String, dynamic> toJson() => {
     'offerID': offerID,
-    'statusID': statusID,
-    'statusTitle': statusTitle,
+    'senderUserID': senderUserID,
+    'receiverUserID': receiverUserID,
+    'senderStatusID': senderStatusID,
+    'receiverStatusID': receiverStatusID,
+    'senderStatusTitle': senderStatusTitle,
+    'receiverStatusTitle': receiverStatusTitle,
     'deliveryType': deliveryType,
     if (meetingLocation != null) 'meetingLocation': meetingLocation,
     'createdAt': createdAt,
     if (completedAt != null) 'completedAt': completedAt,
-    if (isConfirm != null) 'isConfirm': isConfirm,
-    if (myProduct != null) 'myProduct': myProduct!.toJson(),
-    if (theirProduct != null) 'theirProduct': theirProduct!.toJson(),
-    if (cancelDesc != null) 'cancelDesc': cancelDesc,
+    if (senderCancelDesc != null) 'senderCancelDesc': senderCancelDesc,
+    if (receiverCancelDesc != null) 'receiverCancelDesc': receiverCancelDesc,
+    'isSenderConfirm': isSenderConfirm,
+    'isReceiverConfirm': isReceiverConfirm,
+         'isTradeConfirm': isTradeConfirm,
+     'isTradeStart': isTradeStart,
+     if (myProduct != null) 'myProduct': myProduct!.toJson(),
+     if (theirProduct != null) 'theirProduct': theirProduct!.toJson(),
+     if (rating != null) 'rating': rating,
+     if (comment != null) 'comment': comment,
+     if (hasReview != null) 'hasReview': hasReview,
   };
 
   @override
@@ -696,21 +713,10 @@ class UserTrade {
 
   @override
   String toString() {
-    return 'UserTrade(offerID: $offerID, statusTitle: $statusTitle, deliveryType: $deliveryType)';
+    return 'UserTrade(offerID: $offerID, senderStatusTitle: $senderStatusTitle, receiverStatusTitle: $receiverStatusTitle)';
   }
 
-  // isConfirm alanını güvenli şekilde parse eden yardımcı metod
-  static int? _parseIsConfirm(dynamic value) {
-    if (value == null) {
-      return null; // null ise null döndür
-    } else if (value is bool) {
-      return value ? 1 : 0;
-    } else if (value is int) {
-      return value;
-    } else {
-      return null; // Diğer durumlar için null döndür
-    }
-  }
+
 }
 
 @JsonSerializable()
@@ -939,7 +945,7 @@ class UserTradesData {
               
               final trade = UserTrade.fromJson(tradeJson);
               trades.add(trade);
-              print('✅ UserTradesData.fromJson - Successfully parsed trade $i: offerID=${trade.offerID}, rejectionReason="${trade.cancelDesc}"');
+              print('✅ UserTradesData.fromJson - Successfully parsed trade $i: offerID=${trade.offerID}, senderCancelDesc="${trade.senderCancelDesc}", receiverCancelDesc="${trade.receiverCancelDesc}"');
             } catch (e) {
               print('⚠️ UserTradesData.fromJson - Failed to parse trade $i: $e');
               // Hatalı trade'i atla

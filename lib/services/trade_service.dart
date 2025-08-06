@@ -339,8 +339,6 @@ class TradeService {
       final response = await _httpClient.getWithBasicAuth(
         '${ApiConstants.userTrades}/$userId/tradeList',
         fromJson: (json) {
-          // currentUserId'yi JSON'a ekle
-          json['currentUserId'] = userId;
           return UserTradesResponse.fromJson(json);
         },
       );
@@ -352,7 +350,7 @@ class TradeService {
         // Debug: Her trade'i logla
         if (response.data?.data?.trades != null) {
           for (var trade in response.data!.data!.trades!) {
-            Logger.debug('Trade: offerID=${trade.offerID}, statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, cancelDesc="${trade.cancelDesc}"', tag: _tag);
+            Logger.debug('Trade: offerID=${trade.offerID}, senderStatusID=${trade.senderStatusID}, receiverStatusID=${trade.receiverStatusID}, senderStatusTitle=${trade.senderStatusTitle}, receiverStatusTitle=${trade.receiverStatusTitle}', tag: _tag);
           }
         }
       } else {

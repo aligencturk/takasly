@@ -228,44 +228,56 @@ Map<String, dynamic> _$TradeCompleteDataToJson(TradeCompleteData instance) =>
 
 UserTrade _$UserTradeFromJson(Map<String, dynamic> json) => UserTrade(
   offerID: (json['offerID'] as num).toInt(),
-  statusID: (json['statusID'] as num).toInt(),
-  statusTitle: json['statusTitle'] as String,
+  senderUserID: (json['senderUserID'] as num).toInt(),
+  receiverUserID: (json['receiverUserID'] as num).toInt(),
+  senderStatusID: (json['senderStatusID'] as num).toInt(),
+  receiverStatusID: (json['receiverStatusID'] as num).toInt(),
+  senderStatusTitle: json['senderStatusTitle'] as String,
+  receiverStatusTitle: json['receiverStatusTitle'] as String,
   deliveryType: json['deliveryType'] as String,
   meetingLocation: json['meetingLocation'] as String?,
   createdAt: json['createdAt'] as String,
   completedAt: json['completedAt'] as String?,
-  isConfirm: (json['isConfirm'] as num?)?.toInt(),
+  senderCancelDesc: json['senderCancelDesc'] as String?,
+  receiverCancelDesc: json['receiverCancelDesc'] as String?,
+  isSenderConfirm: json['isSenderConfirm'] as bool,
+  isReceiverConfirm: json['isReceiverConfirm'] as bool,
+  isTradeConfirm: json['isTradeConfirm'] as bool,
+  isTradeStart: json['isTradeStart'] as bool,
   myProduct: json['myProduct'] == null
       ? null
       : TradeProduct.fromJson(json['myProduct'] as Map<String, dynamic>),
   theirProduct: json['theirProduct'] == null
       ? null
       : TradeProduct.fromJson(json['theirProduct'] as Map<String, dynamic>),
-  cancelDesc: json['cancelDesc'] as String?,
   rating: (json['rating'] as num?)?.toInt(),
   comment: json['comment'] as String?,
   hasReview: json['hasReview'] as bool?,
-  senderStatusID: (json['senderStatusID'] as num).toInt(),
-  receiverStatusID: (json['receiverStatusID'] as num).toInt(),
 );
 
 Map<String, dynamic> _$UserTradeToJson(UserTrade instance) => <String, dynamic>{
   'offerID': instance.offerID,
-  'statusID': instance.statusID,
-  'statusTitle': instance.statusTitle,
+  'senderUserID': instance.senderUserID,
+  'receiverUserID': instance.receiverUserID,
+  'senderStatusID': instance.senderStatusID,
+  'receiverStatusID': instance.receiverStatusID,
+  'senderStatusTitle': instance.senderStatusTitle,
+  'receiverStatusTitle': instance.receiverStatusTitle,
   'deliveryType': instance.deliveryType,
   'meetingLocation': instance.meetingLocation,
   'createdAt': instance.createdAt,
   'completedAt': instance.completedAt,
-  'isConfirm': instance.isConfirm,
+  'senderCancelDesc': instance.senderCancelDesc,
+  'receiverCancelDesc': instance.receiverCancelDesc,
+  'isSenderConfirm': instance.isSenderConfirm,
+  'isReceiverConfirm': instance.isReceiverConfirm,
+  'isTradeConfirm': instance.isTradeConfirm,
+  'isTradeStart': instance.isTradeStart,
   'myProduct': instance.myProduct,
   'theirProduct': instance.theirProduct,
-  'cancelDesc': instance.cancelDesc,
   'rating': instance.rating,
   'comment': instance.comment,
   'hasReview': instance.hasReview,
-  'senderStatusID': instance.senderStatusID,
-  'receiverStatusID': instance.receiverStatusID,
 };
 
 TradeProduct _$TradeProductFromJson(Map<String, dynamic> json) => TradeProduct(

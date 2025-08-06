@@ -629,7 +629,7 @@ class TradeViewModel extends ChangeNotifier {
           
           // Yüklenen takasların detaylarını log'la
           for (var trade in _userTrades) {
-            Logger.info('📋 Yüklenen Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}, cancelDesc="${trade.cancelDesc}", senderStatusID=${trade.senderStatusID}, receiverStatusID=${trade.receiverStatusID}', tag: 'TradeViewModel');
+            Logger.info('📋 Yüklenen Trade #${trade.offerID}: senderStatusID=${trade.senderStatusID}, receiverStatusID=${trade.receiverStatusID}, senderStatusTitle=${trade.senderStatusTitle}, receiverStatusTitle=${trade.receiverStatusTitle}', tag: 'TradeViewModel');
           }
         } else {
           // 410 durumunda data null olabilir, boş liste kullan
@@ -651,14 +651,24 @@ class TradeViewModel extends ChangeNotifier {
     }
   }
 
-  /// Duruma göre takasları filtrele
-  List<UserTrade> getTradesByStatus(int statusId) {
-    return _userTrades.where((trade) => trade.statusID == statusId).toList();
+  /// Duruma göre takasları filtrele (sender durumuna göre)
+  List<UserTrade> getTradesBySenderStatus(int statusId) {
+    return _userTrades.where((trade) => trade.senderStatusID == statusId).toList();
   }
 
-  /// Duruma göre takasları filtrele (title ile)
-  List<UserTrade> getTradesByStatusTitle(String statusTitle) {
-    return _userTrades.where((trade) => trade.statusTitle == statusTitle).toList();
+  /// Duruma göre takasları filtrele (receiver durumuna göre)
+  List<UserTrade> getTradesByReceiverStatus(int statusId) {
+    return _userTrades.where((trade) => trade.receiverStatusID == statusId).toList();
+  }
+
+  /// Duruma göre takasları filtrele (sender title ile)
+  List<UserTrade> getTradesBySenderStatusTitle(String statusTitle) {
+    return _userTrades.where((trade) => trade.senderStatusTitle == statusTitle).toList();
+  }
+
+  /// Duruma göre takasları filtrele (receiver title ile)
+  List<UserTrade> getTradesByReceiverStatusTitle(String statusTitle) {
+    return _userTrades.where((trade) => trade.receiverStatusTitle == statusTitle).toList();
   }
 
   /// Offer ID'ye göre takas getir
@@ -735,7 +745,7 @@ class TradeViewModel extends ChangeNotifier {
         
         // Yenilenen takasların durumlarını log'la
         for (var trade in _userTrades) {
-          Logger.info('🔄 Yenilenen Trade #${trade.offerID}: statusID=${trade.statusID}, statusTitle=${trade.statusTitle}', tag: 'TradeViewModel');
+          Logger.info('🔄 Yenilenen Trade #${trade.offerID}: senderStatusID=${trade.senderStatusID}, receiverStatusID=${trade.receiverStatusID}', tag: 'TradeViewModel');
         }
       } else {
         Logger.warning('⚠️ Kullanıcı ID bulunamadı', tag: 'TradeViewModel');
