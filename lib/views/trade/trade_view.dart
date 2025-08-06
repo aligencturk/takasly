@@ -454,34 +454,14 @@ class _TradeViewState extends State<TradeView>
                         Logger.info('✅ Trade #${updatedTrade.offerID} için henüz onaylanmamış, butonlar gösterilecek', tag: 'TradeView');
                       }
                       else {
-                        Logger.info('❌ Trade #${updatedTrade.offerID} için butonlar gösterilmeyecek', tag: 'TradeView');
+                        shouldShowButtons = false; // Onaylanmışsa "onay bekliyor" mesajı gösterilecek
+                        Logger.info('❌ Trade #${updatedTrade.offerID} için butonlar gösterilmeyecek (zaten onaylanmış), "onay bekliyor" mesajı gösterilecek', tag: 'TradeView');
                       }
                     }
-                    // StatusID=2 (Onaylandı) olan trade'ler için "Takası Tamamla" butonu göster
-                    else if (currentUserStatusID == 2) {
-                      shouldShowButtons = false; // Onay/red butonları gösterilmez, sadece "Takası Tamamla" butonu TradeCard'da gösterilir
-                      Logger.info('✅ Trade #${updatedTrade.offerID} için statusID=2, "Takası Tamamla" butonu TradeCard\'da gösterilecek', tag: 'TradeView');
-                    }
-                    // StatusID=4 (Teslim Edildi) olan trade'ler için "Takası Tamamla" butonu göster (sadece henüz tamamlamamış kullanıcıya)
-                    else if (currentUserStatusID == 4) {
-                      // Karşı tarafın durumunu kontrol et
-                      int otherUserStatusID;
-                      if (currentUserIdInt == updatedTrade.senderUserID) {
-                        otherUserStatusID = updatedTrade.receiverStatusID;
-                      } else {
-                        otherUserStatusID = updatedTrade.senderStatusID;
-                      }
-                      
-                      // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
-                      if (otherUserStatusID < 4) {
-                        shouldShowButtons = false; // "Takası Tamamla" butonu TradeCard'da gösterilir
-                        Logger.info('✅ Trade #${updatedTrade.offerID} için statusID=4, karşı taraf henüz tamamlamamış, "Takası Tamamla" butonu TradeCard\'da gösterilecek', tag: 'TradeView');
-                      } else {
-                        shouldShowButtons = false; // Her iki taraf da tamamladı, yorum butonu TradeCard'da gösterilir
-                        Logger.info('✅ Trade #${updatedTrade.offerID} için statusID=4, her iki taraf da tamamladı, yorum butonu TradeCard\'da gösterilecek', tag: 'TradeView');
-                      }
-                    } else {
-                      Logger.info('❌ Trade #${updatedTrade.offerID} statusID=$currentUserStatusID olduğu için butonlar gösterilmeyecek', tag: 'TradeView');
+                    // Diğer durumlar için butonlar TradeCard'da gösterilir
+                    else {
+                      shouldShowButtons = false;
+                      Logger.info('✅ Trade #${updatedTrade.offerID} için statusID=$currentUserStatusID, butonlar TradeCard\'da gösterilecek', tag: 'TradeView');
                     }
                     
                     // Ürün bilgilerini kontrol et
@@ -490,6 +470,35 @@ class _TradeViewState extends State<TradeView>
                     Logger.info('  • MyProductID: ${myProduct?.productID}', tag: 'TradeView');
                     Logger.info('  • TheirProductID: ${theirProduct?.productID}', tag: 'TradeView');
                     Logger.info('  • ShouldShowButtons: $shouldShowButtons', tag: 'TradeView');
+                    
+                    // "Takası Tamamla" butonunun gösterilip gösterilmeyeceğini kontrol et
+                    bool shouldShowCompleteButton = false;
+                    if (currentUserStatusID == 2) {
+                      // Karşı tarafın durumunu kontrol et
+                      int otherUserStatusID;
+                      if (currentUserIdInt == updatedTrade.senderUserID) {
+                        otherUserStatusID = updatedTrade.receiverStatusID;
+                      } else {
+                        otherUserStatusID = updatedTrade.senderStatusID;
+                      }
+                      // Karşı taraf da onayladıysa (statusID >= 2) "Takası Tamamla" butonu göster
+                      shouldShowCompleteButton = otherUserStatusID >= 2;
+                    } else if (currentUserStatusID == 4) {
+                      // Karşı tarafın durumunu kontrol et
+                      int otherUserStatusID;
+                      if (currentUserIdInt == updatedTrade.senderUserID) {
+                        otherUserStatusID = updatedTrade.receiverStatusID;
+                      } else {
+                        otherUserStatusID = updatedTrade.senderStatusID;
+                      }
+                      // Karşı taraf henüz tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
+                      // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
+                      shouldShowCompleteButton = otherUserStatusID < 4;
+                    }
+                    Logger.info('  • ShouldShowCompleteButton: $shouldShowCompleteButton', tag: 'TradeView');
+                    
+                    // "Puan Ver" butonu artık TradeCard'da kendi mantığıyla kontrol ediliyor
+                    Logger.info('  • Review button logic handled by TradeCard', tag: 'TradeView');
                     
                     return Container(
                       margin: EdgeInsets.only(bottom: 12),
@@ -514,9 +523,10 @@ class _TradeViewState extends State<TradeView>
                           // Reddetme sebebi dialog'unu göster
                           _showRejectReasonDialog(trade);
                         },
-                        onReview: (trade) {
-                          // Yorum yapma dialog'unu göster
-                          _showTradeCompleteDialog(trade);
+                        onReview: (UserTrade trade, int rating, String comment) async {
+                          // Puan Ver butonu tıklandığında yorum yapma işlemini gerçekleştir
+                          Logger.info('Puan Ver butonu tıklandı - Trade #${trade.offerID}, Rating: $rating, Comment: $comment', tag: 'TradeView');
+                          await _reviewTrade(trade, rating, comment);
                         },
                         onCompleteSimple: (trade) {
                           // Takası Tamamla butonu tıklandığında takas tamamlama dialog'unu göster
@@ -588,7 +598,7 @@ class _TradeViewState extends State<TradeView>
                                         children: [
                                           Icon(Icons.check_circle, color: Colors.white),
                                           SizedBox(width: 8),
-                                          Text('Takas onaylandı! Karşı tarafın takası tamamlaması bekleniyor.'),
+                                          Text('Takas onaylandı!'),
                                         ],
                                       ),
                                       backgroundColor: Colors.green,
@@ -713,8 +723,14 @@ class _TradeViewState extends State<TradeView>
         // Reddetme sebebi dialog'unu göster
         _showRejectReasonDialog(trade);
       },
-      onReview: (trade) {
-        // Yorum yapma dialog'unu göster
+      onReview: (UserTrade trade, int rating, String comment) async {
+        // Puan Ver butonu tıklandığında yorum yapma işlemini gerçekleştir
+        Logger.info('Puan Ver butonu tıklandı - Trade #${trade.offerID}, Rating: $rating, Comment: $comment', tag: 'TradeView');
+        await _reviewTrade(trade, rating, comment);
+      },
+      onCompleteSimple: (trade) {
+        // Takası Tamamla butonu tıklandığında takas tamamlama dialog'unu göster
+        Logger.info('Takası Tamamla butonu tıklandı - Trade #${trade.offerID}', tag: 'TradeView');
         _showTradeCompleteDialog(trade);
       },
     );
@@ -831,7 +847,7 @@ class _TradeViewState extends State<TradeView>
         if (mounted && _scaffoldMessenger != null) {
           _scaffoldMessenger!.showSnackBar(
             SnackBar(
-              content: Text(tradeViewModel.errorMessage ?? 'Durum guncellenirken hata olustu'),
+              content: Text(tradeViewModel.errorMessage ?? 'Durum güncellenirken hata oluştu'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1721,8 +1737,8 @@ class _TradeViewState extends State<TradeView>
 
 
 
-  /// Takas tamamlandığında yorum ve yıldız verme dialog'u göster
-  void _showTradeCompleteDialog(UserTrade trade) {
+  /// Puan Ver butonu için yorum ve yıldız verme dialog'u göster
+  void _showTradeReviewDialog(UserTrade trade) {
     // StatefulBuilder kullanarak dialog içinde state yönetimi
     double rating = 0.0; // Başlangıçta boş yıldızlar
     final TextEditingController commentController = TextEditingController();
@@ -1731,54 +1747,12 @@ class _TradeViewState extends State<TradeView>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          
-          // Dialog başlığını duruma göre ayarla (API'den gelen yeni durumlara göre)
-          String dialogTitle;
-          String dialogSubtitle;
-          
-          // Mevcut kullanıcının durumunu belirle
-          final currentUserId = _tradeViewModel?.currentUserId ?? '0';
-          final currentUserIdInt = int.tryParse(currentUserId) ?? 0;
-          int currentUserStatusID;
-          
-          if (currentUserIdInt == trade.senderUserID) {
-            currentUserStatusID = trade.senderStatusID;
-          } else if (currentUserIdInt == trade.receiverUserID) {
-            currentUserStatusID = trade.receiverStatusID;
-          } else {
-            currentUserStatusID = trade.receiverStatusID;
-          }
-          
-          // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
-          final senderCompleted = trade.senderStatusID >= 4;
-          final receiverCompleted = trade.receiverStatusID >= 4;
-          final bothCompleted = senderCompleted && receiverCompleted;
-          
-          if (currentUserStatusID == 2) {
-            dialogTitle = 'Takası Tamamla';
-            dialogSubtitle = 'Takasınızı tamamlamak için karşı tarafa yorum ve puan verin. Bu işlem takasınızı sonlandıracaktır.';
-          } else if (currentUserStatusID == 4) {
-            if (bothCompleted) {
-              dialogTitle = 'Takası Tamamla ve Değerlendir';
-              dialogSubtitle = 'Her iki taraf da takasını tamamladı! Karşı tarafa yorum ve puan verin.';
-            } else {
-              dialogTitle = 'Takası Tamamla';
-              dialogSubtitle = 'Takasınızı tamamlamak için karşı tarafa yorum ve puan verin. Bu işlem takasınızı sonlandıracaktır.';
-            }
-          } else if (currentUserStatusID == 5) {
-            dialogTitle = 'Yorum Yap';
-            dialogSubtitle = 'Takasınız tamamlandı! Karşı tarafa yorum ve puan verin.';
-          } else {
-            dialogTitle = 'Takas Tamamlandı';
-            dialogSubtitle = 'Takasınızı tamamladınız! Karşı tarafa yorum ve puan verin.';
-          }
-          
           return AlertDialog(
             title: Row(
               children: [
                 Icon(Icons.star, color: Colors.amber, size: 24),
                 SizedBox(width: 8),
-                Text(dialogTitle),
+                Text('Değerlendir'),
               ],
             ),
             content: Container(
@@ -1787,9 +1761,10 @@ class _TradeViewState extends State<TradeView>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    dialogSubtitle,
+                    'Takasınız tamamlandı! Karşı tarafa yorum ve puan verin.',
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
+                  
                   SizedBox(height: 20),
                   
                   // Yıldız değerlendirmesi
@@ -1823,7 +1798,7 @@ class _TradeViewState extends State<TradeView>
                     controller: commentController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'Takas deneyiminizi paylaşın...',
+                      hintText: 'Takas deneyiminizi paylaşın... (İsteğe bağlı)',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1855,50 +1830,208 @@ class _TradeViewState extends State<TradeView>
                     return;
                   }
                   
-                  if (commentController.text.trim().isEmpty) {
-                    if (mounted && _scaffoldMessenger != null) {
-                      _scaffoldMessenger!.showSnackBar(
-                        SnackBar(
-                          content: Text('Lütfen bir yorum yazın'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    }
-                    return;
-                  }
+                  // Yorum alanı opsiyonel olduğu için kontrol kaldırıldı
                   
-                  // StatusID=2 durumunda ek uyarı göster
-                  if (currentUserStatusID == 2) {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text('Takası Tamamla'),
-                        content: Text('Bu işlem takasınızı sonlandıracaktır. Devam etmek istediğinizden emin misiniz?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: Text('İptal'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF10B981),
-                              foregroundColor: Colors.white,
-                            ),
-                            child: Text('Evet, Tamamla'),
-                          ),
-                        ],
-                      ),
-                    );
+                  Navigator.pop(context);
+                  
+                  final finalRating = rating.toInt();
+                  final finalComment = commentController.text.trim();
+                  
+                  Logger.info('Dialog kapatıldı - Rating: $finalRating, Comment: $finalComment', tag: 'TradeView');
+                  final success = await _reviewTrade(trade, finalRating, finalComment);
+                  if (success) {
+                    // Başarılı işlem sonrası ek işlemler gerekebilir
+                    Logger.info('Takas değerlendirmesi başarılı', tag: 'TradeView');
                     
-                    if (confirmed != true) {
+                    // Kullanıcı takaslarını yenile
+                    if (_currentUserId != null && _tradeViewModel != null) {
+                      await _tradeViewModel!.loadUserTrades(int.parse(_currentUserId!));
+                    }
+                    
+                    // UI'ı güncelle
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF10B981),
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('Değerlendir'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Takas tamamlandığında yorum ve yıldız verme dialog'u göster
+  void _showTradeCompleteDialog(UserTrade trade) {
+    // StatefulBuilder kullanarak dialog içinde state yönetimi
+    double rating = 0.0; // Başlangıçta boş yıldızlar
+    final TextEditingController commentController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          
+          // Dialog başlığını duruma göre ayarla (API'den gelen yeni durumlara göre)
+          String dialogTitle;
+          String dialogSubtitle;
+          
+          // Mevcut kullanıcının durumunu belirle
+          final currentUserId = _tradeViewModel?.currentUserId ?? '0';
+          final currentUserIdInt = int.tryParse(currentUserId) ?? 0;
+          int currentUserStatusID;
+          
+          if (currentUserIdInt == trade.senderUserID) {
+            currentUserStatusID = trade.senderStatusID;
+          } else if (currentUserIdInt == trade.receiverUserID) {
+            currentUserStatusID = trade.receiverStatusID;
+          } else {
+            currentUserStatusID = trade.receiverStatusID;
+          }
+          
+          // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
+          final senderCompleted = trade.senderStatusID >= 4;
+          final receiverCompleted = trade.receiverStatusID >= 4;
+          final bothCompleted = senderCompleted && receiverCompleted;
+          
+          // StatusID=2 durumunda sadece takas tamamlama yapılacak, yorum alanı gösterilmeyecek
+          if (currentUserStatusID == 2) {
+            dialogTitle = 'Takası Tamamla';
+            dialogSubtitle = 'Takasınızı tamamlamak istediğinizden emin misiniz?';
+          } else if (currentUserStatusID == 4) {
+            if (bothCompleted) {
+              dialogTitle = 'Takası Tamamla ve Değerlendir';
+              dialogSubtitle = 'Her iki taraf da takasını tamamladı! Karşı tarafa yorum ve puan verin.';
+            } else {
+              dialogTitle = 'Takası Tamamla';
+              dialogSubtitle = 'Takasınızı tamamlamak istediğinizden emin misiniz?';
+            }
+          } else if (currentUserStatusID == 5) {
+            dialogTitle = 'Yorum Yap';
+            dialogSubtitle = 'Takasınız tamamlandı! Karşı tarafa yorum ve puan verin.';
+          } else {
+            dialogTitle = 'Takas Tamamlandı';
+            dialogSubtitle = 'Takasınızı tamamladınız! Karşı tarafa yorum ve puan verin.';
+          }
+          
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.star, color: Colors.amber, size: 24),
+                SizedBox(width: 8),
+                Text(dialogTitle),
+              ],
+            ),
+            content: Container(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    dialogSubtitle,
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                  
+                  // StatusID=2 veya StatusID=4 (her iki taraf tamamlamamış) durumunda yorum alanı gösterilmez
+                  if (currentUserStatusID != 2 && !(currentUserStatusID == 4 && !bothCompleted)) ...[
+                    SizedBox(height: 20),
+                    
+                    // Yıldız değerlendirmesi
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Puan: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        SizedBox(width: 8),
+                        ...List.generate(5, (index) {
+                          return GestureDetector(
+                            onTap: () {
+                              setDialogState(() {
+                                rating = index + 1.0;
+                                Logger.info('Puan seçildi: $rating', tag: 'TradeView');
+                              });
+                            },
+                            child: Icon(
+                              index < rating ? Icons.star : Icons.star_border,
+                              color: index < rating ? Colors.amber : Colors.grey.shade400,
+                              size: 32,
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                    
+                    SizedBox(height: 20),
+                    
+                    // Yorum alanı
+                    TextField(
+                      controller: commentController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Takas deneyiminizi paylaşın...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Color(0xFF10B981), width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('İptal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  // StatusID=2 veya StatusID=4 (her iki taraf tamamlamamış) durumunda rating/comment kontrolü yapılmaz
+                  if (currentUserStatusID != 2 && !(currentUserStatusID == 4 && !bothCompleted)) {
+                    if (rating == 0) {
+                      if (mounted && _scaffoldMessenger != null) {
+                        _scaffoldMessenger!.showSnackBar(
+                          SnackBar(
+                            content: Text('Lütfen bir puan verin'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
                       return;
                     }
-                                                                                                                                                                                                                                                                                      }
+                    
+                    if (commentController.text.trim().isEmpty) {
+                      if (mounted && _scaffoldMessenger != null) {
+                        _scaffoldMessenger!.showSnackBar(
+                          SnackBar(
+                            content: Text('Lütfen bir yorum yazın'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                      return;
+                    }
+                  }
+                  
+                                    // StatusID=2 durumunda ek uyarı göster - KALDIRILDI
+                  // İkinci dialog kaldırıldı, direkt işlem yapılıyor
                     
                     Navigator.pop(context);
-                    Logger.info('Dialog kapatıldı - Rating: $rating, Comment: ${commentController.text.trim()}, StatusID: $currentUserStatusID', tag: 'TradeView');
-                  final success = await _completeTradeWithReview(trade, rating.toInt(), commentController.text.trim());
+                    
+                    // StatusID=2 veya StatusID=4 (her iki taraf tamamlamamış) durumunda rating/comment değerleri 0/boş olarak gönderilir
+                    final finalRating = (currentUserStatusID != 2 && !(currentUserStatusID == 4 && !bothCompleted)) ? rating.toInt() : 0;
+                    final finalComment = (currentUserStatusID != 2 && !(currentUserStatusID == 4 && !bothCompleted)) ? commentController.text.trim() : '';
+                    
+                    Logger.info('Dialog kapatıldı - Rating: $finalRating, Comment: $finalComment, StatusID: $currentUserStatusID', tag: 'TradeView');
+                    final success = await _completeTradeWithReview(trade, finalRating, finalComment);
                   if (success) {
                     // Başarılı işlem sonrası ek işlemler gerekebilir
                     Logger.info('Takas tamamlama ve yorum gönderme başarılı', tag: 'TradeView');
@@ -1943,7 +2076,7 @@ class _TradeViewState extends State<TradeView>
       if (userToken == null) {
         if (mounted && _scaffoldMessenger != null) {
           _scaffoldMessenger!.showSnackBar(
-            SnackBar(content: Text('Kullanici token\'i bulunamadi')),
+            SnackBar(content: Text('Kullanıcı token\'i bulunamadı')),
           );
         }
         return false;
@@ -2007,7 +2140,7 @@ class _TradeViewState extends State<TradeView>
         if (mounted && _scaffoldMessenger != null) {
           _scaffoldMessenger!.showSnackBar(
             SnackBar(
-              content: Text(tradeViewModel.errorMessage ?? 'Durum guncellenirken hata olustu'),
+              content: Text(tradeViewModel.errorMessage ?? 'Durum güncellenirken hata oluştu'),
               backgroundColor: Colors.red,
             ),
           );
@@ -2015,14 +2148,14 @@ class _TradeViewState extends State<TradeView>
         return false;
       }
     } catch (e) {
-      if (mounted && _scaffoldMessenger != null) {
-        _scaffoldMessenger!.showSnackBar(
-          SnackBar(
-            content: Text('Durum guncellenirken hata olustu: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+              if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text('Durum güncellenirken hata oluştu: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       return false;
     }
   }
@@ -2138,7 +2271,95 @@ class _TradeViewState extends State<TradeView>
     }
   }
 
-  /// Takas değerlendirme işlemi (yeni tradeReview endpoint'i ile)
+  /// Takas değerlendirme işlemi (tradeReview endpoint'i ile)
+  Future<bool> _reviewTrade(UserTrade trade, int rating, String comment) async {
+    try {
+      final tradeViewModel = _tradeViewModel;
+      
+      if (tradeViewModel == null) {
+        Logger.error('TradeViewModel referansı bulunamadı', tag: 'TradeView');
+        return false;
+      }
+      final userService = UserService();
+      final userToken = await userService.getUserToken();
+      
+      if (userToken == null) {
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(content: Text('Kullanıcı token\'i bulunamadı')),
+          );
+        }
+        return false;
+      }
+
+      Logger.info('Takas değerlendirme gönderiliyor... Trade #${trade.offerID}, Rating: $rating, Comment: $comment', tag: 'TradeView');
+
+      final success = await tradeViewModel.reviewTrade(
+        userToken: userToken,
+        offerID: trade.offerID,
+        rating: rating,
+        comment: comment,
+      );
+
+      if (success) {
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Değerlendirmeniz başarıyla gönderildi'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        
+        // Takasları yeniden yükle - hasReview alanının güncellenmesi için
+        final userId = await _authService.getCurrentUserId();
+        if (userId != null && tradeViewModel != null) {
+          Logger.info('🔄 Değerlendirme sonrası takaslar yeniden yükleniyor...', tag: 'TradeView');
+          await tradeViewModel.loadUserTrades(int.parse(userId));
+          Logger.info('✅ TradeViewModel yenilendi (reviewTrade sonrası)', tag: 'TradeView');
+        }
+        
+        // UI'ı güncelle
+        if (mounted) {
+          setState(() {});
+        }
+        return true;
+      } else {
+        if (mounted && _scaffoldMessenger != null) {
+          _scaffoldMessenger!.showSnackBar(
+            SnackBar(
+              content: Text(tradeViewModel.errorMessage ?? 'Takas değerlendirmesi gönderilirken hata oluştu'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
+      }
+    } catch (e) {
+      if (mounted && _scaffoldMessenger != null) {
+        _scaffoldMessenger!.showSnackBar(
+          SnackBar(
+            content: Text('Takas değerlendirmesi gönderilirken hata oluştu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  /// Takas değerlendirme işlemi (önce değerlendirme, sonra takas tamamlama)
   Future<bool> _completeTradeWithReview(UserTrade trade, int rating, String comment) async {
     try {
       final tradeViewModel = _tradeViewModel;
@@ -2172,7 +2393,7 @@ class _TradeViewState extends State<TradeView>
         currentUserStatusID = trade.receiverStatusID;
       }
       
-      Logger.info('Takas değerlendirme gönderiliyor... Trade #${trade.offerID}, Rating: $rating, Comment: $comment, StatusID: $currentUserStatusID', tag: 'TradeView');
+      Logger.info('Takas işlemi başlatılıyor... Trade #${trade.offerID}, Rating: $rating, Comment: $comment, StatusID: $currentUserStatusID', tag: 'TradeView');
 
       // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
       final senderCompleted = trade.senderStatusID >= 4;
@@ -2191,13 +2412,14 @@ class _TradeViewState extends State<TradeView>
 
         if (success) {
           if (mounted && _scaffoldMessenger != null) {
+            // StatusID=2 durumunda karşı tarafın tamamlamasını bekliyorsunuz mesajı göster
             _scaffoldMessenger!.showSnackBar(
               SnackBar(
                 content: Row(
                   children: [
                     Icon(Icons.check_circle, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Takasınız tamamlandı! Karşı tarafın takası tamamlaması bekleniyor.'),
+                    Text('Takasınız tamamlandı! Karşı tarafın takası tamamlamasını bekliyorsunuz.'),
                   ],
                 ),
                 backgroundColor: Colors.green,
@@ -2233,30 +2455,39 @@ class _TradeViewState extends State<TradeView>
           return false;
         }
       }
-      // StatusID=4 (Teslim Edildi) durumunda ve her iki kullanıcı da tamamladıysa yorum yap
+      // StatusID=4 (Teslim Edildi) durumunda ve her iki kullanıcı da tamamladıysa önce değerlendirme, sonra takas tamamlama
       else if (currentUserStatusID == 4 && bothCompleted) {
-        Logger.info('Trade #${trade.offerID} için yorum işlemi başlatılıyor (StatusID: $currentUserStatusID, Her iki taraf tamamladı)', tag: 'TradeView');
+        Logger.info('Trade #${trade.offerID} için önce değerlendirme, sonra takas tamamlama işlemi başlatılıyor (StatusID: $currentUserStatusID, Her iki taraf tamamladı)', tag: 'TradeView');
         
-        // Karşı tarafın userID'sini belirle
-        int toUserID;
-        if (currentUserIdInt == trade.senderUserID) {
-          toUserID = trade.receiverUserID;
-        } else {
-          toUserID = trade.senderUserID;
-        }
-        
-        final success = await tradeViewModel.completeTradeWithStatus(
+        // ÖNCE: Değerlendirme yap
+        Logger.info('🔄 1. Adım: Değerlendirme gönderiliyor...', tag: 'TradeView');
+        final reviewSuccess = await tradeViewModel.reviewTrade(
           userToken: userToken,
           offerID: trade.offerID,
-          statusID: 5, // Tamamlandı durumu
-          review: TradeReview(
-            toUserID: toUserID,
-            rating: rating,
-            comment: comment,
-          ),
+          rating: rating,
+          comment: comment,
         );
 
-        if (success) {
+        if (!reviewSuccess) {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(tradeViewModel.errorMessage ?? 'Değerlendirme gönderilirken hata oluştu'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return false;
+        }
+
+        // SONRA: Takas tamamlama yap
+        Logger.info('🔄 2. Adım: Takas tamamlama gönderiliyor...', tag: 'TradeView');
+        final completeSuccess = await tradeViewModel.completeTradeSimple(
+          userToken: userToken,
+          offerID: trade.offerID,
+        );
+
+        if (completeSuccess) {
           if (mounted && _scaffoldMessenger != null) {
             _scaffoldMessenger!.showSnackBar(
               SnackBar(
@@ -2264,7 +2495,7 @@ class _TradeViewState extends State<TradeView>
                   children: [
                     Icon(Icons.check_circle, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Takas başarıyla tamamlandı ve değerlendirildi'),
+                    Text('Değerlendirmeniz gönderildi ve takas tamamlandı'),
                   ],
                 ),
                 backgroundColor: Colors.green,
@@ -2272,15 +2503,17 @@ class _TradeViewState extends State<TradeView>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                duration: Duration(seconds: 3),
               ),
             );
           }
           
-          // Takasları yeniden yükle
+          // Takasları yeniden yükle - hasReview alanının güncellenmesi için
           final userId = await _authService.getCurrentUserId();
           if (userId != null && tradeViewModel != null) {
+            Logger.info('🔄 Değerlendirme + takas tamamlama sonrası takaslar yeniden yükleniyor...', tag: 'TradeView');
             await tradeViewModel.loadUserTrades(int.parse(userId));
-            Logger.info('✅ TradeViewModel yenilendi (tradeComplete sonrası)', tag: 'TradeView');
+            Logger.info('✅ TradeViewModel yenilendi (değerlendirme + takas tamamlama sonrası)', tag: 'TradeView');
           }
           
           // UI'ı güncelle
@@ -2312,13 +2545,14 @@ class _TradeViewState extends State<TradeView>
 
         if (success) {
           if (mounted && _scaffoldMessenger != null) {
+            // StatusID=4 durumunda da karşı tarafın tamamlamasını bekliyorsunuz mesajı göster
             _scaffoldMessenger!.showSnackBar(
               SnackBar(
                 content: Row(
                   children: [
                     Icon(Icons.check_circle, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Takasınız tamamlandı! Karşı tarafın takası tamamlaması bekleniyor.'),
+                    Text('Takasınız tamamlandı! Karşı tarafın takası tamamlamasını bekliyorsunuz.'),
                   ],
                 ),
                 backgroundColor: Colors.green,
@@ -2354,7 +2588,9 @@ class _TradeViewState extends State<TradeView>
           return false;
         }
       } else {
-        // Diğer durumlar için tradeReview endpoint'ini kullan
+        // Diğer durumlar için sadece değerlendirme yap
+        Logger.info('Trade #${trade.offerID} için sadece değerlendirme işlemi başlatılıyor', tag: 'TradeView');
+        
         final success = await tradeViewModel.reviewTrade(
           userToken: userToken,
           offerID: trade.offerID,
@@ -2362,81 +2598,57 @@ class _TradeViewState extends State<TradeView>
           comment: comment,
         );
 
-      if (success) {
-        if (mounted && _scaffoldMessenger != null) {
-          String successMessage;
-          if (currentUserStatusID == 2) {
-            successMessage = 'Takas başarıyla tamamlandı ve değerlendirildi';
-          } else {
-            successMessage = 'Takas değerlendirmesi başarıyla gönderildi';
+        if (success) {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Değerlendirmeniz başarıyla gönderildi'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                duration: Duration(seconds: 3),
+              ),
+            );
           }
           
-          _scaffoldMessenger!.showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text(successMessage),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
-        
-        // Takaslari yeniden yukle
-        final userId = await _authService.getCurrentUserId();
-        if (userId != null && tradeViewModel != null) {
-          await tradeViewModel.loadUserTrades(int.parse(userId));
-          Logger.info('✅ TradeViewModel manuel olarak yenilendi (completeTradeWithReview)', tag: 'TradeView');
-          
-          // Yenilenen trade'i kontrol et
-          final updatedTrade = tradeViewModel.getTradeByOfferId(trade.offerID);
-          if (updatedTrade != null) {
-            Logger.info('✅ Guncellenmis trade bulundu (completeTradeWithReview): #${updatedTrade.offerID}, senderStatusID=${updatedTrade.senderStatusID}, receiverStatusID=${updatedTrade.receiverStatusID}', tag: 'TradeView');
-          } else {
-            Logger.warning('⚠️ Guncellenmis trade bulunamadi (completeTradeWithReview): #${trade.offerID}', tag: 'TradeView');
-          }
-        }
-        
-        // UI'ı güncelle
-        if (mounted) {
-          setState(() {});
-        }
-        
-        // StatusID=2 durumunda takas tamamlandıktan sonra durumu güncelle
-        if (currentUserStatusID == 2) {
-          Logger.info('🔄 Trade #${trade.offerID} statusID=2 durumunda tamamlandı, durum güncelleniyor...', tag: 'TradeView');
-          
-          // Takasları tekrar yükle
+          // Takasları yeniden yükle - hasReview alanının güncellenmesi için
+          final userId = await _authService.getCurrentUserId();
           if (userId != null && tradeViewModel != null) {
+            Logger.info('🔄 Değerlendirme sonrası takaslar yeniden yükleniyor...', tag: 'TradeView');
             await tradeViewModel.loadUserTrades(int.parse(userId));
-            Logger.info('✅ TradeViewModel yenilendi (statusID=2 tamamlama sonrası)', tag: 'TradeView');
+            Logger.info('✅ TradeViewModel yenilendi (değerlendirme sonrası)', tag: 'TradeView');
           }
+          
+          // UI'ı güncelle
+          if (mounted) {
+            setState(() {});
+          }
+          return true;
+        } else {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(tradeViewModel.errorMessage ?? 'Takas değerlendirmesi gönderilirken hata oluştu'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return false;
         }
-        return true;
-      } else {
-        if (mounted && _scaffoldMessenger != null) {
-          _scaffoldMessenger!.showSnackBar(
-            SnackBar(
-              content: Text(tradeViewModel.errorMessage ?? 'Takas değerlendirmesi gönderilirken hata oluştu'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return false;
-      }
       }
     } catch (e) {
       if (mounted && _scaffoldMessenger != null) {
         _scaffoldMessenger!.showSnackBar(
           SnackBar(
-            content: Text('Takas tamamlanirken hata olustu: $e'),
+            content: Text('Takas tamamlanırken hata oluştu: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2444,6 +2656,8 @@ class _TradeViewState extends State<TradeView>
       return false;
     }
   }
+
+
 
   /// Debug bilgisi göster
   void _showDebugInfo() {
@@ -2495,6 +2709,7 @@ class _TradeViewState extends State<TradeView>
       
       final shouldShowButtons = currentUserStatusID == 1 && !currentUserConfirmStatus;
       debugInfo += '  • ShouldShowButtons: $shouldShowButtons\n';
+      debugInfo += '  • ShowButtons Açıklama: ${shouldShowButtons ? "Onay/Red butonları gösterilecek" : currentUserStatusID == 1 ? "\"Onay bekliyor\" mesajı gösterilecek" : "Diğer butonlar TradeCard\'da gösterilecek"}\n';
       debugInfo += '\n';
     }
     

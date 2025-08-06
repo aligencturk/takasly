@@ -543,6 +543,7 @@ class UserTrade {
   final int? rating; // Yorum puanı
   final String? comment; // Yorum metni
   final bool? hasReview; // Yorum yapılıp yapılmadığı
+  final bool? canGiveReview; // Puan verilebilir mi
 
   const UserTrade({
     required this.offerID,
@@ -567,6 +568,7 @@ class UserTrade {
     this.rating,
     this.comment,
     this.hasReview,
+    this.canGiveReview,
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {
@@ -596,6 +598,7 @@ class UserTrade {
        final rating = json['rating'] as int?;
        final comment = json['comment'] as String?;
        final hasReview = json['hasReview'] as bool?;
+       final canGiveReview = json['canGiveReview'] as bool?;
        
        // myProduct güvenli parse
       TradeProduct? myProduct;
@@ -642,6 +645,7 @@ class UserTrade {
          rating: rating,
          comment: comment,
          hasReview: hasReview,
+         canGiveReview: canGiveReview,
       );
       
       print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, senderStatusID=$senderStatusID, receiverStatusID=$receiverStatusID');
@@ -673,6 +677,7 @@ class UserTrade {
          rating: json['rating'] as int?,
          comment: json['comment'] as String?,
          hasReview: json['hasReview'] as bool?,
+         canGiveReview: json['canGiveReview'] as bool?,
       );
     }
   }
@@ -700,6 +705,7 @@ class UserTrade {
      if (rating != null) 'rating': rating,
      if (comment != null) 'comment': comment,
      if (hasReview != null) 'hasReview': hasReview,
+     if (canGiveReview != null) 'canGiveReview': canGiveReview,
   };
 
   @override

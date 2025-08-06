@@ -15,7 +15,7 @@ class TradeCard extends StatelessWidget {
   final bool? showButtons; // API'den gelen showButtons değeri
   final VoidCallback? onDetailTap; // Takas detayı için callback
   final Function(UserTrade)? onReject; // Reddetme için callback
-  final Function(UserTrade)? onReview; // Yorum yapma için callback
+  final Future<void> Function(UserTrade, int rating, String comment)? onReview; // Yorum yapma için callback (rating ve comment ile)
   final Function(UserTrade)? onCompleteSimple; // Basit takas tamamlama için callback
 
   const TradeCard({
@@ -88,36 +88,156 @@ class TradeCard extends StatelessWidget {
     return trade.isReceiverConfirm;
   }
 
-  /// Yorum butonunun gösterilip gösterilmeyeceğini belirle
+  /// "Puan Ver" butonunun gösterilip gösterilmeyeceğini belirle
   bool _shouldShowReviewButton() {
-    // Eğer kullanıcı zaten yorum yapmışsa butonu gösterme
-    if (trade.hasReview == true) {
+    // API'den gelen canGiveReview değerini kontrol et
+    // API zaten değerlendirme kontrolünü yapıyor, tekrar yorum yapılmasına izin vermiyor
+    if (trade.canGiveReview == true) {
+      Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=true, buton gösterilecek', tag: 'TradeCard');
+      return true;
+    }
+    
+    Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=false, buton gösterilmeyecek', tag: 'TradeCard');
+    return false;
+  }
+
+  /// "Takası Tamamla" butonunun gösterilip gösterilmeyeceğini belirle
+  bool _shouldShowCompleteButton() {
+    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    final currentUserStatusID = _getCurrentUserStatusID();
+    
+    // StatusID=2 (Onaylandı) durumunda "Takası Tamamla" butonu göster
+    // ANCAK: Eğer karşı taraf henüz onaylamamışsa (statusID < 2) buton gösterilmez
+    // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
+    if (currentUserStatusID == 2) {
+      // Karşı tarafın durumunu kontrol et
+      int otherUserStatusID;
+      if (currentUserId == trade.senderUserID) {
+        otherUserStatusID = trade.receiverStatusID;
+      } else {
+        otherUserStatusID = trade.senderStatusID;
+      }
+      
+      // Eğer karşı taraf henüz onaylamamışsa (statusID < 2) "Takası Tamamla" butonu gösterilmez
+      // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
+      return otherUserStatusID >= 2;
+    }
+    
+    // StatusID=4 (Teslim Edildi) durumunda, eğer karşı taraf henüz tamamlamamışsa göster
+    // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
+    if (currentUserStatusID == 4) {
+      // Karşı tarafın durumunu kontrol et
+      int otherUserStatusID;
+      if (currentUserId == trade.senderUserID) {
+        otherUserStatusID = trade.receiverStatusID;
+      } else {
+        otherUserStatusID = trade.senderStatusID;
+      }
+      
+      // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
+      // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
+      return otherUserStatusID < 4;
+    }
+    
+    // StatusID=5 (Tamamlandı) durumunda buton gösterilmez
+    // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
+    if (currentUserStatusID == 5) {
       return false;
     }
     
-    // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
-    // Sender ve receiver'ın statusID'si 4 veya 5 olmalı (Teslim Edildi veya Tamamlandı)
-    final senderCompleted = trade.senderStatusID >= 4;
-    final receiverCompleted = trade.receiverStatusID >= 4;
-    
-    // Her iki kullanıcı da takasını tamamlamışsa yorum butonunu göster
-    return senderCompleted && receiverCompleted;
+    return false;
   }
 
-  /// Takası Tamamla butonunun gösterilip gösterilmeyeceğini belirle
-  bool _shouldShowCompleteButton() {
+  /// Karşı tarafın takası tamamlaması bekleniyor mesajı
+  Widget _buildWaitingMessageWidget(BuildContext context) {
     final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    final currentUserStatusID = _getCurrentUserStatusID();
     
-    // Karşı tarafın durumunu kontrol et
-    int otherUserStatusID;
-    if (currentUserId == trade.senderUserID) {
-      otherUserStatusID = trade.receiverStatusID;
-    } else {
-      otherUserStatusID = trade.senderStatusID;
+    // Sadece mevcut kullanıcının statusID'si 4 (Teslim Edildi) olduğunda göster
+    if (currentUserStatusID == 4) {
+      // Karşı tarafın durumunu kontrol et
+      int otherUserStatusID;
+      if (currentUserId == trade.senderUserID) {
+        otherUserStatusID = trade.receiverStatusID;
+      } else {
+        otherUserStatusID = trade.senderStatusID;
+      }
+      
+      // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) mesajı göster
+      if (otherUserStatusID < 4) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.orange[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.hourglass_empty,
+                  color: Colors.orange[600],
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Karşı tarafın takası tamamlaması bekleniyor',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.orange[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     }
     
-    // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
-    return otherUserStatusID < 4;
+    // Mesaj gösterilmeyecekse boş container döndür
+    return Container();
+  }
+
+  /// "Onay bekliyor" mesajını gösteren widget
+  Widget _buildPendingMessageWidget(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: Colors.orange.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.pending_actions,
+              color: Colors.orange,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Onay bekliyor',
+                style: TextStyle(
+                  color: Colors.orange[700],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
@@ -184,39 +304,7 @@ class TradeCard extends StatelessWidget {
     
     if (apiMessage.isEmpty) {
       // API mesajı yoksa varsayılan mesaj göster
-      return Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: Colors.orange.withOpacity(0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.pending_actions,
-                color: Colors.orange,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Karşı tarafın teklifini bekliyorsunuz',
-                  style: TextStyle(
-                    color: Colors.orange[700],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildPendingMessageWidget(context);
     }
     
     // API'den gelen mesajı göster
@@ -255,62 +343,6 @@ class TradeCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  /// Karşı tarafın takası tamamlaması bekleniyor mesajı
-  Widget _buildWaitingMessageWidget(BuildContext context) {
-    // Mevcut kullanıcının durumunu kontrol et
-    final currentStatusID = _getCurrentUserStatusID();
-    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
-    
-    // Sadece statusID=2 (Onaylandı) durumunda ve henüz takasını tamamlamamış kullanıcıya göster
-    if (currentStatusID == 2) {
-      // Karşı tarafın durumunu kontrol et
-      int otherUserStatusID;
-      if (currentUserId == trade.senderUserID) {
-        otherUserStatusID = trade.receiverStatusID;
-      } else {
-        otherUserStatusID = trade.senderStatusID;
-      }
-      
-      // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) mesajı göster
-      if (otherUserStatusID < 4) {
-        return Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.orange[200]!),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.hourglass_empty,
-                  color: Colors.orange[600],
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Karşı tarafın takası tamamlaması bekleniyor',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.orange[700],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-    }
-    
-    // Mesaj gösterilmeyecekse boş container döndür
-    return Container();
   }
 
   /// Reddetme sebebini gösteren widget
@@ -540,9 +572,8 @@ class TradeCard extends StatelessWidget {
                         ],
                       ),
                       
-                      // Karşı tarafın takası tamamlaması bekleniyor mesajı (statusID=2 durumunda)
-                      if (_getCurrentUserStatusID() == 2)
-                        _buildWaitingMessageWidget(context),
+                      // Karşı tarafın takası tamamlaması bekleniyor mesajı (sadece statusID=4 olan kullanıcıya göster)
+                      _buildWaitingMessageWidget(context),
                       
                       // Reddetme sebebi gösterimi (statusID=3, 7 veya 8 ise)
                       if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true) ...[
@@ -558,63 +589,41 @@ class TradeCard extends StatelessWidget {
                       ],
                       
                       // Alt kısım - Aksiyon butonları
-                      // YENİ MANTIK: Kullanıcı takası onayladıktan sonra (statusID=2) "Takası Tamamla" butonu göster
+                      // YENİ MANTIK: Kullanıcının istediği şekilde düzenlendi
                       
-                      // Onay/red butonları (showButtons=true ise herhangi bir statusID için)
-                      if (showButtons == true) ...[
-                        // Debug bilgilerini log'la
-                        Builder(
-                          builder: (context) {
-                            Logger.debug('🔍 TradeCard buton gösterme kontrolü (showButtons=true):', tag: 'TradeCard');
-                            Logger.debug('  • statusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
-                            Logger.debug('  • isConfirm: ${_getCurrentUserConfirmStatus()}', tag: 'TradeCard');
-                            Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
-                            Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
-                            Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
-                            return Container(); // Boş container döndür
-                          },
-                        ),
-                        // Butonları göster
-                        _buildActionButtons(context)
-                      ]
-                      // Takası Tamamla butonu (statusID=2 - Onaylandı durumu)
-                      else if (_getCurrentUserStatusID() == 2)
-                        _buildCompleteTradeButton(context)
-                      // Teslim edildi durumu için takası tamamla butonu (statusID=4) - sadece henüz tamamlamamış kullanıcıya
-                      else if (_getCurrentUserStatusID() == 4 && _shouldShowCompleteButton())
-                        _buildCompleteTradeButton(context)
-                      // Tamamlanmış takaslar için yorum yap butonu (statusID=5) - sadece her iki kullanıcı da tamamladıysa
-                      else if (_getCurrentUserStatusID() == 5 && _shouldShowReviewButton())
-                        _buildReviewButton(context)
-                      // Basit takas tamamlama butonu (statusID=3 - Kargoya Verildi)
-                      else if (_getCurrentUserStatusID() == 3)
-                        _buildCompleteTradeButton(context)
-                      // Eski mantık - sadece statusID=1 için (geriye uyumluluk)
-                      else if (_getCurrentUserStatusID() == 1) ...[
-                        // Debug bilgilerini log'la (sadece statusID=1 olanlar için)
-                        Builder(
-                          builder: (context) {
-                            Logger.debug('🔍 TradeCard buton gösterme kontrolü (statusID=1):', tag: 'TradeCard');
-                            Logger.debug('  • statusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
-                            Logger.debug('  • isConfirm: ${_getCurrentUserConfirmStatus()}', tag: 'TradeCard');
-                            Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
-                            Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
-                            Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
-                            return Container(); // Boş container döndür
-                          },
-                        ),
-                        // Buton gösterme mantığını düzelt
-                        if (showButtons == true)
+                      // If "Takası Tamamla" button should be shown based on the comprehensive logic
+                      Builder(
+                        builder: (context) {
+                          final shouldShow = _shouldShowCompleteButton();
+                          Logger.debug('🔍 Trade #${trade.offerID} - ShouldShowCompleteButton: $shouldShow', tag: 'TradeCard');
+                          Logger.debug('🔍 Trade #${trade.offerID} - CurrentUserStatusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
+                          Logger.debug('🔍 Trade #${trade.offerID} - SenderStatusID: ${trade.senderStatusID}, ReceiverStatusID: ${trade.receiverStatusID}', tag: 'TradeCard');
+                          return shouldShow ? _buildCompleteTradeButton(context) : Container();
+                        },
+                      ),
+                      
+                      // StatusID=1 (Beklemede) durumunda sadece onay/red butonları veya "onay bekliyor" mesajı
+                      if (_getCurrentUserStatusID() == 1) ...[
+                        if (showButtons == true) // This showButtons comes from TradeView
                           _buildActionButtons(context)
-                        else if (showButtons == false)
-                          _buildApiMessageWidget(context, tradeViewModel)
-                        else if (showButtons == null && !hasConfirmed && !hasRejected)
-                          _buildActionButtons(context)
-                        else if (showButtons == null && (hasConfirmed || hasRejected))
-                          _buildApiMessageWidget(context, tradeViewModel)
                         else
-                          _buildApiMessageWidget(context, tradeViewModel)
+                          _buildApiMessageWidget(context, tradeViewModel) // This is the "Onay bekliyor" message
                       ],
+                      
+                      // StatusID=4 veya 5 durumunda "Puan Ver" butonu (eğer her iki taraf da tamamladıysa)
+                      Builder(
+                        builder: (context) {
+                          final currentStatusID = _getCurrentUserStatusID();
+                          final shouldShowReview = _shouldShowReviewButton();
+                          Logger.debug('🔍 Trade #${trade.offerID} - Review button check: currentStatusID=$currentStatusID, shouldShowReview=$shouldShowReview', tag: 'TradeCard');
+                          Logger.debug('🔍 Trade #${trade.offerID} - Trade data: hasReview=${trade.hasReview}, rating=${trade.rating}, comment=${trade.comment}', tag: 'TradeCard');
+                          
+                          if ((currentStatusID == 4 || currentStatusID == 5) && shouldShowReview) {
+                            return _buildReviewButton(context);
+                          }
+                          return Container();
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -789,14 +798,7 @@ class TradeCard extends StatelessWidget {
 
   Widget _buildReviewButton(BuildContext context) {
     // Buton metnini duruma göre ayarla
-    String buttonText;
-    if (_getCurrentUserStatusID() == 4) {
-      buttonText = 'Takası Tamamla ve Değerlendir';
-    } else if (_getCurrentUserStatusID() == 5) {
-      buttonText = 'Yorum Yap';
-    } else {
-      buttonText = 'Değerlendir';
-    }
+    String buttonText = 'Değerlendir';
     
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -878,19 +880,149 @@ class TradeCard extends StatelessWidget {
 
 
   void _completeTradeWithReview(BuildContext context) {
-          Logger.info('Trade değerlendiriliyor...', tag: 'TradeCard');
+    Logger.info('Trade puan veriliyor...', tag: 'TradeCard');
     
-    // Bu metod sadece buton gösterimi için, gerçek işlem TradeView'da yapılıyor
-    // Burada sadece log atıyoruz
-    Logger.debug('Trade değerlendirme butonu tıklandı, işlem TradeView\'da yapılacak', tag: 'TradeCard');
+    // Yıldız ve yorum ile birlikte değerlendirme dialog'u göster
+    _showTradeReviewDialog(context);
+  }
+
+  /// Yıldız ve yorum ile birlikte değerlendirme dialog'u
+  void _showTradeReviewDialog(BuildContext context) {
+    double rating = 0.0;
+    final TextEditingController commentController = TextEditingController();
     
-    // Sadece onReview callback'ini kullan
-    if (onReview != null) {
-      Logger.info('onReview callback çağrılıyor', tag: 'TradeCard');
-      onReview!(trade);
-    } else {
-      Logger.warning('onReview callback tanımlanmamış!', tag: 'TradeCard');
-    }
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.star, color: Colors.amber, size: 24),
+                SizedBox(width: 8),
+                Text('Değerlendir'),
+              ],
+            ),
+            content: Container(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Takasınız tamamlandı! Karşı tarafa değerlendirme yapın.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                  
+                  SizedBox(height: 20),
+                  
+                  // Yıldız değerlendirmesi
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Puan: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      SizedBox(width: 8),
+                      ...List.generate(5, (index) {
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              rating = index + 1.0;
+                              Logger.info('Puan seçildi: $rating', tag: 'TradeCard');
+                            });
+                          },
+                          child: Icon(
+                            index < rating ? Icons.star : Icons.star_border,
+                            color: index < rating ? Colors.amber : Colors.grey.shade400,
+                            size: 32,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                  
+                  SizedBox(height: 20),
+                  
+                  // Yorum alanı
+                  TextField(
+                    controller: commentController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Takas deneyiminizi paylaşın... (İsteğe bağlı)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppTheme.primary, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('İptal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (rating == 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Lütfen bir puan verin'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    return;
+                  }
+                  
+                  Navigator.pop(context);
+                  
+                  final finalRating = rating.toInt();
+                  final finalComment = commentController.text.trim();
+                  
+                  Logger.info('Dialog kapatıldı - Rating: $finalRating, Comment: $finalComment', tag: 'TradeCard');
+                  
+                  // onReview callback'ini çağır ve yıldız/yorum bilgilerini geçir
+                  if (onReview != null) {
+                    Logger.info('onReview callback çağrılıyor - Rating: $finalRating, Comment: $finalComment', tag: 'TradeCard');
+                    await onReview!(trade, finalRating, finalComment);
+                    
+                    // Başarı mesajı göster
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(Icons.star, color: Colors.white, size: 16),
+                              SizedBox(width: 8),
+                              Text('Değerlendirmeniz gönderildi'),
+                            ],
+                          ),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } else {
+                    Logger.warning('onReview callback tanımlanmamış!', tag: 'TradeCard');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('Değerlendir ve Gönder'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _completeTradeSimple(BuildContext context) {
