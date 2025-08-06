@@ -37,7 +37,7 @@ class _EditProductViewState extends State<EditProductView> {
   List<String> _existingImages = [];
   List<File> _newImages = [];
   final ImagePicker _imagePicker = ImagePicker();
-  bool _isShowContact = true; // İletişim bilgilerinin görünürlüğü
+  bool _isShowContact = false; // İletişim bilgilerinin görünürlüğü
 
   @override
   void initState() {

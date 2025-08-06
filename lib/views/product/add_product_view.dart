@@ -701,7 +701,7 @@ class _AddProductViewState extends State<AddProductView> {
               hintText: 'Örn: iPhone 13 Pro Max 256GB',
               counterText: '',
             ),
-            maxLength: 40,
+            maxLength: 20,
             validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
             onChanged: (value) => setState(() {}),
           ),
