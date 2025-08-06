@@ -35,8 +35,7 @@ class _TradeViewState extends State<TradeView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AuthService _authService = AuthService();
-  // Her trade için showButtons değerini saklayacak Map
-  final Map<int, bool> _tradeShowButtonsMap = {};
+  // Artık showButtons değerleri dinamik olarak hesaplanıyor
   String? _currentUserId;
   ScaffoldMessengerState? _scaffoldMessenger;
   
@@ -68,8 +67,7 @@ class _TradeViewState extends State<TradeView>
   }
 
   Future<void> _loadData() async {
-    // showButtons Map'ini temizle
-    _tradeShowButtonsMap.clear();
+    // Artık showButtons değerleri dinamik olarak hesaplanıyor
 
     // Önce kullanıcının login olup olmadığını kontrol et
     final isLoggedIn = await _authService.isLoggedIn();
@@ -145,9 +143,8 @@ class _TradeViewState extends State<TradeView>
                 : Future.value(),
           ]);
           
-          // Takaslar yüklendikten sonra her trade için showButtons değerini kontrol et
-          Logger.info('🔍 Takaslar yüklendi, showButtons değerleri kontrol ediliyor...', tag: 'TradeView');
-          await _loadShowButtonsForTrades(tradeViewModel);
+          // Takaslar yüklendi, artık showButtons değerleri dinamik olarak hesaplanıyor
+          Logger.info('✅ Takaslar yüklendi', tag: 'TradeView');
         }
         
       } catch (e) {
@@ -427,7 +424,6 @@ class _TradeViewState extends State<TradeView>
                     Logger.info('  • receiverStatusTitle: "${updatedTrade.receiverStatusTitle}"', tag: 'TradeView');
                     Logger.info('  • isSenderConfirm: ${updatedTrade.isSenderConfirm}', tag: 'TradeView');
                     Logger.info('  • isReceiverConfirm: ${updatedTrade.isReceiverConfirm}', tag: 'TradeView');
-                    Logger.info('  • showButtons: ${_tradeShowButtonsMap[updatedTrade.offerID]}', tag: 'TradeView');
                     
                     // Mevcut kullanıcının durumunu belirle
                     final currentUserId = tradeViewModel.currentUserId;
@@ -450,13 +446,8 @@ class _TradeViewState extends State<TradeView>
                     // Buton gösterme koşullarını kontrol et
                     bool shouldShowButtons = false;
                     
-                    // API'den gelen showButtons değeri true ise butonları göster (statusID'den bağımsız)
-                    if (_tradeShowButtonsMap[updatedTrade.offerID] == true) {
-                      shouldShowButtons = true;
-                      Logger.info('✅ Trade #${updatedTrade.offerID} için showButtons=true, butonlar gösterilecek', tag: 'TradeView');
-                    }
-                    // StatusID=1 (Beklemede) olan trade'ler için ek kontrol
-                    else if (currentUserStatusID == 1) {
+                    // StatusID=1 (Beklemede) olan trade'ler için kontrol
+                    if (currentUserStatusID == 1) {
                       // Henüz onaylanmamışsa butonları göster
                       if (!currentUserConfirmStatus) {
                         shouldShowButtons = true;
@@ -470,8 +461,27 @@ class _TradeViewState extends State<TradeView>
                     else if (currentUserStatusID == 2) {
                       shouldShowButtons = false; // Onay/red butonları gösterilmez, sadece "Takası Tamamla" butonu TradeCard'da gösterilir
                       Logger.info('✅ Trade #${updatedTrade.offerID} için statusID=2, "Takası Tamamla" butonu TradeCard\'da gösterilecek', tag: 'TradeView');
+                    }
+                    // StatusID=4 (Teslim Edildi) olan trade'ler için "Takası Tamamla" butonu göster (sadece henüz tamamlamamış kullanıcıya)
+                    else if (currentUserStatusID == 4) {
+                      // Karşı tarafın durumunu kontrol et
+                      int otherUserStatusID;
+                      if (currentUserIdInt == updatedTrade.senderUserID) {
+                        otherUserStatusID = updatedTrade.receiverStatusID;
+                      } else {
+                        otherUserStatusID = updatedTrade.senderStatusID;
+                      }
+                      
+                      // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
+                      if (otherUserStatusID < 4) {
+                        shouldShowButtons = false; // "Takası Tamamla" butonu TradeCard'da gösterilir
+                        Logger.info('✅ Trade #${updatedTrade.offerID} için statusID=4, karşı taraf henüz tamamlamamış, "Takası Tamamla" butonu TradeCard\'da gösterilecek', tag: 'TradeView');
+                      } else {
+                        shouldShowButtons = false; // Her iki taraf da tamamladı, yorum butonu TradeCard'da gösterilir
+                        Logger.info('✅ Trade #${updatedTrade.offerID} için statusID=4, her iki taraf da tamamladı, yorum butonu TradeCard\'da gösterilecek', tag: 'TradeView');
+                      }
                     } else {
-                      Logger.info('❌ Trade #${updatedTrade.offerID} statusID=$currentUserStatusID ve showButtons=false olduğu için butonlar gösterilmeyecek', tag: 'TradeView');
+                      Logger.info('❌ Trade #${updatedTrade.offerID} statusID=$currentUserStatusID olduğu için butonlar gösterilmeyecek', tag: 'TradeView');
                     }
                     
                     // Ürün bilgilerini kontrol et
@@ -486,7 +496,7 @@ class _TradeViewState extends State<TradeView>
                       child: TradeCard(
                         trade: updatedTrade,
                         currentUserId: currentUserId.toString(),
-                        showButtons: shouldShowButtons ? true : _tradeShowButtonsMap[updatedTrade.offerID], // Buton gösterme mantığını düzelt
+                        showButtons: shouldShowButtons, // Sadece shouldShowButtons değerini kullan
                         onTap: () {
                           // Takas detayına git
                           Logger.info('Takas detayına gidiliyor: ${updatedTrade.offerID}', tag: 'TradeView');
@@ -509,7 +519,8 @@ class _TradeViewState extends State<TradeView>
                           _showTradeCompleteDialog(trade);
                         },
                         onCompleteSimple: (trade) {
-                          // Takası Tamamla butonu tıklandığında tradeReview endpoint'ini çağır
+                          // Takası Tamamla butonu tıklandığında takas tamamlama dialog'unu göster
+                          Logger.info('Takası Tamamla butonu tıklandı - Trade #${trade.offerID}', tag: 'TradeView');
                           _showTradeCompleteDialog(trade);
                         },
                         onStatusChange: (newStatusId) async {
@@ -550,6 +561,49 @@ class _TradeViewState extends State<TradeView>
                                 offerID: updatedTrade.offerID,
                                 isConfirm: true,
                               );
+                              
+                              // Onaylama başarılıysa, takasları yeniden yükle
+                              if (success) {
+                                Logger.info('Trade #${updatedTrade.offerID} onaylandı, takaslar yeniden yükleniyor...', tag: 'TradeView');
+                                
+                                // Takasları yeniden yükle
+                                final userId = await _authService.getCurrentUserId();
+                                if (userId != null && tradeViewModel != null) {
+                                  await tradeViewModel.loadUserTrades(int.parse(userId));
+                                  Logger.info('✅ TradeViewModel yenilendi (onaylama sonrası)', tag: 'TradeView');
+                                }
+                                
+                                // UI'ı güncelle
+                                
+                                // UI'ı güncelle
+                                if (mounted) {
+                                  setState(() {});
+                                }
+                                
+                                // Başarı mesajını göster
+                                if (mounted && _scaffoldMessenger != null) {
+                                  _scaffoldMessenger!.showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.white),
+                                          SizedBox(width: 8),
+                                          Text('Takas onaylandı! Karşı tarafın takası tamamlaması bekleniyor.'),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                
+                                // Başarı mesajını zaten gösterdik, success'i false yap
+                                success = false;
+                                return; // İşlem tamamlandı, return yap
+                              }
                             } else if (newStatusId == 3) {
                               // Reddetme işlemi - artık onReject callback'i ile yapılıyor
                               Logger.info('Trade #${updatedTrade.offerID} reddetme işlemi onReject callback\'i ile yapılacak', tag: 'TradeView');
@@ -589,8 +643,10 @@ class _TradeViewState extends State<TradeView>
                                 );
                               }
                               
-                              // Durum değişikliği sonrası showButtons değerlerini güncelle
-                              await _updateShowButtonsForTrade(updatedTrade);
+                              // UI'ı güncelle
+                              if (mounted) {
+                                setState(() {});
+                              }
                             } else {
                               Logger.error('Trade #${updatedTrade.offerID} durumu güncellenemedi', tag: 'TradeView');
                               if (mounted && _scaffoldMessenger != null) {
@@ -741,8 +797,10 @@ class _TradeViewState extends State<TradeView>
             Logger.info('✅ TradeViewModel yenilendi (onaylama sonrası)', tag: 'TradeView');
           }
           
-          // showButtons değerini güncelle
-          await _updateShowButtonsForTrade(trade);
+          // UI'ı güncelle
+          if (mounted) {
+            setState(() {});
+          }
         }
       } else if (statusId == 3) {
         // Reddetme işlemi - artık onReject callback'i ile yapılıyor
@@ -1691,12 +1749,22 @@ class _TradeViewState extends State<TradeView>
             currentUserStatusID = trade.receiverStatusID;
           }
           
+          // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
+          final senderCompleted = trade.senderStatusID >= 4;
+          final receiverCompleted = trade.receiverStatusID >= 4;
+          final bothCompleted = senderCompleted && receiverCompleted;
+          
           if (currentUserStatusID == 2) {
             dialogTitle = 'Takası Tamamla';
             dialogSubtitle = 'Takasınızı tamamlamak için karşı tarafa yorum ve puan verin. Bu işlem takasınızı sonlandıracaktır.';
           } else if (currentUserStatusID == 4) {
-            dialogTitle = 'Teslim Edildi / Alındı';
-            dialogSubtitle = 'Ürün teslim edildi! Karşı tarafa yorum ve puan verin.';
+            if (bothCompleted) {
+              dialogTitle = 'Takası Tamamla ve Değerlendir';
+              dialogSubtitle = 'Her iki taraf da takasını tamamladı! Karşı tarafa yorum ve puan verin.';
+            } else {
+              dialogTitle = 'Takası Tamamla';
+              dialogSubtitle = 'Takasınızı tamamlamak için karşı tarafa yorum ve puan verin. Bu işlem takasınızı sonlandıracaktır.';
+            }
           } else if (currentUserStatusID == 5) {
             dialogTitle = 'Yorum Yap';
             dialogSubtitle = 'Takasınız tamamlandı! Karşı tarafa yorum ve puan verin.';
@@ -1841,7 +1909,10 @@ class _TradeViewState extends State<TradeView>
                     }
                     
                     // showButtons değerlerini güncelle
-                    await _updateShowButtonsForTrade(trade);
+                    // UI'ı güncelle
+                    if (mounted) {
+                      setState(() {});
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -1956,134 +2027,7 @@ class _TradeViewState extends State<TradeView>
     }
   }
 
-  /// Belirli bir trade için showButtons değerini güncelle
-  Future<void> _updateShowButtonsForTrade(UserTrade trade) async {
-    try {
-      Logger.info('🔄 Trade #${trade.offerID} için showButtons değeri güncelleniyor...', tag: 'TradeView');
-      
-      final userToken = await _authService.getToken();
-      if (userToken == null || userToken.isEmpty) {
-        Logger.error('UserToken bulunamadı, showButtons güncellenemiyor', tag: 'TradeView');
-        return;
-      }
-      
-      final myProduct = _getMyProduct(trade);
-      final theirProduct = _getTheirProduct(trade);
-      
-      if (myProduct != null && theirProduct != null) {
-        final response = await _tradeViewModel?.checkTradeStatus(
-          userToken: userToken,
-          senderProductID: myProduct.productID,
-          receiverProductID: theirProduct.productID,
-        );
-        
-        if (response != null && response.data != null) {
-          final showButtons = response.data!.showButtons;
-          final statusID = response.data!.statusID;
-          
-          // StatusID=2 (Onaylandı) durumunda showButtons değerini true yap
-          if (statusID == 2) {
-            Logger.info('🔄 Trade #${trade.offerID} statusID=2 (Onaylandı), showButtons değeri true olarak güncelleniyor', tag: 'TradeView');
-            _tradeShowButtonsMap[trade.offerID] = true;
-          } else {
-            _tradeShowButtonsMap[trade.offerID] = showButtons;
-          }
-          
-          Logger.info('✅ Trade #${trade.offerID} showButtons değeri güncellendi: ${_tradeShowButtonsMap[trade.offerID]}', tag: 'TradeView');
-          
-          // UI'ı güncelle
-          if (mounted) {
-            setState(() {});
-          }
-        } else {
-          Logger.warning('⚠️ Trade #${trade.offerID} için showButtons değeri güncellenemedi', tag: 'TradeView');
-        }
-      } else {
-        Logger.warning('⚠️ Trade #${trade.offerID} için ürün bilgileri eksik, showButtons güncellenemiyor', tag: 'TradeView');
-      }
-    } catch (e) {
-      Logger.error('❌ Trade #${trade.offerID} showButtons güncelleme hatası: $e', tag: 'TradeView');
-    }
-  }
-
-  /// Her trade için showButtons değerini kontrol et ve cache'e kaydet
-  Future<void> _loadShowButtonsForTrades(TradeViewModel tradeViewModel) async {
-    try {
-      Logger.info('🔍 Trade\'ler için showButtons değerleri kontrol ediliyor...', tag: 'TradeView');
-      
-      final userToken = await _authService.getToken();
-      if (userToken == null || userToken.isEmpty) {
-        Logger.error('UserToken bulunamadı, showButtons kontrolü yapılamıyor', tag: 'TradeView');
-        return;
-      }
-      
-      final trades = tradeViewModel.userTrades;
-      Logger.info('📊 ${trades.length} adet trade için showButtons kontrolü başlatılıyor', tag: 'TradeView');
-      
-      // Her trade için showButtons değerini kontrol et
-      for (final trade in trades) {
-        final myProduct = _getMyProduct(trade);
-        final theirProduct = _getTheirProduct(trade);
-        
-        if (myProduct != null && theirProduct != null) {
-          try {
-            Logger.info('🔍 Trade #${trade.offerID} için showButtons kontrolü: MyProductID=${myProduct.productID}, TheirProductID=${theirProduct.productID}', tag: 'TradeView');
-            
-            final response = await tradeViewModel.checkTradeStatus(
-              userToken: userToken,
-              senderProductID: myProduct.productID,
-              receiverProductID: theirProduct.productID,
-            );
-            
-            if (response != null && response.data != null) {
-              final showButtons = response.data!.showButtons;
-              final statusID = response.data!.statusID;
-              final message = response.data!.message;
-              final isSender = response.data!.isSender;
-              final isReceiver = response.data!.isReceiver;
-              
-              _tradeShowButtonsMap[trade.offerID] = showButtons;
-              
-              Logger.info('✅ Trade #${trade.offerID} showButtons değeri: $showButtons', tag: 'TradeView');
-              Logger.info('  • API Message: "$message"', tag: 'TradeView');
-              Logger.info('  • isSender: $isSender, isReceiver: $isReceiver', tag: 'TradeView');
-              Logger.info('  • Trade senderStatusID: ${trade.senderStatusID}, receiverStatusID: ${trade.receiverStatusID}', tag: 'TradeView');
-              Logger.info('  • Trade senderStatusTitle: "${trade.senderStatusTitle}", receiverStatusTitle: "${trade.receiverStatusTitle}"', tag: 'TradeView');
-              Logger.info('  • Trade isSenderConfirm: ${trade.isSenderConfirm}, isReceiverConfirm: ${trade.isReceiverConfirm}', tag: 'TradeView');
-              
-              // StatusID=2 (Onaylandı) durumunda showButtons değerini true yap
-              if (statusID == 2) {
-                Logger.info('🔄 Trade #${trade.offerID} statusID=2 (Onaylandı), showButtons değeri true olarak güncelleniyor', tag: 'TradeView');
-                _tradeShowButtonsMap[trade.offerID] = true;
-              }
-            } else {
-              Logger.warning('⚠️ Trade #${trade.offerID} için showButtons değeri alınamadı', tag: 'TradeView');
-              // Varsayılan olarak false ata
-              _tradeShowButtonsMap[trade.offerID] = false;
-            }
-          } catch (e) {
-            Logger.error('❌ Trade #${trade.offerID} showButtons kontrolü hatası: $e', tag: 'TradeView');
-            // Hata durumunda varsayılan olarak false ata
-            _tradeShowButtonsMap[trade.offerID] = false;
-          }
-        } else {
-          Logger.warning('⚠️ Trade #${trade.offerID} için ürün bilgileri eksik, showButtons kontrolü yapılamıyor', tag: 'TradeView');
-          // Ürün bilgileri eksikse varsayılan olarak false ata
-          _tradeShowButtonsMap[trade.offerID] = false;
-        }
-      }
-      
-      Logger.info('✅ Tüm trade\'ler için showButtons değerleri kontrol edildi', tag: 'TradeView');
-      
-      // UI'ı güncelle
-      if (mounted) {
-        setState(() {});
-      }
-      
-    } catch (e) {
-      Logger.error('❌ showButtons kontrolü genel hatası: $e', tag: 'TradeView');
-    }
-  }
+  // Artık showButtons değerleri dinamik olarak hesaplanıyor, cache'e gerek yok
 
   /// Takas verilerini arka planda yükle (UI'ı bloklamasın)
   void _loadTradeDataInBackground(TradeViewModel tradeViewModel, String userId) {
@@ -2098,9 +2042,6 @@ class _TradeViewState extends State<TradeView>
         ]);
         
         Logger.info('✅ Takas verileri arka planda yüklendi', tag: 'TradeView');
-        
-        // Arka planda showButtons değerlerini de kontrol et
-        await _loadShowButtonsForTrades(tradeViewModel);
         
       } catch (e) {
         Logger.error('Arka plan takas veri yükleme hatası: $e', tag: 'TradeView');
@@ -2168,8 +2109,10 @@ class _TradeViewState extends State<TradeView>
           Logger.info('✅ TradeViewModel manuel olarak yenilendi (completeTradeSimple)', tag: 'TradeView');
         }
         
-        // Takas tamamlama sonrası showButtons değerini güncelle
-        await _updateShowButtonsForTrade(trade);
+        // UI'ı güncelle
+        if (mounted) {
+          setState(() {});
+        }
         return true;
       } else {
         if (mounted && _scaffoldMessenger != null) {
@@ -2231,13 +2174,193 @@ class _TradeViewState extends State<TradeView>
       
       Logger.info('Takas değerlendirme gönderiliyor... Trade #${trade.offerID}, Rating: $rating, Comment: $comment, StatusID: $currentUserStatusID', tag: 'TradeView');
 
-      // Yeni tradeReview endpoint'ini kullan
-      final success = await tradeViewModel.reviewTrade(
-        userToken: userToken,
-        offerID: trade.offerID,
-        rating: rating,
-        comment: comment,
-      );
+      // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
+      final senderCompleted = trade.senderStatusID >= 4;
+      final receiverCompleted = trade.receiverStatusID >= 4;
+      final bothCompleted = senderCompleted && receiverCompleted;
+      
+      // StatusID=2 (Onaylandı) durumunda sadece takas tamamlama yap
+      if (currentUserStatusID == 2) {
+        Logger.info('Trade #${trade.offerID} için takas tamamlama işlemi başlatılıyor (StatusID: $currentUserStatusID)', tag: 'TradeView');
+        
+        final success = await tradeViewModel.completeTradeWithStatus(
+          userToken: userToken,
+          offerID: trade.offerID,
+          statusID: 4, // Teslim Edildi durumu
+        );
+
+        if (success) {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Takasınız tamamlandı! Karşı tarafın takası tamamlaması bekleniyor.'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+          
+          // Takasları yeniden yükle
+          final userId = await _authService.getCurrentUserId();
+          if (userId != null && tradeViewModel != null) {
+            await tradeViewModel.loadUserTrades(int.parse(userId));
+            Logger.info('✅ TradeViewModel yenilendi (takas tamamlama sonrası)', tag: 'TradeView');
+          }
+          
+          // UI'ı güncelle
+          if (mounted) {
+            setState(() {});
+          }
+          return true;
+        } else {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanırken hata oluştu'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return false;
+        }
+      }
+      // StatusID=4 (Teslim Edildi) durumunda ve her iki kullanıcı da tamamladıysa yorum yap
+      else if (currentUserStatusID == 4 && bothCompleted) {
+        Logger.info('Trade #${trade.offerID} için yorum işlemi başlatılıyor (StatusID: $currentUserStatusID, Her iki taraf tamamladı)', tag: 'TradeView');
+        
+        // Karşı tarafın userID'sini belirle
+        int toUserID;
+        if (currentUserIdInt == trade.senderUserID) {
+          toUserID = trade.receiverUserID;
+        } else {
+          toUserID = trade.senderUserID;
+        }
+        
+        final success = await tradeViewModel.completeTradeWithStatus(
+          userToken: userToken,
+          offerID: trade.offerID,
+          statusID: 5, // Tamamlandı durumu
+          review: TradeReview(
+            toUserID: toUserID,
+            rating: rating,
+            comment: comment,
+          ),
+        );
+
+        if (success) {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Takas başarıyla tamamlandı ve değerlendirildi'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+          
+          // Takasları yeniden yükle
+          final userId = await _authService.getCurrentUserId();
+          if (userId != null && tradeViewModel != null) {
+            await tradeViewModel.loadUserTrades(int.parse(userId));
+            Logger.info('✅ TradeViewModel yenilendi (tradeComplete sonrası)', tag: 'TradeView');
+          }
+          
+          // UI'ı güncelle
+          if (mounted) {
+            setState(() {});
+          }
+          return true;
+        } else {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanırken hata oluştu'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return false;
+        }
+      }
+      // StatusID=4 (Teslim Edildi) durumunda ama her iki kullanıcı henüz tamamlamamışsa sadece takas tamamlama yap
+      else if (currentUserStatusID == 4 && !bothCompleted) {
+        Logger.info('Trade #${trade.offerID} için takas tamamlama işlemi başlatılıyor (StatusID: $currentUserStatusID, Karşı taraf henüz tamamlamamış)', tag: 'TradeView');
+        
+        final success = await tradeViewModel.completeTradeWithStatus(
+          userToken: userToken,
+          offerID: trade.offerID,
+          statusID: 4, // Teslim Edildi durumu
+        );
+
+        if (success) {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Takasınız tamamlandı! Karşı tarafın takası tamamlaması bekleniyor.'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+          
+          // Takasları yeniden yükle
+          final userId = await _authService.getCurrentUserId();
+          if (userId != null && tradeViewModel != null) {
+            await tradeViewModel.loadUserTrades(int.parse(userId));
+            Logger.info('✅ TradeViewModel yenilendi (takas tamamlama sonrası)', tag: 'TradeView');
+          }
+          
+          // UI'ı güncelle
+          if (mounted) {
+            setState(() {});
+          }
+          return true;
+        } else {
+          if (mounted && _scaffoldMessenger != null) {
+            _scaffoldMessenger!.showSnackBar(
+              SnackBar(
+                content: Text(tradeViewModel.errorMessage ?? 'Takas tamamlanırken hata oluştu'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return false;
+        }
+      } else {
+        // Diğer durumlar için tradeReview endpoint'ini kullan
+        final success = await tradeViewModel.reviewTrade(
+          userToken: userToken,
+          offerID: trade.offerID,
+          rating: rating,
+          comment: comment,
+        );
 
       if (success) {
         if (mounted && _scaffoldMessenger != null) {
@@ -2281,8 +2404,10 @@ class _TradeViewState extends State<TradeView>
           }
         }
         
-        // Takas değerlendirme sonrası showButtons değerini güncelle
-        await _updateShowButtonsForTrade(trade);
+        // UI'ı güncelle
+        if (mounted) {
+          setState(() {});
+        }
         
         // StatusID=2 durumunda takas tamamlandıktan sonra durumu güncelle
         if (currentUserStatusID == 2) {
@@ -2305,6 +2430,7 @@ class _TradeViewState extends State<TradeView>
           );
         }
         return false;
+      }
       }
     } catch (e) {
       if (mounted && _scaffoldMessenger != null) {
@@ -2334,7 +2460,6 @@ class _TradeViewState extends State<TradeView>
     
     for (int i = 0; i < trades.length; i++) {
       final trade = trades[i];
-      final showButtons = _tradeShowButtonsMap[trade.offerID];
       final myProduct = _getMyProduct(trade);
       final theirProduct = _getTheirProduct(trade);
       
@@ -2348,7 +2473,6 @@ class _TradeViewState extends State<TradeView>
       debugInfo += '  • ReceiverCancelDesc: "${trade.receiverCancelDesc}"\n';
       debugInfo += '  • isSenderConfirm: ${trade.isSenderConfirm}\n';
       debugInfo += '  • isReceiverConfirm: ${trade.isReceiverConfirm}\n';
-      debugInfo += '  • showButtons: $showButtons\n';
       debugInfo += '  • MyProductID: ${myProduct?.productID}\n';
       debugInfo += '  • TheirProductID: ${theirProduct?.productID}\n';
       
@@ -2369,8 +2493,7 @@ class _TradeViewState extends State<TradeView>
         currentUserConfirmStatus = trade.isReceiverConfirm;
       }
       
-      final shouldShowButtons = currentUserStatusID == 1 && 
-          (showButtons == true || (showButtons == null && !currentUserConfirmStatus));
+      final shouldShowButtons = currentUserStatusID == 1 && !currentUserConfirmStatus;
       debugInfo += '  • ShouldShowButtons: $shouldShowButtons\n';
       debugInfo += '\n';
     }
@@ -2520,8 +2643,10 @@ class _TradeViewState extends State<TradeView>
           await tradeViewModel.loadUserTrades(int.parse(userId));
         }
         
-        // Reddetme sonrası showButtons değerini güncelle
-        await _updateShowButtonsForTrade(trade);
+        // UI'ı güncelle
+        if (mounted) {
+          setState(() {});
+        }
       } else {
         if (mounted && _scaffoldMessenger != null) {
           _scaffoldMessenger!.showSnackBar(

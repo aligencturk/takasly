@@ -88,6 +88,38 @@ class TradeCard extends StatelessWidget {
     return trade.isReceiverConfirm;
   }
 
+  /// Yorum butonunun gösterilip gösterilmeyeceğini belirle
+  bool _shouldShowReviewButton() {
+    // Eğer kullanıcı zaten yorum yapmışsa butonu gösterme
+    if (trade.hasReview == true) {
+      return false;
+    }
+    
+    // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
+    // Sender ve receiver'ın statusID'si 4 veya 5 olmalı (Teslim Edildi veya Tamamlandı)
+    final senderCompleted = trade.senderStatusID >= 4;
+    final receiverCompleted = trade.receiverStatusID >= 4;
+    
+    // Her iki kullanıcı da takasını tamamlamışsa yorum butonunu göster
+    return senderCompleted && receiverCompleted;
+  }
+
+  /// Takası Tamamla butonunun gösterilip gösterilmeyeceğini belirle
+  bool _shouldShowCompleteButton() {
+    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    
+    // Karşı tarafın durumunu kontrol et
+    int otherUserStatusID;
+    if (currentUserId == trade.senderUserID) {
+      otherUserStatusID = trade.receiverStatusID;
+    } else {
+      otherUserStatusID = trade.senderStatusID;
+    }
+    
+    // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
+    return otherUserStatusID < 4;
+  }
+
   String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
     // Sabit değerler kullan
     switch (statusId) {
@@ -223,6 +255,62 @@ class TradeCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Karşı tarafın takası tamamlaması bekleniyor mesajı
+  Widget _buildWaitingMessageWidget(BuildContext context) {
+    // Mevcut kullanıcının durumunu kontrol et
+    final currentStatusID = _getCurrentUserStatusID();
+    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
+    
+    // Sadece statusID=2 (Onaylandı) durumunda ve henüz takasını tamamlamamış kullanıcıya göster
+    if (currentStatusID == 2) {
+      // Karşı tarafın durumunu kontrol et
+      int otherUserStatusID;
+      if (currentUserId == trade.senderUserID) {
+        otherUserStatusID = trade.receiverStatusID;
+      } else {
+        otherUserStatusID = trade.senderStatusID;
+      }
+      
+      // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) mesajı göster
+      if (otherUserStatusID < 4) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.orange[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.hourglass_empty,
+                  color: Colors.orange[600],
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Karşı tarafın takası tamamlaması bekleniyor',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.orange[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+    
+    // Mesaj gösterilmeyecekse boş container döndür
+    return Container();
   }
 
   /// Reddetme sebebini gösteren widget
@@ -452,8 +540,12 @@ class TradeCard extends StatelessWidget {
                         ],
                       ),
                       
-                                             // Reddetme sebebi gösterimi (statusID=3, 7 veya 8 ise)
-                       if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true) ...[
+                      // Karşı tarafın takası tamamlaması bekleniyor mesajı (statusID=2 durumunda)
+                      if (_getCurrentUserStatusID() == 2)
+                        _buildWaitingMessageWidget(context),
+                      
+                      // Reddetme sebebi gösterimi (statusID=3, 7 veya 8 ise)
+                      if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true) ...[
                         Builder(
                           builder: (context) {
                             Logger.debug('🔍 Reddetme sebebi widget\'ı gösteriliyor', tag: 'TradeCard');
@@ -468,49 +560,49 @@ class TradeCard extends StatelessWidget {
                       // Alt kısım - Aksiyon butonları
                       // YENİ MANTIK: Kullanıcı takası onayladıktan sonra (statusID=2) "Takası Tamamla" butonu göster
                       
+                      // Onay/red butonları (showButtons=true ise herhangi bir statusID için)
+                      if (showButtons == true) ...[
+                        // Debug bilgilerini log'la
+                        Builder(
+                          builder: (context) {
+                            Logger.debug('🔍 TradeCard buton gösterme kontrolü (showButtons=true):', tag: 'TradeCard');
+                            Logger.debug('  • statusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
+                            Logger.debug('  • isConfirm: ${_getCurrentUserConfirmStatus()}', tag: 'TradeCard');
+                            Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
+                            Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
+                            Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
+                            return Container(); // Boş container döndür
+                          },
+                        ),
+                        // Butonları göster
+                        _buildActionButtons(context)
+                      ]
                       // Takası Tamamla butonu (statusID=2 - Onaylandı durumu)
-                      if (_getCurrentUserStatusID() == 2)
+                      else if (_getCurrentUserStatusID() == 2)
                         _buildCompleteTradeButton(context)
-                      // Teslim edildi durumu için yorum butonu (statusID=4)
-                      else if (_getCurrentUserStatusID() == 4)
-                        _buildReviewButton(context)
-                      // Tamamlanmış takaslar için yorum yap butonu (statusID=5)
-                      else if (_getCurrentUserStatusID() == 5 && (trade.hasReview != true))
+                      // Teslim edildi durumu için takası tamamla butonu (statusID=4) - sadece henüz tamamlamamış kullanıcıya
+                      else if (_getCurrentUserStatusID() == 4 && _shouldShowCompleteButton())
+                        _buildCompleteTradeButton(context)
+                      // Tamamlanmış takaslar için yorum yap butonu (statusID=5) - sadece her iki kullanıcı da tamamladıysa
+                      else if (_getCurrentUserStatusID() == 5 && _shouldShowReviewButton())
                         _buildReviewButton(context)
                       // Basit takas tamamlama butonu (statusID=3 - Kargoya Verildi)
                       else if (_getCurrentUserStatusID() == 3)
                         _buildCompleteTradeButton(context)
-                      // Onay/red butonları (showButtons=true ise herhangi bir statusID için)
-                      else if (showButtons == true) ...[
-                                                 // Debug bilgilerini log'la
-                         Builder(
-                           builder: (context) {
-                             Logger.debug('🔍 TradeCard buton gösterme kontrolü (showButtons=true):', tag: 'TradeCard');
-                             Logger.debug('  • statusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
-                             Logger.debug('  • isConfirm: ${_getCurrentUserConfirmStatus()}', tag: 'TradeCard');
-                             Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
-                             Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
-                             Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
-                             return Container(); // Boş container döndür
-                           },
-                         ),
-                        // Butonları göster
-                        _buildActionButtons(context)
-                      ]
-                                             // Eski mantık - sadece statusID=1 için (geriye uyumluluk)
-                       else if (_getCurrentUserStatusID() == 1) ...[
-                         // Debug bilgilerini log'la (sadece statusID=1 olanlar için)
-                         Builder(
-                           builder: (context) {
-                             Logger.debug('🔍 TradeCard buton gösterme kontrolü (statusID=1):', tag: 'TradeCard');
-                             Logger.debug('  • statusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
-                             Logger.debug('  • isConfirm: ${_getCurrentUserConfirmStatus()}', tag: 'TradeCard');
-                             Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
-                             Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
-                             Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
-                             return Container(); // Boş container döndür
-                           },
-                         ),
+                      // Eski mantık - sadece statusID=1 için (geriye uyumluluk)
+                      else if (_getCurrentUserStatusID() == 1) ...[
+                        // Debug bilgilerini log'la (sadece statusID=1 olanlar için)
+                        Builder(
+                          builder: (context) {
+                            Logger.debug('🔍 TradeCard buton gösterme kontrolü (statusID=1):', tag: 'TradeCard');
+                            Logger.debug('  • statusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
+                            Logger.debug('  • isConfirm: ${_getCurrentUserConfirmStatus()}', tag: 'TradeCard');
+                            Logger.debug('  • showButtons: $showButtons', tag: 'TradeCard');
+                            Logger.debug('  • hasConfirmed: $hasConfirmed', tag: 'TradeCard');
+                            Logger.debug('  • hasRejected: $hasRejected', tag: 'TradeCard');
+                            return Container(); // Boş container döndür
+                          },
+                        ),
                         // Buton gösterme mantığını düzelt
                         if (showButtons == true)
                           _buildActionButtons(context)
