@@ -255,8 +255,28 @@ class _AddProductViewState extends State<AddProductView> {
       },
     );
     
-    final success = await Provider.of<ProductViewModel>(context, listen: false)
-        .addProductWithEndpoint(
+    // Şehir ve ilçe isimlerini al
+    final vm = Provider.of<ProductViewModel>(context, listen: false);
+    String? selectedCityTitle;
+    String? selectedDistrictTitle;
+    
+    if (_selectedCityId != null) {
+      final selectedCity = vm.cities.firstWhere(
+        (city) => city.id == _selectedCityId,
+        orElse: () => throw Exception('Şehir bulunamadı'),
+      );
+      selectedCityTitle = selectedCity.name;
+    }
+    
+    if (_selectedDistrictId != null) {
+      final selectedDistrict = vm.districts.firstWhere(
+        (district) => district.id == _selectedDistrictId,
+        orElse: () => throw Exception('İlçe bulunamadı'),
+      );
+      selectedDistrictTitle = selectedDistrict.name;
+    }
+    
+    final success = await vm.addProductWithEndpoint(
           productTitle: _titleController.text.trim(),
           productDescription: _descriptionController.text.trim(),
           categoryId: categoryId!,
@@ -265,7 +285,11 @@ class _AddProductViewState extends State<AddProductView> {
           productImages: _selectedImages,
           selectedCityId: _selectedCityId,
           selectedDistrictId: _selectedDistrictId,
+          selectedCityTitle: selectedCityTitle,
+          selectedDistrictTitle: selectedDistrictTitle,
           isShowContact: _isShowContact,
+          userProvidedLatitude: _currentPosition?.latitude,
+          userProvidedLongitude: _currentPosition?.longitude,
         );
 
     // Yükleniyor dialog'unu kapat
@@ -1209,7 +1233,11 @@ class _AddProductViewState extends State<AddProductView> {
               _selectedCityId = value;
               _selectedDistrictId = null;
             });
-            if (value != null) vm.loadDistricts(value);
+            if (value != null) {
+              vm.loadDistricts(value);
+              // Seçilen şehrin konumunu haritada göster
+              _showCityLocationOnMap(value, vm);
+            }
           },
           validator: (v) => v == null ? 'İl seçimi zorunludur' : null,
         );
@@ -1244,8 +1272,13 @@ class _AddProductViewState extends State<AddProductView> {
           ],
           onChanged: _selectedCityId == null
               ? null
-              : (value) {
+              : (value) async {
                   setState(() => _selectedDistrictId = value);
+                  
+                  // İlçe seçildiğinde konum bilgisini güncelle
+                  if (value != null) {
+                    await _showDistrictLocationOnMap(value, vm);
+                  }
                 },
           validator: (v) => _selectedCityId != null && v == null
               ? 'İlçe seçimi zorunludur'
@@ -1406,6 +1439,72 @@ class _AddProductViewState extends State<AddProductView> {
     setState(() {
       _currentPosition = null;
     });
+  }
+
+  Future<void> _showCityLocationOnMap(String cityId, ProductViewModel vm) async {
+    try {
+      // Şehir ID'sine göre şehir adını bul
+      final city = vm.cities.firstWhere((c) => c.id == cityId);
+      final cityName = city.name;
+      
+      // Şehir konumunu al
+      final position = await _locationService.getLocationFromCityName(cityName);
+      
+      if (position != null && mounted) {
+        // Manuel konum olarak ayarla
+        setState(() {
+          _currentPosition = position;
+        });
+        
+        // Kullanıcıya bilgi ver
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.location_city, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text('$cityName konumu manuel olarak ayarlandı'),
+              ],
+            ),
+            backgroundColor: AppTheme.primary,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text('$cityName için konum bulunamadı'),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text('Şehir konumu alınırken hata oluştu'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   void _showLocationErrorDialog() {
@@ -1989,5 +2088,75 @@ class _AddProductViewState extends State<AddProductView> {
         ],
       ),
     );
+  }
+
+  Future<void> _showDistrictLocationOnMap(String districtId, ProductViewModel vm) async {
+    try {
+      // İlçe ID'sine göre ilçe adını bul
+      final district = vm.districts.firstWhere((d) => d.id == districtId);
+      final districtName = district.name;
+      
+      // Şehir adını da al (daha doğru konum için)
+      final city = vm.cities.firstWhere((c) => c.id == _selectedCityId);
+      final cityName = city.name;
+      
+      // İlçe konumunu al (şehir + ilçe kombinasyonu ile)
+      final position = await _locationService.getLocationFromCityName('$districtName, $cityName, Turkey');
+      
+      if (position != null && mounted) {
+        // Manuel konum olarak ayarla
+        setState(() {
+          _currentPosition = position;
+        });
+        
+        // Kullanıcıya bilgi ver
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.location_on, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text('$districtName konumu manuel olarak ayarlandı'),
+              ],
+            ),
+            backgroundColor: AppTheme.primary,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text('$districtName için konum bulunamadı'),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text('İlçe konumu alınırken hata oluştu'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }

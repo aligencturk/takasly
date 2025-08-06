@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:takasly/utils/logger.dart';
 
 class LocationService {
@@ -130,5 +131,57 @@ class LocationService {
   bool isLocationAccurate(Position position) {
     // Konum doğruluğu 100 metreden az ise kabul edilebilir
     return position.accuracy <= 100;
+  }
+
+  /// Şehir/İlçe adına göre koordinat alır
+  Future<Position?> getLocationFromCityName(String locationName) async {
+    try {
+      Logger.info('Konum aranıyor: $locationName');
+      
+      List<Location> locations = [];
+      
+      // Farklı formatları dene
+      List<String> searchFormats = [
+        locationName, // Orijinal format
+        '$locationName, Turkey', // Turkey eklenmişse
+        locationName.replaceAll(', Turkey', ''), // Turkey'i kaldır
+      ];
+      
+      for (String searchTerm in searchFormats) {
+        try {
+          locations = await locationFromAddress(searchTerm);
+          if (locations.isNotEmpty) {
+            Logger.info('Konum bulundu ($searchTerm): ${locations.first.latitude}, ${locations.first.longitude}');
+            break;
+          }
+        } catch (e) {
+          Logger.warning('Arama başarısız ($searchTerm): $e');
+          continue;
+        }
+      }
+      
+      if (locations.isNotEmpty) {
+        final location = locations.first;
+        
+        return Position(
+          latitude: location.latitude,
+          longitude: location.longitude,
+          timestamp: DateTime.now(),
+          accuracy: 1000, // Şehir/ilçe merkezi için yaklaşık doğruluk
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        );
+      }
+      
+      Logger.warning('Konum bulunamadı: $locationName');
+      return null;
+    } catch (e) {
+      Logger.error('Konum alınırken hata: $e');
+      return null;
+    }
   }
 }

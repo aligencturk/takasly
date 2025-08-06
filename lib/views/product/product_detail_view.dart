@@ -781,7 +781,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    '${widget.product.cityTitle} / ${widget.product.districtTitle}',
+                    _getLocationDisplayText(widget.product),
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.textPrimary,
@@ -835,6 +835,29 @@ class _ProductInfoState extends State<_ProductInfo> {
     }
     
     return 'Belirtilmemiş';
+  }
+
+  String _getLocationDisplayText(Product product) {
+    final cityTitle = product.cityTitle?.trim() ?? '';
+    final districtTitle = product.districtTitle?.trim() ?? '';
+    
+    // Her iki alan da boşsa
+    if (cityTitle.isEmpty && districtTitle.isEmpty) {
+      return 'Konum belirtilmemiş';
+    }
+    
+    // Sadece şehir varsa
+    if (cityTitle.isNotEmpty && districtTitle.isEmpty) {
+      return cityTitle;
+    }
+    
+    // Sadece ilçe varsa
+    if (cityTitle.isEmpty && districtTitle.isNotEmpty) {
+      return districtTitle;
+    }
+    
+    // Her ikisi de varsa
+    return '$cityTitle / $districtTitle';
   }
 
   Widget _buildLocationMap(Product product) {
@@ -1694,4 +1717,4 @@ class _ActionBar extends StatelessWidget {
   }
 
 
-} 
+}

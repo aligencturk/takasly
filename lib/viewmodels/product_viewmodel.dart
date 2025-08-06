@@ -1644,7 +1644,11 @@ class ProductViewModel extends ChangeNotifier {
     required List<File> productImages,
     String? selectedCityId,
     String? selectedDistrictId,
+    String? selectedCityTitle,
+    String? selectedDistrictTitle,
     bool? isShowContact,
+    double? userProvidedLatitude,
+    double? userProvidedLongitude,
   }) async {
     print('🚀 addProductWithEndpoint başlatıldı');
     print('📝 Parametreler:');
@@ -1726,7 +1730,11 @@ class ProductViewModel extends ChangeNotifier {
         productImages: productImages,
         selectedCityId: selectedCityId,
         selectedDistrictId: selectedDistrictId,
+        selectedCityTitle: selectedCityTitle,
+        selectedDistrictTitle: selectedDistrictTitle,
         isShowContact: isShowContact,
+        userProvidedLatitude: userProvidedLatitude,
+        userProvidedLongitude: userProvidedLongitude,
       );
 
       print('📡 API response alındı');

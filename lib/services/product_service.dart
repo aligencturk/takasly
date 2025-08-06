@@ -2229,7 +2229,11 @@ class ProductService {
     required List<File> productImages,
     String? selectedCityId,
     String? selectedDistrictId,
+    String? selectedCityTitle,
+    String? selectedDistrictTitle,
     bool? isShowContact,
+    double? userProvidedLatitude,
+    double? userProvidedLongitude,
   }) async {
     print('🚀 ProductService.addProduct called');
     print('📝 Parameters:');
@@ -2270,22 +2274,14 @@ class ProductService {
         catImage = '';
       }
 
-      // Konum bilgilerini al
-      double? latitude;
-      double? longitude;
+      // Konum bilgilerini kullan (sadece kullanıcı tarafından sağlanmışsa)
+      double? latitude = userProvidedLatitude;
+      double? longitude = userProvidedLongitude;
       
-      try {
-        final locationService = LocationService();
-        final position = await locationService.getCurrentLocation();
-        if (position != null) {
-          latitude = position.latitude;
-          longitude = position.longitude;
-          print('📍 Location obtained: $latitude, $longitude');
-        } else {
-          print('⚠️ Could not get current location, using default values');
-        }
-      } catch (e) {
-        print('⚠️ Error getting location: $e');
+      if (latitude != null && longitude != null) {
+        print('📍 Using user provided location: $latitude, $longitude');
+      } else {
+        print('📍 No GPS location provided by user');
       }
 
       // Form fields - Postman form/data formatına uygun
@@ -2299,6 +2295,8 @@ class ProductService {
         'catImage': catImage, // Kategori icon'u eklendi
         'productCity': selectedCityId ?? '',
         'productDistrict': selectedDistrictId ?? '',
+        'productCityTitle': selectedCityTitle ?? '',
+        'productDistrictTitle': selectedDistrictTitle ?? '',
         'productLat': latitude?.toString() ?? '',
         'productLong': longitude?.toString() ?? '',
         'isShowContact': (isShowContact ?? true) ? '1' : '0',

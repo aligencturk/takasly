@@ -43,6 +43,7 @@ dependencies:
   # Location Services
   geolocator: ^13.0.1
   permission_handler: ^11.3.1
+  geocoding: ^3.0.0
   
   # Maps
   flutter_map: ^7.0.0
