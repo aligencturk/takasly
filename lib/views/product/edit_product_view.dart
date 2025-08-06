@@ -43,12 +43,17 @@ class _EditProductViewState extends State<EditProductView> {
   void initState() {
     super.initState();
     _initializeFields();
-    // Şehirleri yükle
+    // Şehirleri, kategorileri ve koşulları yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
-        context.read<ProductViewModel>().loadCities();
+        final vm = Provider.of<ProductViewModel>(context, listen: false);
+        vm.loadCities();
+        vm.loadConditions();
+        if (vm.categories.isEmpty) {
+          vm.loadCategories();
+        }
       } catch (e) {
-        print('Error loading cities: $e');
+        print('Error loading initial data: $e');
       }
     });
   }
@@ -62,7 +67,9 @@ class _EditProductViewState extends State<EditProductView> {
       _tradePreferencesController.text = widget.product.tradePreferences?.join(', ') ?? '';
       
       _selectedCategoryId = widget.product.categoryId;
-      _selectedSubCategoryId = null; // Product modelinde subCategoryId yok
+      _selectedSubCategoryId = widget.product.subCategoryId?.isNotEmpty == true ? widget.product.subCategoryId : null;
+      _selectedSubSubCategoryId = widget.product.subSubCategoryId?.isNotEmpty == true ? widget.product.subSubCategoryId : null;
+      _selectedSubSubSubCategoryId = widget.product.subSubSubCategoryId?.isNotEmpty == true ? widget.product.subSubSubCategoryId : null;
       _existingImages = List.from(widget.product.images);
       
       // İletişim bilgileri görünürlüğünü yükle
@@ -85,6 +92,13 @@ class _EditProductViewState extends State<EditProductView> {
         }
       }
       
+      // Kategorileri yükle ve ürün kategorilerini seç - biraz gecikme ile
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _loadAndSelectCategories();
+        });
+      });
+      
       // Condition'ı name'den id'ye çevir
       WidgetsBinding.instance.addPostFrameCallback((_) {
         try {
@@ -104,6 +118,92 @@ class _EditProductViewState extends State<EditProductView> {
       });
     } catch (e) {
       print('Error initializing fields: $e');
+    }
+  }
+
+  Future<void> _loadAndSelectCategories() async {
+    try {
+      final productViewModel = context.read<ProductViewModel>();
+      
+      // Ana kategorileri yükle
+      await productViewModel.loadCategories();
+      
+      // Eğer categoryList boşsa, categoryId'yi kullan
+      if (widget.product.categoryList == null || widget.product.categoryList?.isEmpty == true) {
+        if (widget.product.categoryId.isNotEmpty) {
+          setState(() {
+            _selectedCategoryId = widget.product.categoryId;
+          });
+          return;
+        }
+      }
+      
+      // Ürün kategori listesi varsa kategorileri seç
+      if (widget.product.categoryList != null && widget.product.categoryList?.isNotEmpty == true) {
+        final productCategories = widget.product.categoryList!;
+        
+        // İlk kategori ana kategori
+        final mainCategory = productCategories.first;
+        setState(() {
+          _selectedCategoryId = mainCategory.id;
+        });
+        
+        // Ana kategorinin alt kategorilerini yükle
+        await productViewModel.loadSubCategories(mainCategory.id);
+        
+        // İkinci kategori varsa alt kategori olarak seç
+        if (productCategories.length > 1) {
+          final subCategory = productCategories[1];
+          final subCategoryExists = productViewModel.subCategories.any((cat) => cat.id == subCategory.id);
+          
+          if (subCategoryExists) {
+            setState(() {
+              _selectedSubCategoryId = subCategory.id;
+            });
+            
+            // Alt kategorinin alt kategorilerini yükle
+            await productViewModel.loadSubSubCategories(subCategory.id);
+            
+            // Üçüncü kategori varsa alt alt kategori olarak seç
+            if (productCategories.length > 2) {
+              final subSubCategory = productCategories[2];
+              final subSubCategoryExists = productViewModel.subSubCategories.any((cat) => cat.id == subSubCategory.id);
+              
+              if (subSubCategoryExists) {
+                setState(() {
+                  _selectedSubSubCategoryId = subSubCategory.id;
+                });
+                
+                // Alt alt kategorinin alt kategorilerini yükle
+                await productViewModel.loadSubSubSubCategories(subSubCategory.id);
+                
+                // Dördüncü kategori varsa alt alt alt kategori olarak seç
+                if (productCategories.length > 3) {
+                  final subSubSubCategory = productCategories[3];
+                  final subSubSubCategoryExists = productViewModel.subSubSubCategories.any((cat) => cat.id == subSubSubCategory.id);
+                  
+                  if (subSubSubCategoryExists) {
+                    setState(() {
+                      _selectedSubSubSubCategoryId = subSubSubCategory.id;
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading and selecting categories: $e');
+      // Hata durumunda kullanıcıya bilgi ver
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Kategoriler yüklenirken hata oluştu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -948,9 +1048,18 @@ class _EditProductViewState extends State<EditProductView> {
       String? districtTitle;
       if (_selectedCityId != null && _selectedDistrictId != null) {
         cityId = _selectedCityId;
-        cityTitle = _selectedCityId;
+        // City ve district title'larını ProductViewModel'den al
+        final selectedCity = productViewModel.cities.firstWhere(
+          (city) => city.id == _selectedCityId,
+          orElse: () => City(id: _selectedCityId!, name: '', plateCode: _selectedCityId!),
+        );
+        final selectedDistrict = productViewModel.districts.firstWhere(
+          (district) => district.id == _selectedDistrictId,
+          orElse: () => District(id: _selectedDistrictId!, name: '', cityId: _selectedCityId!),
+        );
+        cityTitle = selectedCity.name;
         districtId = _selectedDistrictId;
-        districtTitle = _selectedDistrictId;
+        districtTitle = selectedDistrict.name;
       }
       
              // Condition ID'sini direkt gönder

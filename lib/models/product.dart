@@ -21,6 +21,10 @@ class Product {
   final String? mainCategoryName;
   final String? subCategoryId;
   final String? subCategoryName;
+  final String? subSubCategoryId;
+  final String? subSubCategoryName;
+  final String? subSubSubCategoryId;
+  final String? subSubSubCategoryName;
   final String condition;
   final String? brand;
   final String? model;
@@ -75,6 +79,10 @@ class Product {
     this.mainCategoryName,
     this.subCategoryId,
     this.subCategoryName,
+    this.subSubCategoryId,
+    this.subSubCategoryName,
+    this.subSubSubCategoryId,
+    this.subSubSubCategoryName,
     required this.condition,
     this.brand,
     this.model,
@@ -284,6 +292,10 @@ class Product {
       mainCategoryName: json['mainCategoryName'] != null ? safeString(json['mainCategoryName']) : null,
       subCategoryId: json['subCategoryId'] != null ? safeString(json['subCategoryId']) : null,
       subCategoryName: json['subCategoryName'] != null ? safeString(json['subCategoryName']) : null,
+      subSubCategoryId: json['subSubCategoryId'] != null ? safeString(json['subSubCategoryId']) : null,
+      subSubCategoryName: json['subSubCategoryName'] != null ? safeString(json['subSubCategoryName']) : null,
+      subSubSubCategoryId: json['subSubSubCategoryId'] != null ? safeString(json['subSubSubCategoryId']) : null,
+      subSubSubCategoryName: json['subSubSubCategoryName'] != null ? safeString(json['subSubSubCategoryName']) : null,
       condition: productCondition ?? safeString(json['condition']),
       brand: json['brand'] != null ? safeString(json['brand']) : null,
       model: json['model'] != null ? safeString(json['model']) : null,
@@ -349,6 +361,10 @@ class Product {
     String? mainCategoryName,
     String? subCategoryId,
     String? subCategoryName,
+    String? subSubCategoryId,
+    String? subSubCategoryName,
+    String? subSubSubCategoryId,
+    String? subSubSubCategoryName,
     String? condition,
     String? brand,
     String? model,
@@ -402,6 +418,10 @@ class Product {
       mainCategoryName: mainCategoryName ?? this.mainCategoryName,
       subCategoryId: subCategoryId ?? this.subCategoryId,
       subCategoryName: subCategoryName ?? this.subCategoryName,
+      subSubCategoryId: subSubCategoryId ?? this.subSubCategoryId,
+      subSubCategoryName: subSubCategoryName ?? this.subSubCategoryName,
+      subSubSubCategoryId: subSubSubCategoryId ?? this.subSubSubCategoryId,
+      subSubSubCategoryName: subSubSubCategoryName ?? this.subSubSubCategoryName,
       condition: condition ?? this.condition,
       brand: brand ?? this.brand,
       model: model ?? this.model,
