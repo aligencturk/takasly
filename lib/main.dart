@@ -218,12 +218,34 @@ class MyApp extends StatelessWidget {
            );
          },
          builder: (context, child) {
-           // Performans optimizasyonları
+           // Kalın metin ve text scaling kontrolü
            return MediaQuery(
              data: MediaQuery.of(context).copyWith(
                textScaleFactor: 1.0, // Text scaling'i devre dışı bırak
+               boldText: false, // Kalın metin ayarını devre dışı bırak
+               // Font weight kontrolü
+               platformBrightness: MediaQuery.of(context).platformBrightness,
              ),
-             child: child!,
+             child: Theme(
+               data: Theme.of(context).copyWith(
+                 // Font weight'leri normalize et
+                 textTheme: Theme.of(context).textTheme.apply(
+                   bodyColor: Theme.of(context).textTheme.bodyLarge?.color,
+                   displayColor: Theme.of(context).textTheme.displayLarge?.color,
+                 ),
+                 // Tüm text stillerini normalize et
+                 primaryTextTheme: Theme.of(context).primaryTextTheme.apply(
+                   bodyColor: Theme.of(context).primaryTextTheme.bodyLarge?.color,
+                   displayColor: Theme.of(context).primaryTextTheme.displayLarge?.color,
+                 ),
+               ),
+               child: DefaultTextStyle(
+                 style: DefaultTextStyle.of(context).style.copyWith(
+                   fontWeight: FontWeight.w400, // Varsayılan font weight'i normalize et
+                 ),
+                 child: child!,
+               ),
+             ),
            );
          },
        ),

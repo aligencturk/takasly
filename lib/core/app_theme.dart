@@ -26,38 +26,38 @@ class AppTheme {
     ),
   ];
 
-  // --- Tipografi (Google Fonts - Inter) ---
+  // --- Tipografi (Google Fonts - Inter) - Kalın metin kontrolü ile ---
   static final TextTheme _textTheme = TextTheme(
     displayLarge: GoogleFonts.inter(
       fontSize: 32,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600, // w700'den w600'a düşürüldü
       color: textPrimary,
       letterSpacing: -0.5,
     ),
     displayMedium: GoogleFonts.inter(
       fontSize: 28,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600, // w700'den w600'a düşürüldü
       color: textPrimary,
       letterSpacing: -0.5,
     ),
     headlineMedium: GoogleFonts.inter(
       fontSize: 24,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500, // w600'dan w500'a düşürüldü
       color: textPrimary,
     ),
     headlineSmall: GoogleFonts.inter(
       fontSize: 20,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500, // w600'dan w500'a düşürüldü
       color: textPrimary,
     ),
     titleLarge: GoogleFonts.inter(
       fontSize: 18,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500, // w600'dan w500'a düşürüldü
       color: textPrimary,
     ),
     titleMedium: GoogleFonts.inter(
       fontSize: 16,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400, // w500'dan w400'a düşürüldü
       color: textPrimary,
     ),
     bodyLarge: GoogleFonts.inter(
@@ -72,7 +72,7 @@ class AppTheme {
     ),
     labelLarge: GoogleFonts.inter(
       fontSize: 14,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500, // w600'dan w500'a düşürüldü
       color: Colors.white,
     ), // Buton metni
   );
@@ -85,7 +85,13 @@ class AppTheme {
       primaryColor: primary,
       scaffoldBackgroundColor: background,
       cardColor: surface,
-      textTheme: _textTheme,
+      // Kalın metin kontrolü için font weight ayarları
+      fontFamily: 'Inter',
+      // Text scaling ve bold text kontrolü
+      textTheme: _textTheme.apply(
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
+      ),
       colorScheme: const ColorScheme.light(
         primary: primary,
         secondary: accent,
