@@ -280,21 +280,36 @@ class ProductCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Bilgiler - Responsive yükseklik
+            // Bilgiler - Responsive ve taşma güvenli
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(
-                  left: screenWidth < 360 ? 6 : 10, 
-                  top: screenWidth < 360 ? 8 : 14, 
-                  bottom: screenWidth < 360 ? 6 : 8,
+                  left: screenWidth < 360 ? 6 : 10,
+                  top: screenWidth < 360 ? 6 : 12,
+                  bottom: screenWidth < 360 ? 4 : 6,
                   right: screenWidth < 360 ? 6 : 10,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Üst: Kategori ve başlık
-                    Column(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double availableHeight = constraints.maxHeight;
+                    final double categoryLineHeight = categoryFontSize * 1.0;
+                    final double titleLineHeight = titleFontSize * 1.2;
+                    final double locationLineHeight = locationFontSize * 1.2;
+                    final double spacingSmall = screenWidth < 360 ? 3 : 4;
+                    final double spacingAfterCategory = screenWidth < 360 ? 3 : 5;
+
+                    // Altta konum satırı için ayrılacak alan
+                    final double reservedForBottom = locationLineHeight + spacingSmall;
+
+                    // Başlık için kalan alanı hesapla
+                    double remainingForTitle = availableHeight - categoryLineHeight - spacingAfterCategory - reservedForBottom;
+                    if (remainingForTitle < titleLineHeight) {
+                      remainingForTitle = titleLineHeight; // En az 1 satır
+                    }
+
+                    int allowedTitleLines = (remainingForTitle / titleLineHeight).floor().clamp(1, screenWidth < 360 ? 2 : 3);
+
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Kategori
@@ -305,63 +320,64 @@ class ProductCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.1,
                             fontSize: categoryFontSize,
-                            height: 0.7,
+                            height: 1.0,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                         ),
-                        SizedBox(height: screenWidth < 360 ? 4 : 6),
-                        // Başlık
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            // 40 karakter başlıklar için 2-3 satırda güvenli sığdırma
-                            final int maxTitleLines = screenWidth < 360 ? 2 : 3;
-                            return Text(
-                              product.title,
-                              style: textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: titleFontSize,
-                                height: 1.2,
-                              ),
-                              maxLines: maxTitleLines,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: true,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    // Alt: Konum
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: screenWidth < 360 ? 8 : 10,
-                          color: Colors.grey[500],
-                        ),
-                        const SizedBox(width: 2),
+                        SizedBox(height: spacingAfterCategory),
+
+                        // Başlık - dinamik satır sayısı ile
                         Expanded(
-                          child: Builder(
-                            builder: (context) {
-                              final cityTitle = product.cityTitle.isNotEmpty ? product.cityTitle : 'Şehir belirtilmemiş';
-                              final districtTitle = product.districtTitle.isNotEmpty ? product.districtTitle : 'İlçe belirtilmemiş';
-                              final locationText = '$cityTitle/$districtTitle';
-                              return Text(
-                                locationText,
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[500],
-                                  fontSize: locationFontSize,
-                                  height: 1.0,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              );
-                            },
+                          child: Text(
+                            product.title,
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: titleFontSize,
+                              height: 1.2,
+                            ),
+                            maxLines: allowedTitleLines,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
                           ),
                         ),
+                        SizedBox(height: spacingSmall),
+
+                        // Konum
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: screenWidth < 360 ? 8 : 10,
+                              color: Colors.grey[500],
+                            ),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Builder(
+                                builder: (context) {
+                                  final cityTitle = product.cityTitle.isNotEmpty ? product.cityTitle : 'Şehir belirtilmemiş';
+                                  final districtTitle = product.districtTitle.isNotEmpty ? product.districtTitle : 'İlçe belirtilmemiş';
+                                  final locationText = '$cityTitle/$districtTitle';
+                                  return Text(
+                                    locationText,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey[500],
+                                      fontSize: locationFontSize,
+                                      height: 1.0,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ),
