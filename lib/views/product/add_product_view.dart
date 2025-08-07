@@ -6,6 +6,7 @@ import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/services/location_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:takasly/utils/logger.dart';
 
 class AddProductView extends StatefulWidget {
   const AddProductView({super.key});
@@ -360,7 +361,6 @@ class _AddProductViewState extends State<AddProductView> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('İlan Ekle'),
@@ -701,7 +701,7 @@ class _AddProductViewState extends State<AddProductView> {
               hintText: 'Örn: iPhone 13 Pro Max 256GB',
               counterText: '',
             ),
-            maxLength: 20,
+            maxLength: 40,
             validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
             onChanged: (value) => setState(() {}),
           ),
@@ -1808,7 +1808,7 @@ class _AddProductViewState extends State<AddProductView> {
 
       }
     } catch (e) {
-      print('❌ Error picking image: $e');
+      Logger.error('❌ Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1864,7 +1864,7 @@ class _AddProductViewState extends State<AddProductView> {
         }
       }
     } catch (e) {
-      print('❌ Error picking multiple images: $e');
+      Logger.error('❌ Error picking multiple images: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

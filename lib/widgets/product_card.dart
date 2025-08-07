@@ -101,7 +101,7 @@ class ProductCard extends StatelessWidget {
     
     // Responsive font boyutları
     final categoryFontSize = screenWidth < 360 ? 9.0 : 11.0;
-    final titleFontSize = screenWidth < 360 ? 9.0 : 11.0;
+    final titleFontSize = screenWidth < 360 ? 10.0 : 12.0;
     final locationFontSize = screenWidth < 360 ? 8.0 : 10.0;
 
     return GestureDetector(
@@ -312,15 +312,22 @@ class ProductCard extends StatelessWidget {
                         ),
                         SizedBox(height: screenWidth < 360 ? 4 : 6),
                         // Başlık
-                        Text(
-                          product.title,
-                          style: textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            fontSize: titleFontSize,
-                            height: 1.4,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            // 40 karakter başlıklar için 2-3 satırda güvenli sığdırma
+                            final int maxTitleLines = screenWidth < 360 ? 2 : 3;
+                            return Text(
+                              product.title,
+                              style: textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: titleFontSize,
+                                height: 1.2,
+                              ),
+                              maxLines: maxTitleLines,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
+                            );
+                          },
                         ),
                       ],
                     ),
