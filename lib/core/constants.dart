@@ -41,7 +41,7 @@ class ApiConstants {
   static const String addFavorite = '/service/user/product/addFavorite';
   static const String removeFavorite = '/service/user/product/removeFavorite';
   static const String favoriteList = '/service/user/product'; // {userId}/favoriteList eklenecek
-  static const String productView = '/products'; // {productId}/view eklenecek
+  static const String productView = '/service/user/product'; // {productId}/view eklenecek
   static const String getProductById = '/products'; // {productId} eklenecek
   
   // Category Service Endpoints

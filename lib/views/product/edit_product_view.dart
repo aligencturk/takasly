@@ -5,11 +5,12 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/city.dart';
-import 'package:takasly/models/condition.dart';
+
 import 'package:takasly/models/district.dart';
 import 'package:takasly/models/product.dart';
-import 'package:takasly/models/location.dart';
+
 import 'package:takasly/viewmodels/product_viewmodel.dart';
+import 'package:takasly/utils/logger.dart';
 
 class EditProductView extends StatefulWidget {
   final Product product;
@@ -38,47 +39,106 @@ class _EditProductViewState extends State<EditProductView> {
   List<File> _newImages = [];
   final ImagePicker _imagePicker = ImagePicker();
   bool _isShowContact = false; // İletişim bilgilerinin görünürlüğü
+  
+  // Yeni state değişkenleri
+  bool _isLoadingProductDetail = false;
+  Product? _currentProduct;
 
   @override
   void initState() {
     super.initState();
-    _initializeFields();
-    // Şehirleri, kategorileri ve koşulları yükle
+    // Önce güncel ürün detaylarını yükle, sonra form alanlarını initialize et
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      try {
-        final vm = Provider.of<ProductViewModel>(context, listen: false);
-        vm.loadCities();
-        vm.loadConditions();
-        if (vm.categories.isEmpty) {
-          vm.loadCategories();
-        }
-      } catch (e) {
-        print('Error loading initial data: $e');
-      }
+      _loadProductDetailAndInitialize();
     });
   }
 
-  void _initializeFields() {
+  /// Ürün detaylarını API'den yükle ve form alanlarını initialize et
+  Future<void> _loadProductDetailAndInitialize() async {
     try {
-      // Mevcut ürün bilgilerini form alanlarına yükle
-      _titleController.text = widget.product.title;
-      _descriptionController.text = widget.product.description;
-
-      _tradePreferencesController.text = widget.product.tradePreferences?.join(', ') ?? '';
+      setState(() {
+        _isLoadingProductDetail = true;
+      });
       
-      _selectedCategoryId = widget.product.categoryId;
-      _selectedSubCategoryId = widget.product.subCategoryId?.isNotEmpty == true ? widget.product.subCategoryId : null;
-      _selectedSubSubCategoryId = widget.product.subSubCategoryId?.isNotEmpty == true ? widget.product.subSubCategoryId : null;
-      _selectedSubSubSubCategoryId = widget.product.subSubSubCategoryId?.isNotEmpty == true ? widget.product.subSubSubCategoryId : null;
-      _existingImages = List.from(widget.product.images);
+      Logger.info('🔄 EditProductView - Loading product detail for ID: ${widget.product.id}');
+      
+      final productViewModel = context.read<ProductViewModel>();
+      
+      // Güncel ürün detaylarını API'den yükle
+      final productDetail = await productViewModel.getProductDetail(widget.product.id);
+      
+      if (productDetail != null) {
+        Logger.info('✅ EditProductView - Product detail loaded successfully');
+        setState(() {
+          _currentProduct = productDetail;
+        });
+        
+        // Form alanlarını güncel verilerle doldur
+        _initializeFieldsWithProductData(productDetail);
+        
+        // Şehirleri, kategorileri ve koşulları yükle
+        await _loadInitialData();
+        
+      } else {
+        Logger.error('❌ EditProductView - Failed to load product detail, using widget product data');
+        // API'den yüklenemezse widget'tan gelen veriyi kullan
+        setState(() {
+          _currentProduct = widget.product;
+        });
+        _initializeFieldsWithProductData(widget.product);
+        await _loadInitialData();
+      }
+      
+    } catch (e) {
+      Logger.error('💥 EditProductView - Exception while loading product detail: $e');
+      // Hata durumunda widget'tan gelen veriyi kullan
+      setState(() {
+        _currentProduct = widget.product;
+      });
+      _initializeFieldsWithProductData(widget.product);
+      await _loadInitialData();
+    } finally {
+      setState(() {
+        _isLoadingProductDetail = false;
+      });
+    }
+  }
+
+  /// Şehirleri, kategorileri ve koşulları yükle
+  Future<void> _loadInitialData() async {
+    try {
+      final vm = context.read<ProductViewModel>();
+      await Future.wait([
+        vm.loadCities(),
+        vm.loadConditions(),
+        vm.categories.isEmpty ? vm.loadCategories() : Future.value(),
+      ]);
+    } catch (e) {
+      Logger.error('Error loading initial data: $e');
+    }
+  }
+
+  void _initializeFieldsWithProductData(Product product) {
+    try {
+      // Güncel ürün bilgilerini form alanlarına yükle
+      _titleController.text = product.title;
+      _descriptionController.text = product.description;
+
+      _tradePreferencesController.text = product.tradePreferences.join(', ');
+      
+      _selectedCategoryId = product.categoryId;
+      _selectedSubCategoryId = product.subCategoryId?.isNotEmpty == true ? product.subCategoryId : null;
+      _selectedSubSubCategoryId = product.subSubCategoryId?.isNotEmpty == true ? product.subSubCategoryId : null;
+      _selectedSubSubSubCategoryId = product.subSubSubCategoryId?.isNotEmpty == true ? product.subSubSubCategoryId : null;
+      _existingImages = List.from(product.images);
       
       // İletişim bilgileri görünürlüğünü yükle
-      _isShowContact = widget.product.isShowContact ?? true;
+      _isShowContact = product.isShowContact ?? true;
       
       // Location bilgilerini yükle
-      if (widget.product.cityId != null) {
-        _selectedCityId = widget.product.cityId;
-        _selectedDistrictId = widget.product.districtId;
+      if (product.cityId.isNotEmpty) {
+        _selectedCityId = product.cityId;
+        _selectedDistrictId = product.districtId;
         
         // Eğer şehir seçili ise ilçeleri yükle
         if (_selectedCityId != null) {
@@ -86,7 +146,7 @@ class _EditProductViewState extends State<EditProductView> {
             try {
               context.read<ProductViewModel>().loadDistricts(_selectedCityId!);
             } catch (e) {
-              print('Error loading districts: $e');
+              Logger.error('Error loading districts: $e');
             }
           });
         }
@@ -95,7 +155,7 @@ class _EditProductViewState extends State<EditProductView> {
       // Kategorileri yükle ve ürün kategorilerini seç - biraz gecikme ile
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(const Duration(milliseconds: 500), () {
-          _loadAndSelectCategories();
+          _loadAndSelectCategories(product);
         });
       });
       
@@ -105,7 +165,7 @@ class _EditProductViewState extends State<EditProductView> {
           final productViewModel = context.read<ProductViewModel>();
           if (productViewModel.conditions.isNotEmpty) {
             final condition = productViewModel.conditions.firstWhere(
-              (c) => c.name == widget.product.condition,
+              (c) => c.name == product.condition,
               orElse: () => productViewModel.conditions.first,
             );
             setState(() {
@@ -113,15 +173,15 @@ class _EditProductViewState extends State<EditProductView> {
             });
           }
         } catch (e) {
-          print('Error setting condition: $e');
+          Logger.error('Error setting condition: $e');
         }
       });
     } catch (e) {
-      print('Error initializing fields: $e');
+      Logger.error('Error initializing fields: $e');
     }
   }
 
-  Future<void> _loadAndSelectCategories() async {
+  Future<void> _loadAndSelectCategories(Product product) async {
     try {
       final productViewModel = context.read<ProductViewModel>();
       
@@ -129,18 +189,18 @@ class _EditProductViewState extends State<EditProductView> {
       await productViewModel.loadCategories();
       
       // Eğer categoryList boşsa, categoryId'yi kullan
-      if (widget.product.categoryList == null || widget.product.categoryList?.isEmpty == true) {
-        if (widget.product.categoryId.isNotEmpty) {
+      if (product.categoryList == null || product.categoryList?.isEmpty == true) {
+        if (product.categoryId.isNotEmpty) {
           setState(() {
-            _selectedCategoryId = widget.product.categoryId;
+            _selectedCategoryId = product.categoryId;
           });
           return;
         }
       }
       
       // Ürün kategori listesi varsa kategorileri seç
-      if (widget.product.categoryList != null && widget.product.categoryList?.isNotEmpty == true) {
-        final productCategories = widget.product.categoryList!;
+      if (product.categoryList != null && product.categoryList?.isNotEmpty == true) {
+        final productCategories = product.categoryList!;
         
         // İlk kategori ana kategori
         final mainCategory = productCategories.first;
@@ -194,7 +254,7 @@ class _EditProductViewState extends State<EditProductView> {
         }
       }
     } catch (e) {
-      print('Error loading and selecting categories: $e');
+      Logger.error('Error loading and selecting categories: $e');
       // Hata durumunda kullanıcıya bilgi ver
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -217,7 +277,6 @@ class _EditProductViewState extends State<EditProductView> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('İlanı Düzenle'),
@@ -226,9 +285,20 @@ class _EditProductViewState extends State<EditProductView> {
       ),
       body: Consumer<ProductViewModel>(
         builder: (context, productViewModel, child) {
-          if (productViewModel.isLoading) {
+          // Ürün detayları yüklenirken loading göster
+          if (_isLoadingProductDetail || productViewModel.isLoading) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Ürün detayları yükleniyor...',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
             );
           }
 
@@ -409,7 +479,7 @@ class _EditProductViewState extends State<EditProductView> {
             validator: (v) => v == null ? 'Ana kategori seçimi zorunludur' : null,
           );
         } catch (e) {
-          print('Error building category dropdown: $e');
+          Logger.error('Error building category dropdown: $e');
           return DropdownButtonFormField<String>(
             decoration: const InputDecoration(labelText: 'Ana Kategori'),
             items: const [],
@@ -463,7 +533,7 @@ class _EditProductViewState extends State<EditProductView> {
             validator: (v) => v == null ? 'Alt kategori seçimi zorunludur' : null,
           );
         } catch (e) {
-          print('Error building sub category dropdown: $e');
+          Logger.error('Error building sub category dropdown: $e');
           return DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Alt Kategori',
@@ -520,7 +590,7 @@ class _EditProductViewState extends State<EditProductView> {
             validator: (v) => v == null ? 'Alt alt kategori seçimi zorunludur' : null,
           );
         } catch (e) {
-          print('Error building sub sub category dropdown: $e');
+          Logger.error('Error building sub sub category dropdown: $e');
           return DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Alt Alt Kategori',
@@ -569,7 +639,7 @@ class _EditProductViewState extends State<EditProductView> {
             validator: (v) => v == null ? 'Alt alt alt kategori seçimi zorunludur' : null,
           );
         } catch (e) {
-          print('Error building sub sub sub category dropdown: $e');
+          Logger.error('Error building sub sub sub category dropdown: $e');
           return DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Ürün Kategorisi',
@@ -608,7 +678,7 @@ class _EditProductViewState extends State<EditProductView> {
             validator: (v) => v == null ? 'Durum seçimi zorunludur' : null,
           );
         } catch (e) {
-          print('Error building condition dropdown: $e');
+          Logger.error('Error building condition dropdown: $e');
           return DropdownButtonFormField<String>(
             decoration: const InputDecoration(labelText: 'Ürün Durumu'),
             items: const [],
@@ -653,7 +723,7 @@ class _EditProductViewState extends State<EditProductView> {
             validator: (v) => v == null ? 'İl seçimi zorunludur' : null,
           );
         } catch (e) {
-          print('Error building city dropdown: $e');
+          Logger.error('Error building city dropdown: $e');
           return DropdownButtonFormField<String>(
             decoration: const InputDecoration(labelText: 'İl'),
             items: const [],
@@ -695,7 +765,7 @@ class _EditProductViewState extends State<EditProductView> {
             validator: (v) => v == null ? 'İlçe seçimi zorunludur' : null,
           );
         } catch (e) {
-          print('Error building district dropdown: $e');
+          Logger.error('Error building district dropdown: $e');
           return DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'İlçe',
@@ -1066,7 +1136,7 @@ class _EditProductViewState extends State<EditProductView> {
        String? conditionId = _selectedConditionId;
 
       final success = await productViewModel.updateProduct(
-        productId: widget.product.id,
+        productId: _currentProduct?.id ?? widget.product.id,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         images: allImages.isNotEmpty ? allImages : null,
@@ -1078,8 +1148,8 @@ class _EditProductViewState extends State<EditProductView> {
         cityTitle: cityTitle,
         districtId: districtId,
         districtTitle: districtTitle,
-        productLat: widget.product.productLat,
-        productLong: widget.product.productLong,
+        productLat: _currentProduct?.productLat ?? widget.product.productLat,
+        productLong: _currentProduct?.productLong ?? widget.product.productLong,
         isShowContact: _isShowContact,
       );
 

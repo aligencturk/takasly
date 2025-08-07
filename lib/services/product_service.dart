@@ -1273,7 +1273,7 @@ class ProductService {
         
         // Yeni resimleri multipleFiles'a ekle
         if (newImageFiles.isNotEmpty) {
-          multipleFiles['productimages'] = newImageFiles;
+          multipleFiles['productImages[]'] = newImageFiles;
           print('📸 Added ${newImageFiles.length} new image files to multipleFiles');
         }
       }
@@ -2207,9 +2207,14 @@ class ProductService {
 
   Future<ApiResponse<void>> incrementViewCount(String productId) async {
     try {
-      final response = await _httpClient.post(
-        '${ApiConstants.productView}/$productId/view',
+      final endpoint = '${ApiConstants.productView}/$productId/view';
+      final fullUrl = '${ApiConstants.fullUrl}$endpoint';
+      Logger.debug('👁️ incrementViewCount - POST $fullUrl', tag: _tag);
+
+      final response = await _httpClient.postWithBasicAuth(
+        endpoint,
         fromJson: (json) => null,
+        useBasicAuth: true,
       );
 
       return response;
