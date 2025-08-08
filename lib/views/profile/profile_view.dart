@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/user.dart';
 import 'package:takasly/models/product.dart';
-import 'package:takasly/models/user_profile_detail.dart';
 import 'package:takasly/viewmodels/auth_viewmodel.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/viewmodels/user_viewmodel.dart';
@@ -88,7 +87,10 @@ class _ProfileViewState extends State<ProfileView>
       Logger.warning('⚠️ ProfileView - User ID is null, cannot load profile data');
       Logger.warning('⚠️ ProfileView - UserViewModel state: isLoading=${userViewModel.isLoading}, hasError=${userViewModel.hasError}');
     }
-  }
+
+}
+
+// (Taşındı) No-stretch davranış sınıfı bu dosyanın en altına taşındı
 
   Future<void> _loadUserProfileDetail(int userId) async {
     if (!mounted) return;
@@ -214,63 +216,81 @@ class _ProfileViewState extends State<ProfileView>
 
           final user = userVm.currentUser!;
           final productCount = productVm.myProducts.length;
-          // Favori sayısını ProductViewModel'den al
           final favoriteCount = productVm.favoriteProducts.length;
-          
-          // Puanı UserProfileDetailViewModel'den al
           String score = '0';
           if (profileDetailVm.hasData && profileDetailVm.profileDetail != null) {
             score = profileDetailVm.profileDetail!.averageRating.toStringAsFixed(1);
           }
-          
-          // Debug logları
+
           Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
           Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
-          Logger.debug('👤 ProfileView - User email: ${user.email}');
-          Logger.debug('👤 ProfileView - Product count: $productCount');
-          Logger.debug('👤 ProfileView - Favorite count: $favoriteCount');
-          Logger.debug('👤 ProfileView - Score: $score');
-          
-          return Column(
-            children: [
-              _buildProfileHeader(context, user, productCount, favoriteCount, score),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                color: Colors.white,
-                child: TabBar(
-                  controller: _tabController,
-                  labelColor: AppTheme.primary,
-                  unselectedLabelColor: Colors.grey[600],
-                  indicatorColor: AppTheme.primary,
-                  indicatorWeight: 2,
-                  tabs: const [
-                    Tab(
-                      icon: Icon(Icons.inventory_2_outlined, size: 20),
-                      text: 'İlanlarım',
-                    ),
-                    Tab(
-                      icon: Icon(Icons.rate_review_outlined, size: 20),
-                      text: 'Yorumlar',
-                    ),
-                    Tab(
-                      icon: Icon(Icons.rate_review, size: 20),
-                      text: 'Değerlendirmelerim',
-                    ),
-                  ],
+          Logger.debug('👤 ProfileView - Product count: $productCount, Favorite count: $favoriteCount, Score: $score');
+
+          return ScrollConfiguration(
+            behavior: const _NoStretchScrollBehavior(),
+            child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              SliverToBoxAdapter(
+                child: SafeArea(
+                  bottom: false,
+                  child: _buildProfileHeader(context, user, productCount, favoriteCount, score),
                 ),
               ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildProductsTab(user),
-                    _buildReviewsTab(),
-                    _buildMyReviewsTab(),
-                  ],
+              SliverAppBar(
+                backgroundColor: Colors.white,
+                pinned: true,
+                primary: false,
+                automaticallyImplyLeading: false,
+                toolbarHeight: 0,
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(74),
+                  child: Container
+                  (
+                    color: Colors.white,
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.center,
+                      labelColor: AppTheme.primary,
+                      unselectedLabelColor: Colors.grey[600],
+                      indicatorColor: AppTheme.primary,
+                      indicatorWeight: 2,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      tabs: const [
+                        Tab(
+                          icon: Icon(Icons.inventory_2_outlined, size: 20),
+                          text: 'İlanlarım',
+                        ),
+                        Tab(
+                          icon: Icon(Icons.rate_review_outlined, size: 20),
+                          text: 'Yorumlar',
+                        ),
+                          Tab(
+                            icon: Icon(Icons.rate_review, size: 20),
+                            child: Padding(
+                              padding: EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                'Puanlarım',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
-          );
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildProductsTab(user),
+                _buildReviewsTab(),
+                _buildMyReviewsTab(),
+              ],
+            ),
+          ));
         },
       ),
     );
@@ -1729,4 +1749,22 @@ class _ProfileViewState extends State<ProfileView>
 
 }
 
+class _NoStretchScrollBehavior extends ScrollBehavior {
+  const _NoStretchScrollBehavior();
 
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const ClampingScrollPhysics();
+  }
+
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+    return NotificationListener<OverscrollIndicatorNotification>(
+      onNotification: (notification) {
+        notification.disallowIndicator();
+        return false;
+      },
+      child: child,
+    );
+  }
+}
