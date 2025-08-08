@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/user_profile_detail_viewmodel.dart';
-import '../../viewmodels/report_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
@@ -13,6 +12,27 @@ import '../../widgets/report_dialog.dart';
 import '../../widgets/product_card.dart';
 import '../../views/product/product_detail_view.dart';
 import '../../utils/logger.dart';
+
+// ProfileView ile aynı overscroll davranışı (top-level)
+class _NoStretchScrollBehavior extends ScrollBehavior {
+  const _NoStretchScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const ClampingScrollPhysics();
+  }
+
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+    return NotificationListener<OverscrollIndicatorNotification>(
+      onNotification: (notification) {
+        notification.disallowIndicator();
+        return false;
+      },
+      child: child,
+    );
+  }
+}
 
 class UserProfileDetailView extends StatefulWidget {
   final int userId;
@@ -42,7 +62,6 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     _viewModel.setUserToken(widget.userToken);
     _loadProfileDetail();
   }
-
   Future<void> _loadProfileDetail() async {
     Logger.debug('Loading profile detail for userId: ${widget.userId}', tag: 'UserProfileDetailView');
     await _viewModel.loadProfileDetail(
@@ -107,8 +126,8 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
               backgroundColor: Colors.white,
               foregroundColor: Colors.black87,
               title: Text(
-                viewModel.profileDetail?.userFullname?.isNotEmpty == true 
-                    ? viewModel.profileDetail!.userFullname 
+                (viewModel.profileDetail != null && viewModel.profileDetail!.userFullname.isNotEmpty)
+                    ? viewModel.profileDetail!.userFullname
                     : 'Kullanıcı',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
@@ -117,7 +136,6 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                 ),
               ),
               actions: [
-                // Şikayet butonu
                 IconButton(
                   icon: const Icon(Icons.report_problem_outlined),
                   onPressed: () => _showReportDialog(),
@@ -133,52 +151,63 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                         onRetry: _loadProfileDetail,
                       )
                     : !viewModel.hasData
-                        ? const Center(
-                            child: Text('Profil bilgisi bulunamadı'),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () => _viewModel.refreshProfileDetail(
-                              userToken: widget.userToken,
-                              userId: widget.userId,
-                            ),
-                            child: Column(
-                              children: [
-                                _buildProfileHeader(viewModel.profileDetail!),
-                                Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                                  color: Colors.white,
-                                  child: _tabController != null
-                                      ? TabBar(
-                                          controller: _tabController!,
-                                          labelColor: AppTheme.primary,
-                                          unselectedLabelColor: Colors.grey[600],
-                                          indicatorColor: AppTheme.primary,
-                                          indicatorWeight: 2,
-                                          tabs: const [
-                                            Tab(
-                                              icon: Icon(Icons.inventory_2_outlined, size: 20),
-                                              text: 'İlanlar',
-                                            ),
-                                            Tab(
-                                              icon: Icon(Icons.rate_review_outlined, size: 20),
-                                              text: 'Yorumlar',
-                                            ),
-                                          ],
-                                        )
-                                      : const SizedBox.shrink(),
+                        ? const Center(child: Text('Profil bilgisi bulunamadı'))
+                        : ScrollConfiguration(
+                            behavior: const _NoStretchScrollBehavior(),
+                            child: NestedScrollView(
+                              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                                SliverToBoxAdapter(
+                                  child: SafeArea(
+                                    bottom: false,
+                                    child: _buildProfileHeader(viewModel.profileDetail!),
+                                  ),
                                 ),
-                                Expanded(
-                                  child: _tabController != null
-                                      ? TabBarView(
-                                          controller: _tabController!,
-                                          children: [
-                                            _buildProductsTab(viewModel.profileDetail!),
-                                            _buildReviewsTab(viewModel.profileDetail!),
-                                          ],
-                                        )
-                                      : const SizedBox.shrink(),
+                                SliverAppBar(
+                                  backgroundColor: Colors.white,
+                                  pinned: true,
+                                  primary: false,
+                                  automaticallyImplyLeading: false,
+                                  toolbarHeight: 0,
+                                  bottom: PreferredSize(
+                                    preferredSize: const Size.fromHeight(74),
+                                    child: Container(
+                                      color: Colors.white,
+                                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                                      child: _tabController != null
+                                          ? TabBar(
+                                              controller: _tabController!,
+                                              isScrollable: true,
+                                              tabAlignment: TabAlignment.center,
+                                              labelColor: AppTheme.primary,
+                                              unselectedLabelColor: Colors.grey[600],
+                                              indicatorColor: AppTheme.primary,
+                                              indicatorWeight: 2,
+                                              labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                                              tabs: const [
+                                                Tab(
+                                                  icon: Icon(Icons.inventory_2_outlined, size: 20),
+                                                  text: 'İlanlar',
+                                                ),
+                                                Tab(
+                                                  icon: Icon(Icons.rate_review_outlined, size: 20),
+                                                  text: 'Yorumlar',
+                                                ),
+                                              ],
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ),
                                 ),
                               ],
+                              body: _tabController != null
+                                  ? TabBarView(
+                                      controller: _tabController!,
+                                      children: [
+                                        _buildProductsTab(viewModel.profileDetail!),
+                                        _buildReviewsTab(viewModel.profileDetail!),
+                                      ],
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                           ),
           );
@@ -336,6 +365,8 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       ),
     );
   }
+
+  
 
   Widget _buildKurumsalStatItem({
     required String count,
@@ -775,26 +806,5 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
 
 
 
-  Color _getConditionColor(String condition) {
-    switch (condition.toLowerCase()) {
-      case 'yeni':
-      case 'new':
-        return Colors.green;
-      case 'az kullanılmış':
-      case 'like new':
-      case 'çok az kullanılmış':
-        return Colors.blue;
-      case 'iyi':
-      case 'good':
-        return Colors.orange;
-      case 'orta':
-      case 'fair':
-        return Colors.deepOrange;
-      case 'kötü':
-      case 'poor':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
+  
 } 
