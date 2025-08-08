@@ -3,6 +3,9 @@ import UIKit
 import google_mobile_ads
 import Firebase
 import FirebaseMessaging
+import GoogleMobileAds
+import AppTrackingTransparency
+import AdSupport
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, MessagingDelegate {
@@ -12,6 +15,9 @@ import FirebaseMessaging
   ) -> Bool {
     // Firebase konfigürasyonu
     FirebaseApp.configure()
+
+    // Google Mobile Ads SDK başlatma (iOS)
+    GADMobileAds.sharedInstance().start(completionHandler: nil)
     
     // FCM için notification ayarları
     if #available(iOS 10.0, *) {
@@ -37,6 +43,13 @@ import FirebaseMessaging
         factoryId: "listTile",
         nativeAdFactory: NativeAdFactory()
     )
+
+    // iOS 14+ için App Tracking Transparency izni (reklam doldurma oranını iyileştirir)
+    if #available(iOS 14, *) {
+      ATTrackingManager.requestTrackingAuthorization { status in
+        // İzin sonucu burada döner; gerektiğinde ek konfigürasyon yapılabilir
+      }
+    }
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

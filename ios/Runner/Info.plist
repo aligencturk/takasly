@@ -40,6 +40,10 @@
 	<!-- AdMob App ID -->
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
+
+	<!-- ATT / Tracking izin açıklaması (iOS 14+) -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Size daha uygun reklamlar gösterebilmemiz için uygulama, izleme izni talep eder.</string>
 	
 	<!-- Location Permissions -->
 	<key>NSLocationWhenInUseUsageDescription</key>
