@@ -17,7 +17,6 @@ import '../../widgets/skeletons/favorite_grid_skeleton.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 import 'trade_detail_view.dart';
-import '../product/product_detail_view.dart';
 
 class TradeView extends StatefulWidget {
   final int initialTabIndex;
@@ -1222,56 +1221,21 @@ class _TradeViewState extends State<TradeView>
               }
             },
             child: Padding(
-              padding: EdgeInsets.all(12),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: GridView.builder(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.62,
+                  crossAxisSpacing: 10.0,
+                  mainAxisSpacing: 10.0,
+                  childAspectRatio: 0.7,
                 ),
                 itemCount: productViewModel.favoriteProducts.length,
                 itemBuilder: (context, index) {
                   final product = productViewModel.favoriteProducts[index];
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 12,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProductDetailView(productId: product.id),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: ProductCard(
-                          product: product,
-                          heroTag: 'favorite_${product.id}_$index',
-                          hideFavoriteIcon: false, // Favori sayfasında favori ikonu gösterilmeli
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProductDetailView(productId: product.id),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
+                  return ProductCard(
+                    product: product,
+                    heroTag: 'favorite_${product.id}_$index',
+                    hideFavoriteIcon: false,
                   );
                 },
               ),
