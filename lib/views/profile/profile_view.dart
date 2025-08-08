@@ -884,25 +884,6 @@ class _ProfileViewState extends State<ProfileView>
       ),
       actions: [
         IconButton(
-          onPressed: () async {
-            // Tüm profil verilerini yenile
-            Logger.info('🔄 ProfileView - Manually refreshing all profile data...');
-            await _loadProfileData();
-            
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Profil verileri yenilendi'),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          },
-          icon: const Icon(Icons.refresh, size: 24),
-          tooltip: 'Verileri Yenile',
-        ),
-        IconButton(
           onPressed: () {
             Navigator.push(
               context,
