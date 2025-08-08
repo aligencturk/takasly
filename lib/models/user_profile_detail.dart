@@ -360,25 +360,27 @@ class ProfileProduct {
   }
 }
 
-@JsonSerializable()
-class ProfileReview {
-  final int reviewID;
-  @JsonKey(name: 'revieweeName', defaultValue: '')
-  final String reviewerName;
-  @JsonKey(name: 'revieweeImage')
-  final String? reviewerImage;
-  final int rating;
-  final String comment;
-  final String reviewDate;
+ @JsonSerializable()
+ class ProfileReview {
+   final int reviewID;
+   final int? reviewerUserID;
+   final String reviewerName;
+   final String? reviewerImage;
+   final String? revieweeName; // Kim için yorum yapıldı
+   final int rating;
+   final String comment;
+   final String reviewDate;
 
-  const ProfileReview({
-    required this.reviewID,
-    required this.reviewerName,
-    this.reviewerImage,
-    required this.rating,
-    required this.comment,
-    required this.reviewDate,
-  });
+     const ProfileReview({
+     required this.reviewID,
+     this.reviewerUserID,
+     required this.reviewerName,
+     this.reviewerImage,
+     this.revieweeName,
+     required this.rating,
+     required this.comment,
+     required this.reviewDate,
+   });
 
   factory ProfileReview.fromJson(Map<String, dynamic> json) {
     try {
@@ -387,6 +389,24 @@ class ProfileReview {
       
       // API'den gelen farklı field isimlerini kontrol et
       final reviewID = json['reviewID'] ?? json['id'] ?? 0;
+      // Kullanıcı ID'sini farklı olası alanlardan oku
+      int? reviewerUserID;
+      Logger.debug('🔍 ProfileReview.fromJson - All JSON data: $json', tag: 'ProfileReview');
+      Logger.debug('🔍 ProfileReview.fromJson - Checking revieweeID: ${json['revieweeID']}', tag: 'ProfileReview');
+      Logger.debug('🔍 ProfileReview.fromJson - Checking reviewerID: ${json['reviewerID']}', tag: 'ProfileReview');
+      Logger.debug('🔍 ProfileReview.fromJson - Checking userID: ${json['userID']}', tag: 'ProfileReview');
+      Logger.debug('🔍 ProfileReview.fromJson - Checking userId: ${json['userId']}', tag: 'ProfileReview');
+      Logger.debug('🔍 ProfileReview.fromJson - Checking fromUserID: ${json['fromUserID']}', tag: 'ProfileReview');
+      Logger.debug('🔍 ProfileReview.fromJson - Checking reviewerUserID: ${json['reviewerUserID']}', tag: 'ProfileReview');
+      
+      final dynamic reviewerIdRaw = json['revieweeID'] ?? json['reviewerID'] ?? json['userID'] ?? json['userId'] ?? json['fromUserID'] ?? json['reviewerUserID'] ?? json['revieweeUserID'] ?? json['user_id'] ?? json['reviewer_id'] ?? json['reviewee_id'] ?? json['from_user_id'] ?? json['fromUserId'] ?? json['reviewerId'] ?? json['revieweeId'];
+      if (reviewerIdRaw is int) {
+        reviewerUserID = reviewerIdRaw;
+      } else if (reviewerIdRaw is String) {
+        reviewerUserID = int.tryParse(reviewerIdRaw);
+      }
+      
+      Logger.debug('🔍 ProfileReview.fromJson - Final reviewerUserID: $reviewerUserID (from raw: $reviewerIdRaw)', tag: 'ProfileReview');
       final rating = json['rating'] ?? 0;
       final comment = json['comment'] ?? '';
       final reviewDate = json['reviewDate'] ?? json['date'] ?? '';
@@ -410,30 +430,45 @@ class ProfileReview {
         reviewerName = 'Kullanıcı';
       }
       
-      // Reviewer image için farklı field isimlerini kontrol et
-      String? reviewerImage;
-      if (json['revieweeImage'] != null && json['revieweeImage'].toString().isNotEmpty && json['revieweeImage'].toString() != 'null') {
-        reviewerImage = json['revieweeImage'].toString();
-        Logger.debug('🔍 ProfileReview.fromJson - Using revieweeImage: $reviewerImage', tag: 'ProfileReview');
-      } else if (json['reviewerImage'] != null && json['reviewerImage'].toString().isNotEmpty && json['reviewerImage'].toString() != 'null') {
-        reviewerImage = json['reviewerImage'].toString();
-        Logger.debug('🔍 ProfileReview.fromJson - Using reviewerImage: $reviewerImage', tag: 'ProfileReview');
-      } else if (json['image'] != null && json['image'].toString().isNotEmpty && json['image'].toString() != 'null') {
-        reviewerImage = json['image'].toString();
-        Logger.debug('🔍 ProfileReview.fromJson - Using image: $reviewerImage', tag: 'ProfileReview');
-      } else if (json['avatar'] != null && json['avatar'].toString().isNotEmpty && json['avatar'].toString() != 'null') {
-        reviewerImage = json['avatar'].toString();
-        Logger.debug('🔍 ProfileReview.fromJson - Using avatar: $reviewerImage', tag: 'ProfileReview');
-      }
-      
-      final result = ProfileReview(
-        reviewID: reviewID,
-        reviewerName: reviewerName,
-        reviewerImage: reviewerImage,
-        rating: rating,
-        comment: comment,
-        reviewDate: reviewDate,
-      );
+             // Reviewer image için farklı field isimlerini kontrol et
+       String? reviewerImage;
+       if (json['revieweeImage'] != null && json['revieweeImage'].toString().isNotEmpty && json['revieweeImage'].toString() != 'null') {
+         reviewerImage = json['revieweeImage'].toString();
+         Logger.debug('🔍 ProfileReview.fromJson - Using revieweeImage: $reviewerImage', tag: 'ProfileReview');
+       } else if (json['reviewerImage'] != null && json['reviewerImage'].toString().isNotEmpty && json['reviewerImage'].toString() != 'null') {
+         reviewerImage = json['reviewerImage'].toString();
+         Logger.debug('🔍 ProfileReview.fromJson - Using reviewerImage: $reviewerImage', tag: 'ProfileReview');
+       } else if (json['image'] != null && json['image'].toString().isNotEmpty && json['image'].toString() != 'null') {
+         reviewerImage = json['image'].toString();
+         Logger.debug('🔍 ProfileReview.fromJson - Using image: $reviewerImage', tag: 'ProfileReview');
+       } else if (json['avatar'] != null && json['avatar'].toString().isNotEmpty && json['avatar'].toString() != 'null') {
+         reviewerImage = json['avatar'].toString();
+         Logger.debug('🔍 ProfileReview.fromJson - Using avatar: $reviewerImage', tag: 'ProfileReview');
+       }
+
+       // Reviewee name için - kim için yorum yapıldı
+       String? revieweeName;
+       if (json['revieweeName'] != null && json['revieweeName'].toString().isNotEmpty && json['revieweeName'].toString() != 'null') {
+         revieweeName = json['revieweeName'].toString();
+         Logger.debug('🔍 ProfileReview.fromJson - Using revieweeName: $revieweeName', tag: 'ProfileReview');
+       } else if (json['toUserName'] != null && json['toUserName'].toString().isNotEmpty && json['toUserName'].toString() != 'null') {
+         revieweeName = json['toUserName'].toString();
+         Logger.debug('🔍 ProfileReview.fromJson - Using toUserName: $revieweeName', tag: 'ProfileReview');
+       } else if (json['targetUserName'] != null && json['targetUserName'].toString().isNotEmpty && json['targetUserName'].toString() != 'null') {
+         revieweeName = json['targetUserName'].toString();
+         Logger.debug('🔍 ProfileReview.fromJson - Using targetUserName: $revieweeName', tag: 'ProfileReview');
+       }
+       
+       final result = ProfileReview(
+         reviewID: reviewID,
+         reviewerUserID: reviewerUserID,
+         reviewerName: reviewerName,
+         reviewerImage: reviewerImage,
+         revieweeName: revieweeName,
+         rating: rating,
+         comment: comment,
+         reviewDate: reviewDate,
+       );
       
       Logger.debug('🔍 ProfileReview.fromJson - Parsed successfully: ID=${result.reviewID}, Name="${result.reviewerName}", Rating=${result.rating}, Comment="${result.comment}"', tag: 'ProfileReview');
       
@@ -452,23 +487,27 @@ class ProfileReview {
 
   Map<String, dynamic> toJson() => _$ProfileReviewToJson(this);
 
-  ProfileReview copyWith({
-    int? reviewID,
-    String? reviewerName,
-    String? reviewerImage,
-    int? rating,
-    String? comment,
-    String? reviewDate,
-  }) {
-    return ProfileReview(
-      reviewID: reviewID ?? this.reviewID,
-      reviewerName: reviewerName ?? this.reviewerName,
-      reviewerImage: reviewerImage ?? this.reviewerImage,
-      rating: rating ?? this.rating,
-      comment: comment ?? this.comment,
-      reviewDate: reviewDate ?? this.reviewDate,
-    );
-  }
+     ProfileReview copyWith({
+     int? reviewID,
+     int? reviewerUserID,
+     String? reviewerName,
+     String? reviewerImage,
+     String? revieweeName,
+     int? rating,
+     String? comment,
+     String? reviewDate,
+   }) {
+     return ProfileReview(
+       reviewID: reviewID ?? this.reviewID,
+       reviewerUserID: reviewerUserID ?? this.reviewerUserID,
+       reviewerName: reviewerName ?? this.reviewerName,
+       reviewerImage: reviewerImage ?? this.reviewerImage,
+       revieweeName: revieweeName ?? this.revieweeName,
+       rating: rating ?? this.rating,
+       comment: comment ?? this.comment,
+       reviewDate: reviewDate ?? this.reviewDate,
+     );
+   }
 
   @override
   bool operator ==(Object other) {

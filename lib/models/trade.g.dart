@@ -254,6 +254,8 @@ UserTrade _$UserTradeFromJson(Map<String, dynamic> json) => UserTrade(
   comment: json['comment'] as String?,
   hasReview: json['hasReview'] as bool?,
   canGiveReview: json['canGiveReview'] as bool?,
+  isSenderReview: json['isSenderReview'] as bool?,
+  isReceiverReview: json['isReceiverReview'] as bool?,
 );
 
 Map<String, dynamic> _$UserTradeToJson(UserTrade instance) => <String, dynamic>{
@@ -280,6 +282,8 @@ Map<String, dynamic> _$UserTradeToJson(UserTrade instance) => <String, dynamic>{
   'comment': instance.comment,
   'hasReview': instance.hasReview,
   'canGiveReview': instance.canGiveReview,
+  'isSenderReview': instance.isSenderReview,
+  'isReceiverReview': instance.isReceiverReview,
 };
 
 TradeProduct _$TradeProductFromJson(Map<String, dynamic> json) => TradeProduct(

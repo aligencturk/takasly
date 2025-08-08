@@ -645,7 +645,23 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
           Row(
             children: [
               // Yorum yapan kişinin fotoğrafı
-              Container(
+              GestureDetector(
+                onTap: () {
+                  final reviewerId = review.reviewerUserID ?? 0;
+                  final token = context.read<AuthViewModel>().currentUser?.token ?? '';
+                  if (reviewerId > 0 && token.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserProfileDetailView(
+                          userId: reviewerId,
+                          userToken: token,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
@@ -686,6 +702,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                           size: 20,
                         ),
                       ),
+                ),
               ),
               const SizedBox(width: 12),
               
@@ -694,12 +711,29 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review.reviewerName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
-                        color: Colors.black87,
+                    GestureDetector(
+                      onTap: () {
+                        final reviewerId = review.reviewerUserID ?? 0;
+                        final token = context.read<AuthViewModel>().currentUser?.token ?? '';
+                        if (reviewerId > 0 && token.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UserProfileDetailView(
+                                userId: reviewerId,
+                                userToken: token,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: Text(
+                        review.reviewerName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                          color: Colors.black87,
+                        ),
                       ),
                     ),
                     Text(

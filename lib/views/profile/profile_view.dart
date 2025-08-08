@@ -17,6 +17,7 @@ import 'settings_view.dart';
 import '../product/edit_product_view.dart';
 import '../product/product_detail_view.dart';
 
+
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
 
@@ -850,7 +851,7 @@ class _ProfileViewState extends State<ProfileView>
               margin: const EdgeInsets.symmetric(horizontal: 20),
               color: Colors.white,
               child: Column(
-                children: myReviews.map((review) => _buildReviewItem(review)).toList(),
+                children: myReviews.map((review) => _buildMyReviewItem(review)).toList(),
               ),
             )
           else
@@ -866,6 +867,148 @@ class _ProfileViewState extends State<ProfileView>
             ),
         ],
       ),
+    );
+  }
+
+  // Puanlarım sekmesi için özel review item builder - kullanıcının kendi bilgilerini gösterir
+  Widget _buildMyReviewItem(dynamic review) {
+    return Consumer<UserViewModel>(
+      builder: (context, userVm, child) {
+        final currentUser = userVm.currentUser;
+        if (currentUser == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  // Kullanıcının kendi fotoğrafı (değerlendiren)
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: currentUser.avatar != null && currentUser.avatar!.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: Image.network(
+                              currentUser.avatar!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      currentUser.name.isNotEmpty ? currentUser.name[0].toUpperCase() : '?',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text(
+                                currentUser.name.isNotEmpty ? currentUser.name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Kullanıcının kendi adı ve tarih
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          currentUser.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          review.reviewDate,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Yıldızlar
+                  Row(
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < review.rating ? Icons.star : Icons.star_border,
+                        size: 18,
+                        color: index < review.rating ? Colors.amber : Colors.grey,
+                      );
+                    }),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              // Kim için yorum yapıldığı bilgisi
+              if (review.revieweeName != null && review.revieweeName!.isNotEmpty)
+                Text(
+                  '${review.revieweeName} için yapılan değerlendirme',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              
+              if (review.revieweeName != null && review.revieweeName!.isNotEmpty)
+                const SizedBox(height: 8),
+              
+              // Yorum metni
+              if (review.comment.isNotEmpty)
+                Text(
+                  review.comment,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
