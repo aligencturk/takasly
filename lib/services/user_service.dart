@@ -9,7 +9,7 @@ import '../utils/logger.dart';
 
 class UserService {
   final HttpClient _httpClient = HttpClient();
-  static const String _tag = 'UserService';
+  // tag kaldırıldı (kullanılmıyordu)
 
   /// Kullanıcı profilini günceller
   /// PUT /service/user/id
@@ -122,11 +122,11 @@ class UserService {
                   userDataToTransform['userVerified'] ??
                   userDataToTransform['isVerified'] ??
                   false,
-              'isOnline':
-                  (userDataToTransform['userStatus'] == 'active') ??
-                  userDataToTransform['userOnline'] ??
-                  userDataToTransform['isOnline'] ??
-                  true,
+              'isOnline': (
+                    (userDataToTransform['userStatus']?.toString().toLowerCase() == 'active') ||
+                    (userDataToTransform['userOnline'] == true) ||
+                    (userDataToTransform['isOnline'] == true)
+                  ),
               'createdAt': _parseDateTime(
                 userDataToTransform['userCreatedAt'] ??
                     userDataToTransform['createdAt'],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
-import 'package:takasly/models/user.dart';
 import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:image_picker/image_picker.dart';
@@ -28,7 +27,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   String? _selectedGender;
   File? _selectedImage;
   bool _isLoading = false;
-  bool _isShowContact = true; // Telefon numarasının görünürlüğü
+  // Telefon numarası görünürlüğü ayarı kaldırıldı
   
   final ImagePicker _picker = ImagePicker();
 
@@ -109,9 +108,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           Logger.debug('_selectedGender set to default: $_selectedGender (Belirtilmemiş)', tag: 'EditProfile');
         }
         
-        // Telefon numarası görünürlük ayarını yükle
-        _isShowContact = user.isShowContact ?? true;
-        Logger.debug('_isShowContact set to: $_isShowContact', tag: 'EditProfile');
+        // Telefon numarası görünürlük ayarı kaldırıldığı için yüklenmiyor
       });
     } else {
       Logger.warning('No user data available, refreshing...', tag: 'EditProfile');
@@ -232,7 +229,7 @@ class _EditProfileViewState extends State<EditProfileView> {
         userBirthday: _birthdayController.text,
         userGender: _selectedGender != null ? int.tryParse(_selectedGender!) : null,
         profilePhoto: profilePhotoBase64,
-        isShowContact: _isShowContact,
+        // Telefon numarası görünürlüğü kaldırıldığı için gönderilmiyor
       );
 
       if (mounted) {
@@ -375,7 +372,6 @@ class _EditProfileViewState extends State<EditProfileView> {
                     const SizedBox(height: 16),
                     _buildGenderDropdown(),
                     const SizedBox(height: 16),
-                    _buildContactVisibilitySection(),
                     const SizedBox(height: 32),
                         _buildUpdateButton(),
                       ],
@@ -526,98 +522,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     );
   }
 
-  Widget _buildContactVisibilitySection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.phone, color: AppTheme.primary, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Telefon Numarası Görünürlüğü',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Açıksa, diğer kullanıcılar size arayabilir',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: _isShowContact,
-                onChanged: (value) {
-                  setState(() {
-                    _isShowContact = value;
-                  });
-                },
-                activeColor: AppTheme.primary,
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          Row(
-            children: [
-              Icon(
-                _isShowContact ? Icons.check_circle : Icons.info_outline,
-                color: _isShowContact ? Colors.green : Colors.orange,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  _isShowContact 
-                      ? 'Telefon numaranız görünür olacak. Kullanıcılar size arayabilecek.'
-                      : 'Telefon numaranız gizli olacak. Sadece mesajlaşma ile iletişim kurulabilir.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: _isShowContact ? Colors.green.shade700 : Colors.orange.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          Row(
-            children: [
-              Icon(Icons.security, color: Colors.blue, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Bu ayarı daha sonra profil sayfasından değiştirebilirsiniz.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.blue.shade700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Telefon numarası görünürlüğü bölümü kaldırıldı
 
   Widget _buildUpdateButton() {
     return SizedBox(
