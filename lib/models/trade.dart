@@ -544,6 +544,8 @@ class UserTrade {
   final String? comment; // Yorum metni
   final bool? hasReview; // Yorum yapılıp yapılmadığı
   final bool? canGiveReview; // Puan verilebilir mi
+  final bool? isSenderReview; // Yeni: Gönderen kullanıcı değerlendirme yapmış mı
+  final bool? isReceiverReview; // Yeni: Alıcı kullanıcı değerlendirme yapmış mı
 
   const UserTrade({
     required this.offerID,
@@ -569,6 +571,8 @@ class UserTrade {
     this.comment,
     this.hasReview,
     this.canGiveReview,
+    this.isSenderReview,
+    this.isReceiverReview,
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {
@@ -599,6 +603,8 @@ class UserTrade {
        final comment = json['comment'] as String?;
        final hasReview = json['hasReview'] as bool?;
        final canGiveReview = json['canGiveReview'] as bool?;
+      final isSenderReview = json['isSenderReview'] as bool?;
+      final isReceiverReview = json['isReceiverReview'] as bool?;
        
        // myProduct güvenli parse
       TradeProduct? myProduct;
@@ -646,6 +652,8 @@ class UserTrade {
          comment: comment,
          hasReview: hasReview,
          canGiveReview: canGiveReview,
+         isSenderReview: isSenderReview,
+         isReceiverReview: isReceiverReview,
       );
       
       print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, senderStatusID=$senderStatusID, receiverStatusID=$receiverStatusID');
@@ -678,6 +686,8 @@ class UserTrade {
          comment: json['comment'] as String?,
          hasReview: json['hasReview'] as bool?,
          canGiveReview: json['canGiveReview'] as bool?,
+         isSenderReview: json['isSenderReview'] as bool?,
+         isReceiverReview: json['isReceiverReview'] as bool?,
       );
     }
   }
@@ -706,6 +716,8 @@ class UserTrade {
      if (comment != null) 'comment': comment,
      if (hasReview != null) 'hasReview': hasReview,
      if (canGiveReview != null) 'canGiveReview': canGiveReview,
+     if (isSenderReview != null) 'isSenderReview': isSenderReview,
+     if (isReceiverReview != null) 'isReceiverReview': isReceiverReview,
   };
 
   @override
