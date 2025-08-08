@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/trade_viewmodel.dart';
-import '../../viewmodels/auth_viewmodel.dart';
 import '../../models/trade_detail.dart';
 import '../../services/auth_service.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
+import '../../views/profile/user_profile_detail_view.dart';
 
 class TradeDetailView extends StatefulWidget {
   final int offerID;
@@ -468,59 +468,62 @@ class _TradeDetailViewState extends State<TradeDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Kullanıcı Bilgileri
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: color.withOpacity(0.1),
-                backgroundImage: participant.profilePhoto.isNotEmpty 
-                    ? NetworkImage(participant.profilePhoto)
-                    : null,
-                child: participant.profilePhoto.isEmpty
-                    ? Text(
-                        participant.userName.isNotEmpty 
-                            ? participant.userName[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      )
-                    : null,
-                onBackgroundImageError: participant.profilePhoto.isNotEmpty
-                    ? (exception, stackTrace) {
-                        Logger.error('❌ Profil fotoğrafı yüklenemedi: $exception', tag: 'TradeDetailView');
-                      }
-                    : null,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    Text(
-                      participant.userName,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                    // ID bilgisi kaldırıldı
-                  ],
+          // Kullanıcı Bilgileri (tıklanabilir)
+          GestureDetector(
+            onTap: () => _onParticipantTap(participant),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: color.withOpacity(0.1),
+                  backgroundImage: participant.profilePhoto.isNotEmpty 
+                      ? NetworkImage(participant.profilePhoto)
+                      : null,
+                  child: participant.profilePhoto.isEmpty
+                      ? Text(
+                          participant.userName.isNotEmpty 
+                              ? participant.userName[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        )
+                      : null,
+                  onBackgroundImageError: participant.profilePhoto.isNotEmpty
+                      ? (exception, stackTrace) {
+                          Logger.error('❌ Profil fotoğrafı yüklenemedi: $exception', tag: 'TradeDetailView');
+                        }
+                      : null,
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        participant.userName,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           
           const SizedBox(height: 12),
@@ -530,6 +533,53 @@ class _TradeDetailViewState extends State<TradeDetailView> {
         ],
       ),
     );
+  }
+
+  Future<void> _onParticipantTap(TradeParticipant participant) async {
+    try {
+      final int? userId = participant.userID;
+      if (userId == null) {
+        Logger.error('❌ Kullanıcı ID bulunamadı', tag: 'TradeDetailView');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kullanıcı bilgisi bulunamadı'),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      final authService = AuthService();
+      final userToken = await authService.getToken();
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('❌ User token bulunamadı', tag: 'TradeDetailView');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kullanıcı oturumu bulunamadı'),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      Logger.info('👤 Profil sayfasına yönlendiriliyor - userId=$userId', tag: 'TradeDetailView');
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserProfileDetailView(
+            userId: userId,
+            userToken: userToken,
+          ),
+        ),
+      );
+    } catch (e) {
+      Logger.error('❌ Profil yönlendirme hatası: $e', tag: 'TradeDetailView');
+    }
   }
 
 
