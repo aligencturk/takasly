@@ -74,23 +74,10 @@ class TradeCard extends StatelessWidget {
     return trade.receiverCancelDesc;
   }
 
-  /// Mevcut kullanıcının onay durumunu belirle
-  bool _getCurrentUserConfirmStatus() {
-    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
-    
-    if (currentUserId == trade.senderUserID) {
-      return trade.isSenderConfirm; // Gönderen ise sender onay durumu
-    } else if (currentUserId == trade.receiverUserID) {
-      return trade.isReceiverConfirm; // Alıcı ise receiver onay durumu
-    }
-    
-    // Varsayılan olarak receiver onay durumunu döndür
-    return trade.isReceiverConfirm;
-  }
+  // _getCurrentUserConfirmStatus artık kullanılmıyor
 
   /// "Puan Ver" butonunun gösterilip gösterilmeyeceğini belirle
   bool _shouldShowReviewButton() {
-    final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
     final currentUserStatusID = _getCurrentUserStatusID();
     
     // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
@@ -283,29 +270,7 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  String _getStatusText(int statusId, {TradeViewModel? tradeViewModel}) {
-    // Sabit değerler kullan
-    switch (statusId) {
-      case 1:
-        return 'Beklemede';
-      case 2:
-        return 'Onaylandı';
-      case 3:
-        return 'Reddedildi';
-      case 4:
-        return 'Tamamlandı';
-      case 5:
-        return 'İptal Edildi';
-      case 6:
-        return 'Beklemede';
-      case 7:
-        return 'Reddedildi'; // 7 artık "Reddedildi" olarak değiştirildi
-      case 8:
-        return 'Reddedildi';
-      default:
-        return 'Bilinmiyor';
-    }
-  }
+  
 
   /// API'den gelen mesajı al
   String _getApiMessage(TradeViewModel? tradeViewModel) {
@@ -321,9 +286,6 @@ class TradeCard extends StatelessWidget {
       Logger.debug('Ürün bilgileri eksik, API mesajı alınamıyor', tag: 'TradeCard');
       return '';
     }
-    
-    // Cache key'i oluştur
-    final cacheKey = '${myProduct.productID}_${theirProduct.productID}';
     
     // Cache'den mesajı al
     final cachedStatus = tradeViewModel.getCachedTradeStatus(
@@ -436,8 +398,8 @@ class TradeCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                                     Text(
-                     currentCancelDesc!,
+                  Text(
+                     currentCancelDesc,
                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                        color: Colors.red[700],
                        fontSize: 12,
@@ -524,9 +486,7 @@ class TradeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     
-         // Mevcut kullanıcının onay durumunu belirle
-     final hasConfirmed = _getCurrentUserConfirmStatus();
-     final hasRejected = !_getCurrentUserConfirmStatus() && (_getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8);
+    // Mevcut kullanıcının onay/ret bilgileri artık kullanılmıyor
     
     // Debug log'lar sürekli tekrarlanmasını önlemek için kaldırıldı
     
@@ -593,7 +553,7 @@ class TradeCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       
-                                             // Orta kısım - Takas durumu
+                       // Orta kısım - Takas durumu + sağda Takas detayı butonu
                        Row(
                          children: [
                            Icon(
@@ -610,10 +570,10 @@ class TradeCard extends StatelessWidget {
                                fontSize: 13,
                              ),
                            ),
-                          const Spacer(),
-                          // Takas numarası kaldırıldı
-                        ],
-                      ),
+                           const Spacer(),
+                           _buildDetailTextButton(context),
+                         ],
+                       ),
                       
                       // Karşı tarafın takası tamamlaması bekleniyor mesajı (sadece statusID=4 olan kullanıcıya göster)
                       _buildWaitingMessageWidget(context),
@@ -675,41 +635,9 @@ class TradeCard extends StatelessWidget {
                           return Container();
                         },
                       ),
+
+                       // Detay butonu artık statü satırında hizalanıyor
                     ],
-                  ),
-                ),
-              ),
-              
-              // Üst köşe detay butonu
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: onDetailTap,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: Icon(
-                          Icons.info_outline,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
                   ),
                 ),
               ),
@@ -1088,5 +1016,31 @@ class TradeCard extends StatelessWidget {
     } else {
       Logger.warning('onCompleteSimple callback tanımlanmamış!', tag: 'TradeCard');
     }
+  }
+
+  Widget _buildDetailTextButton(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onDetailTap,
+      icon: Icon(
+        Icons.info_outline,
+        size: 16,
+        color: AppTheme.primary,
+      ),
+      label: Text(
+        'Takas detayı',
+        style: TextStyle(
+          color: AppTheme.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: AppTheme.primary,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
   }
 }
