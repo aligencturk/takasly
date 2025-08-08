@@ -18,6 +18,7 @@ import '../notifications/notification_list_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
+import '../../widgets/native_ad_grid_card.dart';
 
 
 class HomeView extends StatefulWidget {
@@ -234,7 +235,10 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
-        Logger.info('📊 HomeView - Toplam ürün: ${vm.products.length}, Toplam item: ${vm.products.length}, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}');
+        final int productCount = vm.products.length;
+        final int adCount = productCount ~/ 4; // Her 4 ürüne 1 reklam
+        final int totalItemCount = productCount + adCount;
+        Logger.info('📊 HomeView - Toplam ürün: $productCount, Toplam item (reklam dahil): $totalItemCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}');
         
         return SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: _calculateHorizontalPadding(context)),
@@ -247,31 +251,39 @@ class _HomeViewState extends State<HomeView> {
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                if (index < vm.products.length) {
-                  final product = vm.products[index];
-                  
-                  // Kullanıcının kendi ürünü olup olmadığını kontrol et
-                  bool isOwnProduct = false;
-                  if (vm.myProducts.isNotEmpty) {
-                    isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
-                  } else {
-                    // myProducts henüz yüklenmemişse, product.ownerId ile kontrol et
-                    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-                    final currentUserId = authViewModel.currentUser?.id;
-                    isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
-                  }
-                  
-                  return ProductCard(
-                    product: product,
-                    heroTag: 'home_product_${product.id}_$index',
-                    hideFavoriteIcon: isOwnProduct, // Kullanıcının kendi ürünü ise favori ikonunu gizle
-                  );
+                // Her 5. eleman reklam (index: 4,9,14,...)
+                final bool isAd = ((index + 1) % 5 == 0);
+                if (isAd) {
+                  return NativeAdGridCard(key: ValueKey('ad_$index'));
                 }
-                
-                // Geçersiz indeks için boş widget
-                return const SizedBox.shrink();
+
+                // Bu index'e kadar yerleşen reklam sayısı
+                final int numAdsBefore = (index + 1) ~/ 5;
+                final int productIndex = index - numAdsBefore;
+
+                if (productIndex < 0 || productIndex >= productCount) {
+                  return const SizedBox.shrink();
+                }
+
+                final product = vm.products[productIndex];
+
+                // Kullanıcının kendi ürünü olup olmadığını kontrol et
+                bool isOwnProduct = false;
+                if (vm.myProducts.isNotEmpty) {
+                  isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
+                } else {
+                  final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+                  final currentUserId = authViewModel.currentUser?.id;
+                  isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
+                }
+
+                return ProductCard(
+                  product: product,
+                  heroTag: 'home_product_${product.id}_$index',
+                  hideFavoriteIcon: isOwnProduct,
+                );
               },
-              childCount: vm.products.length,
+              childCount: totalItemCount,
             ),
           ),
         );
