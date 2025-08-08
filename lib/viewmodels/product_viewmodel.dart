@@ -474,8 +474,19 @@ class ProductViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      print('📡 ProductViewModel.loadProductById - Making API call for product: $productId');
-      final response = await _productService.getProductById(productId);
+      // Yeni mantık: sadece yeni endpoint ile getir (Basic Auth + userToken)
+      final userToken = await _authService.getToken();
+      if (userToken == null || userToken.isEmpty) {
+        print('❌ ProductViewModel.loadProductById - User token is null or empty');
+        _setError('Kullanıcı oturumu bulunamadı');
+        return;
+      }
+
+      print('📡 ProductViewModel.loadProductById - Calling getProductDetail');
+      final response = await _productService.getProductDetail(
+        userToken: userToken,
+        productId: productId,
+      );
 
       print('📡 ProductViewModel.loadProductById - Response received');
       print('📊 Response success: ${response.isSuccess}');
@@ -486,19 +497,17 @@ class ProductViewModel extends ChangeNotifier {
         _selectedProduct = response.data;
         print('✅ ProductViewModel.loadProductById - Product loaded successfully: ${response.data!.title}');
 
-        // View count'u artır
+        // View count'u artır (arka planda)
         print('👁️ ProductViewModel.loadProductById - Incrementing view count');
         _productService.incrementViewCount(productId);
       } else {
-        // 403 hatası kontrolü
-        if (response.error != null && 
-            (response.error!.contains('403') || 
+        if (response.error != null &&
+            (response.error!.contains('403') ||
              response.error!.contains('Erişim reddedildi') ||
              response.error!.contains('Geçersiz kullanıcı token'))) {
           Logger.warning('🚨 403 error detected in ProductViewModel.loadProductById - triggering global error handler');
           ErrorHandlerService.handleForbiddenError(null);
         }
-        
         print('❌ ProductViewModel.loadProductById - API error: ${response.error}');
         _setError(response.error ?? ErrorMessages.unknownError);
       }
@@ -626,8 +635,8 @@ class ProductViewModel extends ChangeNotifier {
           print('  ${i + 1}. ${category.name} (Icon: "${category.icon}")');
           
           // Kategori ikonlarını önceden cache'le
-          if (category.icon != null && category.icon!.isNotEmpty) {
-            _preloadCategoryIcon(category.icon!);
+          if (category.icon.isNotEmpty) {
+            _preloadCategoryIcon(category.icon);
           }
         }
         
@@ -1112,8 +1121,8 @@ class ProductViewModel extends ChangeNotifier {
             }
           }
           
-          if (productToAdd != null) {
-            _favoriteProducts.add(productToAdd);
+          // productToAdd burada null olamaz; doğrudan ekle
+          _favoriteProducts.add(productToAdd);
             print('✅ ProductViewModel.toggleFavorite - Successfully added to favorites');
             notifyListeners();
             return {
@@ -1121,7 +1130,6 @@ class ProductViewModel extends ChangeNotifier {
               'wasFavorite': false,
               'message': 'Ürün favorilere eklendi',
             };
-          }
         } else {
           print('❌ ProductViewModel.toggleFavorite - Failed to add to favorites: ${response.error}');
           return {
@@ -1131,11 +1139,6 @@ class ProductViewModel extends ChangeNotifier {
           };
         }
       }
-      return {
-        'success': false,
-        'wasFavorite': isFavorite,
-        'message': 'İşlem başarısız',
-      };
     } catch (e) {
       print('💥 ProductViewModel.toggleFavorite - Exception: $e');
       return {
@@ -1411,6 +1414,7 @@ class ProductViewModel extends ChangeNotifier {
     String? title,
     String? description,
     List<String>? images,
+    List<String>? existingImageUrls,
     String? categoryId,
     String? conditionId,
     List<String>? tradePreferences,
@@ -1486,6 +1490,7 @@ class ProductViewModel extends ChangeNotifier {
         title: title,
         description: description,
         images: images,
+        existingImageUrls: existingImageUrls,
         categoryId: categoryId,
         conditionId: conditionId,
         tradePreferences: tradePreferences,
@@ -1568,42 +1573,34 @@ class ProductViewModel extends ChangeNotifier {
   Future<void> _loadUpdatedProduct(String productId) async {
     print('🔄 _loadUpdatedProduct - Loading updated product: $productId');
     try {
-      // Önce getProductById ile dene
-      var response = await _productService.getProductById(productId);
-      
-      // Eğer getProductById başarısız olursa, getProductDetail ile dene
-      if (!response.isSuccess || response.data == null) {
-        print('🔄 getProductById failed, trying getProductDetail...');
-        
-        // User token'ı al
-        final userToken = await _authService.getToken();
-        if (userToken != null && userToken.isNotEmpty) {
-          response = await _productService.getProductDetail(
-            userToken: userToken,
-            productId: productId,
-          );
-        }
+      // Yeni mantık: yalnızca yeni ürün detay endpoint'i
+      final userToken = await _authService.getToken();
+      if (userToken == null || userToken.isEmpty) {
+        print('❌ _loadUpdatedProduct - User token is null or empty');
+        await refreshProducts();
+        return;
       }
-      
+
+      final response = await _productService.getProductDetail(
+        userToken: userToken,
+        productId: productId,
+      );
+
       if (response.isSuccess && response.data != null) {
         final updatedProduct = response.data!;
         print('✅ _loadUpdatedProduct - Product loaded successfully');
         print('📝 Loaded product title: ${updatedProduct.title}');
         print('📝 Loaded product description: ${updatedProduct.description}');
         _updateProductInLists(updatedProduct);
-        
-        // Seçili ürünü de güncelle
         if (_selectedProduct?.id == productId) {
           _selectedProduct = updatedProduct;
         }
       } else {
         print('❌ _loadUpdatedProduct - Failed to load updated product: ${response.error}');
-        // Eğer ürün yüklenemezse, tüm listeyi yenile
         await refreshProducts();
       }
     } catch (e) {
       print('❌ _loadUpdatedProduct - Exception: $e');
-      // Hata durumunda tüm listeyi yenile
       await refreshProducts();
     }
   }
@@ -1913,8 +1910,8 @@ class ProductViewModel extends ChangeNotifier {
       if (response.data != null) {
         print('📊 Response data.userImage: ${response.data!.userImage}');
         print('📊 Response data.userFullname: ${response.data!.userFullname}');
-        print('📊 Response data.owner?.avatar: ${response.data!.owner?.avatar}');
-        print('📊 Response data.owner?.name: ${response.data!.owner?.name}');
+      print('📊 Response data.owner avatar: ${response.data!.owner.avatar}');
+      print('📊 Response data.owner name: ${response.data!.owner.name}');
       }
       
       if (response.isSuccess && response.data != null) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'firebase_options.dart';
@@ -76,9 +77,15 @@ void main() async {
     
     Logger.info('✅ Firebase başarıyla başlatıldı');
     
-    // FCM Background Message Handler'ı ayarla
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    Logger.info('✅ FCM Background Handler ayarlandı');
+    // FCM Background Message Handler'ı sadece desteklenen platformlarda ayarla (Android/iOS)
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+         defaultTargetPlatform == TargetPlatform.iOS)) {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      Logger.info('✅ FCM Background Handler ayarlandı');
+    } else {
+      Logger.info('ℹ️ FCM Background Handler bu platformda desteklenmiyor');
+    }
   } catch (e) {
     Logger.error('❌ Firebase başlatılırken hata: $e');
   }

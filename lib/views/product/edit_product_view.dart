@@ -42,6 +42,7 @@ class _EditProductViewState extends State<EditProductView> {
   
   // Yeni state değişkenleri
   bool _isLoadingProductDetail = false;
+  bool _isUpdating = false;
   Product? _currentProduct;
 
   @override
@@ -285,8 +286,8 @@ class _EditProductViewState extends State<EditProductView> {
       ),
       body: Consumer<ProductViewModel>(
         builder: (context, productViewModel, child) {
-          // Ürün detayları yüklenirken loading göster
-          if (_isLoadingProductDetail || productViewModel.isLoading) {
+          // İlan detayları ilk kez yüklenirken tam ekran loader göster
+          if (_isLoadingProductDetail) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -294,7 +295,7 @@ class _EditProductViewState extends State<EditProductView> {
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
                   Text(
-                    'Ürün detayları yükleniyor...',
+                    'İlan detayları yükleniyor...',
                     style: TextStyle(fontSize: 16),
                   ),
                 ],
@@ -302,130 +303,154 @@ class _EditProductViewState extends State<EditProductView> {
             );
           }
 
-          return Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle(context, 'İlan Bilgileri'),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'İlan Başlığı',
-                      counterText: '',
-                    ),
-                    maxLength: 40,
-                    validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(labelText: 'Açıklama'),
-                    maxLines: 4,
-                    validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
-                  ),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle(context, 'Kategorizasyon'),
-                  const SizedBox(height: 16),
-                  _buildCategoryDropdown(),
-                  const SizedBox(height: 16),
-                  Consumer<ProductViewModel>(
-                    builder: (context, vm, child) {
-                      // Sadece alt kategorileri varsa 2. seviye dropdown'ı göster
-                      if (vm.subCategories.isNotEmpty) {
-                        return Column(
-                          children: [
-                            const SizedBox(height: 16),
-                            _buildSubCategoryDropdown(),
-                          ],
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                  Consumer<ProductViewModel>(
-                    builder: (context, vm, child) {
-                      // Sadece alt kategorileri varsa 3. seviye dropdown'ı göster
-                      if (vm.subSubCategories.isNotEmpty) {
-                        return Column(
-                          children: [
-                            const SizedBox(height: 16),
-                            _buildSubSubCategoryDropdown(),
-                          ],
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                  Consumer<ProductViewModel>(
-                    builder: (context, vm, child) {
-                      // Sadece alt kategorileri varsa 4. seviye dropdown'ı göster
-                      if (vm.subSubSubCategories.isNotEmpty) {
-                        return Column(
-                          children: [
-                            const SizedBox(height: 16),
-                            _buildSubSubSubCategoryDropdown(),
-                          ],
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildConditionDropdown(),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle(context, 'Ek Bilgiler'),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _tradePreferencesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Takas Tercihleri (virgülle ayırın)',
-                      hintText: 'Örn: telefon, laptop, kitap',
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle(context, 'Konum'),
-                  const SizedBox(height: 16),
-                  _buildCityDropdown(),
-                  const SizedBox(height: 16),
-                  _buildDistrictDropdown(),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle(context, 'Resimler'),
-                  const SizedBox(height: 16),
-                  _buildImageSection(),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle(context, 'İletişim Ayarları'),
-                  const SizedBox(height: 16),
-                  _buildContactSettingsSection(),
-                  const SizedBox(height: 32),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _updateProduct,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primary,
-                        foregroundColor: Colors.white,
+          return Stack(
+            children: [
+              Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle(context, 'İlan Bilgileri'),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'İlan Başlığı',
+                          counterText: '',
+                        ),
+                        maxLength: 40,
+                        validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
                       ),
-                      child: const Text(
-                        'Ürünü Güncelle',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(labelText: 'Açıklama'),
+                        maxLines: 4,
+                        validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
                       ),
-                    ),
+                      const SizedBox(height: 24),
+
+                      _buildSectionTitle(context, 'Kategorizasyon'),
+                      const SizedBox(height: 16),
+                      _buildCategoryDropdown(),
+                      const SizedBox(height: 16),
+                      Consumer<ProductViewModel>(
+                        builder: (context, vm, child) {
+                          // Sadece alt kategorileri varsa 2. seviye dropdown'ı göster
+                          if (vm.subCategories.isNotEmpty) {
+                            return Column(
+                              children: [
+                                const SizedBox(height: 16),
+                                _buildSubCategoryDropdown(),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      Consumer<ProductViewModel>(
+                        builder: (context, vm, child) {
+                          // Sadece alt kategorileri varsa 3. seviye dropdown'ı göster
+                          if (vm.subSubCategories.isNotEmpty) {
+                            return Column(
+                              children: [
+                                const SizedBox(height: 16),
+                                _buildSubSubCategoryDropdown(),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      Consumer<ProductViewModel>(
+                        builder: (context, vm, child) {
+                          // Sadece alt kategorileri varsa 4. seviye dropdown'ı göster
+                          if (vm.subSubSubCategories.isNotEmpty) {
+                            return Column(
+                              children: [
+                                const SizedBox(height: 16),
+                                _buildSubSubSubCategoryDropdown(),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildConditionDropdown(),
+                      const SizedBox(height: 24),
+
+                      _buildSectionTitle(context, 'Ek Bilgiler'),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _tradePreferencesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Takas Tercihleri (virgülle ayırın)',
+                          hintText: 'Örn: telefon, laptop, kitap',
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 24),
+
+                      _buildSectionTitle(context, 'Konum'),
+                      const SizedBox(height: 16),
+                      _buildCityDropdown(),
+                      const SizedBox(height: 16),
+                      _buildDistrictDropdown(),
+                      const SizedBox(height: 24),
+
+                      _buildSectionTitle(context, 'Resimler'),
+                      const SizedBox(height: 16),
+                      _buildImageSection(),
+                      const SizedBox(height: 24),
+
+                      _buildSectionTitle(context, 'İletişim Ayarları'),
+                      const SizedBox(height: 16),
+                      _buildContactSettingsSection(),
+                      const SizedBox(height: 32),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _updateProduct,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text(
+                            'Ürünü Güncelle',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+
+              if (_isUpdating)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black45,
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text(
+                            'İlan güncelleniyor...',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),
@@ -1092,14 +1117,16 @@ class _EditProductViewState extends State<EditProductView> {
     }
 
     try {
+      setState(() { _isUpdating = true; });
+      Logger.info('🔄 EditProductView - Product update started');
       final productViewModel = context.read<ProductViewModel>();
       
       // Resimleri ayır: mevcut resimler URL, yeni resimler dosya yolu
       List<String> existingImageUrls = List.from(_existingImages);
       List<String> newImagePaths = _newImages.map((file) => file.path).toList();
       
-      // Tüm resimleri birleştir (mevcut URL'ler + yeni dosya yolları)
-      List<String> allImages = [...existingImageUrls, ...newImagePaths];
+      Logger.info('🖼️ EditProductView - Existing images: ${existingImageUrls.length}');
+      Logger.info('🆕 EditProductView - New images: ${newImagePaths.length}');
       
       // Trade preferences'ı liste haline getir
       List<String>? tradePreferences;
@@ -1139,10 +1166,10 @@ class _EditProductViewState extends State<EditProductView> {
         productId: _currentProduct?.id ?? widget.product.id,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        images: allImages.isNotEmpty ? allImages : null,
+        images: newImagePaths.isNotEmpty ? newImagePaths : null, // Sadece yeni dosya yolları
+        existingImageUrls: existingImageUrls, // Mevcut URL'ler ayrı olarak
         categoryId: _selectedSubSubSubCategoryId ?? _selectedSubSubCategoryId ?? _selectedSubCategoryId ?? _selectedCategoryId,
-                 conditionId: conditionId,
-
+        conditionId: conditionId,
         tradePreferences: tradePreferences,
         cityId: cityId,
         cityTitle: cityTitle,
@@ -1197,6 +1224,11 @@ class _EditProductViewState extends State<EditProductView> {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() { _isUpdating = false; });
+        Logger.info('🏁 EditProductView - Product update finished');
+      }
     }
   }
 }

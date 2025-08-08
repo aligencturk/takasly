@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/http_client.dart';
 import '../core/constants.dart';
@@ -1103,12 +1104,50 @@ class ProductService {
     }
   }
 
+  /// Mevcut URL'yi download edip temporary file'a yazar
+  Future<File?> _downloadImageAsFile(String imageUrl) async {
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode == 200) {
+        final tempDir = Directory.systemTemp;
+        final fileName = imageUrl.split('/').last.split('?').first; // Query parametrelerini temizle
+        final file = File('${tempDir.path}/temp_$fileName');
+        await file.writeAsBytes(response.bodyBytes);
+        print('📥 Downloaded image: ${file.path.split('/').last}');
+        return file;
+      }
+    } catch (e) {
+      print('❌ Failed to download image $imageUrl: $e');
+    }
+    return null;
+  }
+
+  /// Temporary dosyaları temizle
+  void _cleanupTemporaryFiles(Map<String, File> files) {
+    int cleanedCount = 0;
+    for (final file in files.values) {
+      if (file.path.contains('temp_')) {
+        try {
+          file.deleteSync();
+          print('🧹 Cleaned temp file: ${file.path.split('/').last}');
+          cleanedCount++;
+        } catch (e) {
+          print('⚠️ Failed to clean temp file: ${file.path.split('/').last}');
+        }
+      }
+    }
+    if (cleanedCount > 0) {
+      print('🧹 Cleanup completed: $cleanedCount temporary files removed');
+    }
+  }
+
   Future<ApiResponse<Product?>> updateProduct(
     String productId, {
     required String userToken,
     String? title,
     String? description,
     List<String>? images,
+    List<String>? existingImageUrls,
     String? categoryId,
     String? conditionId,
     List<String>? tradePreferences,
@@ -1142,6 +1181,9 @@ class ProductService {
       return ApiResponse.error('Kullanıcı token\'ı bulunamadı');
     }
 
+    // Files'ı dışarda declare et (cleanup için)
+    final files = <String, File>{};
+    
     try {
       // SharedPreferences'dan userId'yi al
       final prefs = await SharedPreferences.getInstance();
@@ -1235,107 +1277,142 @@ class ProductService {
         }
       });
 
-      // Resimler için files hazırla (eğer varsa)
-      final files = <String, File>{};
-      final multipleFiles = <String, List<File>>{};
+      // Resimler için files hazırla (eğer varsa) - files zaten üstte tanımlı
       final newImageFiles = <File>[];
 
       print('🌐 Update Body: $body');
       print('📋 Form Fields: $fields');
       print('📎 Files: ${files.keys.toList()}');
-      print('📎 Multiple Files: ${multipleFiles.keys.toList()}');
-      if (multipleFiles.isNotEmpty) {
-        multipleFiles.forEach((key, files) {
-          print('📎 $key: ${files.length} files');
-          for (int i = 0; i < files.length; i++) {
-            print('  - ${files[i].path.split('/').last}');
-          }
-        });
-      }
       
+      // Sadece yeni dosyalar için file işleme (images artık sadece dosya yolları içeriyor)
       if (images != null && images.isNotEmpty) {
         for (int i = 0; i < images.length; i++) {
           final imagePath = images[i];
-          // Eğer dosya yolu ise (yeni yüklenen resim) File objesi oluştur
-          if (imagePath.startsWith('/') || imagePath.contains('\\')) {
+          // Dosya yolu kontrolü (URL değil, dosya yolu olmalı)
+          if (imagePath.startsWith('/') || imagePath.contains('\\') || imagePath.contains('/')) {
             final file = File(imagePath);
             if (await file.exists()) {
               newImageFiles.add(file);
               print('📸 Added new image file: ${file.path.split('/').last}');
+            } else {
+              print('⚠️ File not found: $imagePath');
             }
+          } else {
+            print('⚠️ Unexpected image format (should be file path): $imagePath');
           }
-          // Eğer URL ise (mevcut resim) fields'a ekle
-          else if (imagePath.startsWith('http')) {
-            fields['existingImage[$i]'] = imagePath;
-            print('📸 Added existing image URL: ${imagePath.substring(0, 50)}...');
-          }
-        }
-        
-        // Yeni resimleri multipleFiles'a ekle
-        if (newImageFiles.isNotEmpty) {
-          multipleFiles['productImages[]'] = newImageFiles;
-          print('📸 Added ${newImageFiles.length} new image files to multipleFiles');
         }
       }
 
-      // Multipart form-data ile gönder
+      // STRATEJİ 2: Mevcut resimleri farklı field adı ile gönder
+      final urlsToKeep = <String>{};
+      if (existingImageUrls != null) {
+        urlsToKeep.addAll(existingImageUrls.where((e) => e.trim().isNotEmpty));
+      }
+      
+      // STRATEJİ 3: Mevcut URL'leri download edip file olarak gönder (keepImages[] çalışmadı!)
+      int totalFileIndex = 0;
+      
+      print('🔄 Starting Strategy 3: Download existing images as files');
+      
+      // Önce mevcut resimleri download et ve file olarak ekle
+      if (urlsToKeep.isNotEmpty) {
+        for (final url in urlsToKeep) {
+          print('📥 Downloading existing image: ${url.substring(url.length - 30)}');
+          final downloadedFile = await _downloadImageAsFile(url);
+          if (downloadedFile != null) {
+            files['productImages[$totalFileIndex]'] = downloadedFile;
+            print('📸 ✅ Downloaded and added existing image at index $totalFileIndex: ${downloadedFile.path.split('/').last}');
+            totalFileIndex++;
+          } else {
+            print('❌ Failed to download existing image at index $totalFileIndex');
+          }
+        }
+        print('📸 Successfully processed ${urlsToKeep.length} existing images as downloaded files');
+      }
+      
+      // Sonra yeni dosyaları ekle
+      if (newImageFiles.isNotEmpty) {
+        for (final file in newImageFiles) {
+          files['productImages[$totalFileIndex]'] = file;
+          print('📸 Added new file at index $totalFileIndex: ${file.path.split('/').last}');
+          totalFileIndex++;
+        }
+        print('📸 Added ${newImageFiles.length} new image files starting from index ${totalFileIndex - newImageFiles.length}');
+      }
+      
+      print('📸 Total images prepared: $totalFileIndex (${urlsToKeep.length} downloaded + ${newImageFiles.length} new)');
+      
+      // Final debug - artık sadece files var (field'larda resim yok)
+      print('📋 Final fields (no images in fields anymore):');
+      fields.forEach((key, value) {
+        if (!key.startsWith('keepImages') && !key.startsWith('productImages')) {
+          print('  📝 $key: $value');
+        }
+      });
+      
+      print('📎 Final files (all images as files):');
+      files.forEach((key, file) {
+        final isDownloaded = file.path.contains('temp_');
+        final icon = isDownloaded ? '📥' : '📸';
+        final type = isDownloaded ? 'downloaded' : 'new';
+        print('  $icon $key: ${file.path.split('/').last} ($type)');
+      });
+
+      // Multipart form-data ile gönder (multipleFiles kullanmıyoruz artık)
       final response = await _httpClient.postMultipart<Product?>(
         endpoint,
         fields: fields,
         files: files.isNotEmpty ? files : null,
-        multipleFiles: multipleFiles.isNotEmpty ? multipleFiles : null,
+        multipleFiles: null, // artık kullanmıyoruz
         fromJson: (json) {
           print('📥 ProductService.updateProduct - Raw response: $json');
           print('📥 ProductService.updateProduct - Response type: ${json.runtimeType}');
 
           // API response'unu detaylı analiz et
-          if (json is Map<String, dynamic>) {
-            print('📥 ProductService.updateProduct - Response keys: ${json.keys.toList()}');
+          print('📥 ProductService.updateProduct - Response keys: ${json.keys.toList()}');
 
-            // Özel format: {"error": false, "200": "OK"} - Bu başarılı güncelleme anlamına gelir
-            if (json.containsKey('error') && json.containsKey('200')) {
-              final errorValue = json['error'];
-              final statusValue = json['200'];
-              print('📥 ProductService.updateProduct - Special format detected');
-              print('📥 ProductService.updateProduct - Error: $errorValue, Status: $statusValue');
+          // Özel format: {"error": false, "200": "OK"} - Bu başarılı güncelleme anlamına gelir
+          if (json.containsKey('error') && json.containsKey('200')) {
+            final errorValue = json['error'];
+            final statusValue = json['200'];
+            print('📥 ProductService.updateProduct - Special format detected');
+            print('📥 ProductService.updateProduct - Error: $errorValue, Status: $statusValue');
               
-              if (errorValue == false && statusValue == 'OK') {
-                print('✅ Success - Product updated successfully with special format');
-                return null;
-              }
-            }
-
-            // success field'ını kontrol et
-            if (json.containsKey('success')) {
-              final successValue = json['success'];
-              print('📥 ProductService.updateProduct - Success field: $successValue');
-            }
-
-            // message field'ını kontrol et
-            if (json.containsKey('message')) {
-              final messageValue = json['message'];
-              print('📥 ProductService.updateProduct - Message field: $messageValue');
-            }
-
-            // data field'ını kontrol et
-            if (json.containsKey('data')) {
-              final dataValue = json['data'];
-              print('📥 ProductService.updateProduct - Data field: $dataValue');
-              if (dataValue is Map<String, dynamic>) {
-                return Product.fromJson(dataValue);
-              }
-            }
-
-            // Eğer data field'ı yoksa, tüm response'u Product olarak parse etmeye çalış
-            try {
-              return Product.fromJson(json);
-            } catch (e) {
-              print('❌ Failed to parse response as Product: $e');
-              throw Exception('Ürün güncellenirken yanıt formatı hatalı');
+            if (errorValue == false && statusValue == 'OK') {
+              print('✅ Success - Product updated successfully with special format');
+              return null;
             }
           }
 
-          throw Exception('Geçersiz API yanıtı');
+          // success field'ını kontrol et
+          if (json.containsKey('success')) {
+            final successValue = json['success'];
+            print('📥 ProductService.updateProduct - Success field: $successValue');
+          }
+
+          // message field'ını kontrol et
+          if (json.containsKey('message')) {
+            final messageValue = json['message'];
+            print('📥 ProductService.updateProduct - Message field: $messageValue');
+          }
+
+          // data field'ını kontrol et
+          if (json.containsKey('data')) {
+            final dataValue = json['data'];
+            print('📥 ProductService.updateProduct - Data field: $dataValue');
+            // data her zaman Map olarak bekleniyor, tür kontrolü gereksiz
+            try {
+              return Product.fromJson(dataValue as Map<String, dynamic>);
+            } catch (_) {}
+          }
+
+          // Eğer data field'ı yoksa, tüm response'u Product olarak parse etmeye çalış
+          try {
+            return Product.fromJson(Map<String, dynamic>.from(json));
+          } catch (e) {
+            print('❌ Failed to parse response as Product: $e');
+            throw Exception('Ürün güncellenirken yanıt formatı hatalı');
+          }
         },
         useBasicAuth: true,
       );
@@ -1345,9 +1422,16 @@ class ProductService {
       print('📊 Response error: ${response.error}');
       print('📊 Response data: ${response.data}');
 
+      // Cleanup: Download edilen temporary dosyaları sil
+      _cleanupTemporaryFiles(files);
+
       return response;
     } catch (e) {
       print('❌ ProductService.updateProduct - Exception: $e');
+      
+      // Exception durumunda da cleanup yap
+      _cleanupTemporaryFiles(files);
+      
       return ApiResponse.error('Ürün güncellenirken hata oluştu: $e');
     }
   }

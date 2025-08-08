@@ -725,14 +725,21 @@ class HttpClient {
 
       final request = http.MultipartRequest('POST', url);
 
-      // Headers ekle
+      // Headers ekle (Multipart için Content-Type kesinlikle eklenmemeli)
+      Map<String, String> headersToAdd;
       if (useBasicAuth) {
         print('🔑 Adding basic auth headers');
-        request.headers.addAll(_getBasicAuthHeaders());
+        headersToAdd = _getBasicAuthHeaders();
       } else {
         print('🔑 Adding bearer token headers');
-        request.headers.addAll(await _getHeaders());
+        headersToAdd = await _getHeaders();
       }
+      // Multipart boundary'yi http package kendisi ayarladığı için Content-Type'ı kaldır
+      if (headersToAdd.containsKey(ApiConstants.contentType)) {
+        print('🧹 Removing Content-Type for multipart request');
+        headersToAdd.remove(ApiConstants.contentType);
+      }
+      request.headers.addAll(headersToAdd);
 
       print('📋 Request headers: ${request.headers}');
 
