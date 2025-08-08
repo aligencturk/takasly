@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:http/http.dart' as http;
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/notification.dart';
@@ -8,6 +10,10 @@ import '../utils/logger.dart';
 class NotificationService {
   final HttpClient _httpClient = HttpClient();
   static const String _tag = 'NotificationService';
+  static const String _fcmApiUrl = 'https://fcm.googleapis.com/v1/projects/takasla-b2aa5/messages:send';
+  
+  // FCM instance
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
   /// Kullanıcının bildirimlerini alır
   /// GET /service/user/account/{userId}/notifications
@@ -106,5 +112,167 @@ class NotificationService {
         Logger.error('❌ NotificationService - Token güncelleme hatası: $e', tag: _tag);
       }
     });
+  }
+
+  /// FCM Token'ını alır
+  Future<String?> getFCMToken() async {
+    try {
+      Logger.debug('Getting FCM token...', tag: _tag);
+      
+      final token = await _firebaseMessaging.getToken();
+      
+      if (token != null) {
+        Logger.debug('✅ FCM Token alındı: ${token.substring(0, 20)}...', tag: _tag);
+        
+        // Token'ı SharedPreferences'a kaydet
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('fcm_token', token);
+        
+        return token;
+      } else {
+        Logger.warning('⚠️ FCM Token alınamadı', tag: _tag);
+        return null;
+      }
+    } catch (e) {
+      Logger.error('❌ FCM Token alma hatası: $e', tag: _tag);
+      return null;
+    }
+  }
+
+  /// Topic'e abone ol (kullanıcı ID'si ile)
+  Future<bool> subscribeToTopic(String userId) async {
+    try {
+      Logger.debug('Topic\'e abone olunuyor: $userId', tag: _tag);
+      
+      await _firebaseMessaging.subscribeToTopic(userId);
+      
+      Logger.debug('✅ Topic\'e abone olundu: $userId', tag: _tag);
+      return true;
+    } catch (e) {
+      Logger.error('❌ Topic\'e abone olma hatası: $e', tag: _tag);
+      return false;
+    }
+  }
+
+  /// Topic aboneliğini iptal et
+  Future<bool> unsubscribeFromTopic(String userId) async {
+    try {
+      Logger.debug('Topic aboneliğ i iptal ediliyor: $userId', tag: _tag);
+      
+      await _firebaseMessaging.unsubscribeFromTopic(userId);
+      
+      Logger.debug('✅ Topic aboneliği iptal edildi: $userId', tag: _tag);
+      return true;
+    } catch (e) {
+      Logger.error('❌ Topic abonelik iptali hatası: $e', tag: _tag);
+      return false;
+    }
+  }
+
+  /// OAuth 2.0 Bearer token ile FCM mesajı gönder
+  Future<bool> sendFCMMessage({
+    required String accessToken,
+    required String topic,
+    required String title,
+    required String body,
+    Map<String, String>? data,
+  }) async {
+    try {
+      Logger.debug('FCM mesajı gönderiliyor - Topic: $topic', tag: _tag);
+      
+      final message = {
+        "message": {
+          "topic": topic,
+          "notification": {
+            "title": title,
+            "body": body
+          },
+          if (data != null) "data": data
+        }
+      };
+
+      final response = await http.post(
+        Uri.parse(_fcmApiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode(message),
+      );
+
+      Logger.debug('FCM Response Status: ${response.statusCode}', tag: _tag);
+      Logger.debug('FCM Response Body: ${response.body}', tag: _tag);
+
+      if (response.statusCode == 200) {
+        Logger.debug('✅ FCM mesajı başarıyla gönderildi', tag: _tag);
+        return true;
+      } else {
+        Logger.error('❌ FCM mesaj gönderme hatası: ${response.statusCode} - ${response.body}', tag: _tag);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('❌ FCM mesaj gönderme exception: $e', tag: _tag);
+      return false;
+    }
+  }
+
+  /// Notification permissions için izin iste
+  Future<bool> requestNotificationPermissions() async {
+    try {
+      Logger.debug('Notification izinleri isteniyor...', tag: _tag);
+      
+      final settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      Logger.debug('Notification izin durumu: ${settings.authorizationStatus}', tag: _tag);
+      
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        Logger.debug('✅ Notification izinleri verildi', tag: _tag);
+        return true;
+      } else {
+        Logger.warning('⚠️ Notification izinleri reddedildi', tag: _tag);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('❌ Notification izin isteme hatası: $e', tag: _tag);
+      return false;
+    }
+  }
+
+  /// FCM token değişikliklerini dinle
+  Stream<String> onTokenRefresh() {
+    return _firebaseMessaging.onTokenRefresh;
+  }
+
+  /// Foreground mesajları dinle
+  Stream<RemoteMessage> onMessage() {
+    return FirebaseMessaging.onMessage;
+  }
+
+  /// Background/terminated mesajları dinle  
+  Stream<RemoteMessage> onMessageOpenedApp() {
+    return FirebaseMessaging.onMessageOpenedApp;
+  }
+
+  /// Notification badge sayısını ayarla (iOS)
+  Future<void> setBadgeCount(int count) async {
+    try {
+      await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      Logger.debug('Badge count ayarlandı: $count', tag: _tag);
+    } catch (e) {
+      Logger.error('Badge count ayarlama hatası: $e', tag: _tag);
+    }
   }
 } 

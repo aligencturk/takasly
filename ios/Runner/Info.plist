@@ -46,6 +46,18 @@
 	<string>Bu uygulama ürününüzün konumunu belirlemek için konum izninize ihtiyaç duyar.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Bu uygulama ürününüzün konumunu belirlemek için konum izninize ihtiyaç duyar.</string>
+	
+	<!-- FCM Background Modes -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>background-fetch</string>
+	</array>
+	
+	<!-- FCM için FirebaseAppDelegateProxyEnabled -->
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'firebase_options.dart';
 import 'core/app_theme.dart';
@@ -39,7 +40,14 @@ import 'views/chat/chat_detail_view.dart';
 import 'views/notifications/notification_list_view.dart';
 import 'utils/logger.dart';
 
-
+/// FCM Background Message Handler
+/// Bu fonksiyon uygulama background veya terminate durumundayken
+/// gelen FCM mesajlarını işler
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  Logger.debug('FCM Background Message: ${message.notification?.title}', tag: 'FCM_BG');
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +75,10 @@ void main() async {
     );
     
     Logger.info('✅ Firebase başarıyla başlatıldı');
+    
+    // FCM Background Message Handler'ı ayarla
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    Logger.info('✅ FCM Background Handler ayarlandı');
   } catch (e) {
     Logger.error('❌ Firebase başlatılırken hata: $e');
   }

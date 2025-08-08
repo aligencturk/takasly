@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/notification.dart';
 import '../services/notification_service.dart';
 import '../services/user_service.dart';
@@ -15,6 +16,12 @@ class NotificationViewModel extends ChangeNotifier {
   bool _hasError = false;
   String _errorMessage = '';
   bool _isRefreshing = false;
+  
+  // FCM state variables
+  String? _fcmToken;
+  bool _isPermissionGranted = false;
+  bool _isTopicSubscribed = false;
+  bool _fcmInitialized = false;
 
   // Getters
   List<Notification> get notifications => _notifications;
@@ -23,6 +30,12 @@ class NotificationViewModel extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   bool get isRefreshing => _isRefreshing;
   bool get hasNotifications => _notifications.isNotEmpty;
+  
+  // FCM Getters
+  String? get fcmToken => _fcmToken;
+  bool get isPermissionGranted => _isPermissionGranted;
+  bool get isTopicSubscribed => _isTopicSubscribed;
+  bool get fcmInitialized => _fcmInitialized;
 
   /// Bildirimleri yükler
   Future<void> loadNotifications() async {
@@ -186,6 +199,179 @@ class NotificationViewModel extends ChangeNotifier {
     _hasError = false;
     _errorMessage = '';
     notifyListeners();
+  }
+
+  /// FCM'i başlatır ve gerekli ayarları yapar
+  Future<void> initializeFCM() async {
+    try {
+      Logger.debug('FCM başlatılıyor...', tag: _tag);
+      
+      // İzin iste
+      final permissionGranted = await _notificationService.requestNotificationPermissions();
+      _isPermissionGranted = permissionGranted;
+      
+      if (permissionGranted) {
+        // FCM Token'ını al
+        await _refreshFCMToken();
+        
+        // Message listener'larını başlat
+        _setupMessageListeners();
+        
+        // Kullanıcı ID'sine abone ol
+        await _subscribeToUserTopic();
+        
+        _fcmInitialized = true;
+        Logger.debug('✅ FCM başarıyla başlatıldı', tag: _tag);
+      } else {
+        Logger.warning('⚠️ FCM izinleri verilmediği için başlatılamadı', tag: _tag);
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      Logger.error('❌ FCM başlatma hatası: $e', tag: _tag);
+      _setError('Bildirim servisi başlatılamadı');
+    }
+  }
+  
+  /// FCM Token'ını yeniler
+  Future<void> _refreshFCMToken() async {
+    try {
+      final token = await _notificationService.getFCMToken();
+      _fcmToken = token;
+      
+      if (token != null) {
+        Logger.debug('FCM Token güncellendi: ${token.substring(0, 20)}...', tag: _tag);
+      }
+    } catch (e) {
+      Logger.error('FCM Token yenileme hatası: $e', tag: _tag);
+    }
+  }
+  
+  /// Kullanıcının topic'ine abone ol
+  Future<void> _subscribeToUserTopic() async {
+    try {
+      final currentUser = await _userService.getCurrentUser();
+      if (currentUser?.id != null) {
+        final success = await _notificationService.subscribeToTopic(currentUser!.id);
+        _isTopicSubscribed = success;
+        
+        if (success) {
+          Logger.debug('✅ Kullanıcı topic\'ine abone olundu: ${currentUser.id}', tag: _tag);
+        }
+      }
+    } catch (e) {
+      Logger.error('Kullanıcı topic abone olma hatası: $e', tag: _tag);
+    }
+  }
+  
+  /// Message listener'larını kurar
+  void _setupMessageListeners() {
+    // Foreground mesajları dinle
+    _notificationService.onMessage().listen((RemoteMessage message) {
+      Logger.debug('Foreground mesaj alındı: ${message.notification?.title}', tag: _tag);
+      
+      // Bildirim alındığında notification listesini yenile
+      refreshNotifications();
+    });
+    
+    // Background'dan açılan mesajları dinle
+    _notificationService.onMessageOpenedApp().listen((RemoteMessage message) {
+      Logger.debug('Background mesajdan uygulama açıldı: ${message.notification?.title}', tag: _tag);
+      
+      // Mesaj detayına git (isteğe bağlı)
+      _handleMessageNavigation(message);
+    });
+    
+    // Token yenileme dinle
+    _notificationService.onTokenRefresh().listen((String newToken) {
+      Logger.debug('FCM Token yenilendi: ${newToken.substring(0, 20)}...', tag: _tag);
+      _fcmToken = newToken;
+      notifyListeners();
+    });
+  }
+  
+  /// Mesaj navigasyonunu işler
+  void _handleMessageNavigation(RemoteMessage message) {
+    try {
+      final data = message.data;
+      if (data.containsKey('type')) {
+        final type = data['type'];
+        final id = data['id'];
+        
+        Logger.debug('Mesaj navigasyon - Type: $type, ID: $id', tag: _tag);
+        
+        // Mesaj tipine göre navigasyon yapılabilir
+        // Bu kısmı UI katmanında handle etmek daha uygun olacaktır
+      }
+    } catch (e) {
+      Logger.error('Mesaj navigasyon hatası: $e', tag: _tag);
+    }
+  }
+  
+  /// Belirli bir topic'e abone ol
+  Future<bool> subscribeToTopic(String topic) async {
+    try {
+      Logger.debug('Topic\'e abone olunuyor: $topic', tag: _tag);
+      
+      final success = await _notificationService.subscribeToTopic(topic);
+      
+      if (success) {
+        Logger.debug('✅ Topic\'e başarıyla abone olundu: $topic', tag: _tag);
+      }
+      
+      return success;
+    } catch (e) {
+      Logger.error('Topic abone olma hatası: $e', tag: _tag);
+      return false;
+    }
+  }
+  
+  /// Belirli bir topic aboneliğini iptal et
+  Future<bool> unsubscribeFromTopic(String topic) async {
+    try {
+      Logger.debug('Topic aboneliği iptal ediliyor: $topic', tag: _tag);
+      
+      final success = await _notificationService.unsubscribeFromTopic(topic);
+      
+      if (success) {
+        Logger.debug('✅ Topic aboneliği başarıyla iptal edildi: $topic', tag: _tag);
+      }
+      
+      return success;
+    } catch (e) {
+      Logger.error('Topic abonelik iptali hatası: $e', tag: _tag);
+      return false;
+    }
+  }
+  
+  /// FCM mesajı gönder (OAuth 2.0 Bearer token ile)
+  Future<bool> sendFCMMessage({
+    required String accessToken,
+    required String topic,
+    required String title,
+    required String body,
+    Map<String, String>? data,
+  }) async {
+    try {
+      Logger.debug('FCM mesajı gönderiliyor...', tag: _tag);
+      
+      final success = await _notificationService.sendFCMMessage(
+        accessToken: accessToken,
+        topic: topic,
+        title: title,
+        body: body,
+        data: data,
+      );
+      
+      if (success) {
+        Logger.debug('✅ FCM mesajı başarıyla gönderildi', tag: _tag);
+      }
+      
+      return success;
+    } catch (e) {
+      Logger.error('FCM mesaj gönderme hatası: $e', tag: _tag);
+      return false;
+    }
   }
 
   /// ViewModel'i temizler
