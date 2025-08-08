@@ -226,7 +226,7 @@ class _ProfileViewState extends State<ProfileView>
           Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
           Logger.debug('👤 ProfileView - Product count: $productCount, Favorite count: $favoriteCount, Score: $score');
 
-          return ScrollConfiguration(
+           return ScrollConfiguration(
             behavior: const _NoStretchScrollBehavior(),
             child: NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -244,8 +244,7 @@ class _ProfileViewState extends State<ProfileView>
                 toolbarHeight: 0,
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(74),
-                  child: Container
-                  (
+                  child: Container(
                     color: Colors.white,
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     child: TabBar(
@@ -266,16 +265,16 @@ class _ProfileViewState extends State<ProfileView>
                           icon: Icon(Icons.rate_review_outlined, size: 20),
                           text: 'Yorumlar',
                         ),
-                          Tab(
-                            icon: Icon(Icons.rate_review, size: 20),
-                            child: Padding(
-                              padding: EdgeInsets.only(bottom: 2),
-                              child: Text(
-                                'Puanlarım',
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        Tab(
+                          icon: Icon(Icons.rate_review, size: 20),
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              'Puanlarım',
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                        ),
                       ],
                     ),
                   ),
