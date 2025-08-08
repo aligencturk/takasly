@@ -60,6 +60,9 @@ class TradeCard extends StatelessWidget {
     return trade.receiverStatusTitle;
   }
 
+  /// Ekranda gösterilecek durum başlığı (başlatan için onay bekliyor düzeltmesi)
+  // API'den gelen başlıkların aynen gösterilmesi isteniyor; override kaldırıldı
+
   /// Mevcut kullanıcının reddetme sebebini belirle
   String? _getCurrentUserCancelDesc() {
     final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
@@ -79,23 +82,14 @@ class TradeCard extends StatelessWidget {
   /// "Puan Ver" butonunun gösterilip gösterilmeyeceğini belirle
   bool _shouldShowReviewButton() {
     final currentUserStatusID = _getCurrentUserStatusID();
-    
-    // Her iki kullanıcının da takasını tamamlamış olup olmadığını kontrol et
-    final senderCompleted = trade.senderStatusID >= 4;
-    final receiverCompleted = trade.receiverStatusID >= 4;
-    final bothCompleted = senderCompleted && receiverCompleted;
-    
     Logger.debug('🔍 Trade #${trade.offerID} - Review button check:', tag: 'TradeCard');
     Logger.debug('  • currentUserStatusID: $currentUserStatusID', tag: 'TradeCard');
-    Logger.debug('  • senderStatusID: ${trade.senderStatusID}, receiverStatusID: ${trade.receiverStatusID}', tag: 'TradeCard');
-    Logger.debug('  • bothCompleted: $bothCompleted', tag: 'TradeCard');
     Logger.debug('  • canGiveReview: ${trade.canGiveReview}', tag: 'TradeCard');
     Logger.debug('  • hasReview: ${trade.hasReview}', tag: 'TradeCard');
     Logger.debug('  • rating: ${trade.rating}', tag: 'TradeCard');
     Logger.debug('  • comment: ${trade.comment}', tag: 'TradeCard');
     
-    // Önce değerlendirme yapılıp yapılmadığını kontrol et
-    // hasReview, rating veya comment varsa değerlendirme yapılmış demektir
+    // Önce değerlendirme yapılıp yapılmadığını kontrol et (API verisine göre)
     final hasReviewData = trade.hasReview == true || 
                          (trade.rating != null && trade.rating! > 0) || 
                          (trade.comment != null && trade.comment!.isNotEmpty);
@@ -106,28 +100,13 @@ class TradeCard extends StatelessWidget {
       return false;
     }
     
-    // API'den gelen canGiveReview değerini kontrol et
+    // API alanı: canGiveReview true ise buton gösterilir (değerlendirme yapılmadıysa)
     if (trade.canGiveReview == true) {
       Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=true ve değerlendirme yapılmamış, buton gösterilecek', tag: 'TradeCard');
       return true;
     }
-    
-    // Eğer canGiveReview false ise veya null ise, manuel kontrol yap
-    // StatusID=5 (Tamamlandı) durumunda ve her iki taraf da tamamladıysa yorum yapılabilir
-    // StatusID=4 durumunda sadece karşı taraf henüz tamamlamamışsa yorum yapılabilir
-    if (currentUserStatusID == 5 && bothCompleted) {
-      Logger.debug('🔍 Trade #${trade.offerID} - StatusID=5 ve her iki taraf tamamladı, değerlendirme yapılabilir', tag: 'TradeCard');
-      return true;
-    }
-    
-    // StatusID=4 durumunda sadece karşı taraf henüz tamamlamamışsa değerlendirme yapılabilir
-    if (currentUserStatusID == 4 && !bothCompleted) {
-      Logger.debug('🔍 Trade #${trade.offerID} - StatusID=4 ama karşı taraf henüz tamamlamadı, değerlendirme yapılamaz', tag: 'TradeCard');
-      return false;
-    }
-    
-    Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=false, buton gösterilmeyecek', tag: 'TradeCard');
-    Logger.debug('🔍 Trade #${trade.offerID} - currentStatusID=$currentUserStatusID, bothCompleted=$bothCompleted', tag: 'TradeCard');
+    // Aksi halde gösterme (tamamen API kararı)
+    Logger.debug('🔍 Trade #${trade.offerID} - Değerlendirme butonu gösterilmeyecek (canGiveReview=${trade.canGiveReview})', tag: 'TradeCard');
     return false;
   }
 
@@ -153,20 +132,10 @@ class TradeCard extends StatelessWidget {
       return otherUserStatusID >= 2;
     }
     
-    // StatusID=4 (Teslim Edildi) durumunda, eğer karşı taraf henüz tamamlamamışsa göster
-    // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
-    if (currentUserStatusID == 4) {
-      // Karşı tarafın durumunu kontrol et
-      int otherUserStatusID;
-      if (currentUserId == trade.senderUserID) {
-        otherUserStatusID = trade.receiverStatusID;
-      } else {
-        otherUserStatusID = trade.senderStatusID;
-      }
-      
-      // Eğer karşı taraf henüz takasını tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
-      // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
-      return otherUserStatusID < 4;
+    // API kuralı: Bir taraf takası tamamladıysa (currentUserStatusID >= 4),
+    // o kullanıcı için "Takası Tamamla" butonu artık görünmemeli
+    if (currentUserStatusID >= 4) {
+      return false;
     }
     
     // StatusID=5 (Tamamlandı) durumunda buton gösterilmez
