@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../utils/logger.dart';
@@ -11,13 +10,18 @@ class AdMobService {
   factory AdMobService() => _instance;
   AdMobService._internal();
 
-  // Test ID'leri - Production'da gerçek ID'lerle değiştirilecek
-  static const String _androidAppId = 'ca-app-pub-3940256099942544~3347511713';
-  static const String _iosAppId = 'ca-app-pub-3940256099942544~1458002511';
-  
-  // Test Native Advanced Ad ID'leri
-  static const String _androidNativeAdUnitId = 'ca-app-pub-3940256099942544/2247696110';
-  static const String _iosNativeAdUnitId = 'ca-app-pub-3940256099942544/3985214057';
+  // App IDs (bilgi amaçlı)
+  static const String _androidAppId = 'ca-app-pub-3940256099942544~3347511713'; // Test
+  static const String _iosAppId = 'ca-app-pub-3600325889588673~5340558560'; // Prod (Info.plist'den kullanılıyor)
+
+  // Native Advanced Ad Unit IDs
+  // Debug/Test (Google Resmi Test ID'leri)
+  static const String _androidNativeAdUnitIdTest = 'ca-app-pub-3940256099942544/2247696110';
+  static const String _iosNativeAdUnitIdTest = 'ca-app-pub-3940256099942544/3986624511';
+
+  // Production (kendi birimleriniz) - iOS prod şu an mevcut değer
+  static const String _androidNativeAdUnitIdProd = 'ca-app-pub-3940256099942544/2247696110'; // TODO: Gerçek Android prod ID ile değiştirin
+  static const String _iosNativeAdUnitIdProd = 'ca-app-pub-3600325889588673/3365147820';
 
   bool _isInitialized = false;
   NativeAd? _nativeAd;
@@ -95,14 +99,19 @@ class AdMobService {
     return _androidAppId; // Default
   }
 
-  /// Native Ad Unit ID'sini al
+  /// Native Ad Unit ID'sini al (Debug'da test ID'leri, Release'de prod ID'leri)
   String get nativeAdUnitId {
+    final bool isDebug = kDebugMode;
     if (Platform.isAndroid) {
-      return _androidNativeAdUnitId;
+      final id = isDebug ? _androidNativeAdUnitIdTest : _androidNativeAdUnitIdProd;
+      Logger.debug('📡 AdMobService - Android NativeAdUnitId: $id (debug=$isDebug)');
+      return id;
     } else if (Platform.isIOS) {
-      return _iosNativeAdUnitId;
+      final id = isDebug ? _iosNativeAdUnitIdTest : _iosNativeAdUnitIdProd;
+      Logger.debug('📡 AdMobService - iOS NativeAdUnitId: $id (debug=$isDebug)');
+      return id;
     }
-    return _androidNativeAdUnitId; // Default
+    return isDebug ? _androidNativeAdUnitIdTest : _androidNativeAdUnitIdProd; // Default
   }
 
   /// Native reklam yükle (performans optimizasyonlu)

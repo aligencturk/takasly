@@ -39,7 +39,7 @@
 	
 	<!-- AdMob App ID -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-3600325889588673~5340558560</string>
 
 	<!-- ATT / Tracking izin açıklaması (iOS 14+) -->
 	<key>NSUserTrackingUsageDescription</key>

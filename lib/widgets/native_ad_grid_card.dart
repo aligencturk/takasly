@@ -16,6 +16,9 @@ class _NativeAdGridCardState extends State<NativeAdGridCard>
     with AutomaticKeepAliveClientMixin {
   final AdMobService _adMobService = AdMobService();
   NativeAd? _nativeAd;
+  // Platform view yeniden yaratma hatasını önlemek için AdWidget'ı tekil tut
+  Widget? _adWidget;
+  Key? _adKey;
   bool _isLoaded = false;
   bool _isDisposed = false;
   bool _isLoading = false;
@@ -52,6 +55,8 @@ class _NativeAdGridCardState extends State<NativeAdGridCard>
         _nativeAd?.dispose();
       } catch (_) {}
       _nativeAd = null;
+      _adWidget = null;
+      _adKey = null;
       _isLoaded = false;
       _hasError = false;
 
@@ -66,6 +71,9 @@ class _NativeAdGridCardState extends State<NativeAdGridCard>
               return;
             }
             _nativeAd = ad as NativeAd;
+            // AdWidget'ı bir kez oluştur ve aynı instance'ı kullan
+            _adWidget = AdWidget(ad: _nativeAd!);
+            _adKey = ValueKey(_nativeAd);
             _isLoaded = true;
             _hasError = false;
             if (mounted) setState(() {});
@@ -162,17 +170,36 @@ class _NativeAdGridCardState extends State<NativeAdGridCard>
       );
     }
 
-    // Yüklü reklam - ürün kartı ile aynı düzen
+    // Yüklü reklam - karta tam sığacak şekilde
     return Container(
       decoration: decoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
         children: [
-          // Üst görsel alanını andıracak şekilde reklamı kırparak göster
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(top: borderRadius.topLeft),
-              child: AdWidget(ad: _nativeAd!),
+          // Ana reklam - kartın tamamını kaplasın
+          ClipRRect(
+            borderRadius: borderRadius,
+            child: _adWidget == null
+                ? Container(color: Colors.grey[200])
+                : KeyedSubtree(key: _adKey, child: _adWidget!),
+          ),
+          // Sponsorlu etiketi - sol üstte overlay
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.9),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Sponsorlu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: screenWidth < 360 ? 10 : 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ),
         ],
