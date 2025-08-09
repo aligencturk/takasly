@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/notification_viewmodel.dart';
+
+import '../../widgets/announcement_dialog.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/filter_bottom_sheet.dart';
@@ -63,6 +65,19 @@ class _HomeViewState extends State<HomeView> {
       final notificationViewModel = Provider.of<NotificationViewModel>(context, listen: false);
       Future.microtask(() {
         notificationViewModel.loadNotifications();
+      });
+      
+      // Remote Config duyuru kontrolü - arka planda çalıştır
+      Future.microtask(() async {
+        try {
+          // 2 saniye bekle ki remote config initialize olsun
+          await Future.delayed(const Duration(seconds: 2));
+          
+          await AnnouncementDialog.showIfNeeded(context);
+          
+        } catch (e) {
+          Logger.error('❌ Remote Config duyuru kontrolü hatası: $e', error: e);
+        }
       });
       
 

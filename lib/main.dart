@@ -19,6 +19,7 @@ import 'viewmodels/ad_viewmodel.dart';
 import 'viewmodels/report_viewmodel.dart';
 import 'viewmodels/user_profile_detail_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
+import 'viewmodels/remote_config_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/home/home_view.dart';
 import 'views/auth/login_view.dart';
@@ -136,6 +137,16 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReportViewModel()),
         ChangeNotifierProvider(create: (_) => UserProfileDetailViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final remoteConfigViewModel = RemoteConfigViewModel();
+            // Remote Config'i güvenli bir şekilde başlat
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              remoteConfigViewModel.initialize();
+            });
+            return remoteConfigViewModel;
+          },
+        ),
       ],
              child: MaterialApp(
          title: AppConstants.appName,
