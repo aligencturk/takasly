@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/services/location_service.dart';
+import 'package:takasly/services/image_optimization_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:takasly/utils/logger.dart';
 
@@ -1795,21 +1796,35 @@ class _AddProductViewState extends State<AddProductView> {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: source,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 85,
+        // Temel kalite ayarları - optimize servis daha detaylı boyutlandırma yapacak
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 95,
       );
 
       if (pickedFile != null) {
+        // Seçilen görseli optimize et
+        Logger.debug('🖼️ AddProductView - Optimizing selected image...');
+        final File optimizedFile = await ImageOptimizationService.optimizeSingleXFile(pickedFile);
+        
         setState(() {
-          _selectedImages.add(File(pickedFile.path));
+          _selectedImages.add(optimizedFile);
           // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
           if (_selectedImages.length == 1) {
             _coverImageIndex = 0;
           }
         });
 
-
+        // Kullanıcıya bilgi ver
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fotoğraf optimize edilerek eklendi'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } catch (e) {
       Logger.error('❌ Error picking image: $e');
@@ -1838,25 +1853,50 @@ class _AddProductViewState extends State<AddProductView> {
       }
 
       final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia(
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 85,
+        // Temel kalite ayarları - optimize servis daha detaylı boyutlandırma yapacak
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 95,
       );
 
       if (pickedFiles.isNotEmpty) {
         final List<XFile> filesToAdd = pickedFiles.take(remainingSlots).toList();
         
+        // Kullanıcıya optimizasyon başladığını bildir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fotoğraflar optimize ediliyor...'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        
+        // Seçilen görselleri optimize et
+        Logger.debug('🖼️ AddProductView - Optimizing ${filesToAdd.length} selected images...');
+        final List<File> optimizedFiles = await ImageOptimizationService.optimizeXFiles(
+          filesToAdd, 
+          maxImages: remainingSlots,
+        );
+        
         setState(() {
-          for (final file in filesToAdd) {
-            _selectedImages.add(File(file.path));
-          }
+          _selectedImages.addAll(optimizedFiles);
           // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
-          if (_selectedImages.length == filesToAdd.length) {
+          if (_selectedImages.length == optimizedFiles.length) {
             _coverImageIndex = 0;
           }
         });
 
-
+        // Kullanıcıya optimizasyon tamamlandığını bildir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${optimizedFiles.length} fotoğraf optimize edilerek eklendi'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
 
         if (pickedFiles.length > remainingSlots) {
           ScaffoldMessenger.of(context).showSnackBar(

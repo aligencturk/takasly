@@ -4,6 +4,7 @@ import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:takasly/services/image_optimization_service.dart';
 import 'package:takasly/utils/phone_formatter.dart';
 import 'package:takasly/utils/logger.dart';
 import 'dart:io';
@@ -125,35 +126,55 @@ class _EditProfileViewState extends State<EditProfileView> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
+        // Temel kalite ayarları - optimize servis daha detaylı boyutlandırma yapacak
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 95,
       );
       
       if (image != null) {
+        // Kullanıcıya optimizasyon başladığını bildir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil fotoğrafı optimize ediliyor...'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        
+        // Seçilen görseli optimize et
+        Logger.debug('🖼️ EditProfileView - Optimizing profile image...', tag: 'EditProfile');
+        final File optimizedFile = await ImageOptimizationService.optimizeSingleXFile(image);
+        
         setState(() {
-          _selectedImage = File(image.path);
+          _selectedImage = optimizedFile;
         });
         
-        // Kullanıcıya bilgi ver
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Profil fotoğrafı seçildi: ${image.path.split('/').last}'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        // Kullanıcıya optimizasyon tamamlandığını bildir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil fotoğrafı optimize edilerek seçildi'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
         
-        Logger.debug('Image selected: ${image.path}', tag: 'EditProfile');
+        Logger.debug('Profile image optimized and selected: ${optimizedFile.path}', tag: 'EditProfile');
       }
     } catch (e) {
-      Logger.error('Error selecting image: $e', tag: 'EditProfile');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Resim seçilirken hata oluştu: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      Logger.error('Error selecting and optimizing image: $e', tag: 'EditProfile');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Resim seçilirken hata oluştu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

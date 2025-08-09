@@ -5,11 +5,10 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/city.dart';
-
 import 'package:takasly/models/district.dart';
 import 'package:takasly/models/product.dart';
-
 import 'package:takasly/viewmodels/product_viewmodel.dart';
+import 'package:takasly/services/image_optimization_service.dart';
 import 'package:takasly/utils/logger.dart';
 
 class EditProductView extends StatefulWidget {
@@ -966,17 +965,72 @@ class _EditProductViewState extends State<EditProductView> {
 
   Future<void> _pickImages() async {
     try {
+      final int totalExistingImages = _existingImages.length + _newImages.length;
+      final int remainingSlots = 5 - totalExistingImages;
+      
+      if (remainingSlots <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maksimum 5 fotoğraf olabilir'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia();
       
       if (pickedFiles.isNotEmpty) {
+        final List<XFile> filesToAdd = pickedFiles.take(remainingSlots).toList();
+        
+        // Kullanıcıya optimizasyon başladığını bildir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fotoğraflar optimize ediliyor...'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        
+        // Seçilen görselleri optimize et
+        Logger.debug('🖼️ EditProductView - Optimizing ${filesToAdd.length} selected images...');
+        final List<File> optimizedFiles = await ImageOptimizationService.optimizeXFiles(
+          filesToAdd, 
+          maxImages: remainingSlots,
+        );
+        
         setState(() {
-          _newImages.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+          _newImages.addAll(optimizedFiles);
         });
+
+        // Kullanıcıya optimizasyon tamamlandığını bildir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${optimizedFiles.length} fotoğraf optimize edilerek eklendi'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        if (pickedFiles.length > remainingSlots) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${pickedFiles.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 5 resim)'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Resim seçilirken hata oluştu: $e')),
-      );
+      Logger.error('❌ EditProductView - Error picking images: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Resim seçilirken hata oluştu: $e')),
+        );
+      }
     }
   }
 
