@@ -222,9 +222,13 @@ class _ProfileViewState extends State<ProfileView>
           if (profileDetailVm.hasData && profileDetailVm.profileDetail != null) {
             score = profileDetailVm.profileDetail!.averageRating.toStringAsFixed(1);
           }
-          final int myReviewsCount = (profileDetailVm.hasData && profileDetailVm.profileDetail != null)
-              ? profileDetailVm.profileDetail!.myReviews.length
-              : 0;
+          int myReviewsCount = 0;
+          // Öncelik: User modelindeki myReviews (daha erken yüklenebilir)
+          if (user.myReviews.isNotEmpty) {
+            myReviewsCount = user.myReviews.length;
+          } else if (profileDetailVm.hasData && profileDetailVm.profileDetail != null) {
+            myReviewsCount = profileDetailVm.profileDetail!.myReviews.length;
+          }
 
           Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
           Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
@@ -269,19 +273,19 @@ class _ProfileViewState extends State<ProfileView>
                           icon: Icon(Icons.rate_review_outlined, size: 20),
                           text: 'Yorumlar',
                         ),
-                        Tab(
-                          icon: const Icon(Icons.rate_review, size: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'Yorumlarım',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(width: 6),
-                                if (myReviewsCount > 0)
+                          Tab(
+                            icon: const Icon(Icons.rate_review, size: 20),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'Yorumlarım',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  // Rozeti her zaman göster, 0 ise "0" yazsın
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
@@ -297,10 +301,10 @@ class _ProfileViewState extends State<ProfileView>
                                       ),
                                     ),
                                   ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
