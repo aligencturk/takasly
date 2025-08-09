@@ -30,6 +30,8 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
           ?.map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  totalProducts: json['totalProducts'] as int? ?? 0,
+  totalFavorites: json['totalFavorites'] as int? ?? 0,
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -50,4 +52,6 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'token': instance.token,
   'isShowContact': instance.isShowContact,
   'myReviews': instance.myReviews,
+  'totalProducts': instance.totalProducts,
+  'totalFavorites': instance.totalFavorites,
 };

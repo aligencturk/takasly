@@ -22,6 +22,8 @@ class User {
   final String? token; // Kullanıcı token'ı
   final bool? isShowContact; // Telefon numarasının görünürlüğü
   final List<ProfileReview> myReviews; // Kullanıcının yaptığı değerlendirmeler
+  final int totalProducts; // Toplam ilan sayısı (getUser'dan)
+  final int totalFavorites; // Toplam favori sayısı (getUser'dan)
 
   const User({
     required this.id,
@@ -41,6 +43,8 @@ class User {
     this.token,
     this.isShowContact,
     this.myReviews = const [],
+    this.totalProducts = 0,
+    this.totalFavorites = 0,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -70,6 +74,16 @@ class User {
       if (value is bool) return value;
       if (value is String) return value.toLowerCase() == 'true';
       if (value is int) return value != 0;
+      return defaultValue;
+    }
+
+    // Güvenli int dönüşümü
+    int safeInt(dynamic value, {int defaultValue = 0}) {
+      if (value is int) return value;
+      if (value is String) {
+        return int.tryParse(value) ?? defaultValue;
+      }
+      if (value is double) return value.toInt();
       return defaultValue;
     }
 
@@ -187,6 +201,12 @@ class User {
       token: json['token'] != null ? safeString(json['token']) : null,
       isShowContact: json['isShowContact'] != null ? safeBool(json['isShowContact']) : true,
       myReviews: parseMyReviews(json['myReviews']),
+      totalProducts: json.containsKey('totalProducts')
+          ? safeInt(json['totalProducts'])
+          : (json.containsKey('productCount') ? safeInt(json['productCount']) : 0),
+      totalFavorites: json.containsKey('totalFavorites')
+          ? safeInt(json['totalFavorites'])
+          : (json.containsKey('favoriteCount') ? safeInt(json['favoriteCount']) : 0),
     );
   }
   Map<String, dynamic> toJson() {
@@ -197,6 +217,9 @@ class User {
     if (lastSeenAt != null) {
       json['lastSeenAt'] = lastSeenAt!.toIso8601String();
     }
+    // Toplam sayıları da serileştir
+    json['totalProducts'] = totalProducts;
+    json['totalFavorites'] = totalFavorites;
     return json;
   }
 
@@ -218,6 +241,8 @@ class User {
     String? token,
     bool? isShowContact,
     List<ProfileReview>? myReviews,
+    int? totalProducts,
+    int? totalFavorites,
   }) {
     return User(
       id: id ?? this.id,
@@ -237,6 +262,8 @@ class User {
       token: token ?? this.token,
       isShowContact: isShowContact ?? this.isShowContact,
       myReviews: myReviews ?? this.myReviews,
+      totalProducts: totalProducts ?? this.totalProducts,
+      totalFavorites: totalFavorites ?? this.totalFavorites,
     );
   }
 

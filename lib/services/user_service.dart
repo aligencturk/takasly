@@ -550,6 +550,9 @@ class UserService {
               'gender':
                   userDataToTransform['userGender'] ??
                   userDataToTransform['gender'],
+              // toplamlari ekle (varsa)
+              'totalProducts': userDataToTransform['totalProducts'] ?? userDataToTransform['productCount'] ?? 0,
+              'totalFavorites': userDataToTransform['totalFavorites'] ?? userDataToTransform['favoriteCount'] ?? 0,
               'token': userToken, // Token'ı User modeline ekle
               'myReviews': userDataToTransform['myReviews'] ?? [], // Kullanıcının yaptığı değerlendirmeler
             };

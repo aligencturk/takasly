@@ -78,10 +78,7 @@ class _ProfileViewState extends State<ProfileView>
         Logger.debug('👤 ProfileView - Product $i location: cityTitle="${product.cityTitle}", districtTitle="${product.districtTitle}"');
       }
       
-      // Kullanıcının favori ürünlerini yükle
-      await productViewModel.loadFavoriteProducts();
-      if (!mounted) return;
-      
+      // Favori ürünleri liste içinde kullanılmıyor; gereksiz API çağrısını kaldırdık
       // Kullanıcının profil detaylarını yükle (değerlendirmeler için)
       await _loadUserProfileDetail(int.parse(userId));
     } else {
@@ -216,8 +213,9 @@ class _ProfileViewState extends State<ProfileView>
           }
 
           final user = userVm.currentUser!;
-          final productCount = productVm.myProducts.length;
-          final favoriteCount = productVm.favoriteProducts.length;
+          // API çağrıları yerine getUser datasından gelen toplamlar kullanılacak
+          final productCount = user.totalProducts;
+          final favoriteCount = user.totalFavorites;
           String score = '0';
           if (profileDetailVm.hasData && profileDetailVm.profileDetail != null) {
             score = profileDetailVm.profileDetail!.averageRating.toStringAsFixed(1);
