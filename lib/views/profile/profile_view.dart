@@ -320,7 +320,10 @@ class _ProfileViewState extends State<ProfileView>
               subtitle: 'İlk ilanınızı ekleyerek takasa başlayabilirsiniz.',
               actionButton: Container(
                 height: 40,
-                color: AppTheme.primary,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: TextButton(
                   onPressed: () {
                     Navigator.pushNamed(context, '/add-product');
@@ -328,7 +331,9 @@ class _ProfileViewState extends State<ProfileView>
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.zero,
-                    shape: const RoundedRectangleBorder(),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: const Text(
                     'İlan Ekle',
@@ -1231,7 +1236,10 @@ class _ProfileViewState extends State<ProfileView>
               Expanded(
                 child: Container(
                   height: 40,
-                  color: Colors.grey[100],
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: TextButton(
                     onPressed: () async {
                       if (!mounted) return;
@@ -1252,7 +1260,9 @@ class _ProfileViewState extends State<ProfileView>
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.black87,
                       padding: EdgeInsets.zero,
-                      shape: const RoundedRectangleBorder(),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: const Text(
                       'Profili Düzenle',
@@ -1270,7 +1280,10 @@ class _ProfileViewState extends State<ProfileView>
               Expanded(
                 child: Container(
                   height: 40,
-                  color: AppTheme.primary,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: TextButton(
                     onPressed: () {
                       Navigator.pushNamed(context, '/add-product');
@@ -1278,7 +1291,9 @@ class _ProfileViewState extends State<ProfileView>
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
                       padding: EdgeInsets.zero,
-                      shape: const RoundedRectangleBorder(),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: const Text(
                       'İlan Ekle',
