@@ -1625,22 +1625,26 @@ class _AddProductViewState extends State<AddProductView> {
       width: 100,
       height: 100,
       margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCoverImage ? AppTheme.primary : Colors.grey.shade300,
-          width: isCoverImage ? 2 : 1,
-        ),
-      ),
       child: Stack(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.file(
-              image,
-              width: 100,
-              height: 100,
-              fit: BoxFit.cover,
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isCoverImage ? AppTheme.primary : Colors.grey.shade300,
+                width: isCoverImage ? 2 : 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(isCoverImage ? 10 : 11),
+              child: Image.file(
+                image,
+                width: 100,
+                height: 100,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
 
