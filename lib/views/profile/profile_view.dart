@@ -222,6 +222,9 @@ class _ProfileViewState extends State<ProfileView>
           if (profileDetailVm.hasData && profileDetailVm.profileDetail != null) {
             score = profileDetailVm.profileDetail!.averageRating.toStringAsFixed(1);
           }
+          final int myReviewsCount = (profileDetailVm.hasData && profileDetailVm.profileDetail != null)
+              ? profileDetailVm.profileDetail!.myReviews.length
+              : 0;
 
           Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
           Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
@@ -257,22 +260,44 @@ class _ProfileViewState extends State<ProfileView>
                       indicatorColor: AppTheme.primary,
                       indicatorWeight: 2,
                       labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                      tabs: const [
-                        Tab(
+                      tabs: [
+                        const Tab(
                           icon: Icon(Icons.inventory_2_outlined, size: 20),
                           text: 'İlanlarım',
                         ),
-                        Tab(
+                        const Tab(
                           icon: Icon(Icons.rate_review_outlined, size: 20),
                           text: 'Yorumlar',
                         ),
                         Tab(
-                          icon: Icon(Icons.rate_review, size: 20),
+                          icon: const Icon(Icons.rate_review, size: 20),
                           child: Padding(
-                            padding: EdgeInsets.only(bottom: 2),
-                            child: Text(
-                              'Puanlarım',
-                              overflow: TextOverflow.ellipsis,
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Yorumlarım',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(width: 6),
+                                if (myReviewsCount > 0)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      myReviewsCount.toString(),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[800],
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ),
@@ -830,25 +855,7 @@ class _ProfileViewState extends State<ProfileView>
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
-          // Değerlendirme sayısı
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(20),
-            color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildReviewStatItem(
-                  icon: Icons.rate_review,
-                  value: myReviews.length.toString(),
-                  label: 'Yaptığınız Değerlendirme',
-                  color: AppTheme.primary,
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 8),
+          // Başlık yanına küçük rozet taşındığı için üst sayım kutusu kaldırıldı
           
           // Değerlendirmeler listesi
           if (myReviews.isNotEmpty)
