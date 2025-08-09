@@ -3,7 +3,6 @@ import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
-import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 import '../../utils/phone_formatter.dart';
 
@@ -12,7 +11,7 @@ class RegisterView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final textTheme = Theme.of(context).textTheme; // used above in header and footer
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -26,7 +25,10 @@ class RegisterView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Column(
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
         children: [
           // Üst yeşil bölüm
           Container(
@@ -120,6 +122,7 @@ class RegisterView extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -310,7 +313,6 @@ class _RegisterFormState extends State<_RegisterForm> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Form(
@@ -324,6 +326,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               Expanded(
                 child: TextFormField(
                   controller: _firstNameController,
+                  keyboardType: TextInputType.name,
                   textCapitalization: TextCapitalization.words,
                   style: const TextStyle(fontSize: 14),
                   decoration: const InputDecoration(
@@ -347,6 +350,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               Expanded(
                 child: TextFormField(
                   controller: _lastNameController,
+                  keyboardType: TextInputType.name,
                   textCapitalization: TextCapitalization.words,
                   style: const TextStyle(fontSize: 14),
                   decoration: const InputDecoration(
