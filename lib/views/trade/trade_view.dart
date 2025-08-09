@@ -187,7 +187,7 @@ class _TradeViewState extends State<TradeView>
         backgroundColor: AppTheme.background,
         elevation: 0,
         title: Text(
-          'Takaslarım',
+          'Takaslarım & Favorilerim',
           style: AppTheme.lightTheme.textTheme.titleLarge?.copyWith(
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.w600,
@@ -1221,7 +1221,7 @@ class _TradeViewState extends State<TradeView>
               }
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20).copyWith(top: 20),
               child: GridView.builder(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
