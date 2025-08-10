@@ -30,8 +30,8 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
           ?.map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
-  totalProducts: json['totalProducts'] as int? ?? 0,
-  totalFavorites: json['totalFavorites'] as int? ?? 0,
+  totalProducts: (json['totalProducts'] as num?)?.toInt() ?? 0,
+  totalFavorites: (json['totalFavorites'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{

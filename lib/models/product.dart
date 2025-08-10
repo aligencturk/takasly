@@ -62,6 +62,7 @@ class Product {
   final String? productCode;
   final int? favoriteCount;
   final String? profilePhoto;
+  final String? shareLink;
 
   const Product({
     required this.id,
@@ -119,6 +120,7 @@ class Product {
     this.productCode,
     this.favoriteCount,
     this.profilePhoto,
+    this.shareLink,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -229,6 +231,7 @@ class Product {
     final productCode = json['productCode'] != null ? safeString(json['productCode']) : null;
     final favoriteCount = json['favoriteCount'] as int?;
     final profilePhoto = json['profilePhoto'] != null ? safeString(json['profilePhoto']) : null;
+    final shareLink = json['shareLink'] != null ? safeString(json['shareLink']) : null;
 
     // Ana resim ve galeri resimlerini birleştir
     final allImages = <String>[];
@@ -335,6 +338,7 @@ class Product {
       productCode: productCode,
       favoriteCount: favoriteCount,
       profilePhoto: profilePhoto,
+      shareLink: shareLink,
     );
   }
   Map<String, dynamic> toJson() {
@@ -401,6 +405,7 @@ class Product {
     String? productCode,
     int? favoriteCount,
     String? profilePhoto,
+    String? shareLink,
   }) {
     return Product(
       id: id ?? this.id,
@@ -458,6 +463,7 @@ class Product {
       productCode: productCode ?? this.productCode,
       favoriteCount: favoriteCount ?? this.favoriteCount,
       profilePhoto: profilePhoto ?? this.profilePhoto,
+      shareLink: shareLink ?? this.shareLink,
     );
   }
 

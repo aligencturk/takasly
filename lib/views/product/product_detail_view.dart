@@ -180,42 +180,16 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     }
   }
 
-  String _getCategoryDisplayNameForShare(Product product) {
-    // Önce categoryList'i kontrol et (yeni API)
-    if (product.categoryList != null && product.categoryList!.isNotEmpty) {
-      return product.categoryList!.map((cat) => cat.name).join(' > ');
-    }
-    
-    // Sonra categoryName'i kontrol et (API'den direkt gelen)
-    if (product.catname.isNotEmpty) {
-      return product.catname;
-    }
-    
-    // Sonra category objesini kontrol et
-    if (product.category != null && product.category.name.isNotEmpty) {
-      return product.category.name;
-    }
-    
-    return 'Kategori belirtilmemiş';
-  }
+
 
   void _shareProduct(BuildContext context, Product product) {
-    // Ürün detay sayfası için link oluştur
-    final productUrl = 'https://takasly.com/product/${product.id}';
+    // API'den gelen shareLink'i kullan, yoksa varsayılan link oluştur
+    final productUrl = product.shareLink ?? 'https://takasly.com/product/${product.id}';
     
     final shareText = '''
 ${product.title}
-
-${product.description ?? 'Açıklama bulunmuyor'}
-
-📍 ${product.cityTitle} / ${product.districtTitle}
-🏷️ ${_getCategoryDisplayNameForShare(product)}
-📅 ${product.createdAt.day.toString().padLeft(2, '0')}.${product.createdAt.month.toString().padLeft(2, '0')}.${product.createdAt.year}
-${product.tradeFor != null && product.tradeFor!.isNotEmpty ? '🔄 Takas: ${product.tradeFor!}\n' : ''}
-
-🔗 Ürün linki: $productUrl
-
 Takasly uygulamasından paylaşıldı.
+$productUrl
 ''';
 
     // Sistem paylaşma menüsünü kullan

@@ -69,6 +69,7 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   productCode: json['productCode'] as String?,
   favoriteCount: (json['favoriteCount'] as num?)?.toInt(),
   profilePhoto: json['profilePhoto'] as String?,
+  shareLink: json['shareLink'] as String?,
 );
 
 Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
@@ -126,6 +127,7 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'productCode': instance.productCode,
   'favoriteCount': instance.favoriteCount,
   'profilePhoto': instance.profilePhoto,
+  'shareLink': instance.shareLink,
 };
 
 const _$ProductStatusEnumMap = {
