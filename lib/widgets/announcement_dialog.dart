@@ -81,11 +81,18 @@ class AnnouncementDialog extends StatelessWidget {
       
       if (shouldShow && context.mounted) {
         Logger.info('📢 Duyuru gösteriliyor...');
-        
+        // Görsel varsa öncelik: tam ekran görsel duyuru
+        final hasImage =
+            remoteConfigViewModel.announcementImageEnabled &&
+            remoteConfigViewModel.announcementImageUrl.isNotEmpty;
+
         await showDialog<void>(
           context: context,
           barrierDismissible: true,
-          builder: (BuildContext context) => const AnnouncementDialog(),
+          barrierColor: Colors.black54,
+          builder: (BuildContext context) => hasImage
+              ? const FullScreenImageAnnouncementDialog()
+              : const AnnouncementDialog(),
         );
         
         // Dialog kapatıldıktan sonra gösterildi olarak işaretle
@@ -122,6 +129,7 @@ class AnnouncementDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(8), // Köşeli tasarım
           ),
           elevation: 8,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Container(
             constraints: const BoxConstraints(
               maxWidth: 500,
@@ -321,6 +329,63 @@ class AnnouncementDialog extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Tam ekran görsel duyuru diyalogu (sadece resim)
+class FullScreenImageAnnouncementDialog extends StatelessWidget {
+  const FullScreenImageAnnouncementDialog({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<RemoteConfigViewModel>(
+      builder: (context, rc, child) {
+        final imageUrl = rc.announcementImageUrl;
+
+        return Dialog(
+          insetPadding: EdgeInsets.zero,
+          backgroundColor: Colors.black,
+          child: Stack(
+            children: [
+              // Görsel tam ekran ve kesilmeden (contain) gösterilir
+              Positioned.fill(
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  errorWidget: (context, url, error) => const Center(
+                    child: Icon(Icons.broken_image, color: Colors.white70, size: 48),
+                  ),
+                ),
+              ),
+
+              // Kapat butonu
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white24, width: 1),
+                      ),
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
