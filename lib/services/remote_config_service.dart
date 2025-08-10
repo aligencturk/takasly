@@ -33,6 +33,13 @@ class RemoteConfigService {
         'announcement_enabled': false,
         'announcement_title': 'Duyuru',
         'announcement_button_text': 'Tamam',
+        // Resim özellikleri
+        'announcement_image_url': '',
+        'announcement_image_enabled': false,
+        'announcement_image_position': 'top', // top, bottom, background
+        'announcement_image_width': 300.0,
+        'announcement_image_height': 200.0,
+        'announcement_image_fit': 'cover', // cover, contain, fill, fitWidth, fitHeight
       });
 
       // İlk fetch işlemi
@@ -156,6 +163,118 @@ class RemoteConfigService {
     }
   }
 
+  /// Duyuru resim URL'ini getirir
+  String getAnnouncementImageUrl() {
+    try {
+      if (!_isInitialized || _remoteConfig == null) {
+        Logger.warning('⚠️ Remote Config henüz başlatılmamış, varsayılan değer döndürülüyor');
+        return '';
+      }
+      
+      final url = _remoteConfig!.getString('announcement_image_url');
+      Logger.debug('🖼️ Duyuru resim URL alındı: ${url.isNotEmpty ? "Mevcut" : "Boş"}');
+      return url;
+      
+    } catch (e) {
+      Logger.error('❌ Duyuru resim URL alma hatası: $e', error: e);
+      return '';
+    }
+  }
+
+  /// Duyuru resminin aktif olup olmadığını kontrol eder
+  bool isAnnouncementImageEnabled() {
+    try {
+      if (!_isInitialized || _remoteConfig == null) {
+        Logger.warning('⚠️ Remote Config henüz başlatılmamış, varsayılan değer döndürülüyor');
+        return false;
+      }
+      
+      final enabled = _remoteConfig!.getBool('announcement_image_enabled');
+      Logger.debug('🖼️ Duyuru resim durumu: ${enabled ? "Aktif" : "Pasif"}');
+      return enabled;
+      
+    } catch (e) {
+      Logger.error('❌ Duyuru resim durumu alma hatası: $e', error: e);
+      return false;
+    }
+  }
+
+  /// Duyuru resim pozisyonunu getirir (top, bottom, background)
+  String getAnnouncementImagePosition() {
+    try {
+      if (!_isInitialized || _remoteConfig == null) {
+        Logger.warning('⚠️ Remote Config henüz başlatılmamış, varsayılan değer döndürülüyor');
+        return 'top';
+      }
+      
+      final position = _remoteConfig!.getString('announcement_image_position');
+      final validPositions = ['top', 'bottom', 'background'];
+      final finalPosition = validPositions.contains(position) ? position : 'top';
+      Logger.debug('📍 Duyuru resim pozisyonu: $finalPosition');
+      return finalPosition;
+      
+    } catch (e) {
+      Logger.error('❌ Duyuru resim pozisyonu alma hatası: $e', error: e);
+      return 'top';
+    }
+  }
+
+  /// Duyuru resim genişliğini getirir
+  double getAnnouncementImageWidth() {
+    try {
+      if (!_isInitialized || _remoteConfig == null) {
+        Logger.warning('⚠️ Remote Config henüz başlatılmamış, varsayılan değer döndürülüyor');
+        return 300.0;
+      }
+      
+      final width = _remoteConfig!.getDouble('announcement_image_width');
+      Logger.debug('📏 Duyuru resim genişlik: $width');
+      return width > 0 ? width : 300.0;
+      
+    } catch (e) {
+      Logger.error('❌ Duyuru resim genişlik alma hatası: $e', error: e);
+      return 300.0;
+    }
+  }
+
+  /// Duyuru resim yüksekliğini getirir
+  double getAnnouncementImageHeight() {
+    try {
+      if (!_isInitialized || _remoteConfig == null) {
+        Logger.warning('⚠️ Remote Config henüz başlatılmamış, varsayılan değer döndürülüyor');
+        return 200.0;
+      }
+      
+      final height = _remoteConfig!.getDouble('announcement_image_height');
+      Logger.debug('📏 Duyuru resim yükseklik: $height');
+      return height > 0 ? height : 200.0;
+      
+    } catch (e) {
+      Logger.error('❌ Duyuru resim yükseklik alma hatası: $e', error: e);
+      return 200.0;
+    }
+  }
+
+  /// Duyuru resim fit modunu getirir
+  String getAnnouncementImageFit() {
+    try {
+      if (!_isInitialized || _remoteConfig == null) {
+        Logger.warning('⚠️ Remote Config henüz başlatılmamış, varsayılan değer döndürülüyor');
+        return 'cover';
+      }
+      
+      final fit = _remoteConfig!.getString('announcement_image_fit');
+      final validFits = ['cover', 'contain', 'fill', 'fitWidth', 'fitHeight'];
+      final finalFit = validFits.contains(fit) ? fit : 'cover';
+      Logger.debug('📐 Duyuru resim fit: $finalFit');
+      return finalFit;
+      
+    } catch (e) {
+      Logger.error('❌ Duyuru resim fit alma hatası: $e', error: e);
+      return 'cover';
+    }
+  }
+
   /// Remote Config'den string değer alır
   String getString(String key, {String defaultValue = ''}) {
     try {
@@ -244,6 +363,13 @@ class RemoteConfigService {
       Logger.debug('🔧 announcement_enabled: ${isAnnouncementEnabled()}');
       Logger.debug('🔧 announcement_title: "${getAnnouncementTitle()}"');
       Logger.debug('🔧 announcement_button_text: "${getAnnouncementButtonText()}"');
+      Logger.debug('🔧 --- Resim Özellikleri ---');
+      Logger.debug('🔧 announcement_image_url: "${getAnnouncementImageUrl()}"');
+      Logger.debug('🔧 announcement_image_enabled: ${isAnnouncementImageEnabled()}');
+      Logger.debug('🔧 announcement_image_position: "${getAnnouncementImagePosition()}"');
+      Logger.debug('🔧 announcement_image_width: ${getAnnouncementImageWidth()}');
+      Logger.debug('🔧 announcement_image_height: ${getAnnouncementImageHeight()}');
+      Logger.debug('🔧 announcement_image_fit: "${getAnnouncementImageFit()}"');
       Logger.debug('🔧 ============================');
       
     } catch (e) {

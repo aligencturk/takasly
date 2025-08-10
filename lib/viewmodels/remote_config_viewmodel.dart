@@ -15,6 +15,14 @@ class RemoteConfigViewModel extends ChangeNotifier {
   bool _announcementEnabled = false;
   String _announcementTitle = 'Duyuru';
   String _announcementButtonText = 'Tamam';
+  
+  // Resim özellikleri cache
+  String _announcementImageUrl = '';
+  bool _announcementImageEnabled = false;
+  String _announcementImagePosition = 'top';
+  double _announcementImageWidth = 300.0;
+  double _announcementImageHeight = 200.0;
+  String _announcementImageFit = 'cover';
 
   // Getters
   bool get isLoading => _isLoading;
@@ -28,12 +36,27 @@ class RemoteConfigViewModel extends ChangeNotifier {
   bool get announcementEnabled => _announcementEnabled;
   String get announcementTitle => _announcementTitle;
   String get announcementButtonText => _announcementButtonText;
+  
+  // Resim özellikleri getters
+  String get announcementImageUrl => _announcementImageUrl;
+  bool get announcementImageEnabled => _announcementImageEnabled;
+  String get announcementImagePosition => _announcementImagePosition;
+  double get announcementImageWidth => _announcementImageWidth;
+  double get announcementImageHeight => _announcementImageHeight;
+  String get announcementImageFit => _announcementImageFit;
 
   /// Duyuru gösterilmesi gerekip gerekmediğini kontrol eder
-  bool get shouldShowAnnouncement => 
-      _announcementEnabled && 
-      _announcementText.isNotEmpty && 
-      !_isAnnouncementShown;
+  bool get shouldShowAnnouncement =>
+      // Genel enable açıksa ya da sadece görsel enable + url doluysa göster
+      (
+        _announcementEnabled ||
+        (_announcementImageEnabled && _announcementImageUrl.isNotEmpty)
+      ) &&
+      !_isAnnouncementShown &&
+      (
+        _announcementText.isNotEmpty ||
+        (_announcementImageEnabled && _announcementImageUrl.isNotEmpty)
+      );
 
   RemoteConfigViewModel() {
     Logger.info('🚀 RemoteConfigViewModel constructor called');
@@ -104,12 +127,22 @@ class RemoteConfigViewModel extends ChangeNotifier {
   /// Cache'deki değerleri günceller
   Future<void> _updateCachedValues() async {
     try {
+      // Temel duyuru özellikleri
       _announcementText = _remoteConfigService.getAnnouncementText();
       _announcementEnabled = _remoteConfigService.isAnnouncementEnabled();
       _announcementTitle = _remoteConfigService.getAnnouncementTitle();
       _announcementButtonText = _remoteConfigService.getAnnouncementButtonText();
       
+      // Resim özellikleri
+      _announcementImageUrl = _remoteConfigService.getAnnouncementImageUrl();
+      _announcementImageEnabled = _remoteConfigService.isAnnouncementImageEnabled();
+      _announcementImagePosition = _remoteConfigService.getAnnouncementImagePosition();
+      _announcementImageWidth = _remoteConfigService.getAnnouncementImageWidth();
+      _announcementImageHeight = _remoteConfigService.getAnnouncementImageHeight();
+      _announcementImageFit = _remoteConfigService.getAnnouncementImageFit();
+      
       Logger.debug('📋 Cache güncellendi - Duyuru aktif: $_announcementEnabled, Metin uzunluğu: ${_announcementText.length}');
+      Logger.debug('🖼️ Cache güncellendi - Resim aktif: $_announcementImageEnabled, URL: ${_announcementImageUrl.isNotEmpty ? "Mevcut" : "Boş"}');
       
       notifyListeners();
     } catch (e) {

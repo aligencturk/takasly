@@ -1,12 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../viewmodels/remote_config_viewmodel.dart';
 import '../core/app_theme.dart';
-import '../core/constants.dart';
 import '../utils/logger.dart';
 
 class AnnouncementDialog extends StatelessWidget {
   const AnnouncementDialog({Key? key}) : super(key: key);
+
+  /// String'den BoxFit'e çevirir
+  static BoxFit _parseBoxFit(String fitString) {
+    switch (fitString.toLowerCase()) {
+      case 'contain':
+        return BoxFit.contain;
+      case 'fill':
+        return BoxFit.fill;
+      case 'fitwidth':
+        return BoxFit.fitWidth;
+      case 'fitheight':
+        return BoxFit.fitHeight;
+      case 'scaledown':
+        return BoxFit.scaleDown;
+      case 'cover':
+      default:
+        return BoxFit.cover;
+    }
+  }
+
+  /// Resim widget'ını oluşturur
+  Widget _buildAnnouncementImage({
+    required String imageUrl,
+    required double width,
+    required double height,
+    required BoxFit fit,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey[100],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          width: width,
+          height: height,
+          fit: fit,
+          placeholder: (context, url) => Container(
+            width: width,
+            height: height,
+            color: Colors.grey[200],
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          errorWidget: (context, url, error) => Container(
+            width: width,
+            height: height,
+            color: Colors.grey[300],
+            child: const Icon(
+              Icons.image_not_supported,
+              color: Colors.grey,
+              size: 32,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   /// Duyuruyu gösterir ve kullanıcı kapatırsa marked as shown yapar
   static Future<void> showIfNeeded(BuildContext context) async {
@@ -42,6 +105,17 @@ class AnnouncementDialog extends StatelessWidget {
         final title = remoteConfigViewModel.announcementTitle;
         final text = remoteConfigViewModel.announcementText;
         final buttonText = remoteConfigViewModel.announcementButtonText;
+        
+        // Resim özelliklerini al
+        final imageUrl = remoteConfigViewModel.announcementImageUrl;
+        final imageEnabled = remoteConfigViewModel.announcementImageEnabled;
+        final imagePosition = remoteConfigViewModel.announcementImagePosition;
+        final imageWidth = remoteConfigViewModel.announcementImageWidth;
+        final imageHeight = remoteConfigViewModel.announcementImageHeight;
+        final imageFit = _parseBoxFit(remoteConfigViewModel.announcementImageFit);
+        
+        // Resim gösterilecek mi?
+        final showImage = imageEnabled && imageUrl.isNotEmpty;
 
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -60,6 +134,17 @@ class AnnouncementDialog extends StatelessWidget {
                 color: Colors.grey[200]!,
                 width: 1,
               ),
+              // Background image desteği
+              image: showImage && imagePosition == 'background' 
+                  ? DecorationImage(
+                      image: CachedNetworkImageProvider(imageUrl),
+                      fit: imageFit,
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withOpacity(0.3), // Metin okunabilirliği için overlay
+                        BlendMode.darken,
+                      ),
+                    )
+                  : null,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -69,7 +154,9 @@ class AnnouncementDialog extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: showImage && imagePosition == 'background' 
+                        ? Colors.black.withOpacity(0.7) // Background resim varsa koyu overlay
+                        : Colors.grey[50],
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(8),
                     ),
@@ -105,7 +192,9 @@ class AnnouncementDialog extends StatelessWidget {
                           title,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
+                            color: showImage && imagePosition == 'background' 
+                                ? Colors.white
+                                : AppTheme.textPrimary,
                             letterSpacing: -0.1,
                           ),
                         ),
@@ -133,22 +222,45 @@ class AnnouncementDialog extends StatelessWidget {
                   ),
                 ),
                 
-                // Content - Sade içerik alanı
+                // Content - Resim pozisyonuna göre layout
                 Flexible(
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
+                    decoration: showImage && imagePosition == 'background' 
+                        ? BoxDecoration(
+                            color: Colors.black.withOpacity(0.6), // Background resim varsa koyu overlay
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(8),
+                            ),
+                          )
+                        : null,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Duyuru metni - Temiz tipografi
+                        // Üst resim (position: top)
+                        if (showImage && imagePosition == 'top') ...[
+                          Center(
+                            child: _buildAnnouncementImage(
+                              imageUrl: imageUrl,
+                              width: imageWidth,
+                              height: imageHeight,
+                              fit: imageFit,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        
+                        // Duyuru metni
                         Flexible(
                           child: SingleChildScrollView(
                             child: Text(
                               text,
                               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: AppTheme.textPrimary,
+                                color: showImage && imagePosition == 'background' 
+                                    ? Colors.white
+                                    : AppTheme.textPrimary,
                                 height: 1.5,
                                 fontWeight: FontWeight.w400,
                                 letterSpacing: 0.1,
@@ -156,6 +268,19 @@ class AnnouncementDialog extends StatelessWidget {
                             ),
                           ),
                         ),
+                        
+                        // Alt resim (position: bottom)
+                        if (showImage && imagePosition == 'bottom') ...[
+                          const SizedBox(height: 16),
+                          Center(
+                            child: _buildAnnouncementImage(
+                              imageUrl: imageUrl,
+                              width: imageWidth,
+                              height: imageHeight,
+                              fit: imageFit,
+                            ),
+                          ),
+                        ],
                         
                         const SizedBox(height: 24),
                         
