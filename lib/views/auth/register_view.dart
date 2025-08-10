@@ -16,6 +16,7 @@ class RegisterView extends StatelessWidget {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -89,7 +90,12 @@ class RegisterView extends StatelessWidget {
           Expanded(
             child: Container(
               color: Colors.white,
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                isKeyboardOpen ? 8 : 24,
+                24,
+                isKeyboardOpen ? 8 : 24,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -393,9 +399,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               if (value == null || value.trim().isEmpty) {
                 return 'E-posta gerekli';
               }
-              if (!RegExp(
-                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-              ).hasMatch(value.trim())) {
+              if (!RegExp(r'^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4} ').hasMatch(value.trim())) {
                 return 'Geçerli bir e-posta adresi girin';
               }
               return null;
@@ -438,24 +442,18 @@ class _RegisterFormState extends State<_RegisterForm> {
               prefixIcon: const Icon(Icons.lock_outline, size: 20),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
+                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   size: 20,
                 ),
                 onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
+                  setState(() => _obscurePassword = !_obscurePassword);
                 },
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               isDense: true,
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Şifre gerekli';
-              }
+              if (value == null || value.isEmpty) return 'Şifre gerekli';
               return null;
             },
           ),
@@ -471,27 +469,19 @@ class _RegisterFormState extends State<_RegisterForm> {
               prefixIcon: const Icon(Icons.lock_outline, size: 20),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
+                  _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   size: 20,
                 ),
                 onPressed: () {
-                  setState(() {
-                    _obscureConfirmPassword = !_obscureConfirmPassword;
-                  });
+                  setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
                 },
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               isDense: true,
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Şifre tekrarı gerekli';
-              }
-              if (value != _passwordController.text) {
-                return 'Şifreler eşleşmiyor';
-              }
+              if (value == null || value.isEmpty) return 'Şifre tekrarı gerekli';
+              if (value != _passwordController.text) return 'Şifreler eşleşmiyor';
               return null;
             },
           ),
@@ -501,14 +491,9 @@ class _RegisterFormState extends State<_RegisterForm> {
           CheckboxListTile(
             value: _acceptPolicy,
             onChanged: (value) {
-              setState(() {
-                _acceptPolicy = value ?? false;
-              });
+              setState(() => _acceptPolicy = value ?? false);
             },
-            title: Text(
-              'Kullanım Koşullarını kabul ediyorum',
-              style: const TextStyle(fontSize: 12),
-            ),
+            title: const Text('Kullanım Koşullarını kabul ediyorum', style: TextStyle(fontSize: 12)),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             activeColor: colorScheme.primary,
@@ -517,30 +502,25 @@ class _RegisterFormState extends State<_RegisterForm> {
           CheckboxListTile(
             value: _acceptKvkk,
             onChanged: (value) {
-              setState(() {
-                _acceptKvkk = value ?? false;
-              });
+              setState(() => _acceptKvkk = value ?? false);
             },
-                         title: RichText(
-               text: TextSpan(
-                 style: const TextStyle(fontSize: 12, color: Colors.black87),
-                 children: [
-                   TextSpan(
-                     text: 'KVKK Aydınlatma Metnini',
-                     style: TextStyle(
-                       fontSize: 12,
-                       color: colorScheme.primary,
-                       decoration: TextDecoration.underline,
-                     ),
-                     recognizer: TapGestureRecognizer()
-                       ..onTap = () {
-                         _showKvkkDialog(context);
-                       },
-                   ),
-                   const TextSpan(text: ' okudum ve kabul ediyorum'),
-                 ],
-               ),
-             ),
+            title: RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 12, color: Colors.black87),
+                children: [
+                  TextSpan(
+                    text: 'KVKK Aydınlatma Metnini',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()..onTap = () => _showKvkkDialog(context),
+                  ),
+                  const TextSpan(text: ' okudum ve kabul ediyorum'),
+                ],
+              ),
+            ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             activeColor: colorScheme.primary,
@@ -550,7 +530,7 @@ class _RegisterFormState extends State<_RegisterForm> {
 
           // Kayıt Ol Butonu
           Consumer<AuthViewModel>(
-            builder: (context, authViewModel, child) {
+            builder: (context, authViewModel, _) {
               return SizedBox(
                 height: 48,
                 child: ElevatedButton(
