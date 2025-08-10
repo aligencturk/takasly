@@ -170,40 +170,14 @@ class _NativeAdGridCardState extends State<NativeAdGridCard>
       );
     }
 
-    // Yüklü reklam - karta tam sığacak şekilde
+    // Yüklü reklam - platform view; ClipRRect bazı cihazlarda görünümü gizleyebildiği için kaldırıldı
     return Container(
       decoration: decoration,
-      child: Stack(
-        children: [
-          // Ana reklam - kartın tamamını kaplasın
-          ClipRRect(
-            borderRadius: borderRadius,
-            child: _adWidget == null
-                ? Container(color: Colors.grey[200])
-                : KeyedSubtree(key: _adKey, child: _adWidget!),
-          ),
-          // Sponsorlu etiketi - sol üstte overlay
-          Positioned(
-            top: 8,
-            left: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.9),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'Sponsorlu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: screenWidth < 360 ? 10 : 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+      child: _adWidget == null
+          ? Container(color: Colors.grey[200])
+          : SizedBox.expand(
+              child: KeyedSubtree(key: _adKey, child: _adWidget!),
             ),
-          ),
-        ],
-      ),
     );
   }
 

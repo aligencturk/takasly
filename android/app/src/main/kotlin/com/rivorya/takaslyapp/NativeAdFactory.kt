@@ -6,10 +6,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.RatingBar
 import android.widget.TextView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdView
+import com.google.android.gms.ads.nativead.MediaView
 import io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin
 
 class NativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.NativeAdFactory {
@@ -31,6 +31,17 @@ class NativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.Nati
         }
 
         try {
+            // Media (ürün görseli gibi) - headline/body/cta ile çakışmaması için uygun scale
+            nativeAdView.mediaView = nativeAdView.findViewById<MediaView>(R.id.ad_media)
+            try {
+                nativeAd.mediaContent?.let { media ->
+                    nativeAdView.mediaView?.mediaContent = media
+                    nativeAdView.mediaView?.setImageScaleType(ImageView.ScaleType.CENTER_CROP)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "MediaContent atama hatası: ${e.message}")
+            }
+
             // Headline
             nativeAdView.headlineView = nativeAdView.findViewById(R.id.ad_headline)
             if (nativeAd.headline != null && nativeAd.headline!!.isNotEmpty()) {
@@ -40,78 +51,57 @@ class NativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.Nati
                 nativeAdView.headlineView?.visibility = View.GONE
             }
 
-            // Body
+            // Body (fallback'li)
             nativeAdView.bodyView = nativeAdView.findViewById(R.id.ad_body)
-            if (nativeAd.body == null || nativeAd.body!!.isEmpty()) {
-                nativeAdView.bodyView?.visibility = View.GONE
-            } else {
+            try {
+                val bodyCandidate = when {
+                    !nativeAd.body.isNullOrBlank() -> nativeAd.body
+                    !nativeAd.advertiser.isNullOrBlank() -> "Sponsor: ${nativeAd.advertiser}"
+                    !nativeAd.store.isNullOrBlank() -> "Mağaza: ${nativeAd.store}"
+                    !nativeAd.price.isNullOrBlank() -> "Fiyat: ${nativeAd.price}"
+                    !nativeAd.callToAction.isNullOrBlank() -> nativeAd.callToAction
+                    else -> "Sponsorlu içerik"
+                }
+
+                (nativeAdView.bodyView as TextView).text = bodyCandidate
                 nativeAdView.bodyView?.visibility = View.VISIBLE
-                (nativeAdView.bodyView as TextView).text = nativeAd.body
+            } catch (e: Exception) {
+                Log.w(TAG, "Body metni ayarlanırken hata: ${e.message}")
+                // En kötü senaryoda boş bırakma, kullanıcıya en azından sponsorlu bilgisini göster
+                (nativeAdView.bodyView as TextView).text = "Sponsorlu içerik"
+                nativeAdView.bodyView?.visibility = View.VISIBLE
             }
 
-            // Call to action
-            nativeAdView.callToActionView = nativeAdView.findViewById(R.id.ad_call_to_action)
-            if (nativeAd.callToAction == null || nativeAd.callToAction!!.isEmpty()) {
-                nativeAdView.callToActionView?.visibility = View.GONE
-            } else {
-                nativeAdView.callToActionView?.visibility = View.VISIBLE
-                (nativeAdView.callToActionView as Button).text = nativeAd.callToAction
-            }
-
-            // Icon
-            nativeAdView.iconView = nativeAdView.findViewById(R.id.ad_icon)
-            if (nativeAd.icon == null) {
-                nativeAdView.iconView?.visibility = View.GONE
-            } else {
-                try {
-                    (nativeAdView.iconView as ImageView).setImageDrawable(nativeAd.icon?.drawable)
-                    nativeAdView.iconView?.visibility = View.VISIBLE
-                } catch (e: Exception) {
-                    Log.w(TAG, "Icon yükleme hatası: ${e.message}")
-                    nativeAdView.iconView?.visibility = View.GONE
+            // Call to action (NativeAdView gereklilikleri için clickable view) - container + label ile
+            val ctaButton = nativeAdView.findViewById<Button>(R.id.ad_call_to_action)
+            nativeAdView.callToActionView = ctaButton
+            try {
+                val ctaText = when {
+                    !nativeAd.callToAction.isNullOrBlank() -> nativeAd.callToAction
+                    !nativeAd.price.isNullOrBlank() -> "Satın Al"
+                    !nativeAd.store.isNullOrBlank() -> "Yükle"
+                    !nativeAd.advertiser.isNullOrBlank() -> "İncele"
+                    else -> "İncele"
                 }
-            }
-
-            // Star rating
-            nativeAdView.starRatingView = nativeAdView.findViewById(R.id.ad_stars)
-            if (nativeAd.starRating == null) {
-                nativeAdView.starRatingView?.visibility = View.GONE
-            } else {
+                ctaButton.text = ctaText
+                ctaButton.visibility = View.VISIBLE
+                ctaButton.isClickable = true
+                ctaButton.isEnabled = true
+            } catch (e: Exception) {
+                Log.w(TAG, "CTA metni ayarlanırken hata: ${e.message}")
                 try {
-                    (nativeAdView.starRatingView as RatingBar).rating = nativeAd.starRating!!.toFloat()
-                    nativeAdView.starRatingView?.visibility = View.VISIBLE
-                } catch (e: Exception) {
-                    Log.w(TAG, "Star rating yükleme hatası: ${e.message}")
-                    nativeAdView.starRatingView?.visibility = View.GONE
-                }
+                    ctaButton.text = "İncele"
+                    ctaButton.visibility = View.VISIBLE
+                } catch (_: Exception) {}
             }
 
             // Advertiser
             nativeAdView.advertiserView = nativeAdView.findViewById(R.id.ad_advertiser)
-            if (nativeAd.advertiser == null || nativeAd.advertiser!!.isEmpty()) {
-                nativeAdView.advertiserView?.visibility = View.GONE
-            } else {
-                nativeAdView.advertiserView?.visibility = View.VISIBLE
-                (nativeAdView.advertiserView as TextView).text = nativeAd.advertiser
-            }
+            val advertiserText = if (nativeAd.advertiser.isNullOrEmpty()) "" else nativeAd.advertiser
+            (nativeAdView.advertiserView as TextView).text = advertiserText
+            nativeAdView.advertiserView?.visibility = if (advertiserText.isNullOrEmpty()) View.GONE else View.VISIBLE
 
-            // Store
-            nativeAdView.storeView = nativeAdView.findViewById(R.id.ad_store)
-            if (nativeAd.store == null || nativeAd.store!!.isEmpty()) {
-                nativeAdView.storeView?.visibility = View.GONE
-            } else {
-                nativeAdView.storeView?.visibility = View.VISIBLE
-                (nativeAdView.storeView as TextView).text = nativeAd.store
-            }
 
-            // Price
-            nativeAdView.priceView = nativeAdView.findViewById(R.id.ad_price)
-            if (nativeAd.price == null || nativeAd.price!!.isEmpty()) {
-                nativeAdView.priceView?.visibility = View.GONE
-            } else {
-                nativeAdView.priceView?.visibility = View.VISIBLE
-                (nativeAdView.priceView as TextView).text = nativeAd.price
-            }
 
             // Native ad'ı view'a bağla
             try {
@@ -135,11 +125,11 @@ class NativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.Nati
                     nativeAdView.headlineView?.visibility = View.VISIBLE
                 }
                 
-                nativeAdView.callToActionView = nativeAdView.findViewById(R.id.ad_call_to_action)
-                if (nativeAd.callToAction != null && nativeAd.callToAction!!.isNotEmpty()) {
-                    (nativeAdView.callToActionView as Button).text = nativeAd.callToAction
-                    nativeAdView.callToActionView?.visibility = View.VISIBLE
-                }
+                val ctaButton2 = nativeAdView.findViewById<Button>(R.id.ad_call_to_action)
+                nativeAdView.callToActionView = ctaButton2
+                val fallbackCta = if (!nativeAd.callToAction.isNullOrBlank()) nativeAd.callToAction else "İncele"
+                ctaButton2.text = fallbackCta
+                ctaButton2.visibility = View.VISIBLE
                 
                 nativeAdView.setNativeAd(nativeAd)
                 Log.d(TAG, "Minimum native ad görünümü başarıyla oluşturuldu")
