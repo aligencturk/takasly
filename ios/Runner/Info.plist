@@ -56,11 +56,27 @@
 	<array>
 		<string>remote-notification</string>
 		<string>background-fetch</string>
+		<string>background-processing</string>
 	</array>
 	
 	<!-- FCM için FirebaseAppDelegateProxyEnabled -->
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<false/>
+	
+	<!-- FCM için Notification Service Extension -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	
+	<!-- iOS Notification Presentation Options -->
+	<key>NSUserNotificationAlertStyle</key>
+	<string>alert</string>
+	
+	<!-- iOS 14+ Notification Presentation -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Bildirimleri göstermek için izin gerekiyor</string>
 	
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

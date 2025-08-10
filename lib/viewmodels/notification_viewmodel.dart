@@ -211,14 +211,23 @@ class NotificationViewModel extends ChangeNotifier {
       _isPermissionGranted = permissionGranted;
       
       if (permissionGranted) {
+        // iOS foreground bildirim gösterimi için sunum seçeneklerini ayarla
+        await _notificationService.setBadgeCount(0);
+        
         // FCM Token'ını al
         await _refreshFCMToken();
         
         // Message listener'larını başlat
         _setupMessageListeners();
         
-        // Kullanıcı ID'sine abone ol
-        await _subscribeToUserTopic();
+        // Kullanıcı ID'sine abone ol (retry ile)
+        await _subscribeToUserTopicWithRetry();
+        
+        // Testler için 'test_topic' topic'ine de abone ol (debug amaçlı)
+        try {
+          await _notificationService.subscribeToTopic('test_topic');
+          Logger.debug('✅ test_topic aboneliği eklendi', tag: _tag);
+        } catch (_) {}
         
         _fcmInitialized = true;
         Logger.debug('✅ FCM başarıyla başlatıldı', tag: _tag);
@@ -247,17 +256,36 @@ class NotificationViewModel extends ChangeNotifier {
     }
   }
   
-  /// Kullanıcının topic'ine abone ol
-  Future<void> _subscribeToUserTopic() async {
+  /// Kullanıcının topic'ine abone ol (retry ile)
+  Future<void> _subscribeToUserTopicWithRetry() async {
     try {
       final currentUser = await _userService.getCurrentUser();
       if (currentUser?.id != null) {
-        final success = await _notificationService.subscribeToTopic(currentUser!.id);
-        _isTopicSubscribed = success;
+        Logger.debug('Kullanıcı topic\'ine abone olunuyor: ${currentUser!.id}', tag: _tag);
         
-        if (success) {
-          Logger.debug('✅ Kullanıcı topic\'ine abone olundu: ${currentUser.id}', tag: _tag);
+        // Retry logic ile topic subscription
+        int maxAttempts = 3;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            final success = await _notificationService.subscribeToTopic(currentUser.id);
+            _isTopicSubscribed = success;
+            
+            if (success) {
+              Logger.debug('✅ Kullanıcı topic\'ine abone olundu: ${currentUser.id}', tag: _tag);
+              return;
+            } else {
+              Logger.warning('⚠️ Topic aboneliği başarısız, deneme $attempt/$maxAttempts', tag: _tag);
+            }
+          } catch (e) {
+            Logger.warning('⚠️ Topic aboneliği hatası (deneme $attempt/$maxAttempts): $e', tag: _tag);
+          }
+          
+          if (attempt < maxAttempts) {
+            await Future.delayed(Duration(seconds: attempt * 2)); // Exponential backoff
+          }
         }
+        
+        Logger.error('❌ Kullanıcı topic\'ine abone olunamadı: ${currentUser.id}', tag: _tag);
       }
     } catch (e) {
       Logger.error('Kullanıcı topic abone olma hatası: $e', tag: _tag);
@@ -347,7 +375,8 @@ class NotificationViewModel extends ChangeNotifier {
   /// FCM mesajı gönder (OAuth 2.0 Bearer token ile)
   Future<bool> sendFCMMessage({
     required String accessToken,
-    required String topic,
+    String? topic,
+    String? token,
     required String title,
     required String body,
     Map<String, String>? data,
@@ -358,6 +387,7 @@ class NotificationViewModel extends ChangeNotifier {
       final success = await _notificationService.sendFCMMessage(
         accessToken: accessToken,
         topic: topic,
+        token: token,
         title: title,
         body: body,
         data: data,
@@ -374,6 +404,85 @@ class NotificationViewModel extends ChangeNotifier {
     }
   }
 
+  /// Test bildirimi gönder
+  Future<bool> sendTestNotification() async {
+    try {
+      Logger.debug('Test bildirimi gönderiliyor...', tag: _tag);
+      
+      final success = await _notificationService.sendTestNotification();
+      
+      if (success) {
+        Logger.debug('✅ Test bildirimi başarıyla gönderildi', tag: _tag);
+      }
+      
+      return success;
+    } catch (e) {
+      Logger.error('❌ Test bildirimi gönderme hatası: $e', tag: _tag);
+      return false;
+    }
+  }
+
+  /// Sadece test amaçlı: Elle girilen Bearer ile KULLANICI ID topic'ine gönderir
+  Future<bool> sendTestNotificationWithBearer({
+    required String bearer,
+  }) async {
+    try {
+      if (bearer.trim().isEmpty) {
+        Logger.warning('⚠️ Boş bearer token', tag: _tag);
+        return false;
+      }
+      
+      final masked = bearer.length > 12 ? '${bearer.substring(0, 6)}...${bearer.substring(bearer.length - 6)}' : '***';
+      Logger.debug('Bearer test bildirimi gönderiliyor... ($masked) - hedef: kullanıcı topic', tag: _tag);
+
+      // Kullanıcı ID topic'ini al ve garanti abonelik
+      final user = await _userService.getCurrentUser();
+      if (user == null || user.id.isEmpty) {
+        Logger.warning('⚠️ Kullanıcı bulunamadı, topic belirlenemedi', tag: _tag);
+        return false;
+      }
+      
+      Logger.debug('Kullanıcı ID: ${user.id}, Topic: ${user.id}', tag: _tag);
+      
+      // Topic'e abone olmayı dene
+      try {
+        final subscribed = await _notificationService.subscribeToTopic(user.id);
+        if (subscribed) {
+          Logger.debug('✅ Topic aboneliği başarılı: ${user.id}', tag: _tag);
+        } else {
+          Logger.warning('⚠️ Topic aboneliği başarısız: ${user.id}', tag: _tag);
+        }
+      } catch (e) {
+        Logger.warning('⚠️ Topic aboneliği hatası: $e', tag: _tag);
+      }
+
+      // Basit test mesajı gönder
+      final success = await _notificationService.sendFCMMessage(
+        accessToken: bearer,
+        token: null,
+        topic: user.id, // TOPIC = KULLANICI ID
+        title: 'Test Bildirimi',
+        body: 'FCM v1 test bildirimi - ${DateTime.now().toString().substring(11, 19)}',
+        data: {
+          'type': 'test',
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+        },
+      );
+      
+      if (success) {
+        Logger.debug('✅ Bearer test bildirimi gönderildi', tag: _tag);
+      } else {
+        Logger.error('❌ Bearer test bildirimi gönderilemedi', tag: _tag);
+      }
+      
+      return success;
+    } catch (e) {
+      Logger.error('❌ Bearer ile test bildirim hatası: $e', tag: _tag);
+      return false;
+    }
+  }
+  
   /// ViewModel'i temizler
   void dispose() {
     _notifications.clear();

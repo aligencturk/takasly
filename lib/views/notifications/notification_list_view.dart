@@ -7,6 +7,7 @@ import '../../core/constants.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../utils/logger.dart';
+import 'package:flutter/services.dart';
 
 class NotificationListView extends StatefulWidget {
   const NotificationListView({Key? key}) : super(key: key);
@@ -52,6 +53,88 @@ class _NotificationListViewState extends State<NotificationListView> {
               final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
               viewModel.refreshNotifications();
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.vpn_key_outlined),
+            tooltip: 'Bearer ile Test Gönder',
+            onPressed: () async {
+              final controller = TextEditingController();
+              bool toDevice = true;
+              await showDialog(
+                context: context,
+                builder: (ctx) {
+                  return StatefulBuilder(
+                    builder: (ctx, setState) => AlertDialog(
+                      title: const Text('Bearer ile Test Bildirimi'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: controller,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              hintText: 'OAuth 2.0 Bearer Access Token',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Switch(
+                                value: toDevice,
+                                onChanged: (v) => setState(() => toDevice = v),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(toDevice ? 'Cihaza Gönder' : 'Topic: test_topic'),
+                            ],
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('İptal'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final bearer = controller.text.trim();
+                            if (bearer.isEmpty) {
+                              Navigator.of(ctx).pop();
+                              return;
+                            }
+                            final vm = Provider.of<NotificationViewModel>(context, listen: false);
+                            await vm.sendTestNotificationWithBearer(bearer: bearer);
+                            if (mounted) Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Gönder'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.key),
+            tooltip: 'FCM Token Kopyala',
+            onPressed: () async {
+              final vm = Provider.of<NotificationViewModel>(context, listen: false);
+              final token = vm.fcmToken ?? 'FCM token henüz alınamadı';
+              await Clipboard.setData(ClipboardData(text: token));
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(token.length > 60 ? '${token.substring(0,60)}...' : token)),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_active),
+            onPressed: () {
+              final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
+              viewModel.sendTestNotification();
+            },
+            tooltip: 'Test Bildirimi Gönder',
           ),
         ],
       ),

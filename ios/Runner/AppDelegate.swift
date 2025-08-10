@@ -24,10 +24,18 @@ import AdSupport
     // FCM için notification ayarları
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .provisional]
       UNUserNotificationCenter.current().requestAuthorization(
         options: authOptions,
-        completionHandler: {_, _ in })
+        completionHandler: { granted, error in
+          print("🔔 iOS Notification permission granted: \(granted), error: \(String(describing: error))")
+          UNUserNotificationCenter.current().getNotificationSettings { settings in
+            print("🔧 iOS Notification settings: authorizationStatus=\(settings.authorizationStatus.rawValue)")
+            print("🔧 iOS Notification settings: alertSetting=\(settings.alertSetting.rawValue)")
+            print("🔧 iOS Notification settings: soundSetting=\(settings.soundSetting.rawValue)")
+            print("🔧 iOS Notification settings: badgeSetting=\(settings.badgeSetting.rawValue)")
+          }
+        })
     } else {
       let settings: UIUserNotificationSettings =
       UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
@@ -36,6 +44,16 @@ import AdSupport
     
     application.registerForRemoteNotifications()
     Messaging.messaging().delegate = self
+    
+    // FCM için özel ayarlar
+    Messaging.messaging().isAutoInitEnabled = true
+    
+    // APNS token'ı erken ayarlamaya çalış (iOS simülatör için)
+    if let apnsToken = Messaging.messaging().apnsToken {
+        print("✅ APNS Token zaten mevcut: \(apnsToken)")
+    } else {
+        print("⚠️ APNS Token henüz ayarlanmamış, remote notification kaydı bekleniyor...")
+    }
     
     GeneratedPluginRegistrant.register(with: self)
     
@@ -74,23 +92,133 @@ import AdSupport
   // MARK: - FCM Delegate Methods
   func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
     let dataDict:[String: String] = ["token": fcmToken ?? ""]
+    print("🎯 FCM Registration Token (delegate): \(fcmToken ?? "<nil>")")
     NotificationCenter.default.post(name: Notification.Name("FCMToken"), object: nil, userInfo: dataDict)
   }
   
   override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    let tokenParts = deviceToken.map { data in String(format: "%02.2hhx", data) }
+    let tokenHex = tokenParts.joined()
+    print("📱 iOS APNS Device Token (hex): \(tokenHex)")
     Messaging.messaging().apnsToken = deviceToken
+    print("✅ APNS Token Firebase Messaging'e ayarlandı")
+
+    // APNS set edildikten sonra FCM token'ı tekrar almaya çalış
+    Messaging.messaging().token { token, error in
+      if let error = error {
+        print("⚠️ FCM token alma hatası (native): \(error)")
+      } else if let token = token {
+        print("🎯 FCM Token (native fetch): \(token)")
+      } else {
+        print("⚠️ FCM Token (native fetch) null döndü")
+      }
+    }
+  }
+  
+  override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+    print("❌ iOS APNS kayıt hatası: \(error)")
   }
   
   // MARK: - UNUserNotificationCenterDelegate
   override func userNotificationCenter(_ center: UNUserNotificationCenter,
                                       willPresent notification: UNNotification,
                                       withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-    completionHandler([[.alert, .sound]])
+    print("🔔 willPresent notification: \(notification.request.content.title)")
+    print("🔔 Notification content: \(notification.request.content.body)")
+    print("🔔 Notification userInfo: \(notification.request.content.userInfo)")
+    
+    // iOS 14+ için tüm presentation options'ları aç
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .badge, .sound, .list])
+    } else {
+      completionHandler([.alert, .badge, .sound])
+    }
+  }
+
+  // iOS background/silent notification handling (when proxy disabled)
+  override func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable : Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    print("📩 didReceiveRemoteNotification: \(userInfo)")
+    
+    // Firebase Messaging'e ilet
+    Messaging.messaging().appDidReceiveMessage(userInfo)
+    
+    // Notification content'ini kontrol et
+    if let aps = userInfo["aps"] as? [String: Any] {
+      print("📱 APS content: \(aps)")
+      
+      if let alert = aps["alert"] as? [String: Any] {
+        print("🔔 Alert: \(alert)")
+      }
+      
+      // Local notification oluştur (test için)
+      if let alert = aps["alert"] as? [String: Any],
+         let title = alert["title"] as? String,
+         let body = alert["body"] as? String {
+        
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = UNNotificationSound.default
+        
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+          if let error = error {
+            print("❌ Local notification hatası: \(error)")
+          } else {
+            print("✅ Local notification eklendi")
+          }
+        }
+      }
+    }
+    
+    completionHandler(.newData)
+  }
+  
+  // FCM mesajları için özel handling - iOS'ta RemoteMessage yok
+  func messaging(_ messaging: Messaging, didReceiveMessage userInfo: [AnyHashable: Any]) {
+    print("📨 FCM didReceiveMessage: \(userInfo)")
+    
+    // Notification content'ini kontrol et
+    if let aps = userInfo["aps"] as? [String: Any] {
+      print("📱 APS content: \(aps)")
+      
+      if let alert = aps["alert"] as? [String: Any] {
+        print("🔔 Alert: \(alert)")
+        
+        // Local notification oluştur (test için)
+        if let title = alert["title"] as? String,
+           let body = alert["body"] as? String {
+          
+          let content = UNMutableNotificationContent()
+          content.title = title
+          content.body = body
+          content.sound = UNNotificationSound.default
+          
+          let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+          UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+              print("❌ FCM local notification hatası: \(error)")
+            } else {
+              print("✅ FCM local notification eklendi")
+            }
+          }
+        }
+      }
+    }
+    
+    if let data = userInfo["data"] as? [String: Any] {
+      print("📊 FCM Data: \(data)")
+    }
   }
   
   override func userNotificationCenter(_ center: UNUserNotificationCenter,
                                       didReceive response: UNNotificationResponse,
                                       withCompletionHandler completionHandler: @escaping () -> Void) {
+    print("🔔 didReceive notification response: \(response.notification.request.content.title)")
     completionHandler()
   }
 }
@@ -173,12 +301,14 @@ class NativeAdFactory : FLTNativeAdFactory {
         adView.callToActionView = ctaButton
 
         // MediaView aspect ratio: width/height
-        let aspectRatio = max(nativeAd.mediaContent?.aspectRatio ?? (16.0/9.0), 0.01)
+        // mediaContent artık optional değil; oran 0 ise güvenli varsayılan kullan
+        let mediaAspect = nativeAd.mediaContent.aspectRatio
+        let aspectRatio = mediaAspect > 0 ? mediaAspect : (16.0/9.0)
         let mediaHeight = mediaView.heightAnchor.constraint(
             equalTo: mediaView.widthAnchor,
             multiplier: CGFloat(1.0 / aspectRatio)
         )
-        mediaHeight.priority = .defaultHigh
+        mediaHeight.priority = UILayoutPriority.defaultHigh
 
         NSLayoutConstraint.activate([
             // MediaView üstte tam genişlik
@@ -216,13 +346,10 @@ class NativeAdFactory : FLTNativeAdFactory {
             ctaButton.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
 
-        // Verileri bağla
-        if let mediaContent = nativeAd.mediaContent {
-            mediaView.mediaContent = mediaContent
-            mediaView.isHidden = false
-        } else {
-            mediaView.isHidden = true
-        }
+        // Verileri bağla (mediaContent non-optional)
+        let mediaContent = nativeAd.mediaContent
+        mediaView.mediaContent = mediaContent
+        mediaView.isHidden = false
 
         (adView.headlineView as? UILabel)?.text = nativeAd.headline
 

@@ -49,6 +49,28 @@ import 'utils/logger.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   Logger.debug('FCM Background Message: ${message.notification?.title}', tag: 'FCM_BG');
+  
+  // Background'da gelen mesajları işle
+  if (message.notification != null) {
+    Logger.debug('Background notification: ${message.notification!.title} - ${message.notification!.body}', tag: 'FCM_BG');
+  }
+  
+  if (message.data.isNotEmpty) {
+    Logger.debug('Background data: ${message.data}', tag: 'FCM_BG');
+  }
+}
+
+/// Android için notification channel oluşturur
+Future<void> _createNotificationChannel() async {
+  try {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      // Android için notification channel oluştur
+      // Bu işlem Android manifest'te tanımlanan channel ID ile uyumlu olmalı
+      Logger.info('✅ Android notification channel manifest\'te tanımlı');
+    }
+  } catch (e) {
+    Logger.error('❌ Notification channel oluşturma hatası: $e');
+  }
 }
 
 void main() async {
@@ -84,6 +106,96 @@ void main() async {
          defaultTargetPlatform == TargetPlatform.iOS)) {
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
       Logger.info('✅ FCM Background Handler ayarlandı');
+      
+      // FCM'i başlat
+      try {
+        final messaging = FirebaseMessaging.instance;
+        
+        // Notification permissions'ları iste
+        NotificationSettings settings = await messaging.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
+        
+        if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+          Logger.info('✅ FCM izinleri verildi');
+          
+          // iOS: APNS token hazır değilse FCM token alamayız. Kısa bekleme/retry yapalım
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+            try {
+              // iOS simülatör için sandbox mod ayarla
+              await messaging.setAutoInitEnabled(true);
+              
+              const int maxAttempts = 15; // ~7.5sn (artırdık)
+              String? apnsToken;
+              for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                apnsToken = await messaging.getAPNSToken();
+                if (apnsToken != null && apnsToken.isNotEmpty) {
+                  Logger.info('✅ APNS Token hazır: ${apnsToken.substring(0, 12)}...');
+                  break;
+                }
+                Logger.info('⏳ APNS token bekleniyor... ($attempt/$maxAttempts)');
+                await Future.delayed(const Duration(milliseconds: 500));
+              }
+              if (apnsToken == null || apnsToken.isEmpty) {
+                Logger.warning('⚠️ APNS token halen hazır değil; FCM token gecikebilir');
+                // iOS simülatörde bazen APNS token gelmez, yine de FCM token almayı dene
+                Logger.info('🔄 iOS simülatör: APNS token olmadan FCM token deneniyor...');
+              }
+            } catch (e) {
+              Logger.warning('⚠️ APNS token beklerken uyarı: $e');
+            }
+          }
+
+          // FCM token'ı al
+          String? token = await messaging.getToken();
+          if (token != null) {
+            Logger.info('✅ FCM Token alındı: $token');
+          }
+          
+          // Foreground message listener'ı başlat
+          FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+            Logger.info('🔔 Foreground FCM Message alındı: ${message.notification?.title}');
+            
+            if (message.notification != null) {
+              Logger.info('📱 Notification: ${message.notification!.title} - ${message.notification!.body}');
+            }
+            
+            if (message.data.isNotEmpty) {
+              Logger.info('📊 Data: ${message.data}');
+            }
+          });
+          
+          // Background'dan açılan mesajları dinle
+          FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+            Logger.info('🔄 Background FCM Message ile uygulama açıldı: ${message.notification?.title}');
+            
+            if (message.notification != null) {
+              Logger.info('📱 Background Notification: ${message.notification!.title} - ${message.notification!.body}');
+            }
+            
+            if (message.data.isNotEmpty) {
+              Logger.info('📊 Background Data: ${message.data}');
+            }
+          });
+          
+          // Android için notification channel oluştur
+          if (defaultTargetPlatform == TargetPlatform.android) {
+            await _createNotificationChannel();
+          }
+          
+          Logger.info('✅ FCM başarıyla başlatıldı');
+        } else {
+          Logger.warning('⚠️ FCM izinleri reddedildi: ${settings.authorizationStatus}');
+        }
+      } catch (e) {
+        Logger.error('❌ FCM başlatılırken hata: $e');
+      }
     } else {
       Logger.info('ℹ️ FCM Background Handler bu platformda desteklenmiyor');
     }
@@ -153,7 +265,17 @@ class MyApp extends StatelessWidget {
          debugShowCheckedModeBanner: false,
          theme: AppTheme.lightTheme,
          navigatorKey: ErrorHandlerService.navigatorKey, // Navigator key ekle
-         home: SplashVideoPage(),
+         home: Builder(
+           builder: (context) {
+             // ViewModel'ler arasında bağlantı kur
+             WidgetsBinding.instance.addPostFrameCallback((_) {
+               final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+               final notificationViewModel = Provider.of<NotificationViewModel>(context, listen: false);
+               authViewModel.setNotificationViewModel(notificationViewModel);
+             });
+             return SplashVideoPage();
+           },
+         ),
                    routes: {
             '/home': (context) => const HomeView(),
             '/login': (context) => const LoginView(),

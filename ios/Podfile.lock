@@ -10,6 +10,9 @@ PODS:
   - Firebase/Messaging (11.15.0):
     - Firebase/CoreOnly
     - FirebaseMessaging (~> 11.15.0)
+  - Firebase/RemoteConfig (11.15.0):
+    - Firebase/CoreOnly
+    - FirebaseRemoteConfig (~> 11.15.0)
   - firebase_auth (5.7.0):
     - Firebase/Auth (= 11.15.0)
     - firebase_core
@@ -25,6 +28,12 @@ PODS:
     - Firebase/Messaging (= 11.15.0)
     - firebase_core
     - Flutter
+  - firebase_remote_config (5.5.0):
+    - Firebase/RemoteConfig (= 11.15.0)
+    - firebase_core
+    - Flutter
+  - FirebaseABTesting (11.15.0):
+    - FirebaseCore (~> 11.15.0)
   - FirebaseAppCheckInterop (11.15.0)
   - FirebaseAuth (11.15.0):
     - FirebaseAppCheckInterop (~> 11.0)
@@ -64,6 +73,15 @@ PODS:
     - GoogleUtilities/Reachability (~> 8.1)
     - GoogleUtilities/UserDefaults (~> 8.1)
     - nanopb (~> 3.30910.0)
+  - FirebaseRemoteConfig (11.15.0):
+    - FirebaseABTesting (~> 11.0)
+    - FirebaseCore (~> 11.15.0)
+    - FirebaseInstallations (~> 11.0)
+    - FirebaseRemoteConfigInterop (~> 11.0)
+    - FirebaseSharedSwift (~> 11.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+  - FirebaseRemoteConfigInterop (11.15.0)
   - FirebaseSharedSwift (11.15.0)
   - Flutter (1.0.0)
   - geocoding_ios (1.0.5):
@@ -159,6 +177,7 @@ DEPENDENCIES:
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_database (from `.symlinks/plugins/firebase_database/ios`)
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
+  - firebase_remote_config (from `.symlinks/plugins/firebase_remote_config/ios`)
   - Flutter (from `Flutter`)
   - geocoding_ios (from `.symlinks/plugins/geocoding_ios/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
@@ -177,6 +196,7 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - Firebase
+    - FirebaseABTesting
     - FirebaseAppCheckInterop
     - FirebaseAuth
     - FirebaseAuthInterop
@@ -186,6 +206,8 @@ SPEC REPOS:
     - FirebaseDatabase
     - FirebaseInstallations
     - FirebaseMessaging
+    - FirebaseRemoteConfig
+    - FirebaseRemoteConfigInterop
     - FirebaseSharedSwift
     - Google-Mobile-Ads-SDK
     - GoogleDataTransport
@@ -206,6 +228,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_database/ios"
   firebase_messaging:
     :path: ".symlinks/plugins/firebase_messaging/ios"
+  firebase_remote_config:
+    :path: ".symlinks/plugins/firebase_remote_config/ios"
   Flutter:
     :path: Flutter
   geocoding_ios:
@@ -239,6 +263,8 @@ SPEC CHECKSUMS:
   firebase_core: 99a37263b3c27536063a7b601d9e2a49400a433c
   firebase_database: c456dc3b57839fb1efa3d247c88f644fe1a0c1a4
   firebase_messaging: bf6697c61f31c7cc0f654131212ff04c0115c2c7
+  firebase_remote_config: 395d35aa770405fd0121c97382671371ea00734a
+  FirebaseABTesting: 5e9d432834aebf27ab72100d37af44dfbe8d82f7
   FirebaseAppCheckInterop: 06fe5a3799278ae4667e6c432edd86b1030fa3df
   FirebaseAuth: a6575e5fbf46b046c58dc211a28a5fbdd8d4c83b
   FirebaseAuthInterop: 7087d7a4ee4bc4de019b2d0c240974ed5d89e2fd
@@ -248,6 +274,8 @@ SPEC CHECKSUMS:
   FirebaseDatabase: 954eb5613d01573ea50ef839e380edcb68db3707
   FirebaseInstallations: 317270fec08a5d418fdbc8429282238cab3ac843
   FirebaseMessaging: 3b26e2cee503815e01c3701236b020aa9b576f09
+  FirebaseRemoteConfig: b496646b82855e174a7f1e354c65e0e913085168
+  FirebaseRemoteConfigInterop: 1c6135e8a094cc6368949f5faeeca7ee8948b8aa
   FirebaseSharedSwift: e17c654ef1f1a616b0b33054e663ad1035c8fd40
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   geocoding_ios: eafacae6ad11a1eb56681f7d11df602a5fd49416

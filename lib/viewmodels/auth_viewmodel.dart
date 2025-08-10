@@ -7,11 +7,13 @@ import '../core/constants.dart';
 import 'product_viewmodel.dart';
 import '../utils/logger.dart';
 import '../services/error_handler_service.dart';
+import 'notification_viewmodel.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final FirebaseChatService _firebaseChatService = FirebaseChatService();
   ProductViewModel? _productViewModel;
+  NotificationViewModel? _notificationViewModel;
 
   User? _currentUser;
   bool _isLoading = false;
@@ -24,6 +26,11 @@ class AuthViewModel extends ChangeNotifier {
   // ProductViewModel referansını ayarla
   void setProductViewModel(ProductViewModel productViewModel) {
     _productViewModel = productViewModel;
+  }
+
+  // NotificationViewModel referansını ayarla
+  void setNotificationViewModel(NotificationViewModel notificationViewModel) {
+    _notificationViewModel = notificationViewModel;
   }
 
   // Getters
@@ -184,7 +191,19 @@ class AuthViewModel extends ChangeNotifier {
           await _firebaseChatService.saveUser(_currentUser!);
         } catch (e) {
           // Firebase kaydetme hatası kritik değil, devam et
-          print('Firebase kullanıcı kaydetme hatası: $e');
+          Logger.warning('Firebase kullanıcı kaydetme hatası: $e');
+        }
+        
+        // FCM'i başlat
+        try {
+          if (_notificationViewModel != null) {
+            await _notificationViewModel!.initializeFCM();
+            Logger.info('✅ FCM başarıyla başlatıldı');
+          } else {
+            Logger.warning('⚠️ NotificationViewModel bulunamadı, FCM başlatılamadı');
+          }
+        } catch (e) {
+          Logger.error('❌ FCM başlatma hatası: $e', error: e);
         }
         
         _setLoading(false);

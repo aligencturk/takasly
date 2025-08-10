@@ -19,6 +19,8 @@
     <!-- AdMob için gerekli izinler -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Android 13+ bildirim izni -->
+     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <!-- FCM için gerekli izinler -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -96,5 +98,10 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
+            
+        <!-- FCM için default bildirim rengi -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/colorAccent" />
     </application>
 </manifest>

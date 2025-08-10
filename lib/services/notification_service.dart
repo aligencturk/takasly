@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart' as perm;
 import '../core/http_client.dart';
 import '../core/constants.dart';
 import '../models/notification.dart';
@@ -119,10 +121,57 @@ class NotificationService {
     try {
       Logger.debug('Getting FCM token...', tag: _tag);
       
-      final token = await _firebaseMessaging.getToken();
+      // iOS'ta APNS token hazır olmadan FCM token alınamaz.
+      // APNS token'ı beklemek için küçük bir retry mekaniği ekleyelim.
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        try {
+          // Auto init aktif olsun
+          await _firebaseMessaging.setAutoInitEnabled(true);
+          
+          const int maxAttempts = 15; // ~7.5 saniye bekleme (15 x 500ms)
+          String? apnsToken;
+          for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            apnsToken = await _firebaseMessaging.getAPNSToken();
+            if (apnsToken != null && apnsToken.isNotEmpty) {
+              Logger.debug('✅ APNS token hazır: ${apnsToken.substring(0, 12)}...', tag: _tag);
+              break;
+            }
+            Logger.debug('⏳ APNS token bekleniyor... ($attempt/$maxAttempts)', tag: _tag);
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+          if (apnsToken == null || apnsToken.isEmpty) {
+            Logger.warning('⚠️ APNS token halen hazır değil, FCM token alınamayabilir', tag: _tag);
+            Logger.info('🔄 iOS simülatör: APNS token olmadan FCM token deneniyor...', tag: _tag);
+          }
+        } catch (e) {
+          Logger.warning('⚠️ APNS token hazırlama hatası: $e', tag: _tag);
+        }
+      }
+
+      String? token;
+      try {
+        token = await _firebaseMessaging.getToken();
+      } catch (e) {
+        Logger.error('❌ FCM Token alma hatası: $e', tag: _tag);
+        
+        // iOS simülatör için alternatif deneme
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+          Logger.info('🔄 iOS simülatör: Alternatif FCM token alma deneniyor...', tag: _tag);
+          await Future.delayed(const Duration(seconds: 2));
+          try {
+            token = await _firebaseMessaging.getToken();
+            Logger.info('✅ Alternatif deneme başarılı!', tag: _tag);
+          } catch (e2) {
+            Logger.error('❌ Alternatif deneme de başarısız: $e2', tag: _tag);
+            return null;
+          }
+        } else {
+          return null;
+        }
+      }
       
       if (token != null) {
-        Logger.debug('✅ FCM Token alındı: ${token.substring(0, 20)}...', tag: _tag);
+        Logger.info('✅ FCM Token alındı: $token', tag: _tag);
         
         // Token'ı SharedPreferences'a kaydet
         final prefs = await SharedPreferences.getInstance();
@@ -139,10 +188,19 @@ class NotificationService {
     }
   }
 
-  /// Topic'e abone ol (kullanıcı ID'si ile)
+  /// Topic'e abone ol
   Future<bool> subscribeToTopic(String userId) async {
     try {
       Logger.debug('Topic\'e abone olunuyor: $userId', tag: _tag);
+      
+      // FCM token'ın hazır olduğundan emin ol
+      String? fcmToken = await getFCMToken();
+      if (fcmToken == null || fcmToken.isEmpty) {
+        Logger.warning('⚠️ FCM token bulunamadı, topic aboneliği yapılamıyor', tag: _tag);
+        return false;
+      }
+      
+      Logger.debug('FCM token hazır, topic aboneliği yapılıyor: ${fcmToken.substring(0, 20)}...', tag: _tag);
       
       await _firebaseMessaging.subscribeToTopic(userId);
       
@@ -172,24 +230,73 @@ class NotificationService {
   /// OAuth 2.0 Bearer token ile FCM mesajı gönder
   Future<bool> sendFCMMessage({
     required String accessToken,
-    required String topic,
+    String? topic,
+    String? token,
     required String title,
     required String body,
     Map<String, String>? data,
   }) async {
     try {
-      Logger.debug('FCM mesajı gönderiliyor - Topic: $topic', tag: _tag);
+      Logger.debug('FCM mesajı gönderiliyor - Topic: $topic, Token: ${token?.substring(0, 20) ?? "null"}...', tag: _tag);
       
-      final message = {
-        "message": {
-          "topic": topic,
-          "notification": {
-            "title": title,
-            "body": body
-          },
-          if (data != null) "data": data
-        }
+      // Platform'a göre farklı mesaj yapısı
+      final Map<String, dynamic> msg = {
+        "notification": {
+          "title": title, 
+          "body": body,
+        },
+        if (data != null) "data": data,
       };
+      
+      // Android için ek ayarlar
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        msg["android"] = {
+          "priority": "high",
+          "notification": {
+            "channel_id": "high_importance_channel",
+            "sound": "default",
+            "priority": "high",
+            "default_sound": true,
+            "default_vibrate_timings": true,
+            "default_light_settings": true
+          }
+        };
+      }
+      
+      // iOS için ek ayarlar
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        msg["apns"] = {
+          "headers": {
+            "apns-push-type": "alert",
+            "apns-priority": "10"
+          },
+          "payload": {
+            "aps": {
+              "alert": {
+                "title": title,
+                "body": body
+              },
+              "sound": "default",
+              "badge": 1
+            }
+          }
+        };
+      }
+      
+      if (token != null && token.isNotEmpty) {
+        msg["token"] = token;
+        Logger.debug('FCM mesajı TOKEN ile gönderiliyor', tag: _tag);
+      } else if (topic != null && topic.isNotEmpty) {
+        msg["topic"] = topic;
+        Logger.debug('FCM mesajı TOPIC ile gönderiliyor: $topic', tag: _tag);
+      } else {
+        Logger.error('❌ FCM mesajı için token veya topic gerekli', tag: _tag);
+        return false;
+      }
+      
+      final message = {"message": msg};
+      
+      Logger.debug('FCM Request Body: ${jsonEncode(message)}', tag: _tag);
 
       final response = await http.post(
         Uri.parse(_fcmApiUrl),
@@ -221,6 +328,19 @@ class NotificationService {
     try {
       Logger.debug('Notification izinleri isteniyor...', tag: _tag);
       
+      // Android 13+ için notification izni
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        try {
+          final status = await perm.Permission.notification.status;
+          if (!status.isGranted) {
+            final result = await perm.Permission.notification.request();
+            Logger.debug('Android notification permission: $result', tag: _tag);
+          }
+        } catch (e) {
+          Logger.warning('Android notification izni kontrolünde uyarı: $e', tag: _tag);
+        }
+      }
+
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
         announcement: false,
@@ -273,6 +393,42 @@ class NotificationService {
       Logger.debug('Badge count ayarlandı: $count', tag: _tag);
     } catch (e) {
       Logger.error('Badge count ayarlama hatası: $e', tag: _tag);
+    }
+  }
+  
+  /// Test FCM mesajı gönder (kendi cihaza)
+  Future<bool> sendTestNotification() async {
+    try {
+      Logger.debug('Test FCM mesajı gönderiliyor...', tag: _tag);
+      
+      // Kendi FCM token'ını al
+      final token = await getFCMToken();
+      if (token == null) {
+        Logger.error('❌ FCM token bulunamadı', tag: _tag);
+        return false;
+      }
+      
+      // Test mesajı gönder
+      final success = await sendFCMMessage(
+        accessToken: 'test_token', // Bu gerçek bir token olmalı
+        topic: '4',
+        title: 'Test Bildirimi',
+        body: 'Bu bir test bildirimidir. FCM çalışıyor!',
+        data: {
+          'type': 'test',
+          'id': '1',
+          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+        },
+      );
+      
+      if (success) {
+        Logger.debug('✅ Test FCM mesajı başarıyla gönderildi', tag: _tag);
+      }
+      
+      return success;
+    } catch (e) {
+      Logger.error('❌ Test FCM mesajı gönderme hatası: $e', tag: _tag);
+      return false;
     }
   }
 } 
