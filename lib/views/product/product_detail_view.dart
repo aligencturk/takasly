@@ -188,8 +188,11 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     
     final shareText = '''
 ${product.title}
-Takasly uygulamasından paylaşıldı.
+
 $productUrl
+
+Takasly uygulamasından paylaşıldı.
+
 ''';
 
     // Sistem paylaşma menüsünü kullan
