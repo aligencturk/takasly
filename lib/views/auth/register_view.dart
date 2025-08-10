@@ -13,6 +13,7 @@ class RegisterView extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme; // used above in header and footer
     final colorScheme = Theme.of(context).colorScheme;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -101,21 +102,24 @@ class RegisterView extends StatelessWidget {
 
 
                   // Giriş Yap Butonu
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Zaten hesabın var mı?", style: textTheme.bodyMedium),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text(
-                          'Giriş Yap',
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
+                  Visibility(
+                    visible: !isKeyboardOpen,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text("Zaten hesabın var mı?", style: textTheme.bodyMedium),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            'Giriş Yap',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
