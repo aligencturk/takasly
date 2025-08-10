@@ -22,7 +22,6 @@ import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
 import '../../widgets/native_ad_grid_card.dart';
 
-
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
@@ -42,11 +41,16 @@ class _HomeViewState extends State<HomeView> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Hot reload kontrolü - sadece debug modda
       if (kDebugMode) {
-        Logger.info('🔧 HomeView - Debug mode detected, checking hot reload state...');
-        final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+        Logger.info(
+          '🔧 HomeView - Debug mode detected, checking hot reload state...',
+        );
+        final authViewModel = Provider.of<AuthViewModel>(
+          context,
+          listen: false,
+        );
         await authViewModel.checkHotReloadState();
       }
-      
+
       final productViewModel = Provider.of<ProductViewModel>(
         context,
         listen: false,
@@ -60,27 +64,27 @@ class _HomeViewState extends State<HomeView> {
       if (productViewModel.categories.isEmpty) {
         productViewModel.loadCategories();
       }
-      
+
       // Bildirimleri arka planda yükle
-      final notificationViewModel = Provider.of<NotificationViewModel>(context, listen: false);
+      final notificationViewModel = Provider.of<NotificationViewModel>(
+        context,
+        listen: false,
+      );
       Future.microtask(() {
         notificationViewModel.loadNotifications();
       });
-      
+
       // Remote Config duyuru kontrolü - arka planda çalıştır
       Future.microtask(() async {
         try {
           // 2 saniye bekle ki remote config initialize olsun
           await Future.delayed(const Duration(seconds: 2));
-          
+
           await AnnouncementDialog.showIfNeeded(context);
-          
         } catch (e) {
           Logger.error('❌ Remote Config duyuru kontrolü hatası: $e', error: e);
         }
       });
-      
-
     });
   }
 
@@ -96,17 +100,21 @@ class _HomeViewState extends State<HomeView> {
     final position = _scrollController.position;
     final maxScrollExtent = position.maxScrollExtent;
     final currentPixels = position.pixels;
-    
+
     // Eğer scroll pozisyonu %80'e ulaştıysa ve daha fazla ürün varsa yükle (daha agresif)
     if (currentPixels >= maxScrollExtent * 0.8 && maxScrollExtent > 0) {
       final productViewModel = Provider.of<ProductViewModel>(
         context,
         listen: false,
       );
-      
-      Logger.info('📜 HomeView - Scroll position: $currentPixels/$maxScrollExtent (${(currentPixels / maxScrollExtent * 100).toStringAsFixed(1)}%)');
-      Logger.info('📜 HomeView - hasMore: ${productViewModel.hasMore}, isLoadingMore: ${productViewModel.isLoadingMore}');
-      
+
+      Logger.info(
+        '📜 HomeView - Scroll position: $currentPixels/$maxScrollExtent (${(currentPixels / maxScrollExtent * 100).toStringAsFixed(1)}%)',
+      );
+      Logger.info(
+        '📜 HomeView - hasMore: ${productViewModel.hasMore}, isLoadingMore: ${productViewModel.isLoadingMore}',
+      );
+
       // Sadece loadMoreProducts çağır, o zaten filtreleri kontrol ediyor
       if (productViewModel.hasMore && !productViewModel.isLoadingMore) {
         Logger.info('📜 HomeView - Triggering loadMoreProducts');
@@ -135,26 +143,23 @@ class _HomeViewState extends State<HomeView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF0F9F4),
-              Color(0xFFF7F8FA),
-              Color(0xFFFFFFFF),
-            ],
+            colors: [Color(0xFFF0F9F4), Color(0xFFF7F8FA), Color(0xFFFFFFFF)],
             stops: [0.0, 0.6, 1.0],
           ),
         ),
         child: _buildPage(_currentIndex),
       ),
-      
+
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) async {
-          if (index == 4) { // İlan Ekle butonu artık index 4'te
+          if (index == 4) {
+            // İlan Ekle butonu artık index 4'te
             final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const AddProductView()),
             );
-            
+
             // Ürün ekleme sayfasından dönüldüğünde ürün listesini yenile
             if (result == true) {
               final productViewModel = Provider.of<ProductViewModel>(
@@ -162,7 +167,7 @@ class _HomeViewState extends State<HomeView> {
                 listen: false,
               );
               await productViewModel.refreshProducts();
-              
+
               // UI'ın yenilenmesini garanti altına al
               if (mounted) {
                 setState(() {
@@ -191,7 +196,9 @@ class _HomeViewState extends State<HomeView> {
       case 3:
         return const ProfileView();
       case 4:
-        return const Center(child: Text('Boş Sayfa')); // İlan Ekle butonu için boş sayfa
+        return const Center(
+          child: Text('Boş Sayfa'),
+        ); // İlan Ekle butonu için boş sayfa
       default:
         return _buildHomeTab();
     }
@@ -215,6 +222,8 @@ class _HomeViewState extends State<HomeView> {
           const SliverToBoxAdapter(child: SizedBox(height: 20)),
           _buildProductGrid(),
           _buildLoadingIndicator(),
+          // Alt navigasyon ile son kartlar arasında ferah boşluk
+          _buildBottomSpacer(),
         ],
       ),
     );
@@ -241,10 +250,7 @@ class _HomeViewState extends State<HomeView> {
             child: Center(
               child: Text(
                 'Gösterilecek ürün bulunamadı.',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
             ),
           );
@@ -253,10 +259,14 @@ class _HomeViewState extends State<HomeView> {
         final int productCount = vm.products.length;
         final int adCount = productCount ~/ 4; // Her 4 ürüne 1 reklam
         final int totalItemCount = productCount + adCount;
-        Logger.info('📊 HomeView - Toplam ürün: $productCount, Toplam item (reklam dahil): $totalItemCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}');
-        
+        Logger.info(
+          '📊 HomeView - Toplam ürün: $productCount, Toplam item (reklam dahil): $totalItemCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}',
+        );
+
         return SliverPadding(
-          padding: EdgeInsets.symmetric(horizontal: _calculateHorizontalPadding(context)),
+          padding: EdgeInsets.symmetric(
+            horizontal: _calculateHorizontalPadding(context),
+          ),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -264,42 +274,45 @@ class _HomeViewState extends State<HomeView> {
               mainAxisSpacing: _calculateGridSpacing(context),
               childAspectRatio: _calculateChildAspectRatio(context),
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                // Her 5. eleman reklam (index: 4,9,14,...)
-                final bool isAd = ((index + 1) % 5 == 0);
-                if (isAd) {
-                  return NativeAdGridCard(key: ValueKey('ad_$index'));
-                }
+            delegate: SliverChildBuilderDelegate((context, index) {
+              // Her 5. eleman reklam (index: 4,9,14,...)
+              final bool isAd = ((index + 1) % 5 == 0);
+              if (isAd) {
+                return NativeAdGridCard(key: ValueKey('ad_$index'));
+              }
 
-                // Bu index'e kadar yerleşen reklam sayısı
-                final int numAdsBefore = (index + 1) ~/ 5;
-                final int productIndex = index - numAdsBefore;
+              // Bu index'e kadar yerleşen reklam sayısı
+              final int numAdsBefore = (index + 1) ~/ 5;
+              final int productIndex = index - numAdsBefore;
 
-                if (productIndex < 0 || productIndex >= productCount) {
-                  return const SizedBox.shrink();
-                }
+              if (productIndex < 0 || productIndex >= productCount) {
+                return const SizedBox.shrink();
+              }
 
-                final product = vm.products[productIndex];
+              final product = vm.products[productIndex];
 
-                // Kullanıcının kendi ürünü olup olmadığını kontrol et
-                bool isOwnProduct = false;
-                if (vm.myProducts.isNotEmpty) {
-                  isOwnProduct = vm.myProducts.any((myProduct) => myProduct.id == product.id);
-                } else {
-                  final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-                  final currentUserId = authViewModel.currentUser?.id;
-                  isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
-                }
-
-                return ProductCard(
-                  product: product,
-                  heroTag: 'home_product_${product.id}_$index',
-                  hideFavoriteIcon: isOwnProduct,
+              // Kullanıcının kendi ürünü olup olmadığını kontrol et
+              bool isOwnProduct = false;
+              if (vm.myProducts.isNotEmpty) {
+                isOwnProduct = vm.myProducts.any(
+                  (myProduct) => myProduct.id == product.id,
                 );
-              },
-              childCount: totalItemCount,
-            ),
+              } else {
+                final authViewModel = Provider.of<AuthViewModel>(
+                  context,
+                  listen: false,
+                );
+                final currentUserId = authViewModel.currentUser?.id;
+                isOwnProduct =
+                    currentUserId != null && product.ownerId == currentUserId;
+              }
+
+              return ProductCard(
+                product: product,
+                heroTag: 'home_product_${product.id}_$index',
+                hideFavoriteIcon: isOwnProduct,
+              );
+            }, childCount: totalItemCount),
           ),
         );
       },
@@ -311,7 +324,9 @@ class _HomeViewState extends State<HomeView> {
       child: Consumer<ProductViewModel>(
         builder: (context, vm, child) {
           return Container(
-            margin: EdgeInsets.symmetric(horizontal: _calculateHorizontalPadding(context)),
+            margin: EdgeInsets.symmetric(
+              horizontal: _calculateHorizontalPadding(context),
+            ),
             child: Row(
               children: [
                 // Arama butonu
@@ -387,16 +402,14 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-
-
-
-
   Widget _buildLoadingIndicator() {
     return SliverToBoxAdapter(
       child: Consumer<ProductViewModel>(
         builder: (context, vm, child) {
-          Logger.info('📊 HomeView - Loading indicator: isLoadingMore=${vm.isLoadingMore}, hasMore=${vm.hasMore}');
-          
+          Logger.info(
+            '📊 HomeView - Loading indicator: isLoadingMore=${vm.isLoadingMore}, hasMore=${vm.hasMore}',
+          );
+
           return vm.isLoadingMore
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
@@ -411,8 +424,6 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
-
-
 
   void _showFilterBottomSheet(ProductViewModel vm) {
     if (vm.cities.isEmpty) {
@@ -431,6 +442,13 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
+
+  // Alt navigasyon ile çakışmayı önlemek için ekstra boşluk bırakır
+  Widget _buildBottomSpacer() {
+    final double bottomSafe = MediaQuery.of(context).padding.bottom;
+    const double extra = 24.0; // bir tık artırılmış boşluk
+    return const SliverToBoxAdapter(child: SizedBox(height: extra));
+  }
 }
 
 class HomeAppBar extends StatelessWidget {
@@ -440,7 +458,7 @@ class HomeAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
-    
+
     // Responsive boyutlar
     final iconSize = screenWidth < 360 ? 16.0 : 18.0;
     final containerSize = screenWidth < 360 ? 36.0 : 40.0;
@@ -462,7 +480,7 @@ class HomeAppBar extends StatelessWidget {
             width: screenWidth < 360 ? 100 : 120,
             height: screenWidth < 360 ? 100 : 120,
           ),
-          
+
           // Sağ taraf - Bildirimler ve Favoriler ikonları
           Row(
             children: [
@@ -485,9 +503,13 @@ class HomeAppBar extends StatelessWidget {
                   onPressed: () {
                     Logger.debug('Bildirimler ikonuna tıklandı');
                     // Bildirimleri okundu olarak işaretle
-                    final notificationViewModel = Provider.of<NotificationViewModel>(context, listen: false);
+                    final notificationViewModel =
+                        Provider.of<NotificationViewModel>(
+                          context,
+                          listen: false,
+                        );
                     notificationViewModel.markAllAsRead();
-                    
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -502,44 +524,53 @@ class HomeAppBar extends StatelessWidget {
                         size: iconSize,
                         color: Colors.grey[700],
                       ),
-                                             // Bildirim sayısı badge'i - dinamik
-                                                Consumer<NotificationViewModel>(
-                           builder: (context, notificationViewModel, child) {
-                             final notificationCount = notificationViewModel.unreadCount;
-                           return notificationCount > 0
-                               ? Positioned(
-                                   right: 0,
-                                   top: 0,
-                                   child: Container(
-                                     width: notificationCount > 9 ? badgeSize + 2 : badgeSize,
-                                     height: notificationCount > 9 ? badgeSize + 2 : badgeSize,
-                                     decoration: const BoxDecoration(
-                                       color: Colors.red,
-                                       shape: BoxShape.circle,
-                                     ),
-                                     child: Center(
-                                       child: Text(
-                                         notificationCount > 9 ? '9+' : notificationCount.toString(),
-                                         style: TextStyle(
-                                           color: Colors.white,
-                                           fontSize: notificationCount > 9 ? badgeFontSize - 1 : badgeFontSize,
-                                           fontWeight: FontWeight.bold,
-                                         ),
-                                       ),
-                                     ),
-                                   ),
-                                 )
-                               : const SizedBox.shrink();
-                         },
-                       ),
+                      // Bildirim sayısı badge'i - dinamik
+                      Consumer<NotificationViewModel>(
+                        builder: (context, notificationViewModel, child) {
+                          final notificationCount =
+                              notificationViewModel.unreadCount;
+                          return notificationCount > 0
+                              ? Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    width: notificationCount > 9
+                                        ? badgeSize + 2
+                                        : badgeSize,
+                                    height: notificationCount > 9
+                                        ? badgeSize + 2
+                                        : badgeSize,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        notificationCount > 9
+                                            ? '9+'
+                                            : notificationCount.toString(),
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: notificationCount > 9
+                                              ? badgeFontSize - 1
+                                              : badgeFontSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink();
+                        },
+                      ),
                     ],
                   ),
                   padding: EdgeInsets.zero,
                 ),
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Favoriler ikonu
               Container(
                 width: containerSize,
@@ -562,7 +593,9 @@ class HomeAppBar extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TradeView(initialTabIndex: 1), // 1 = Favoriler sekmesi
+                        builder: (context) => const TradeView(
+                          initialTabIndex: 1,
+                        ), // 1 = Favoriler sekmesi
                       ),
                     );
                   },
