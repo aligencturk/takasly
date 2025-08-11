@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+import '../../services/notification_service.dart';
+import '../../services/social_auth_service.dart';
+import '../../core/constants.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../core/app_theme.dart';
@@ -85,7 +90,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 100),
-        
+
         // E-posta input
         Container(
           height: 56,
@@ -107,14 +112,17 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
             decoration: const InputDecoration(
               labelText: 'E-posta',
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 18,
+              ),
               labelStyle: TextStyle(color: Colors.grey),
             ),
           ),
         ),
-        
+
         const SizedBox(height: 5),
-        
+
         // Şifre input
         Container(
           height: 56,
@@ -136,7 +144,10 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
             decoration: InputDecoration(
               labelText: 'Şifre',
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 18,
+              ),
               labelStyle: const TextStyle(color: Colors.grey),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -154,9 +165,9 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
             ),
           ),
         ),
-        
+
         const SizedBox(height: 1),
-        
+
         // Şifremi Unuttum ve Kayıt Ol butonları
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -189,9 +200,9 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         ElevatedButton(
           onPressed: () => _submitLogin(context),
           style: ElevatedButton.styleFrom(
@@ -205,10 +216,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ),
           child: const Text(
             'Giriş Yap',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -218,11 +226,14 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
   Future<void> _submitLogin(BuildContext context) async {
     Logger.debug('_submitLogin called', tag: 'LoginView');
     Logger.debug('Email: ${_emailController.text.trim()}', tag: 'LoginView');
-    Logger.debug('Password: ${_passwordController.text.trim().isNotEmpty ? "provided" : "empty"}', tag: 'LoginView');
-    
+    Logger.debug(
+      'Password: ${_passwordController.text.trim().isNotEmpty ? "provided" : "empty"}',
+      tag: 'LoginView',
+    );
+
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-    
+
     final success = await authViewModel.login(
       _emailController.text.trim(),
       _passwordController.text.trim(),
@@ -230,14 +241,20 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
 
     Logger.debug('Login result: $success', tag: 'LoginView');
     if (!success) {
-      Logger.error('Login failed: ${authViewModel.errorMessage}', tag: 'LoginView');
+      Logger.error(
+        'Login failed: ${authViewModel.errorMessage}',
+        tag: 'LoginView',
+      );
     }
 
     if (mounted) {
       if (success) {
         Logger.info('Login successful, navigating to home', tag: 'LoginView');
         if (authViewModel.currentUser != null) {
-          Logger.debug('Setting current user: ${authViewModel.currentUser!.name}', tag: 'LoginView');
+          Logger.debug(
+            'Setting current user: ${authViewModel.currentUser!.name}',
+            tag: 'LoginView',
+          );
           userViewModel.setCurrentUser(authViewModel.currentUser!);
         }
         Navigator.of(context).pushReplacementNamed('/home');
@@ -265,10 +282,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
         Row(
           children: [
             Expanded(
-              child: Container(
-                height: 1,
-                color: Colors.white.withOpacity(0.3),
-              ),
+              child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -281,16 +295,13 @@ class _BottomButtonsState extends State<_BottomButtons> {
               ),
             ),
             Expanded(
-              child: Container(
-                height: 1,
-                color: Colors.white.withOpacity(0.3),
-              ),
+              child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
             ),
           ],
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Google ve Apple ile Giriş
         Row(
           children: [
@@ -302,7 +313,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
@@ -311,10 +325,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
                   icon: const Icon(Icons.g_mobiledata, size: 18),
                   label: const Text(
                     'Google',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
@@ -328,7 +339,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
@@ -337,19 +351,16 @@ class _BottomButtonsState extends State<_BottomButtons> {
                   icon: const Icon(Icons.apple, size: 18),
                   label: const Text(
                     'Apple',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
             ),
           ],
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Test butonları (geliştirme için)
         Row(
           children: [
@@ -379,7 +390,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Test Ridvan', style: TextStyle(fontSize: 14)),
+                child: const Text(
+                  'Test Ridvan',
+                  style: TextStyle(fontSize: 14),
+                ),
               ),
             ),
           ],
@@ -389,17 +403,81 @@ class _BottomButtonsState extends State<_BottomButtons> {
   }
 
   // Google ile giriş
-  void _handleGoogleLogin(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google ile giriş özelliği yakında!')),
+  Future<void> _handleGoogleLogin(BuildContext context) async {
+    final authVm = Provider.of<AuthViewModel>(context, listen: false);
+    // NotificationViewModel burada opsiyonel olarak kullanılabilir
+
+    final String? googleAccessToken = await SocialAuthService.instance
+        .signInWithGoogleAndGetAccessToken();
+    if (googleAccessToken == null || googleAccessToken.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google oturum açılamadı.')),
+        );
+      }
+      return;
+    }
+    final String deviceID = await _getOrCreateDeviceId();
+    final String? fcmToken = await NotificationService.instance.getFCMToken();
+
+    final success = await authVm.loginWithGoogle(
+      googleAccessToken: googleAccessToken,
+      deviceID: deviceID,
+      fcmToken: fcmToken,
     );
+
+    if (!mounted) return;
+
+    if (success) {
+      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+      if (authVm.currentUser != null) {
+        userViewModel.setCurrentUser(authVm.currentUser!);
+      }
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authVm.errorMessage ?? 'Giriş başarısız oldu.')),
+      );
+    }
   }
 
   // Apple ile giriş
-  void _handleAppleLogin(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Apple ile giriş özelliği yakında!')),
+  Future<void> _handleAppleLogin(BuildContext context) async {
+    final authVm = Provider.of<AuthViewModel>(context, listen: false);
+
+    // Apple Sign In akışı UI dışı; burada endpoint’e uygun çağrı yapıyoruz
+    final String appleIdToken = '';
+    final String deviceID = await _getOrCreateDeviceId();
+    final String? fcmToken = await NotificationService.instance.getFCMToken();
+
+    final success = await authVm.loginWithApple(
+      appleIdToken: appleIdToken,
+      deviceID: deviceID,
+      fcmToken: fcmToken,
     );
+
+    if (!mounted) return;
+
+    if (success) {
+      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+      if (authVm.currentUser != null) {
+        userViewModel.setCurrentUser(authVm.currentUser!);
+      }
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authVm.errorMessage ?? 'Giriş başarısız oldu.')),
+      );
+    }
+  }
+
+  Future<String> _getOrCreateDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString(AppConstants.deviceIdKey);
+    if (existing != null && existing.isNotEmpty) return existing;
+    final String newId = const Uuid().v4();
+    await prefs.setString(AppConstants.deviceIdKey, newId);
+    return newId;
   }
 
   // Test login
@@ -416,7 +494,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
       password = '123a';
     }
 
-    Logger.info('Test login başlatılıyor: $testUser ($email)', tag: 'LoginView');
+    Logger.info(
+      'Test login başlatılıyor: $testUser ($email)',
+      tag: 'LoginView',
+    );
 
     final success = await authViewModel.login(email, password);
 
@@ -425,11 +506,14 @@ class _BottomButtonsState extends State<_BottomButtons> {
         if (authViewModel.currentUser != null) {
           userViewModel.setCurrentUser(authViewModel.currentUser!);
         }
-        
+
         Logger.info('Test login başarılı: $testUser', tag: 'LoginView');
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
-        Logger.error('Test login başarısız: $testUser - ${authViewModel.errorMessage}', tag: 'LoginView');
+        Logger.error(
+          'Test login başarısız: $testUser - ${authViewModel.errorMessage}',
+          tag: 'LoginView',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -441,4 +525,4 @@ class _BottomButtonsState extends State<_BottomButtons> {
       }
     }
   }
-} 
+}

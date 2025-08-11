@@ -8,12 +8,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:422264804561:android:f051979faf48e8e2ce61f0",
+        "mobilesdk_app_id": "1:422264804561:android:ba599e0c5a5186b7ce61f0",
         "android_client_info": {
           "package_name": "com.rivorya.takaslyapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "422264804561-5vusvdlo298es4p8dsg1dvhar7lih11u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rivorya.takaslyapp",
+            "certificate_hash": "5edb8e013c89a17bcd6ce2793bb576dcb6782be9"
+          }
+        },
+        {
+          "client_id": "422264804561-lk8btjq6gsqepm3as0s383crgmotiaeq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBrF93iVesLFoTpDXBQG6ILnd_Z1B7jeI4"
@@ -21,7 +34,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "422264804561-lk8btjq6gsqepm3as0s383crgmotiaeq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "422264804561-lgv323ms44c16f323qf8s97k1e23houk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.takasly.takasly"
+              }
+            }
+          ]
         }
       }
     }

@@ -15,6 +15,8 @@ class AuthViewModel extends ChangeNotifier {
   ProductViewModel? _productViewModel;
   NotificationViewModel? _notificationViewModel;
 
+  // FCM token erişimi için (NotificationViewModel üzerinden)
+
   User? _currentUser;
   bool _isLoading = false;
   bool _isLoggedIn = false;
@@ -65,21 +67,27 @@ class AuthViewModel extends ChangeNotifier {
       return;
     }
 
-    Logger.info('🔐 AuthViewModel initializing authentication for hot reload...');
+    Logger.info(
+      '🔐 AuthViewModel initializing authentication for hot reload...',
+    );
     _setLoading(true);
-    
+
     try {
       // Hızlı kontrol - SharedPreferences'dan direkt oku
       _isLoggedIn = await _authService.isLoggedIn();
       Logger.info('🔍 Quick login check result: $_isLoggedIn');
-      
+
       if (_isLoggedIn) {
         Logger.info('✅ User is logged in, fetching current user data...');
         _currentUser = await _authService.getCurrentUser();
-        
-        if (_currentUser != null && _currentUser!.id.isNotEmpty && _currentUser!.id != '0') {
-          Logger.info('✅ Current user loaded: ${_currentUser!.name} (${_currentUser!.id})');
-          
+
+        if (_currentUser != null &&
+            _currentUser!.id.isNotEmpty &&
+            _currentUser!.id != '0') {
+          Logger.info(
+            '✅ Current user loaded: ${_currentUser!.name} (${_currentUser!.id})',
+          );
+
           // Firebase'e kullanıcıyı kaydet (hot reload için)
           try {
             await _firebaseChatService.saveUser(_currentUser!);
@@ -88,10 +96,12 @@ class AuthViewModel extends ChangeNotifier {
             Logger.warning('⚠️ Firebase save error during hot reload: $e');
           }
         } else {
-          Logger.warning('⚠️ User is logged in but current user data is null, empty ID, or ID is 0');
+          Logger.warning(
+            '⚠️ User is logged in but current user data is null, empty ID, or ID is 0',
+          );
           _isLoggedIn = false;
           _currentUser = null;
-          
+
           // Geçersiz verileri temizle
           try {
             final prefs = await SharedPreferences.getInstance();
@@ -107,7 +117,7 @@ class AuthViewModel extends ChangeNotifier {
         Logger.info('❌ User is not logged in');
         _currentUser = null;
       }
-      
+
       _isInitialized = true;
       Logger.info('✅ AuthViewModel initialization completed for hot reload');
     } catch (e) {
@@ -139,23 +149,30 @@ class AuthViewModel extends ChangeNotifier {
   // Hot reload durumunu kontrol et ve gerekirse yeniden başlat
   Future<void> checkHotReloadState() async {
     Logger.info('🔄 Checking hot reload state...');
-    
+
     // Sadece hot restart durumunda otomatik giriş yap
     if (!_isInitialized && _isHotRestart) {
       Logger.info('🔄 Hot restart detected, running initialization...');
       await _initializeAuth();
       return;
     }
-    
+
     // Eğer initialized ama user data yoksa ve hot restart ise, yeniden kontrol et
-    if (_isInitialized && _currentUser == null && _isLoggedIn && _isHotRestart) {
-      Logger.warning('⚠️ Hot restart: Initialized but no user data, rechecking...');
+    if (_isInitialized &&
+        _currentUser == null &&
+        _isLoggedIn &&
+        _isHotRestart) {
+      Logger.warning(
+        '⚠️ Hot restart: Initialized but no user data, rechecking...',
+      );
       _isInitialized = false;
       await _initializeAuth();
       return;
     }
-    
-    Logger.info('✅ Hot reload state check completed - User: ${_currentUser?.name ?? 'None'}, LoggedIn: $_isLoggedIn, HotRestart: $_isHotRestart');
+
+    Logger.info(
+      '✅ Hot reload state check completed - User: ${_currentUser?.name ?? 'None'}, LoggedIn: $_isLoggedIn, HotRestart: $_isHotRestart',
+    );
   }
 
   Future<bool> login(String email, String password) async {
@@ -175,7 +192,7 @@ class AuthViewModel extends ChangeNotifier {
     // Önce eski kullanıcı verilerini temizle
     _currentUser = null;
     _isLoggedIn = false;
-    
+
     // Ürün verilerini de temizle (kullanıcı değişikliği)
     _productViewModel?.clearAllProductData();
 
@@ -185,7 +202,7 @@ class AuthViewModel extends ChangeNotifier {
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data;
         _isLoggedIn = true;
-        
+
         // Firebase'e kullanıcıyı kaydet
         try {
           await _firebaseChatService.saveUser(_currentUser!);
@@ -193,21 +210,106 @@ class AuthViewModel extends ChangeNotifier {
           // Firebase kaydetme hatası kritik değil, devam et
           Logger.warning('Firebase kullanıcı kaydetme hatası: $e');
         }
-        
+
         // FCM'i başlat
         try {
           if (_notificationViewModel != null) {
             await _notificationViewModel!.initializeFCM();
             Logger.info('✅ FCM başarıyla başlatıldı');
           } else {
-            Logger.warning('⚠️ NotificationViewModel bulunamadı, FCM başlatılamadı');
+            Logger.warning(
+              '⚠️ NotificationViewModel bulunamadı, FCM başlatılamadı',
+            );
           }
         } catch (e) {
           Logger.error('❌ FCM başlatma hatası: $e', error: e);
         }
-        
+
         _setLoading(false);
         notifyListeners(); // UI'ı güncelle
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> loginWithGoogle({
+    required String googleAccessToken,
+    required String deviceID,
+    String? fcmToken,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.loginSocial(
+        platform: 'google',
+        accessToken: googleAccessToken,
+        deviceID: deviceID,
+        fcmToken: fcmToken,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _currentUser = response.data;
+        _isLoggedIn = true;
+
+        // FCM başlat
+        try {
+          if (_notificationViewModel != null) {
+            await _notificationViewModel!.initializeFCM();
+          }
+        } catch (_) {}
+
+        _setLoading(false);
+        notifyListeners();
+        return true;
+      } else {
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> loginWithApple({
+    required String appleIdToken,
+    required String deviceID,
+    String? fcmToken,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.loginSocial(
+        platform: 'apple',
+        idToken: appleIdToken,
+        deviceID: deviceID,
+        fcmToken: fcmToken,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        _currentUser = response.data;
+        _isLoggedIn = true;
+
+        try {
+          if (_notificationViewModel != null) {
+            await _notificationViewModel!.initializeFCM();
+          }
+        } catch (_) {}
+
+        _setLoading(false);
+        notifyListeners();
         return true;
       } else {
         _setError(response.error ?? ErrorMessages.unknownError);
@@ -230,9 +332,15 @@ class AuthViewModel extends ChangeNotifier {
     required bool policy,
     required bool kvkk,
   }) async {
-    Logger.debug('🚀 AuthViewModel.register başlatılıyor...', tag: 'AuthViewModel');
-    Logger.debug('📝 Parametreler: firstName=$firstName, lastName=$lastName, email=$email, phone=$phone', tag: 'AuthViewModel');
-    
+    Logger.debug(
+      '🚀 AuthViewModel.register başlatılıyor...',
+      tag: 'AuthViewModel',
+    );
+    Logger.debug(
+      '📝 Parametreler: firstName=$firstName, lastName=$lastName, email=$email, phone=$phone',
+      tag: 'AuthViewModel',
+    );
+
     if (firstName.trim().isEmpty ||
         lastName.trim().isEmpty ||
         email.trim().isEmpty ||
@@ -250,19 +358,28 @@ class AuthViewModel extends ChangeNotifier {
     }
 
     if (firstName.length > AppConstants.maxUsernameLength) {
-      Logger.warning('❌ İsim çok uzun: ${firstName.length}', tag: 'AuthViewModel');
+      Logger.warning(
+        '❌ İsim çok uzun: ${firstName.length}',
+        tag: 'AuthViewModel',
+      );
       _setError('İsim çok uzun');
       return false;
     }
 
     if (lastName.length > AppConstants.maxUsernameLength) {
-      Logger.warning('❌ Soyisim çok uzun: ${lastName.length}', tag: 'AuthViewModel');
+      Logger.warning(
+        '❌ Soyisim çok uzun: ${lastName.length}',
+        tag: 'AuthViewModel',
+      );
       _setError('Soyisim çok uzun');
       return false;
     }
 
     if (!policy) {
-      Logger.warning('❌ Gizlilik politikası kabul edilmedi', tag: 'AuthViewModel');
+      Logger.warning(
+        '❌ Gizlilik politikası kabul edilmedi',
+        tag: 'AuthViewModel',
+      );
       _setError('Gizlilik politikasını kabul etmelisiniz');
       return false;
     }
@@ -277,8 +394,11 @@ class AuthViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      Logger.debug('📡 AuthService.register çağrılıyor...', tag: 'AuthViewModel');
-      
+      Logger.debug(
+        '📡 AuthService.register çağrılıyor...',
+        tag: 'AuthViewModel',
+      );
+
       final response = await _authService.register(
         firstName: firstName,
         lastName: lastName,
@@ -290,19 +410,31 @@ class AuthViewModel extends ChangeNotifier {
       );
 
       Logger.debug('📥 AuthService response alındı', tag: 'AuthViewModel');
-      Logger.debug('📊 Response isSuccess: ${response.isSuccess}', tag: 'AuthViewModel');
+      Logger.debug(
+        '📊 Response isSuccess: ${response.isSuccess}',
+        tag: 'AuthViewModel',
+      );
       Logger.debug('📊 Response data: ${response.data}', tag: 'AuthViewModel');
-      Logger.debug('📊 Response error: ${response.error}', tag: 'AuthViewModel');
+      Logger.debug(
+        '📊 Response error: ${response.error}',
+        tag: 'AuthViewModel',
+      );
 
       if (response.isSuccess && response.data != null) {
-        Logger.info('✅ Register başarılı, user data alındı', tag: 'AuthViewModel');
+        Logger.info(
+          '✅ Register başarılı, user data alındı',
+          tag: 'AuthViewModel',
+        );
         _currentUser = response.data;
         _isLoggedIn = true;
         _setLoading(false);
         return true;
       } else {
         Logger.error('❌ Register başarısız', tag: 'AuthViewModel');
-        Logger.error('❌ Error message: ${response.error}', tag: 'AuthViewModel');
+        Logger.error(
+          '❌ Error message: ${response.error}',
+          tag: 'AuthViewModel',
+        );
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
@@ -389,7 +521,7 @@ class AuthViewModel extends ChangeNotifier {
           notifyListeners();
           Logger.info('✅ User verification status updated in ViewModel');
         }
-        
+
         _setLoading(false);
         return true;
       } else {
@@ -404,7 +536,9 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> resendEmailVerificationCode({required String email}) async {
+  Future<Map<String, dynamic>?> resendEmailVerificationCode({
+    required String email,
+  }) async {
     // Email validation
     if (email.trim().isEmpty) {
       _setError('E-posta adresi boş olamaz');
@@ -426,9 +560,18 @@ class AuthViewModel extends ChangeNotifier {
         email: email.trim(),
       );
 
-      Logger.debug('📥 ResendEmailVerificationCode response: ${response.isSuccess}', tag: 'AuthViewModel');
-      Logger.debug('📥 ResendEmailVerificationCode data: ${response.data}', tag: 'AuthViewModel');
-      Logger.debug('📥 ResendEmailVerificationCode error: ${response.error}', tag: 'AuthViewModel');
+      Logger.debug(
+        '📥 ResendEmailVerificationCode response: ${response.isSuccess}',
+        tag: 'AuthViewModel',
+      );
+      Logger.debug(
+        '📥 ResendEmailVerificationCode data: ${response.data}',
+        tag: 'AuthViewModel',
+      );
+      Logger.debug(
+        '📥 ResendEmailVerificationCode error: ${response.error}',
+        tag: 'AuthViewModel',
+      );
 
       if (response.isSuccess) {
         _setLoading(false);
@@ -452,8 +595,10 @@ class AuthViewModel extends ChangeNotifier {
     required String codeToken,
   }) async {
     Logger.info('🔑 AuthViewModel.checkPasswordResetCode called');
-    
-    if (code.trim().isEmpty || email.trim().isEmpty || codeToken.trim().isEmpty) {
+
+    if (code.trim().isEmpty ||
+        email.trim().isEmpty ||
+        codeToken.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return null;
     }
@@ -472,7 +617,9 @@ class AuthViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      Logger.debug('📤 AuthViewModel - Calling authService.checkPasswordResetCode');
+      Logger.debug(
+        '📤 AuthViewModel - Calling authService.checkPasswordResetCode',
+      );
       final response = await _authService.checkPasswordResetCode(
         code: code,
         email: email,
@@ -480,24 +627,33 @@ class AuthViewModel extends ChangeNotifier {
       );
 
       if (response.isSuccess) {
-        Logger.info('✅ AuthViewModel - Password reset code verification successful');
+        Logger.info(
+          '✅ AuthViewModel - Password reset code verification successful',
+        );
         _setLoading(false);
         return response.data;
       } else {
-        Logger.error('❌ AuthViewModel - Password reset code verification failed: ${response.error}');
+        Logger.error(
+          '❌ AuthViewModel - Password reset code verification failed: ${response.error}',
+        );
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return null;
       }
     } catch (e) {
-      Logger.error('💥 AuthViewModel - Password reset code verification exception: $e', error: e);
+      Logger.error(
+        '💥 AuthViewModel - Password reset code verification exception: $e',
+        error: e,
+      );
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return null;
     }
   }
 
-  Future<Map<String, dynamic>?> resendEmailVerificationCodeWithToken({required String userToken}) async {
+  Future<Map<String, dynamic>?> resendEmailVerificationCodeWithToken({
+    required String userToken,
+  }) async {
     // Token validation
     if (userToken.trim().isEmpty) {
       _setError('Kullanıcı token\'ı boş olamaz');
@@ -512,9 +668,18 @@ class AuthViewModel extends ChangeNotifier {
         userToken: userToken.trim(),
       );
 
-      Logger.debug('📥 ResendEmailVerificationCodeWithToken response: ${response.isSuccess}', tag: 'AuthViewModel');
-      Logger.debug('📥 ResendEmailVerificationCodeWithToken data: ${response.data}', tag: 'AuthViewModel');
-      Logger.debug('📥 ResendEmailVerificationCodeWithToken error: ${response.error}', tag: 'AuthViewModel');
+      Logger.debug(
+        '📥 ResendEmailVerificationCodeWithToken response: ${response.isSuccess}',
+        tag: 'AuthViewModel',
+      );
+      Logger.debug(
+        '📥 ResendEmailVerificationCodeWithToken data: ${response.data}',
+        tag: 'AuthViewModel',
+      );
+      Logger.debug(
+        '📥 ResendEmailVerificationCodeWithToken error: ${response.error}',
+        tag: 'AuthViewModel',
+      );
 
       if (response.isSuccess) {
         _setLoading(false);
@@ -525,7 +690,10 @@ class AuthViewModel extends ChangeNotifier {
         return null;
       }
     } catch (e) {
-      Logger.error('💥 ResendEmailVerificationCodeWithToken exception: $e', error: e);
+      Logger.error(
+        '💥 ResendEmailVerificationCodeWithToken exception: $e',
+        error: e,
+      );
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return null;
@@ -538,7 +706,7 @@ class AuthViewModel extends ChangeNotifier {
     required String passwordAgain,
   }) async {
     Logger.info('🔒 AuthViewModel.updatePassword called with passToken');
-    
+
     // updatePassword metodunu changePassword metoduna yönlendir
     return await changePassword(
       passToken: passToken,
@@ -553,7 +721,7 @@ class AuthViewModel extends ChangeNotifier {
     required String passwordAgain,
   }) async {
     Logger.info('🔒 AuthViewModel.changePassword called with passToken');
-    
+
     if (passToken.trim().isEmpty ||
         password.trim().isEmpty ||
         passwordAgain.trim().isEmpty) {
@@ -587,13 +755,18 @@ class AuthViewModel extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        Logger.error('❌ AuthViewModel - Password change failed: ${response.error}');
+        Logger.error(
+          '❌ AuthViewModel - Password change failed: ${response.error}',
+        );
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
-      Logger.error('💥 AuthViewModel - Password change exception: $e', error: e);
+      Logger.error(
+        '💥 AuthViewModel - Password change exception: $e',
+        error: e,
+      );
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
@@ -607,7 +780,7 @@ class AuthViewModel extends ChangeNotifier {
     required String newPasswordAgain,
   }) async {
     Logger.info('🔒 AuthViewModel.updateUserPassword called (direct)');
-    
+
     if (currentPassword.trim().isEmpty ||
         newPassword.trim().isEmpty ||
         newPasswordAgain.trim().isEmpty) {
@@ -646,20 +819,23 @@ class AuthViewModel extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        Logger.error('❌ AuthViewModel - User password update failed: ${response.error}');
+        Logger.error(
+          '❌ AuthViewModel - User password update failed: ${response.error}',
+        );
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
-      Logger.error('💥 AuthViewModel - User password update exception: $e', error: e);
+      Logger.error(
+        '💥 AuthViewModel - User password update exception: $e',
+        error: e,
+      );
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
     }
   }
-
-
 
   Future<bool> updateProfile({
     String? name,
@@ -719,10 +895,10 @@ class AuthViewModel extends ChangeNotifier {
       if (response.isSuccess) {
         _currentUser = null;
         _isLoggedIn = false;
-        
+
         // Çıkış yapılırken ürün verilerini de temizle
         _productViewModel?.clearAllProductData();
-        
+
         _setLoading(false);
         return true;
       } else {
@@ -770,13 +946,15 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> handleForbiddenError() async {
     // Eğer zaten işlem yapılıyorsa çık
     if (_isHandlingForbiddenError) {
-      Logger.warning('⚠️ AuthViewModel: 403 error handler already running, skipping...');
+      Logger.warning(
+        '⚠️ AuthViewModel: 403 error handler already running, skipping...',
+      );
       return;
     }
-    
+
     _isHandlingForbiddenError = true;
     Logger.warning('🚨 403 Forbidden error detected - Auto logout');
-    
+
     // Token'ı temizle
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -787,13 +965,13 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('❌ Error clearing user data: $e', error: e);
     }
-    
+
     _currentUser = null;
     _isLoggedIn = false;
     _isInitialized = false;
     _clearError();
     notifyListeners();
-    
+
     // Global error handler'ı çağır
     try {
       ErrorHandlerService.handleForbiddenError(null);
@@ -801,7 +979,7 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('❌ Error calling global error handler: $e', error: e);
     }
-    
+
     // İşlem tamamlandıktan sonra flag'i sıfırla
     Future.delayed(const Duration(seconds: 3), () {
       _isHandlingForbiddenError = false;

@@ -17,14 +17,17 @@ class ApiConstants {
   static const String login = '/service/auth/login';
   static const String register = '/service/auth/register';
   static const String forgotPassword = '/service/auth/forgotPassword';
-  static const String changePassword = '/service/auth/forgotPassword/updatePass';
+  static const String changePassword =
+      '/service/auth/forgotPassword/updatePass';
   static const String checkCode = '/service/auth/code/checkCode';
   static const String againSendCode = '/service/auth/code/againSendCode';
+  static const String loginSocial = '/service/auth/loginSocial';
   static const String profile = '/auth/profile';
 
   // User Service Endpoints
   static const String userProfile = '/service/user/id';
-  static const String userProfileDetail = '/service/user/account'; // {userId}/profileDetail
+  static const String userProfileDetail =
+      '/service/user/account'; // {userId}/profileDetail
   static const String updateAccount = '/service/user/update/account';
   static const String deleteUser = '/service/user/delete';
   static const String addProduct =
@@ -33,40 +36,54 @@ class ApiConstants {
       '/service/user/product'; // {userId}/productList eklenecek
   static const String allProducts = '/service/user/product/allProductList';
   static const String categoriesList = '/service/general/general/categories/0';
-  
+
   // Product Service Endpoints
-  static const String productDetail = '/service/user/product'; // {productId}/productDetail eklenecek
-  static const String editProduct = '/service/user/product'; // {userId}/editProduct eklenecek
-  static const String deleteProduct = '/service/user/product'; // {userId}/deleteProduct eklenecek
+  static const String productDetail =
+      '/service/user/product'; // {productId}/productDetail eklenecek
+  static const String editProduct =
+      '/service/user/product'; // {userId}/editProduct eklenecek
+  static const String deleteProduct =
+      '/service/user/product'; // {userId}/deleteProduct eklenecek
   static const String addFavorite = '/service/user/product/addFavorite';
   static const String removeFavorite = '/service/user/product/removeFavorite';
-  static const String favoriteList = '/service/user/product'; // {userId}/favoriteList eklenecek
-  static const String productView = '/service/user/product'; // {productId}/view eklenecek
+  static const String favoriteList =
+      '/service/user/product'; // {userId}/favoriteList eklenecek
+  static const String productView =
+      '/service/user/product'; // {productId}/view eklenecek
   static const String getProductById = '/products'; // {productId} eklenecek
-  
+
   // Category Service Endpoints
-  static const String subCategories = '/service/general/general/categories'; // {parentCategoryId} eklenecek
-  static const String subSubCategories = '/service/general/general/categories'; // {parentSubCategoryId} eklenecek
-  static const String subSubSubCategories = '/service/general/general/categories'; // {parentSubSubCategoryId} eklenecek
-  
+  static const String subCategories =
+      '/service/general/general/categories'; // {parentCategoryId} eklenecek
+  static const String subSubCategories =
+      '/service/general/general/categories'; // {parentSubCategoryId} eklenecek
+  static const String subSubSubCategories =
+      '/service/general/general/categories'; // {parentSubSubCategoryId} eklenecek
+
   // Location Service Endpoints
   static const String cities = '/service/general/general/cities/all';
-  static const String districts = '/service/general/general/districts'; // {cityId} eklenecek
-  
+  static const String districts =
+      '/service/general/general/districts'; // {cityId} eklenecek
+
   // Condition Service Endpoints
-  static const String productConditions = '/service/general/general/productConditions';
-  
+  static const String productConditions =
+      '/service/general/general/productConditions';
+
   // Trade Service Endpoints
   static const String startTrade = '/service/user/product/startTrade';
   static const String tradeComplete = '/service/user/product/tradeComplete';
   static const String tradeReview = '/service/user/product/tradeReview';
   static const String confirmTrade = '/service/user/product/confirmTrade';
-  static const String updateTradeStatus = '/service/user/product/updateTradeStatus';
-  static const String checkTradeStatus = '/service/user/product/checkTradeStatus';
-  static const String tradeDetail = '/service/user/product'; // {offerId}/tradeDetail eklenecek
-  static const String userTrades = '/service/user/product'; // {userId}/tradeList eklenecek
+  static const String updateTradeStatus =
+      '/service/user/product/updateTradeStatus';
+  static const String checkTradeStatus =
+      '/service/user/product/checkTradeStatus';
+  static const String tradeDetail =
+      '/service/user/product'; // {offerId}/tradeDetail eklenecek
+  static const String userTrades =
+      '/service/user/product'; // {userId}/tradeList eklenecek
   static const String deliveryTypes = '/service/general/general/deliveryTypes';
-  
+
   // Report Service Endpoints
   static const String reportUser = '/service/user/product/reportUser';
 
@@ -100,6 +117,7 @@ class AppConstants {
   static const String userTokenKey = 'user_token';
   static const String userIdKey = 'user_id';
   static const String userDataKey = 'user_data';
+  static const String deviceIdKey = 'device_id';
   static const String lastAppStartKey = 'last_app_start';
 
   // Validation

@@ -14,7 +14,7 @@ class AuthService {
     try {
       // Önce eski kullanıcı verilerini temizle
       await _clearUserData();
-      
+
       Logger.info('🔐 LOGIN ATTEMPT: $email');
       Logger.debug(
         '📤 Login Request Body: {"userEmail": "$email", "userPassword": "$password"}',
@@ -100,10 +100,10 @@ class AuthService {
                 completeUser.email != 'user@example.com') {
               Logger.info('✅ Complete user profile fetched successfully');
               await _saveUserDataOnly(completeUser);
-              
+
               // Token'ı her zaman güncelle (API'den yeni token gelebilir)
               await _updateTokenIfNeeded(token);
-              
+
               return ApiResponse.success(completeUser);
             } else {
               Logger.warning(
@@ -111,12 +111,16 @@ class AuthService {
               );
             }
           } else {
-            Logger.warning('⚠️ Failed to fetch complete profile, using login data');
+            Logger.warning(
+              '⚠️ Failed to fetch complete profile, using login data',
+            );
           }
         } catch (e) {
-          Logger.warning('⚠️ Error fetching complete profile: $e, using login data');
+          Logger.warning(
+            '⚠️ Error fetching complete profile: $e, using login data',
+          );
         }
-        
+
         // Token'ı her zaman güncelle
         await _updateTokenIfNeeded(token);
 
@@ -127,6 +131,134 @@ class AuthService {
       return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
     } catch (e) {
       Logger.error('💥 Login exception: $e', error: e);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  Future<ApiResponse<User>> loginSocial({
+    required String platform, // 'google' | 'apple'
+    String? accessToken, // google
+    String? idToken, // apple
+    required String deviceID,
+    String? fcmToken,
+  }) async {
+    try {
+      // Eski kullanıcı verilerini temizle
+      await _clearUserData();
+
+      final Map<String, dynamic> body = {
+        'platform': platform,
+        'deviceID': deviceID,
+      };
+
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        body['fcmToken'] = fcmToken;
+      }
+
+      if (platform.toLowerCase() == 'google' && accessToken != null) {
+        body['accessToken'] = accessToken;
+      }
+
+      if (platform.toLowerCase() == 'apple' && idToken != null) {
+        body['idToken'] = idToken;
+      }
+
+      Logger.info('🔐 SOCIAL LOGIN ATTEMPT: $platform');
+      Logger.debug('📤 Social Login Request Body: ${json.encode(body)}');
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.loginSocial,
+        body: body,
+        useBasicAuth: true,
+        fromJson: (json) {
+          Logger.debug('🔍 SocialLogin fromJson - Raw data: $json');
+
+          // 410/200 format: data içinde user ve token
+          if (json is Map<String, dynamic>) {
+            Map<String, dynamic>? dataField;
+            if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
+              dataField = json['data'] as Map<String, dynamic>;
+            } else {
+              dataField = json; // bazı durumlarda direkt dönebilir
+            }
+
+            if (dataField['userID'] != null &&
+                (dataField['token'] != null || json['token'] != null)) {
+              final tokenString = (dataField['token'] ?? json['token'])
+                  .toString();
+              final user = User(
+                id: dataField['userID'].toString(),
+                name:
+                    (dataField['userFirstname'] != null &&
+                        dataField['userLastname'] != null)
+                    ? '${dataField['userFirstname']} ${dataField['userLastname']}'
+                    : dataField['userName']?.toString() ?? 'Kullanıcı',
+                firstName: dataField['userFirstname']?.toString(),
+                lastName: dataField['userLastname']?.toString(),
+                email: dataField['userEmail']?.toString() ?? '',
+                phone: dataField['userPhone']?.toString(),
+                isVerified: (dataField['userVerified'] ?? false) == true,
+                isOnline: true,
+                createdAt: dataField['userCreatedAt'] != null
+                    ? DateTime.tryParse(
+                            dataField['userCreatedAt'].toString(),
+                          ) ??
+                          DateTime.now()
+                    : DateTime.now(),
+                updatedAt: DateTime.now(),
+                token: tokenString,
+              );
+
+              return {'user': user, 'token': tokenString};
+            }
+
+            // Alternatif standart format
+            if (json.containsKey('user')) {
+              final user = User.fromJson(json['user']);
+              final token = json['token']?.toString() ?? '';
+              return {'user': user, 'token': token};
+            }
+          }
+
+          return {
+            'user': User(
+              id: '0',
+              name: 'Kullanıcı',
+              firstName: null,
+              lastName: null,
+              email: 'user@example.com',
+              phone: null,
+              isVerified: false,
+              isOnline: true,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              token: '',
+            ),
+            'token': '',
+          };
+        },
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        final user = data['user'] as User;
+        final token = data['token'] as String? ?? '';
+
+        if (token.isNotEmpty) {
+          await _saveUserData(user, token);
+          await _updateTokenIfNeeded(token);
+        } else {
+          // Bazı sosyal login akışlarında token body dışında olabilir, yine de user'ı kaydetme
+          await _saveUserDataOnly(user);
+        }
+
+        return ApiResponse.success(user);
+      }
+
+      return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
+    } catch (e) {
+      Logger.error('💥 Social login exception: $e', error: e);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -158,7 +290,9 @@ class AuthService {
       final platform = await _getPlatform();
 
       Logger.info('📝 REGISTER ATTEMPT: $email');
-      Logger.debug('📤 Register Request Body: {"userFirstname": "$firstName", "userLastname": "$lastName", "userEmail": "$email", "userPhone": "$phone", "userPassword": "$password", "version": "1.0", "platform": "$platform", "policy": $policy, "kvkk": $kvkk}');
+      Logger.debug(
+        '📤 Register Request Body: {"userFirstname": "$firstName", "userLastname": "$lastName", "userEmail": "$email", "userPhone": "$phone", "userPassword": "$password", "version": "1.0", "platform": "$platform", "policy": $policy, "kvkk": $kvkk}',
+      );
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.register,
@@ -209,7 +343,9 @@ class AuthService {
               token: userData['token'], // Token'ı User nesnesine dahil et
             );
 
-            Logger.debug('✅ User objesi oluşturuldu: ${user.id} - ${user.name}');
+            Logger.debug(
+              '✅ User objesi oluşturuldu: ${user.id} - ${user.name}',
+            );
             return {
               'user': user,
               'token': userData['token'] ?? '', // Register'da token olmayabilir
@@ -238,7 +374,9 @@ class AuthService {
 
         // Token ve kullanıcı bilgilerini kaydet
         await _saveUserData(user, token);
-        Logger.debug('🔑 Token saved after register: ${token.substring(0, 10)}...');
+        Logger.debug(
+          '🔑 Token saved after register: ${token.substring(0, 10)}...',
+        );
 
         // Register sonrasında tam kullanıcı bilgilerini çek (token varsa)
         if (token.isNotEmpty) {
@@ -253,20 +391,22 @@ class AuthService {
               Logger.info('✅ Complete user profile fetched successfully');
               final completeUser = profileResponse.data!;
               await _saveUserDataOnly(completeUser);
-              
+
               // Token'ı her zaman güncelle (API'den yeni token gelebilir)
               await _updateTokenIfNeeded(token);
-              
+
               return ApiResponse.success(completeUser);
             } else {
-              Logger.warning('⚠️ Failed to fetch complete profile, using register data');
+              Logger.warning(
+                '⚠️ Failed to fetch complete profile, using register data',
+              );
             }
           } catch (e) {
             Logger.warning(
               '⚠️ Error fetching complete profile: $e, using register data',
             );
           }
-          
+
           // Token'ı her zaman güncelle
           await _updateTokenIfNeeded(token);
         }
@@ -282,7 +422,9 @@ class AuthService {
     }
   }
 
-  Future<ApiResponse<Map<String, dynamic>?>> forgotPassword(String email) async {
+  Future<ApiResponse<Map<String, dynamic>?>> forgotPassword(
+    String email,
+  ) async {
     try {
       Logger.info('🔑 FORGOT PASSWORD ATTEMPT: $email');
       Logger.debug('📤 Forgot Password Request Body: {"userEmail": "$email"}');
@@ -293,59 +435,68 @@ class AuthService {
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 ForgotPassword fromJson - Raw data: $json');
-          
+
           // API response'unda codeToken var mı kontrol et
           if (json is Map<String, dynamic>) {
             final result = <String, dynamic>{};
-            
+
             // Tüm response verilerini logla
-            Logger.debug('🔍 ForgotPassword response keys: ${json.keys.toList()}');
-            
+            Logger.debug(
+              '🔍 ForgotPassword response keys: ${json.keys.toList()}',
+            );
+
             // codeToken varsa al (direkt response'ta veya data objesi içinde)
             String? codeToken;
             if (json.containsKey('codeToken') && json['codeToken'] != null) {
               codeToken = json['codeToken'].toString();
               Logger.debug('🔑 CodeToken found in response root: $codeToken');
-            } else if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+            } else if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
               if (data.containsKey('codeToken') && data['codeToken'] != null) {
                 codeToken = data['codeToken'].toString();
                 Logger.debug('🔑 CodeToken found in data object: $codeToken');
               }
             }
-            
+
             if (codeToken != null) {
               result['codeToken'] = codeToken;
             } else {
-              Logger.warning('⚠️ CodeToken not found in response or data object');
+              Logger.warning(
+                '⚠️ CodeToken not found in response or data object',
+              );
             }
-            
+
             // Mail bilgilerini de al
-            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+            if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
-              if (data.containsKey('mail') && data['mail'] is Map<String, dynamic>) {
+              if (data.containsKey('mail') &&
+                  data['mail'] is Map<String, dynamic>) {
                 result['mail'] = data['mail'];
                 Logger.debug('📧 Mail info found: ${data['mail']}');
               }
             }
-            
+
             // Diğer response verilerini de al
             json.forEach((key, value) {
               if (key != 'codeToken' && key != 'data') {
                 result[key] = value;
               }
             });
-            
+
             Logger.debug('🔍 Final result: $result');
             return result.isNotEmpty ? result : null;
           }
-          
+
           Logger.warning('⚠️ Response is not a Map: ${json.runtimeType}');
           return null;
         },
       );
 
-      Logger.debug('📥 ForgotPassword Response isSuccess: ${response.isSuccess}');
+      Logger.debug(
+        '📥 ForgotPassword Response isSuccess: ${response.isSuccess}',
+      );
       Logger.debug('📥 ForgotPassword Response data: ${response.data}');
       Logger.debug('📥 ForgotPassword Response error: ${response.error}');
 
@@ -388,7 +539,7 @@ class AuthService {
 
       if (response.isSuccess) {
         Logger.info('✅ Email verification successful');
-        
+
         // Kullanıcının isVerified durumunu güncelle
         try {
           final currentUser = await getCurrentUser();
@@ -406,14 +557,14 @@ class AuthService {
               updatedAt: DateTime.now(),
               token: currentUser.token,
             );
-            
+
             await _saveUserDataOnly(updatedUser);
             Logger.info('✅ User verification status updated to true');
           }
         } catch (e) {
           Logger.warning('⚠️ Failed to update user verification status: $e');
         }
-        
+
         return ApiResponse.success(null);
       }
 
@@ -442,59 +593,70 @@ class AuthService {
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 CheckPasswordResetCode fromJson - Raw data: $json');
-          
+
           // API response'unda passToken var mı kontrol et
           if (json is Map<String, dynamic>) {
             final result = <String, dynamic>{};
-            
+
             // Tüm response verilerini logla
-            Logger.debug('🔍 CheckPasswordResetCode response keys: ${json.keys.toList()}');
-            
+            Logger.debug(
+              '🔍 CheckPasswordResetCode response keys: ${json.keys.toList()}',
+            );
+
             // passToken varsa al (direkt response'ta veya data objesi içinde)
             String? passToken;
             if (json.containsKey('passToken') && json['passToken'] != null) {
               passToken = json['passToken'].toString();
               Logger.debug('🔑 PassToken found in response root: $passToken');
-            } else if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+            } else if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
               if (data.containsKey('passToken') && data['passToken'] != null) {
                 passToken = data['passToken'].toString();
                 Logger.debug('🔑 PassToken found in data object: $passToken');
               }
             }
-            
+
             if (passToken != null) {
               result['passToken'] = passToken;
             } else {
-              Logger.warning('⚠️ PassToken not found in response or data object');
+              Logger.warning(
+                '⚠️ PassToken not found in response or data object',
+              );
             }
-            
+
             // Diğer response verilerini de al
             json.forEach((key, value) {
               if (key != 'passToken') {
                 result[key] = value;
               }
             });
-            
+
             Logger.debug('🔍 Final result: $result');
             return result.isNotEmpty ? result : null;
           }
-          
+
           Logger.warning('⚠️ Response is not a Map: ${json.runtimeType}');
           return null;
         },
       );
 
-      Logger.debug('📥 CheckPasswordResetCode Response isSuccess: ${response.isSuccess}');
+      Logger.debug(
+        '📥 CheckPasswordResetCode Response isSuccess: ${response.isSuccess}',
+      );
       Logger.debug('📥 CheckPasswordResetCode Response data: ${response.data}');
-      Logger.debug('📥 CheckPasswordResetCode Response error: ${response.error}');
+      Logger.debug(
+        '📥 CheckPasswordResetCode Response error: ${response.error}',
+      );
 
       if (response.isSuccess) {
         Logger.info('✅ Password reset code verification successful');
         return ApiResponse.success(response.data);
       }
 
-      Logger.error('❌ Password reset code verification failed: ${response.error}');
+      Logger.error(
+        '❌ Password reset code verification failed: ${response.error}',
+      );
       return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
     } catch (e) {
       Logger.error('💥 Check password reset code exception: $e', error: e);
@@ -507,23 +669,21 @@ class AuthService {
   }) async {
     try {
       Logger.info('🔄 RESEND EMAIL CODE ATTEMPT: $email');
-      
+
       // Email validation
       if (email.trim().isEmpty) {
         Logger.error('❌ Email is empty');
         return ApiResponse.error('E-posta adresi boş olamaz');
       }
-      
+
       // Email format validation
       final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
       if (!emailRegex.hasMatch(email)) {
         Logger.error('❌ Invalid email format: $email');
         return ApiResponse.error('Geçersiz e-posta formatı');
       }
-      
-      final requestBody = {
-        'userEmail': email.trim(),
-      };
+
+      final requestBody = {'userEmail': email.trim()};
       Logger.debug('📤 Resend Code Request Body: ${json.encode(requestBody)}');
 
       final response = await _httpClient.postWithBasicAuth(
@@ -532,44 +692,47 @@ class AuthService {
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 ResendCode fromJson - Raw data: $json');
-          
+
           // API response'unda codeToken var mı kontrol et
           if (json is Map<String, dynamic>) {
             final result = <String, dynamic>{};
-            
+
             // Tüm response verilerini logla
             Logger.debug('🔍 ResendCode response keys: ${json.keys.toList()}');
-            
+
             // codeToken varsa al (direkt response'ta veya data objesi içinde)
             String? codeToken;
             if (json.containsKey('codeToken') && json['codeToken'] != null) {
               codeToken = json['codeToken'].toString();
               Logger.debug('🔑 CodeToken found in response root: $codeToken');
-            } else if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+            } else if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
               if (data.containsKey('codeToken') && data['codeToken'] != null) {
                 codeToken = data['codeToken'].toString();
                 Logger.debug('🔑 CodeToken found in data object: $codeToken');
               }
             }
-            
+
             if (codeToken != null) {
               result['codeToken'] = codeToken;
             } else {
-              Logger.warning('⚠️ CodeToken not found in response or data object');
+              Logger.warning(
+                '⚠️ CodeToken not found in response or data object',
+              );
             }
-            
+
             // Diğer response verilerini de al
             json.forEach((key, value) {
               if (key != 'codeToken') {
                 result[key] = value;
               }
             });
-            
+
             Logger.debug('🔍 Final result: $result');
             return result.isNotEmpty ? result : null;
           }
-          
+
           Logger.warning('⚠️ Response is not a Map: ${json.runtimeType}');
           return null;
         },
@@ -592,22 +755,21 @@ class AuthService {
     }
   }
 
-  Future<ApiResponse<Map<String, dynamic>?>> resendEmailVerificationCodeWithToken({
-    required String userToken,
-  }) async {
+  Future<ApiResponse<Map<String, dynamic>?>>
+  resendEmailVerificationCodeWithToken({required String userToken}) async {
     try {
       Logger.info('📧 RESEND EMAIL VERIFICATION CODE WITH TOKEN ATTEMPT');
-      
+
       // Token validation
       if (userToken.trim().isEmpty) {
         Logger.error('❌ User token is empty');
         return ApiResponse.error('Kullanıcı token\'ı boş olamaz');
       }
-      
-      final requestBody = {
-        'userToken': userToken.trim(),
-      };
-      Logger.debug('📤 Resend Code with Token Request Body: ${json.encode(requestBody)}');
+
+      final requestBody = {'userToken': userToken.trim()};
+      Logger.debug(
+        '📤 Resend Code with Token Request Body: ${json.encode(requestBody)}',
+      );
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.againSendCode,
@@ -615,52 +777,63 @@ class AuthService {
         useBasicAuth: true,
         fromJson: (json) {
           Logger.debug('🔍 ResendCode with Token fromJson - Raw data: $json');
-          
+
           // API response'unda codeToken var mı kontrol et
           if (json is Map<String, dynamic>) {
             final result = <String, dynamic>{};
-            
+
             // Tüm response verilerini logla
-            Logger.debug('🔍 ResendCode with Token response keys: ${json.keys.toList()}');
-            
+            Logger.debug(
+              '🔍 ResendCode with Token response keys: ${json.keys.toList()}',
+            );
+
             // codeToken varsa al (direkt response'ta veya data objesi içinde)
             String? codeToken;
             if (json.containsKey('codeToken') && json['codeToken'] != null) {
               codeToken = json['codeToken'].toString();
               Logger.debug('🔑 CodeToken found in response root: $codeToken');
-            } else if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+            } else if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
               if (data.containsKey('codeToken') && data['codeToken'] != null) {
                 codeToken = data['codeToken'].toString();
                 Logger.debug('🔑 CodeToken found in data object: $codeToken');
               }
             }
-            
+
             if (codeToken != null) {
               result['codeToken'] = codeToken;
             } else {
-              Logger.warning('⚠️ CodeToken not found in response or data object');
+              Logger.warning(
+                '⚠️ CodeToken not found in response or data object',
+              );
             }
-            
+
             // Diğer response verilerini de al
             json.forEach((key, value) {
               if (key != 'codeToken') {
                 result[key] = value;
               }
             });
-            
+
             Logger.debug('🔍 Final result with token: $result');
             return result.isNotEmpty ? result : null;
           }
-          
-          Logger.warning('⚠️ Response with token is not a Map: ${json.runtimeType}');
+
+          Logger.warning(
+            '⚠️ Response with token is not a Map: ${json.runtimeType}',
+          );
           return null;
         },
       );
 
-      Logger.debug('📥 ResendCode with Token Response isSuccess: ${response.isSuccess}');
+      Logger.debug(
+        '📥 ResendCode with Token Response isSuccess: ${response.isSuccess}',
+      );
       Logger.debug('📥 ResendCode with Token Response data: ${response.data}');
-      Logger.debug('📥 ResendCode with Token Response error: ${response.error}');
+      Logger.debug(
+        '📥 ResendCode with Token Response error: ${response.error}',
+      );
 
       if (response.isSuccess) {
         Logger.info('✅ Resend email code with token successful');
@@ -681,7 +854,7 @@ class AuthService {
     required String passwordAgain,
   }) async {
     Logger.info('🔒 UPDATE PASSWORD ATTEMPT with passToken');
-    
+
     // updatePassword metodunu changePassword metoduna yönlendir
     return await changePassword(
       passToken: passToken,
@@ -715,7 +888,9 @@ class AuthService {
         },
       );
 
-      Logger.debug('📥 ChangePassword Response isSuccess: ${response.isSuccess}');
+      Logger.debug(
+        '📥 ChangePassword Response isSuccess: ${response.isSuccess}',
+      );
       Logger.debug('📥 ChangePassword Response data: ${response.data}');
       Logger.debug('📥 ChangePassword Response error: ${response.error}');
 
@@ -740,14 +915,16 @@ class AuthService {
   }) async {
     try {
       Logger.info('🔒 UPDATE USER PASSWORD ATTEMPT (direct)');
-      
+
       // Mevcut kullanıcının token'ını al
       final userToken = await getCurrentUserToken();
       if (userToken == null || userToken.isEmpty) {
         Logger.error('❌ User token not found');
-        return ApiResponse.error('Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.');
+        return ApiResponse.error(
+          'Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.',
+        );
       }
-      
+
       Logger.debug(
         '📤 Update User Password Request Body: {"passToken": "${userToken.substring(0, 10)}...", "password": "${newPassword.length} chars", "passwordAgain": "${newPasswordAgain.length} chars"}',
       );
@@ -766,7 +943,9 @@ class AuthService {
         },
       );
 
-      Logger.debug('📥 UpdateUserPassword Response isSuccess: ${response.isSuccess}');
+      Logger.debug(
+        '📥 UpdateUserPassword Response isSuccess: ${response.isSuccess}',
+      );
       Logger.debug('📥 UpdateUserPassword Response data: ${response.data}');
       Logger.debug('📥 UpdateUserPassword Response error: ${response.error}');
 
@@ -790,23 +969,32 @@ class AuthService {
         fromJson: (json) {
           // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
           if (json is Map<String, dynamic>) {
-            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+            if (json.containsKey('token') &&
+                json['token'] != null &&
+                json['token'].toString().isNotEmpty) {
               final newToken = json['token'].toString();
-              Logger.debug('🔄 Get Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              Logger.debug(
+                '🔄 Get Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...',
+              );
               _updateTokenIfNeeded(newToken);
             }
-            
+
             // Data içinde token kontrolü
-            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+            if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
-              if (data.containsKey('token') && data['token'] != null && data['token'].toString().isNotEmpty) {
+              if (data.containsKey('token') &&
+                  data['token'] != null &&
+                  data['token'].toString().isNotEmpty) {
                 final newToken = data['token'].toString();
-                Logger.debug('🔄 Get Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                Logger.debug(
+                  '🔄 Get Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...',
+                );
                 _updateTokenIfNeeded(newToken);
               }
             }
           }
-          
+
           return User.fromJson(json);
         },
       );
@@ -841,23 +1029,32 @@ class AuthService {
         fromJson: (json) {
           // Token güncelleme kontrolü - API'den yeni token gelirse kaydet
           if (json is Map<String, dynamic>) {
-            if (json.containsKey('token') && json['token'] != null && json['token'].toString().isNotEmpty) {
+            if (json.containsKey('token') &&
+                json['token'] != null &&
+                json['token'].toString().isNotEmpty) {
               final newToken = json['token'].toString();
-              Logger.debug('🔄 Update Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...');
+              Logger.debug(
+                '🔄 Update Profile - API response\'unda yeni token bulundu: ${newToken.substring(0, 20)}...',
+              );
               _updateTokenIfNeeded(newToken);
             }
-            
+
             // Data içinde token kontrolü
-            if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+            if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
-              if (data.containsKey('token') && data['token'] != null && data['token'].toString().isNotEmpty) {
+              if (data.containsKey('token') &&
+                  data['token'] != null &&
+                  data['token'].toString().isNotEmpty) {
                 final newToken = data['token'].toString();
-                Logger.debug('🔄 Update Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...');
+                Logger.debug(
+                  '🔄 Update Profile - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...',
+                );
                 _updateTokenIfNeeded(newToken);
               }
             }
           }
-          
+
           return User.fromJson(json);
         },
       );
@@ -876,10 +1073,10 @@ class AuthService {
   Future<ApiResponse<void>> logout() async {
     try {
       Logger.debug('🚪 AuthService.logout called');
-      
+
       // API çağrısı yapmadan direkt local verileri temizle
       await _clearUserData();
-      
+
       Logger.debug('✅ AuthService.logout - Local data cleared successfully');
       return ApiResponse.success(null);
     } catch (e) {
@@ -916,10 +1113,14 @@ class AuthService {
       final userDataString = prefs.getString(AppConstants.userDataKey);
 
       if (userDataString != null && userDataString.isNotEmpty) {
-        Logger.debug('✅ AuthService.getCurrentUser - User data found, length: ${userDataString.length}');
+        Logger.debug(
+          '✅ AuthService.getCurrentUser - User data found, length: ${userDataString.length}',
+        );
         final userData = json.decode(userDataString);
         final user = User.fromJson(userData);
-        Logger.info('✅ AuthService.getCurrentUser - User loaded: ${user.id} - ${user.name}');
+        Logger.info(
+          '✅ AuthService.getCurrentUser - User loaded: ${user.id} - ${user.name}',
+        );
         return user;
       }
 
@@ -939,10 +1140,7 @@ class AuthService {
       );
       Logger.debug('🔍 _saveUserData - User.toJson(): ${user.toJson()}');
 
-      if (user.id != null &&
-          user.id.isNotEmpty &&
-          token != null &&
-          token.isNotEmpty) {
+      if (user.id.isNotEmpty && token.isNotEmpty) {
         Logger.debug(
           'Login sonrası userId kaydediliyor: [${user.id}], token: [${token.substring(0, 10)}...]',
         );
@@ -955,7 +1153,9 @@ class AuthService {
 
         // Kaydetme sonrası kontrol
         final savedUserId = prefs.getString(AppConstants.userIdKey);
-        Logger.debug('🔍 _saveUserData - Saved and retrieved userId: [$savedUserId]');
+        Logger.debug(
+          '🔍 _saveUserData - Saved and retrieved userId: [$savedUserId]',
+        );
       } else {
         Logger.error(
           'HATA: Login sonrası userId veya token null/boş! userId: [${user.id}], token: [$token]',
@@ -969,21 +1169,23 @@ class AuthService {
   Future<void> _saveUserDataOnly(User user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (user.id != null && user.id.isNotEmpty) {
+      if (user.id.isNotEmpty) {
         Logger.debug(
           'Profil güncelleme sonrası userId kaydediliyor: ${user.id}',
         );
         await prefs.setString(AppConstants.userIdKey, user.id);
       } else {
-        Logger.debug('Profil güncelleme sonrası userId boş, eski id korunuyor.');
+        Logger.debug(
+          'Profil güncelleme sonrası userId boş, eski id korunuyor.',
+        );
       }
-      
+
       // Mevcut token'ı koru
       final currentToken = prefs.getString(AppConstants.userTokenKey);
       if (currentToken != null && user.token == null) {
         user = user.copyWith(token: currentToken);
       }
-      
+
       await prefs.setString(
         AppConstants.userDataKey,
         json.encode(user.toJson()),
@@ -999,10 +1201,12 @@ class AuthService {
       if (newToken.isNotEmpty) {
         final prefs = await SharedPreferences.getInstance();
         final currentToken = prefs.getString(AppConstants.userTokenKey);
-        
+
         // Token farklıysa veya yoksa güncelle
         if (currentToken != newToken) {
-          Logger.debug('🔄 Token güncelleniyor: ${newToken.substring(0, 20)}...');
+          Logger.debug(
+            '🔄 Token güncelleniyor: ${newToken.substring(0, 20)}...',
+          );
           await prefs.setString(AppConstants.userTokenKey, newToken);
           Logger.debug('✅ Token başarıyla güncellendi');
         } else {
@@ -1048,14 +1252,18 @@ class AuthService {
       Logger.debug(
         '🔍 AuthService - Retrieved user token: ${userToken?.substring(0, 10)}...',
       );
-      Logger.debug('🔍 AuthService - Retrieved user data length: ${userData?.length}');
+      Logger.debug(
+        '🔍 AuthService - Retrieved user data length: ${userData?.length}',
+      );
 
       // User data'yı parse edip ID'yi kontrol et
       if (userData != null) {
         try {
           final userJson = json.decode(userData);
           final userIdFromData = userJson['id'];
-          Logger.debug('🔍 AuthService - User ID from userData: [$userIdFromData]');
+          Logger.debug(
+            '🔍 AuthService - User ID from userData: [$userIdFromData]',
+          );
           Logger.debug('🔍 AuthService - Full userData: $userJson');
 
           // Eğer userData'daki ID farklıysa, onu kullan
@@ -1074,7 +1282,10 @@ class AuthService {
 
       return userId;
     } catch (e) {
-      Logger.error('❌ AuthService - Error getting current user ID: $e', error: e);
+      Logger.error(
+        '❌ AuthService - Error getting current user ID: $e',
+        error: e,
+      );
       return null;
     }
   }
@@ -1085,14 +1296,17 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.userTokenKey);
       final userId = prefs.getString(AppConstants.userIdKey);
-      
-      Logger.debug('🔍 AuthService.isLoggedIn - userId=[$userId], token=[${token?.substring(0, token.length > 10 ? 10 : token.length)}...]');
-      
-      final isLoggedIn = token != null &&
+
+      Logger.debug(
+        '🔍 AuthService.isLoggedIn - userId=[$userId], token=[${token?.substring(0, token.length > 10 ? 10 : token.length)}...]',
+      );
+
+      final isLoggedIn =
+          token != null &&
           token.isNotEmpty &&
           userId != null &&
           userId.isNotEmpty;
-          
+
       Logger.info('🔍 AuthService.isLoggedIn - Result: $isLoggedIn');
       return isLoggedIn;
     } catch (e) {
@@ -1107,12 +1321,17 @@ class AuthService {
       Logger.debug('🔍 AuthService.getCurrentUserToken called');
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.userTokenKey);
-      
-      Logger.debug('🔍 AuthService.getCurrentUserToken - token=[${token?.substring(0, token.length > 10 ? 10 : token.length)}...]');
-      
+
+      Logger.debug(
+        '🔍 AuthService.getCurrentUserToken - token=[${token?.substring(0, token.length > 10 ? 10 : token.length)}...]',
+      );
+
       return token;
     } catch (e) {
-      Logger.error('❌ AuthService.getCurrentUserToken - Exception: $e', error: e);
+      Logger.error(
+        '❌ AuthService.getCurrentUserToken - Exception: $e',
+        error: e,
+      );
       return null;
     }
   }
