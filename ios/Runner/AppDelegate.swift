@@ -7,7 +7,6 @@ import AppTrackingTransparency
 import AdSupport
 import FirebaseMessaging
 
-
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   override func application(
@@ -16,13 +15,14 @@ import FirebaseMessaging
   ) -> Bool {
     // Firebase konfigürasyonu
     FirebaseApp.configure()
+    
     // Bildirim için mesaj delegate'ini ayarla
     Messaging.messaging().delegate = self
     
     // iOS bildirim ayarları
     UNUserNotificationCenter.current().delegate = self
 
-     // Bildirim izinlerini talep et
+    // Bildirim izinlerini talep et
     let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .provisional, .criticalAlert]
     UNUserNotificationCenter.current().requestAuthorization(
       options: authOptions,
@@ -60,8 +60,32 @@ import FirebaseMessaging
       UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
     
+    // Google Mobile Ads SDK başlatma (iOS) - güvenli başlatma
+    MobileAds.shared.start { status in
+      print("✅ AdMob iOS başlatıldı: \(status.adapterStatusesByClassName)")
+    }
+    
     // Flutter plugins kaydı
     GeneratedPluginRegistrant.register(with: self)
+    
+    // Native ad factory'yi güvenli şekilde kaydet
+    do {
+      FLTGoogleMobileAdsPlugin.registerNativeAdFactory(
+          self,
+          factoryId: "listTile",
+          nativeAdFactory: NativeAdFactory()
+      )
+      print("✅ Native Ad Factory başarıyla kaydedildi")
+    } catch {
+      print("❌ Native Ad Factory kaydetme hatası: \(error)")
+    }
+
+    // iOS 14+ için App Tracking Transparency izni (reklam doldurma oranını iyileştirir)
+    if #available(iOS 14, *) {
+      ATTrackingManager.requestTrackingAuthorization { status in
+        // İzin sonucu burada döner; gerektiğinde ek konfigürasyon yapılabilir
+      }
+    }
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -89,6 +113,16 @@ import FirebaseMessaging
     // Üst sınıfın metodunu çağır
     super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
   }
+  
+  override func applicationWillTerminate(_ application: UIApplication) {
+    // Native ad factory'yi güvenli şekilde temizle
+    do {
+      FLTGoogleMobileAdsPlugin.unregisterNativeAdFactory(self, factoryId: "listTile")
+      print("✅ Native Ad Factory başarıyla temizlendi")
+    } catch {
+      print("❌ Native Ad Factory temizleme hatası: \(error)")
+    }
+  }
 }
 
 // FCM Token yenileme davranışı için FirebaseMessagingDelegate
@@ -107,8 +141,8 @@ extension AppDelegate: MessagingDelegate {
 
 // Foreground bildirim davranışı için UNUserNotificationCenterDelegate
 @available(iOS 10.0, *)
-extension AppDelegate {
-  override func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+extension AppDelegate: UNUserNotificationCenterDelegate {
+  func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
     let userInfo = notification.request.content.userInfo
     print("Ön planda bildirim alındı: \(userInfo)")
     
@@ -117,13 +151,13 @@ extension AppDelegate {
     
     // iOS 14+ için tüm bildirim seçeneklerini göster
     if #available(iOS 14.0, *) {
-      completionHandler([[.banner, .list, .sound, .badge]])
+      completionHandler([.banner, .list, .sound, .badge])
     } else {
-      completionHandler([[.alert, .sound, .badge]])
+      completionHandler([.alert, .sound, .badge])
     }
   }
   
-  override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+  func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
     let userInfo = response.notification.request.content.userInfo
     print("Bildirime tıklandı: \(userInfo)")
     
@@ -131,45 +165,6 @@ extension AppDelegate {
     Messaging.messaging().appDidReceiveMessage(userInfo)
     
     completionHandler()
-  }
-  
-    // Google Mobile Ads SDK başlatma (iOS) - güvenli başlatma
-    MobileAds.shared.start { status in
-      print("✅ AdMob iOS başlatıldı: \(status.adapterStatusesByClassName)")
-    }
-    
-    GeneratedPluginRegistrant.register(with: self)
-    
-    // Native ad factory'yi güvenli şekilde kaydet
-    do {
-      FLTGoogleMobileAdsPlugin.registerNativeAdFactory(
-          self,
-          factoryId: "listTile",
-          nativeAdFactory: NativeAdFactory()
-      )
-      print("✅ Native Ad Factory başarıyla kaydedildi")
-    } catch {
-      print("❌ Native Ad Factory kaydetme hatası: \(error)")
-    }
-
-    // iOS 14+ için App Tracking Transparency izni (reklam doldurma oranını iyileştirir)
-    if #available(iOS 14, *) {
-      ATTrackingManager.requestTrackingAuthorization { status in
-        // İzin sonucu burada döner; gerektiğinde ek konfigürasyon yapılabilir
-      }
-    }
-    
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-  
-  override func applicationWillTerminate(_ application: UIApplication) {
-    // Native ad factory'yi güvenli şekilde temizle
-    do {
-      FLTGoogleMobileAdsPlugin.unregisterNativeAdFactory(self, factoryId: "listTile")
-      print("✅ Native Ad Factory başarıyla temizlendi")
-    } catch {
-      print("❌ Native Ad Factory temizleme hatası: \(error)")
-    }
   }
 }
 
