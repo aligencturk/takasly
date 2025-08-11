@@ -141,8 +141,8 @@ extension AppDelegate: MessagingDelegate {
 
 // Foreground bildirim davranışı için UNUserNotificationCenterDelegate
 @available(iOS 10.0, *)
-extension AppDelegate: UNUserNotificationCenterDelegate {
-  func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+extension AppDelegate {
+  override func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
     let userInfo = notification.request.content.userInfo
     print("Ön planda bildirim alındı: \(userInfo)")
     
@@ -157,7 +157,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     }
   }
   
-  func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+  override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
     let userInfo = response.notification.request.content.userInfo
     print("Bildirime tıklandı: \(userInfo)")
     
