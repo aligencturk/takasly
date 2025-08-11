@@ -16,49 +16,28 @@ import FirebaseMessaging
     // Firebase konfigürasyonu
     FirebaseApp.configure()
     
+    // iOS bildirim ayarları
+    configureNotifications()
+    
     // Bildirim için mesaj delegate'ini ayarla
     Messaging.messaging().delegate = self
     
-    // iOS bildirim ayarları
-    UNUserNotificationCenter.current().delegate = self
-
-    // Bildirim izinlerini talep et
-    let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .provisional, .criticalAlert]
-    UNUserNotificationCenter.current().requestAuthorization(
-      options: authOptions,
-      completionHandler: { granted, error in
-        if granted {
-          print("iOS bildirim izinleri verildi")
-        } else {
-          print("iOS bildirim izinleri reddedildi: \(String(describing: error))")
-        }
-      }
-    )
- 
-    // Bildirim kayıt ayarları
-    application.registerForRemoteNotifications()
-    
-    // APNs ayarları
+    // iOS 10+ için UNUserNotificationCenter delegate'ini ayarla
     if #available(iOS 10.0, *) {
-      // iOS 10 ve üzeri için
       UNUserNotificationCenter.current().delegate = self
-      
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .provisional, .criticalAlert]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: { _, _ in }
+    }
+    
+    // iOS 8-9 için eski notification ayarları
+    if #available(iOS 8.0, *) {
+      let settings = UIUserNotificationSettings(
+        types: [.alert, .badge, .sound],
+        categories: nil
       )
-    } else {
-      // iOS 9 ve altı için (daha eski sürümler için)
-      let settings: UIUserNotificationSettings =
-        UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
       application.registerUserNotificationSettings(settings)
     }
     
-    // Foreground bildirimleri için ayar
-    if #available(iOS 10.0, *) {
-      UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
-    }
+    // Bildirim kayıt ayarları
+    application.registerForRemoteNotifications()
     
     // Google Mobile Ads SDK başlatma (iOS) - güvenli başlatma
     MobileAds.shared.start { status in
@@ -139,17 +118,17 @@ extension AppDelegate: MessagingDelegate {
   }
 }
 
-// Foreground bildirim davranışı için UNUserNotificationCenterDelegate
+// MARK: - UNUserNotificationCenterDelegate
 @available(iOS 10.0, *)
 extension AppDelegate {
   override func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
     let userInfo = notification.request.content.userInfo
-    print("Ön planda bildirim alındı: \(userInfo)")
+    print("✅ iOS Foreground Bildirim Alındı: \(userInfo)")
     
     // Bildirimi FirebaseMessaging'e ilet
     Messaging.messaging().appDidReceiveMessage(userInfo)
     
-    // iOS 14+ için tüm bildirim seçeneklerini göster
+    // iOS 14+ için optimize edilmiş bildirim seçenekleri
     if #available(iOS 14.0, *) {
       completionHandler([.banner, .list, .sound, .badge])
     } else {
@@ -159,7 +138,7 @@ extension AppDelegate {
   
   override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
     let userInfo = response.notification.request.content.userInfo
-    print("Bildirime tıklandı: \(userInfo)")
+    print("✅ iOS Bildirime Tıklandı: \(userInfo)")
     
     // Bildirimi FirebaseMessaging'e ilet
     Messaging.messaging().appDidReceiveMessage(userInfo)
@@ -326,4 +305,45 @@ class NativeAdFactory : FLTNativeAdFactory {
 
         return adView
     }
+}
+
+// MARK: - AppDelegate Extensions
+extension AppDelegate {
+  // MARK: - iOS Bildirim Konfigürasyonu
+  private func configureNotifications() {
+    // iOS 10+ için UNUserNotificationCenter delegate'ini ayarla
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self
+    }
+    
+    // Bildirim izinlerini iste
+    let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .provisional]
+    UNUserNotificationCenter.current().requestAuthorization(
+      options: authOptions,
+      completionHandler: { granted, error in
+        DispatchQueue.main.async {
+          if granted {
+            print("✅ iOS bildirim izinleri verildi")
+            
+            // İzin verildikten sonra APNs'e kayıt ol
+            DispatchQueue.main.async {
+              UIApplication.shared.registerForRemoteNotifications()
+            }
+          } else {
+            print("❌ iOS bildirim izinleri reddedildi: \(String(describing: error))")
+          }
+        }
+      }
+    )
+    
+    // iOS 14+ için ek izinler
+    if #available(iOS 14.0, *) {
+      UNUserNotificationCenter.current().requestAuthorization(
+        options: [.alert, .badge, .sound, .provisional, .criticalAlert],
+        completionHandler: { granted, error in
+          print("iOS 14+ notification permissions: \(granted)")
+        }
+      )
+    }
+  }
 }

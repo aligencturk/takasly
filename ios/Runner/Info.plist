@@ -74,7 +74,49 @@
 	
 	<!-- iOS 14+ Notification Presentation -->
 	<key>NSUserNotificationUsageDescription</key>
-	<string>Bildirimleri göstermek için izin gerekiyor</string>
+	<string>Bu uygulama bildirimleri gösterebilmek için izin talep eder</string>
+	
+	<!-- Push Notification Configuration -->
+	<key>UIUserNotificationSettings</key>
+	<dict>
+		<key>UIUserNotificationTypeAlert</key>
+		<true/>
+		<key>UIUserNotificationTypeBadge</key>
+		<true/>
+		<key>UIUserNotificationTypeSound</key>
+		<true/>
+	</dict>
+	
+	<!-- iOS 14+ Notification Presentation Options -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Bu uygulama bildirimleri gösterebilmek için izin talep eder</string>
+	
+	<!-- FCM için ek ayarlar -->
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	
+	<!-- iOS Notification Categories -->
+	<key>UINotificationCategory</key>
+	<array>
+		<dict>
+			<key>identifier</key>
+			<string>test_category</string>
+			<key>actions</key>
+			<array>
+				<dict>
+					<key>identifier</key>
+					<string>test_action</string>
+					<key>title</key>
+					<string>Test</string>
+					<key>options</key>
+					<dict>
+						<key>foreground</key>
+						<true/>
+					</dict>
+				</dict>
+			</array>
+		</dict>
+	</array>
 	
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

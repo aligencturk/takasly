@@ -1,17 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import '../models/notification.dart';
+import '../models/notification.dart' as AppNotification;
 import '../services/notification_service.dart';
 import '../services/user_service.dart';
 import '../utils/logger.dart';
 
 class NotificationViewModel extends ChangeNotifier {
-  final NotificationService _notificationService = NotificationService();
+  final NotificationService _notificationService = NotificationService.instance;
   final UserService _userService = UserService();
   static const String _tag = 'NotificationViewModel';
 
   // State variables
-  List<Notification> _notifications = [];
+  List<AppNotification.Notification> _notifications = [];
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
@@ -24,7 +24,7 @@ class NotificationViewModel extends ChangeNotifier {
   bool _fcmInitialized = false;
 
   // Getters
-  List<Notification> get notifications => _notifications;
+  List<AppNotification.Notification> get notifications => _notifications;
   bool get isLoading => _isLoading;
   bool get hasError => _hasError;
   String get errorMessage => _errorMessage;
@@ -75,7 +75,7 @@ class NotificationViewModel extends ChangeNotifier {
       );
 
       if (response.isSuccess && response.data != null) {
-        _notifications = response.data!;
+        _notifications = List<AppNotification.Notification>.from(response.data!);
         Logger.debug('Loaded ${_notifications.length} notifications', tag: _tag);
         _clearError();
       } else {
@@ -125,7 +125,7 @@ class NotificationViewModel extends ChangeNotifier {
       );
 
       if (response.isSuccess && response.data != null) {
-        _notifications = response.data!;
+        _notifications = List<AppNotification.Notification>.from(response.data!);
         Logger.debug('Refreshed ${_notifications.length} notifications', tag: _tag);
         _clearError();
       } else {
@@ -140,7 +140,7 @@ class NotificationViewModel extends ChangeNotifier {
   }
 
   /// Belirli bir bildirimi bulur
-  Notification? getNotificationById(int id) {
+  AppNotification.Notification? getNotificationById(int id) {
     try {
       return _notifications.firstWhere((notification) => notification.id == id);
     } catch (e) {
@@ -149,17 +149,17 @@ class NotificationViewModel extends ChangeNotifier {
   }
 
   /// Bildirim tipine göre filtreleme
-  List<Notification> getNotificationsByType(String type) {
+  List<AppNotification.Notification> getNotificationsByType(String type) {
     return _notifications.where((notification) => notification.type == type).toList();
   }
 
   /// Yeni takas teklifi bildirimlerini alır
-  List<Notification> get newTradeOfferNotifications {
+  List<AppNotification.Notification> get newTradeOfferNotifications {
     return getNotificationsByType('new_trade_offer');
   }
 
   /// Takas tamamlanma bildirimlerini alır
-  List<Notification> get tradeCompletedNotifications {
+  List<AppNotification.Notification> get tradeCompletedNotifications {
     return getNotificationsByType('trade_completed');
   }
 
@@ -204,11 +204,19 @@ class NotificationViewModel extends ChangeNotifier {
   /// FCM'i başlatır ve gerekli ayarları yapar
   Future<void> initializeFCM() async {
     try {
-      Logger.debug('FCM başlatılıyor...', tag: _tag);
+      Logger.debug('🚀 FCM Başlatılıyor...', tag: _tag);
+      
+      // Platform kontrolü
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        Logger.warning('📱 iOS PLATFORM TESPIT EDİLDİ', tag: _tag);
+        Logger.warning('⚠️ iOS Simülatörde PUSH BİLDİRİMLER ÇALIŞMAZ!', tag: _tag);
+        Logger.info('💡 Gerçek iOS cihazında test etmeniz gerekiyor', tag: _tag);
+      }
       
       // İzin iste
       final permissionGranted = await _notificationService.requestNotificationPermissions();
       _isPermissionGranted = permissionGranted;
+      Logger.debug('🔐 Bildirim İzni: ${permissionGranted ? "VERİLDİ ✅" : "REDDEDİLDİ ❌"}', tag: _tag);
       
       if (permissionGranted) {
         // iOS foreground bildirim gösterimi için sunum seçeneklerini ayarla
@@ -230,9 +238,19 @@ class NotificationViewModel extends ChangeNotifier {
         } catch (_) {}
         
         _fcmInitialized = true;
-        Logger.debug('✅ FCM başarıyla başlatıldı', tag: _tag);
+        Logger.debug('✅ FCM BAŞARIYLA BAŞLATILDI!', tag: _tag);
+        
+        // iOS için ek bilgilendirme
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+          Logger.info('📋 iOS BİLDİRİM TEST REHBERİ:', tag: _tag);
+          Logger.info('1️⃣ Gerçek iOS cihazı kullanın (simülatör değil)', tag: _tag);
+          Logger.info('2️⃣ Firebase Console\'da APNs sertifikası ekleyin', tag: _tag);
+          Logger.info('3️⃣ Development/Production entitlements doğru ayarlayın', tag: _tag);
+          Logger.info('4️⃣ App Store Connect\'te Bundle ID tanımlayın', tag: _tag);
+        }
       } else {
         Logger.warning('⚠️ FCM izinleri verilmediği için başlatılamadı', tag: _tag);
+        Logger.info('💡 İzinleri manuel olarak Ayarlar > Bildirimler\'den verebilirsiniz', tag: _tag);
       }
       
       notifyListeners();
@@ -379,7 +397,7 @@ class NotificationViewModel extends ChangeNotifier {
     String? token,
     required String title,
     required String body,
-    Map<String, String>? data,
+    Map<String, dynamic>? data,
   }) async {
     try {
       Logger.debug('FCM mesajı gönderiliyor...', tag: _tag);
@@ -460,9 +478,9 @@ class NotificationViewModel extends ChangeNotifier {
       final success = await _notificationService.sendFCMMessage(
         accessToken: bearer,
         token: null,
-        topic: user.id, // TOPIC = KULLANICI ID
+        topic: "2", // TOPIC = KULLANICI ID
         title: 'Test Bildirimi',
-        body: 'FCM v1 test bildirimi - ${DateTime.now().toString().substring(11, 19)}',
+        body: 'Ali ıslak kek yaptım yicen mi - ${DateTime.now().toString().substring(11, 19)}',
         data: {
           'type': 'test',
           'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
@@ -484,6 +502,7 @@ class NotificationViewModel extends ChangeNotifier {
   }
   
   /// ViewModel'i temizler
+  @override
   void dispose() {
     _notifications.clear();
     super.dispose();

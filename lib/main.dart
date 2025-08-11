@@ -45,19 +45,10 @@ import 'utils/logger.dart';
 /// FCM Background Message Handler
 /// Bu fonksiyon uygulama background veya terminate durumundayken
 /// gelen FCM mesajlarını işler
+
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  Logger.debug('FCM Background Message: ${message.notification?.title}', tag: 'FCM_BG');
-  
-  // Background'da gelen mesajları işle
-  if (message.notification != null) {
-    Logger.debug('Background notification: ${message.notification!.title} - ${message.notification!.body}', tag: 'FCM_BG');
-  }
-  
-  if (message.data.isNotEmpty) {
-    Logger.debug('Background data: ${message.data}', tag: 'FCM_BG');
-  }
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Burada ağır iş yapmayın. Genelde log/analitik yeterli olur.
 }
 
 /// Android için notification channel oluşturur
@@ -75,7 +66,8 @@ Future<void> _createNotificationChannel() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // Performans optimizasyonları
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -104,7 +96,7 @@ void main() async {
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
          defaultTargetPlatform == TargetPlatform.iOS)) {
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
       Logger.info('✅ FCM Background Handler ayarlandı');
       
       // FCM'i başlat
@@ -125,30 +117,13 @@ void main() async {
         if (settings.authorizationStatus == AuthorizationStatus.authorized) {
           Logger.info('✅ FCM izinleri verildi');
           
-          // iOS: APNS token hazır değilse FCM token alamayız. Kısa bekleme/retry yapalım
+          // iOS için optimize edilmiş başlatma
           if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
             try {
-              // iOS simülatör için sandbox mod ayarla
               await messaging.setAutoInitEnabled(true);
-              
-              const int maxAttempts = 15; // ~7.5sn (artırdık)
-              String? apnsToken;
-              for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-                apnsToken = await messaging.getAPNSToken();
-                if (apnsToken != null && apnsToken.isNotEmpty) {
-                  Logger.info('✅ APNS Token hazır: ${apnsToken.substring(0, 12)}...');
-                  break;
-                }
-                Logger.info('⏳ APNS token bekleniyor... ($attempt/$maxAttempts)');
-                await Future.delayed(const Duration(milliseconds: 500));
-              }
-              if (apnsToken == null || apnsToken.isEmpty) {
-                Logger.warning('⚠️ APNS token halen hazır değil; FCM token gecikebilir');
-                // iOS simülatörde bazen APNS token gelmez, yine de FCM token almayı dene
-                Logger.info('🔄 iOS simülatör: APNS token olmadan FCM token deneniyor...');
-              }
+              Logger.info('✅ iOS FCM auto-init etkinleştirildi');
             } catch (e) {
-              Logger.warning('⚠️ APNS token beklerken uyarı: $e');
+              Logger.warning('⚠️ iOS FCM auto-init hatası: $e');
             }
           }
 

@@ -82,6 +82,8 @@ dependencies:
   
   # Video Player
   video_player: ^2.10.0
+
+  flutter_local_notifications: ^18.0.1
   
   # AdMob
   google_mobile_ads: ^6.0.0

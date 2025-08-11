@@ -576,6 +576,25 @@ class HttpClient {
           return ApiResponse<T>.success(null);
         }
 
+        // Response body'nin JSON olup olmadığını kontrol et
+        String trimmedBody = response.body.trim();
+        if (!trimmedBody.startsWith('{') && !trimmedBody.startsWith('[')) {
+          // JSON değil, text response
+          print('⚠️ Success - Non-JSON response body: "$trimmedBody"');
+          
+          // "Method geçersiz!" gibi hata mesajlarını kontrol et
+          if (trimmedBody.contains('Method geçersiz') || 
+              trimmedBody.contains('geçersiz') ||
+              trimmedBody.contains('invalid') ||
+              trimmedBody.contains('error')) {
+            return ApiResponse<T>.error(trimmedBody);
+          }
+          
+          // Text response'u success olarak döndür (eğer hata mesajı değilse)
+          // Generic type uyumsuzluğu nedeniyle null döndür
+          return ApiResponse<T>.success(null);
+        }
+
         try {
           final data = json.decode(response.body);
           print('✅ Parsed response data: $data');
