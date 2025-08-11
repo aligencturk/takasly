@@ -88,6 +88,7 @@ dependencies:
   
   # AdMob
   google_mobile_ads: ^6.0.0
+  sliver_tools: ^0.2.12
   
   # Social Login
   google_sign_in: ^6.2.1

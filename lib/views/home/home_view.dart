@@ -18,9 +18,11 @@ import '../chat/chat_list_view.dart';
 import '../home/search_view.dart';
 import '../notifications/notification_list_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
+import '../../widgets/native_ad_wide_card.dart';
+import 'dart:math' as math;
+import 'package:sliver_tools/sliver_tools.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
-import '../../widgets/native_ad_grid_card.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -257,64 +259,75 @@ class _HomeViewState extends State<HomeView> {
         }
 
         final int productCount = vm.products.length;
-        final int adCount = productCount ~/ 4; // Her 4 ürüne 1 reklam
-        final int totalItemCount = productCount + adCount;
-        Logger.info(
-          '📊 HomeView - Toplam ürün: $productCount, Toplam item (reklam dahil): $totalItemCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}',
-        );
+        Logger.info('📊 HomeView - Toplam ürün: $productCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}');
 
-        return SliverPadding(
-          padding: EdgeInsets.symmetric(
-            horizontal: _calculateHorizontalPadding(context),
-          ),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: _calculateGridSpacing(context),
-              mainAxisSpacing: _calculateGridSpacing(context),
-              childAspectRatio: _calculateChildAspectRatio(context),
+        // Ürünleri 8'lik parçalara böl, her parçadan sonra geniş reklam yerleştir
+        final List<Widget> sections = [];
+        for (int start = 0; start < productCount; start += 8) {
+          final end = math.min(start + 8, productCount);
+          final chunk = vm.products.sublist(start, end);
+
+          sections.add(
+            SliverPadding(
+              padding: EdgeInsets.symmetric(
+                horizontal: _calculateHorizontalPadding(context),
+              ),
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: _calculateGridSpacing(context),
+                  mainAxisSpacing: _calculateGridSpacing(context),
+                  childAspectRatio: _calculateChildAspectRatio(context),
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final product = chunk[index];
+
+                    bool isOwnProduct = false;
+                    if (vm.myProducts.isNotEmpty) {
+                      isOwnProduct = vm.myProducts.any(
+                        (myProduct) => myProduct.id == product.id,
+                      );
+                    } else {
+                      final authViewModel = Provider.of<AuthViewModel>(
+                        context,
+                        listen: false,
+                      );
+                      final currentUserId = authViewModel.currentUser?.id;
+                      isOwnProduct = currentUserId != null &&
+                          product.ownerId == currentUserId;
+                    }
+
+                    return ProductCard(
+                      product: product,
+                      heroTag: 'home_product_${product.id}_${start + index}',
+                      hideFavoriteIcon: isOwnProduct,
+                    );
+                  },
+                  childCount: chunk.length,
+                ),
+              ),
             ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              // Her 5. eleman reklam (index: 4,9,14,...)
-              final bool isAd = ((index + 1) % 5 == 0);
-              if (isAd) {
-                return NativeAdGridCard(key: ValueKey('ad_$index'));
-              }
+          );
 
-              // Bu index'e kadar yerleşen reklam sayısı
-              final int numAdsBefore = (index + 1) ~/ 5;
-              final int productIndex = index - numAdsBefore;
+          // Parça sonu: geniş reklam ekle (son parça hariç)
+          if (end < productCount) {
+            sections.add(
+              SliverPadding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: _calculateHorizontalPadding(context),
+                  vertical: _calculateGridSpacing(context),
+                ),
+                sliver: const SliverToBoxAdapter(
+                  child: NativeAdWideCard(),
+                ),
+              ),
+            );
+          }
+        }
 
-              if (productIndex < 0 || productIndex >= productCount) {
-                return const SizedBox.shrink();
-              }
-
-              final product = vm.products[productIndex];
-
-              // Kullanıcının kendi ürünü olup olmadığını kontrol et
-              bool isOwnProduct = false;
-              if (vm.myProducts.isNotEmpty) {
-                isOwnProduct = vm.myProducts.any(
-                  (myProduct) => myProduct.id == product.id,
-                );
-              } else {
-                final authViewModel = Provider.of<AuthViewModel>(
-                  context,
-                  listen: false,
-                );
-                final currentUserId = authViewModel.currentUser?.id;
-                isOwnProduct =
-                    currentUserId != null && product.ownerId == currentUserId;
-              }
-
-              return ProductCard(
-                product: product,
-                heroTag: 'home_product_${product.id}_$index',
-                hideFavoriteIcon: isOwnProduct,
-              );
-            }, childCount: totalItemCount),
-          ),
-        );
+        // Bütün bölümleri bir araya getir
+        return MultiSliver(children: sections);
       },
     );
   }
@@ -445,7 +458,6 @@ class _HomeViewState extends State<HomeView> {
 
   // Alt navigasyon ile çakışmayı önlemek için ekstra boşluk bırakır
   Widget _buildBottomSpacer() {
-    final double bottomSafe = MediaQuery.of(context).padding.bottom;
     const double extra = 24.0; // bir tık artırılmış boşluk
     return const SliverToBoxAdapter(child: SizedBox(height: extra));
   }
