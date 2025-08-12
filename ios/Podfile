@@ -1,5 +1,5 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '13.0'
+platform :ios, '14.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -35,8 +35,8 @@ target 'Runner' do
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   
-  # GoogleUtilities çakışmasını çözmek için özel versiyon belirtme
-  pod 'GoogleUtilities', '~> 8.1'
+  # Flutter plugin'leri kendi bağımlılıklarını yönetsin - iOS 14.0+ optimize edilmiş
+  # Google Sign-In ve Firebase versiyonları flutter plugin'leri tarafından otomatik belirlenir
   
   target 'RunnerTests' do
     inherit! :search_paths
@@ -47,24 +47,12 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
-    # GoogleUtilities çakışmasını çözmek için
+    # iOS deployment target'ı güncelle
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
       
-      # GoogleUtilities için uyumluluk ayarları
-      if target.name == 'GoogleUtilities'
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GPB_USE_PROTOBUF_FRAMEWORK_IMPORTS=1'
-      end
+      # Flutter plugin'leri için standart iOS 14.0+ ayarları
     end
   end
-  
-  # GoogleUtilities versiyon çakışmasını çözmek için
-  installer.pods_project.targets.each do |target|
-    if target.name == 'GoogleUtilities'
-      target.build_configurations.each do |config|
-        config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-      end
-    end
-  end
+
 end

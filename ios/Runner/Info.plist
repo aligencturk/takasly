@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
@@ -24,100 +23,43 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Bu uygulama ürün fotoğrafları çekmek için kameraya erişim istiyor.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Bu uygulama size en yakın ürünleri göstermek için konumunuza erişim istiyor.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Bu uygulama ürün fotoğrafları seçmek için foto galerisine erişim istiyor.</string>
-	<key>io.flutter.embedded_views_preview</key>
-	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+	  <dict>
+		<key>CFBundleTypeRole</key>
+		<string>Editor</string>
+		<key>CFBundleURLName</key>
+		<string>googleauth</string>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		  <string>com.googleusercontent.apps.422264804561-llio284tijfqkh873at3ci09fna2epl0</string>
+		</array>
+	  </dict>
+	  <dict>
+		<key>CFBundleTypeRole</key>
+		<string>Editor</string>
+		<key>CFBundleURLName</key>
+		<string>bundleid</string>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		  <string>com.rivorya.takaslyapp</string>
+		</array>
+	  </dict>
+	</array>
 	
-	<!-- AdMob App ID -->
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3600325889588673~5340558560</string>
-
-	<!-- ATT / Tracking izin açıklaması (iOS 14+) -->
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Size daha uygun reklamlar gösterebilmemiz için uygulama, izleme izni talep eder.</string>
-	
-	<!-- Location Permissions -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Bu uygulama ürününüzün konumunu belirlemek için konum izninize ihtiyaç duyar.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Bu uygulama ürününüzün konumunu belirlemek için konum izninize ihtiyaç duyar.</string>
-	
-	<!-- FCM Background Modes -->
-	<key>UIBackgroundModes</key>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>remote-notification</string>
+		<string>googlegmail</string>
+		<string>googleauth</string>
+		<string>googledrive</string>
+		<string>googlephoto</string>
+		<string>googlechrome</string>
+		<string>googlechromes</string>
 	</array>
-	
-	<!-- FCM için FirebaseAppDelegateProxyEnabled -->
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
-	
-	<!-- FCM için Notification Service Extension -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	
-	<!-- iOS Notification Presentation Options -->
-	<key>NSUserNotificationAlertStyle</key>
-	<string>alert</string>
-	
-	<!-- iOS 14+ Notification Presentation -->
-	<key>NSUserNotificationUsageDescription</key>
-	<string>Bu uygulama bildirimleri gösterebilmek için izin talep eder</string>
-	
-	<!-- Push Notification Configuration -->
-	<key>UIUserNotificationSettings</key>
-	<dict>
-		<key>UIUserNotificationTypeAlert</key>
-		<true/>
-		<key>UIUserNotificationTypeBadge</key>
-		<true/>
-		<key>UIUserNotificationTypeSound</key>
-		<true/>
-	</dict>
-	
-	<!-- iOS 14+ Notification Presentation Options -->
-	<key>NSUserNotificationUsageDescription</key>
-	<string>Bu uygulama bildirimleri gösterebilmek için izin talep eder</string>
-	
-	<!-- FCM için ek ayarlar -->
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
-	
-	<!-- iOS Notification Categories -->
-	<key>UINotificationCategory</key>
-	<array>
-		<dict>
-			<key>identifier</key>
-			<string>test_category</string>
-			<key>actions</key>
-			<array>
-				<dict>
-					<key>identifier</key>
-					<string>test_action</string>
-					<key>title</key>
-					<string>Test</string>
-					<key>options</key>
-					<dict>
-						<key>foreground</key>
-						<true/>
-					</dict>
-				</dict>
-			</array>
-		</dict>
-	</array>
-	
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -136,6 +78,13 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
 	</array>
 </dict>
 </plist>

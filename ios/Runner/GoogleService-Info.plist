@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>422264804561-llio284tijfqkh873at3ci09fna2epl0.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.422264804561-llio284tijfqkh873at3ci09fna2epl0</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>422264804561-5vusvdlo298es4p8dsg1dvhar7lih11u.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyBG3MaXvP6uCEt9FsgVe-1GasluEFTypXo</string>
 	<key>GCM_SENDER_ID</key>
@@ -25,7 +31,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:422264804561:ios:05775d50977f383ece61f0</string>
+	<string>1:422264804561:ios:6eeb364f84682f81ce61f0</string>
 	<key>DATABASE_URL</key>
 	<string>https://takasla-b2aa5-default-rtdb.europe-west1.firebasedatabase.app</string>
 </dict>

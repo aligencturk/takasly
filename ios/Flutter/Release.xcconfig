@@ -1,5 +1,2 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
-
-// AdMob Prod App ID (Release)
-GAD_APPLICATION_ID=ca-app-pub-3600325889588673~5340558560

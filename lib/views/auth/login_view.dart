@@ -404,40 +404,85 @@ class _BottomButtonsState extends State<_BottomButtons> {
 
   // Google ile giriş
   Future<void> _handleGoogleLogin(BuildContext context) async {
-    final authVm = Provider.of<AuthViewModel>(context, listen: false);
-    // NotificationViewModel burada opsiyonel olarak kullanılabilir
-
-    final String? googleAccessToken = await SocialAuthService.instance
-        .signInWithGoogleAndGetAccessToken();
-    if (googleAccessToken == null || googleAccessToken.isEmpty) {
+    try {
+      Logger.info('Google giriş başlatılıyor', tag: 'LoginView');
+      
+      final authVm = Provider.of<AuthViewModel>(context, listen: false);
+      
+      // Loading göster
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google oturum açılamadı.')),
+          const SnackBar(
+            content: Text('Google ile giriş yapılıyor...'),
+            duration: Duration(seconds: 2),
+          ),
         );
       }
-      return;
-    }
-    final String deviceID = await _getOrCreateDeviceId();
-    final String? fcmToken = await NotificationService.instance.getFCMToken();
 
-    final success = await authVm.loginWithGoogle(
-      googleAccessToken: googleAccessToken,
-      deviceID: deviceID,
-      fcmToken: fcmToken,
-    );
-
-    if (!mounted) return;
-
-    if (success) {
-      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-      if (authVm.currentUser != null) {
-        userViewModel.setCurrentUser(authVm.currentUser!);
+      Logger.info('Google Sign-In başlatılıyor...', tag: 'LoginView');
+      
+      final String? googleAccessToken = await SocialAuthService.instance
+          .signInWithGoogleAndGetAccessToken();
+          
+      if (googleAccessToken == null || googleAccessToken.isEmpty) {
+        Logger.warning('Google access token alınamadı', tag: 'LoginView');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Google oturum açılamadı. Lütfen tekrar deneyin.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
       }
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authVm.errorMessage ?? 'Giriş başarısız oldu.')),
+      
+      Logger.info('Google access token başarıyla alındı', tag: 'LoginView');
+      
+      Logger.info('Google access token alındı, giriş yapılıyor', tag: 'LoginView');
+      
+      final String deviceID = await _getOrCreateDeviceId();
+      final String? fcmToken = await NotificationService.instance.getFCMToken();
+
+      final success = await authVm.loginWithGoogle(
+        googleAccessToken: googleAccessToken,
+        deviceID: deviceID,
+        fcmToken: fcmToken,
       );
+
+      if (!mounted) return;
+
+      if (success) {
+        final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+        if (authVm.currentUser != null) {
+          userViewModel.setCurrentUser(authVm.currentUser!);
+        }
+        
+        Logger.info('Google giriş başarılı', tag: 'LoginView');
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Logger.error('Google giriş başarısız: ${authVm.errorMessage}', tag: 'LoginView');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authVm.errorMessage ?? 'Google ile giriş başarısız oldu.'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    } catch (e, s) {
+      Logger.error('Google giriş hatası: $e', stackTrace: s, tag: 'LoginView');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Beklenmeyen hata: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
