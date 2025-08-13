@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
+import '../../models/product_filter.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/notification_viewmodel.dart';
 
@@ -58,6 +59,24 @@ class _HomeViewState extends State<HomeView> {
         listen: false,
       );
       productViewModel.loadInitialData();
+      // Kullanıcı giriş yaptıysa varsayılan olarak konuma göre en yakın ilanları göster
+      final authViewModelForLocation = Provider.of<AuthViewModel>(
+        context,
+        listen: false,
+      );
+      if (authViewModelForLocation.currentUser != null) {
+        final currentFilter = productViewModel.currentFilter;
+        // Kullanıcının kendi filtresini ezmemek için sadece varsayılanda ve aktif filtre yokken uygula
+        if (currentFilter.sortType == SortType.defaultSort.value &&
+            !currentFilter.hasActiveFilters) {
+          Logger.info(
+            '📍 HomeView - Logged-in user detected, applying nearest-to-me sorting',
+          );
+          await productViewModel.applyFilter(
+            currentFilter.copyWith(sortType: SortType.nearestToMe.value),
+          );
+        }
+      }
       // Favorileri arka planda yükle (UI'ı bloklamasın)
       Future.microtask(() {
         productViewModel.loadFavoriteProducts();
@@ -259,7 +278,9 @@ class _HomeViewState extends State<HomeView> {
         }
 
         final int productCount = vm.products.length;
-        Logger.info('📊 HomeView - Toplam ürün: $productCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}');
+        Logger.info(
+          '📊 HomeView - Toplam ürün: $productCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}',
+        );
 
         // Ürünleri 8'lik parçalara böl, her parçadan sonra geniş reklam yerleştir
         final List<Widget> sections = [];
@@ -279,33 +300,31 @@ class _HomeViewState extends State<HomeView> {
                   mainAxisSpacing: _calculateGridSpacing(context),
                   childAspectRatio: _calculateChildAspectRatio(context),
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final product = chunk[index];
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final product = chunk[index];
 
-                    bool isOwnProduct = false;
-                    if (vm.myProducts.isNotEmpty) {
-                      isOwnProduct = vm.myProducts.any(
-                        (myProduct) => myProduct.id == product.id,
-                      );
-                    } else {
-                      final authViewModel = Provider.of<AuthViewModel>(
-                        context,
-                        listen: false,
-                      );
-                      final currentUserId = authViewModel.currentUser?.id;
-                      isOwnProduct = currentUserId != null &&
-                          product.ownerId == currentUserId;
-                    }
-
-                    return ProductCard(
-                      product: product,
-                      heroTag: 'home_product_${product.id}_${start + index}',
-                      hideFavoriteIcon: isOwnProduct,
+                  bool isOwnProduct = false;
+                  if (vm.myProducts.isNotEmpty) {
+                    isOwnProduct = vm.myProducts.any(
+                      (myProduct) => myProduct.id == product.id,
                     );
-                  },
-                  childCount: chunk.length,
-                ),
+                  } else {
+                    final authViewModel = Provider.of<AuthViewModel>(
+                      context,
+                      listen: false,
+                    );
+                    final currentUserId = authViewModel.currentUser?.id;
+                    isOwnProduct =
+                        currentUserId != null &&
+                        product.ownerId == currentUserId;
+                  }
+
+                  return ProductCard(
+                    product: product,
+                    heroTag: 'home_product_${product.id}_${start + index}',
+                    hideFavoriteIcon: isOwnProduct,
+                  );
+                }, childCount: chunk.length),
               ),
             ),
           );
@@ -318,9 +337,7 @@ class _HomeViewState extends State<HomeView> {
                   horizontal: _calculateHorizontalPadding(context),
                   vertical: _calculateGridSpacing(context),
                 ),
-                sliver: const SliverToBoxAdapter(
-                  child: NativeAdWideCard(),
-                ),
+                sliver: const SliverToBoxAdapter(child: NativeAdWideCard()),
               ),
             );
           }
