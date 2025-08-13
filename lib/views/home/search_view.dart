@@ -101,6 +101,7 @@ class _SearchViewState extends State<SearchView> {
           child: TextField(
             controller: _searchController,
             focusNode: _searchFocusNode,
+            textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText: 'Ürün ara...',
               hintStyle: TextStyle(

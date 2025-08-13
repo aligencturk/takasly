@@ -108,6 +108,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           child: TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
+            textCapitalization: TextCapitalization.none,
             style: const TextStyle(fontSize: 16),
             decoration: const InputDecoration(
               labelText: 'E-posta',
@@ -140,6 +141,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           child: TextFormField(
             controller: _passwordController,
             obscureText: _obscureText,
+            textCapitalization: TextCapitalization.sentences,
             style: const TextStyle(fontSize: 16),
             decoration: InputDecoration(
               labelText: 'Şifre',
@@ -406,9 +408,9 @@ class _BottomButtonsState extends State<_BottomButtons> {
   Future<void> _handleGoogleLogin(BuildContext context) async {
     try {
       Logger.info('Google giriş başlatılıyor', tag: 'LoginView');
-      
+
       final authVm = Provider.of<AuthViewModel>(context, listen: false);
-      
+
       // Loading göster
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -420,10 +422,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
       }
 
       Logger.info('Google Sign-In başlatılıyor...', tag: 'LoginView');
-      
+
       final String? googleAccessToken = await SocialAuthService.instance
           .signInWithGoogleAndGetAccessToken();
-          
+
       if (googleAccessToken == null || googleAccessToken.isEmpty) {
         Logger.warning('Google access token alınamadı', tag: 'LoginView');
         if (mounted) {
@@ -437,11 +439,14 @@ class _BottomButtonsState extends State<_BottomButtons> {
         }
         return;
       }
-      
+
       Logger.info('Google access token başarıyla alındı', tag: 'LoginView');
-      
-      Logger.info('Google access token alındı, giriş yapılıyor', tag: 'LoginView');
-      
+
+      Logger.info(
+        'Google access token alındı, giriş yapılıyor',
+        tag: 'LoginView',
+      );
+
       final String deviceID = await _getOrCreateDeviceId();
       final String? fcmToken = await NotificationService.instance.getFCMToken();
 
@@ -454,19 +459,27 @@ class _BottomButtonsState extends State<_BottomButtons> {
       if (!mounted) return;
 
       if (success) {
-        final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+        final userViewModel = Provider.of<UserViewModel>(
+          context,
+          listen: false,
+        );
         if (authVm.currentUser != null) {
           userViewModel.setCurrentUser(authVm.currentUser!);
         }
-        
+
         Logger.info('Google giriş başarılı', tag: 'LoginView');
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
-        Logger.error('Google giriş başarısız: ${authVm.errorMessage}', tag: 'LoginView');
+        Logger.error(
+          'Google giriş başarısız: ${authVm.errorMessage}',
+          tag: 'LoginView',
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(authVm.errorMessage ?? 'Google ile giriş başarısız oldu.'),
+              content: Text(
+                authVm.errorMessage ?? 'Google ile giriş başarısız oldu.',
+              ),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
@@ -474,7 +487,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
       }
     } catch (e, s) {
       Logger.error('Google giriş hatası: $e', stackTrace: s, tag: 'LoginView');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

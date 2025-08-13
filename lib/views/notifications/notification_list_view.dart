@@ -71,6 +71,7 @@ class _NotificationListViewState extends State<NotificationListView> {
                         children: [
                           TextField(
                             controller: controller,
+                            textCapitalization: TextCapitalization.sentences,
                             maxLines: 3,
                             decoration: const InputDecoration(
                               hintText: 'OAuth 2.0 Bearer Access Token',

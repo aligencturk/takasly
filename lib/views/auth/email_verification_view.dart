@@ -190,6 +190,7 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
   Widget _buildVerificationCodeField() {
     return TextFormField(
       controller: _codeController,
+      textCapitalization: TextCapitalization.sentences,
       decoration: InputDecoration(
         labelText: 'Doğrulama Kodu',
         hintText: '6 haneli kodu girin',

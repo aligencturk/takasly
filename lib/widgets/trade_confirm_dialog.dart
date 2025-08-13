@@ -232,6 +232,7 @@ class _TradeConfirmDialogState extends State<TradeConfirmDialog> {
               // Reject Reason Field
               TextFormField(
                 controller: _cancelDescController,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   labelText: 'Reddetme Sebebi',
                   hintText: 'Takası neden reddettiğinizi belirtin...',

@@ -748,6 +748,7 @@ class _StartTradeViewState extends State<StartTradeView> {
           
           TextField(
             controller: _meetingLocationController,
+            textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText: 'Örn: İstanbul / Kadıköy',
               border: OutlineInputBorder(
@@ -817,6 +818,7 @@ class _StartTradeViewState extends State<StartTradeView> {
           TextField(
             controller: _messageController,
             maxLines: 3,
+            textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText: 'Takas teklifinizle ilgili bir mesaj yazabilirsiniz...',
               border: OutlineInputBorder(

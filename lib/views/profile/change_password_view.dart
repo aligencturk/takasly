@@ -100,6 +100,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
               // Mevcut Şifre
               TextFormField(
                 controller: _currentPasswordController,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   labelText: 'Mevcut Şifre',
                   hintText: 'Mevcut şifrenizi girin',
@@ -137,6 +138,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
               // Yeni Şifre
               TextFormField(
                 controller: _newPasswordController,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   labelText: 'Yeni Şifre',
                   hintText: 'Yeni şifrenizi belirleyin',
@@ -174,6 +176,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
               // Şifre Tekrar
               TextFormField(
                 controller: _confirmPasswordController,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   labelText: 'Şifre Tekrar',
                   hintText: 'Yeni şifrenizi tekrar girin',

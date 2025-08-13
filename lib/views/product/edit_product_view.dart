@@ -315,6 +315,7 @@ class _EditProductViewState extends State<EditProductView> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _titleController,
+                         textCapitalization: TextCapitalization.sentences,
                         decoration: const InputDecoration(
                           labelText: 'İlan Başlığı',
                           counterText: '',
@@ -325,6 +326,7 @@ class _EditProductViewState extends State<EditProductView> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
+                         textCapitalization: TextCapitalization.sentences,
                         decoration: const InputDecoration(labelText: 'Açıklama'),
                         maxLines: 4,
                         validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
@@ -385,6 +387,7 @@ class _EditProductViewState extends State<EditProductView> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _tradePreferencesController,
+                         textCapitalization: TextCapitalization.sentences,
                         decoration: const InputDecoration(
                           labelText: 'Takas Tercihleri (virgülle ayırın)',
                           hintText: 'Örn: telefon, laptop, kitap',

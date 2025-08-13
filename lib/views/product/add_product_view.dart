@@ -697,6 +697,7 @@ class _AddProductViewState extends State<AddProductView> {
           // Form fields
           TextFormField(
             controller: _titleController,
+            textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
               labelText: 'Ürün Başlığı',
               hintText: 'Örn: iPhone 13 Pro Max 256GB',
@@ -709,6 +710,7 @@ class _AddProductViewState extends State<AddProductView> {
           const SizedBox(height: 24),
           TextFormField(
             controller: _descriptionController,
+            textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
               labelText: 'Açıklama',
               hintText: 'Ürününüzün detaylarını, özelliklerini ve durumunu açıklayın',
@@ -986,6 +988,7 @@ class _AddProductViewState extends State<AddProductView> {
           // Form fields
           TextFormField(
             controller: _tradeForController,
+            textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
               labelText: 'Ne ile takas etmek istersin?',
               hintText: 'Örn: MacBook Pro, para, başka bir telefon...',

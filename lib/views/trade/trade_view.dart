@@ -1980,6 +1980,7 @@ class _TradeViewState extends State<TradeView>
                   TextField(
                     controller: commentController,
                     maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
                       hintText: 'Takas deneyiminizi paylaşın... (İsteğe bağlı)',
                       border: OutlineInputBorder(
@@ -2184,6 +2185,7 @@ class _TradeViewState extends State<TradeView>
                     TextField(
                       controller: commentController,
                       maxLines: 3,
+                      textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
                         hintText: 'Takas deneyiminizi paylaşın...',
                         border: OutlineInputBorder(
@@ -3107,6 +3109,7 @@ class _TradeViewState extends State<TradeView>
               TextField(
                 controller: reasonController,
                 maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   hintText: 'Reddetme sebebinizi buraya yazın...',
                   border: OutlineInputBorder(

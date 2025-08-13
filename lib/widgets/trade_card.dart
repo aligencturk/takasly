@@ -913,6 +913,7 @@ class TradeCard extends StatelessWidget {
                   TextField(
                     controller: commentController,
                     maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
                       hintText: 'Takas deneyiminizi paylaşın... (İsteğe bağlı)',
                       border: OutlineInputBorder(

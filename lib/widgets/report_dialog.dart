@@ -318,6 +318,7 @@ class _ReportDialogState extends State<ReportDialog> {
                             maxLines: null,
                             expands: true,
                             maxLength: 200,
+                            textCapitalization: TextCapitalization.sentences,
                             decoration: InputDecoration(
                               hintText: 'Şikayet sebebinizi yazın...',
                               hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(

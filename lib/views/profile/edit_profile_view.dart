@@ -24,12 +24,12 @@ class _EditProfileViewState extends State<EditProfileView> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _birthdayController = TextEditingController();
-  
+
   String? _selectedGender;
   File? _selectedImage;
   bool _isLoading = false;
   // Telefon numarası görünürlüğü ayarı kaldırıldı
-  
+
   final ImagePicker _picker = ImagePicker();
 
   /// Profil fotoğrafını base64 formatına dönüştürür
@@ -37,7 +37,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     try {
       final bytes = imageFile.readAsBytesSync();
       final base64String = base64Encode(bytes);
-      
+
       // Dosya uzantısını belirle
       String mimeType = 'image/jpeg'; // Varsayılan
       final fileName = imageFile.path.toLowerCase();
@@ -50,9 +50,12 @@ class _EditProfileViewState extends State<EditProfileView> {
       } else if (fileName.endsWith('.webp')) {
         mimeType = 'image/webp';
       }
-      
+
       final dataUrl = 'data:$mimeType;base64,$base64String';
-      Logger.debug('Image converted to base64, size: ${bytes.length} bytes', tag: 'EditProfile');
+      Logger.debug(
+        'Image converted to base64, size: ${bytes.length} bytes',
+        tag: 'EditProfile',
+      );
       return dataUrl;
     } catch (e) {
       Logger.error('Error converting image to base64: $e', tag: 'EditProfile');
@@ -72,47 +75,65 @@ class _EditProfileViewState extends State<EditProfileView> {
   void _loadUserData() {
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
     final user = userViewModel.currentUser;
-    
+
     if (user != null) {
       Logger.debug('Loading user data: ${user.name}', tag: 'EditProfile');
       Logger.debug('firstName: ${user.firstName}', tag: 'EditProfile');
       Logger.debug('lastName: ${user.lastName}', tag: 'EditProfile');
       Logger.debug('email: ${user.email}', tag: 'EditProfile');
       Logger.debug('gender (raw): ${user.gender}', tag: 'EditProfile');
-      Logger.debug('gender type: ${user.gender.runtimeType}', tag: 'EditProfile');
-      
+      Logger.debug(
+        'gender type: ${user.gender.runtimeType}',
+        tag: 'EditProfile',
+      );
+
       setState(() {
         _firstNameController.text = user.firstName ?? '';
         _lastNameController.text = user.lastName ?? '';
         _emailController.text = user.email;
-        _phoneController.text = user.phone != null && user.phone!.isNotEmpty 
-            ? PhoneFormatter.formatPhoneNumber(user.phone!) 
+        _phoneController.text = user.phone != null && user.phone!.isNotEmpty
+            ? PhoneFormatter.formatPhoneNumber(user.phone!)
             : '';
         _birthdayController.text = user.birthday ?? '';
-        
+
         // Gender değerini API'ye uygun şekilde set et
         final genderValue = user.gender?.toString();
         Logger.debug('genderValue: $genderValue', tag: 'EditProfile');
-        
+
         // String gender değerlerini int'e map et
         if (genderValue == 'Erkek' || genderValue == '1') {
           _selectedGender = '1';
-          Logger.debug('_selectedGender set to: $_selectedGender (Erkek)', tag: 'EditProfile');
+          Logger.debug(
+            '_selectedGender set to: $_selectedGender (Erkek)',
+            tag: 'EditProfile',
+          );
         } else if (genderValue == 'Kadın' || genderValue == '2') {
           _selectedGender = '2';
-          Logger.debug('_selectedGender set to: $_selectedGender (Kadın)', tag: 'EditProfile');
+          Logger.debug(
+            '_selectedGender set to: $_selectedGender (Kadın)',
+            tag: 'EditProfile',
+          );
         } else if (genderValue == 'Belirtilmemiş' || genderValue == '3') {
           _selectedGender = '3';
-          Logger.debug('_selectedGender set to: $_selectedGender (Belirtilmemiş)', tag: 'EditProfile');
+          Logger.debug(
+            '_selectedGender set to: $_selectedGender (Belirtilmemiş)',
+            tag: 'EditProfile',
+          );
         } else {
           _selectedGender = '3'; // default: Belirtilmemiş
-          Logger.debug('_selectedGender set to default: $_selectedGender (Belirtilmemiş)', tag: 'EditProfile');
+          Logger.debug(
+            '_selectedGender set to default: $_selectedGender (Belirtilmemiş)',
+            tag: 'EditProfile',
+          );
         }
-        
+
         // Telefon numarası görünürlük ayarı kaldırıldığı için yüklenmiyor
       });
     } else {
-      Logger.warning('No user data available, refreshing...', tag: 'EditProfile');
+      Logger.warning(
+        'No user data available, refreshing...',
+        tag: 'EditProfile',
+      );
       // Kullanıcı verisi yoksa yenile
       userViewModel.forceRefreshUser().then((_) {
         if (mounted) {
@@ -131,7 +152,7 @@ class _EditProfileViewState extends State<EditProfileView> {
         maxHeight: 2400,
         imageQuality: 95,
       );
-      
+
       if (image != null) {
         // Kullanıcıya optimizasyon başladığını bildir
         if (mounted) {
@@ -143,15 +164,19 @@ class _EditProfileViewState extends State<EditProfileView> {
             ),
           );
         }
-        
+
         // Seçilen görseli optimize et
-        Logger.debug('🖼️ EditProfileView - Optimizing profile image...', tag: 'EditProfile');
-        final File optimizedFile = await ImageOptimizationService.optimizeSingleXFile(image);
-        
+        Logger.debug(
+          '🖼️ EditProfileView - Optimizing profile image...',
+          tag: 'EditProfile',
+        );
+        final File optimizedFile =
+            await ImageOptimizationService.optimizeSingleXFile(image);
+
         setState(() {
           _selectedImage = optimizedFile;
         });
-        
+
         // Kullanıcıya optimizasyon tamamlandığını bildir
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -162,11 +187,17 @@ class _EditProfileViewState extends State<EditProfileView> {
             ),
           );
         }
-        
-        Logger.debug('Profile image optimized and selected: ${optimizedFile.path}', tag: 'EditProfile');
+
+        Logger.debug(
+          'Profile image optimized and selected: ${optimizedFile.path}',
+          tag: 'EditProfile',
+        );
       }
     } catch (e) {
-      Logger.error('Error selecting and optimizing image: $e', tag: 'EditProfile');
+      Logger.error(
+        'Error selecting and optimizing image: $e',
+        tag: 'EditProfile',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -188,19 +219,20 @@ class _EditProfileViewState extends State<EditProfileView> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppTheme.primary,
-            ),
+            colorScheme: Theme.of(
+              context,
+            ).colorScheme.copyWith(primary: AppTheme.primary),
           ),
           child: child!,
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() {
         // Türkçe tarih formatı: GG/AA/YYYY
-        _birthdayController.text = '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+        _birthdayController.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
       });
     }
   }
@@ -216,16 +248,22 @@ class _EditProfileViewState extends State<EditProfileView> {
 
     try {
       final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-      
+
       Logger.debug('Updating account with:', tag: 'EditProfile');
-      Logger.debug('firstName: ${_firstNameController.text}', tag: 'EditProfile');
+      Logger.debug(
+        'firstName: ${_firstNameController.text}',
+        tag: 'EditProfile',
+      );
       Logger.debug('lastName: ${_lastNameController.text}', tag: 'EditProfile');
       Logger.debug('email: ${_emailController.text}', tag: 'EditProfile');
-      
+
       // Profil fotoğrafını base64 formatına dönüştür
       String? profilePhotoBase64;
       if (_selectedImage != null) {
-        Logger.debug('Converting selected image to base64...', tag: 'EditProfile');
+        Logger.debug(
+          'Converting selected image to base64...',
+          tag: 'EditProfile',
+        );
         profilePhotoBase64 = _convertImageToBase64(_selectedImage!);
         if (profilePhotoBase64 == null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -236,19 +274,30 @@ class _EditProfileViewState extends State<EditProfileView> {
           );
           return;
         }
-        Logger.info('Image successfully converted to base64', tag: 'EditProfile');
-        Logger.debug('Base64 string length: ${profilePhotoBase64.length}', tag: 'EditProfile');
+        Logger.info(
+          'Image successfully converted to base64',
+          tag: 'EditProfile',
+        );
+        Logger.debug(
+          'Base64 string length: ${profilePhotoBase64.length}',
+          tag: 'EditProfile',
+        );
       } else {
-        Logger.info('No new image selected, keeping existing photo', tag: 'EditProfile');
+        Logger.info(
+          'No new image selected, keeping existing photo',
+          tag: 'EditProfile',
+        );
       }
-      
+
       final result = await userViewModel.updateAccount(
         userFirstname: _firstNameController.text,
         userLastname: _lastNameController.text,
         userEmail: _emailController.text,
         userPhone: PhoneFormatter.prepareForApi(_phoneController.text),
         userBirthday: _birthdayController.text,
-        userGender: _selectedGender != null ? int.tryParse(_selectedGender!) : null,
+        userGender: _selectedGender != null
+            ? int.tryParse(_selectedGender!)
+            : null,
         profilePhoto: profilePhotoBase64,
         // Telefon numarası görünürlüğü kaldırıldığı için gönderilmiyor
       );
@@ -257,7 +306,7 @@ class _EditProfileViewState extends State<EditProfileView> {
         if (result) {
           // Profil güncellemesi başarılı olduğunda kullanıcı verilerini yenile
           await userViewModel.forceRefreshUser();
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Profil başarıyla güncellendi'),
@@ -266,32 +315,40 @@ class _EditProfileViewState extends State<EditProfileView> {
           );
           Navigator.pop(context, true); // Başarılı güncelleme sinyali gönder
         } else {
-           // Güncelleme başarısız - hata mesajını kontrol et
-           final errorMessage = userViewModel.errorMessage;
-           
-           // 401 hatası veya oturum süresi dolmuş hatası kontrolü
-           if (errorMessage != null && 
-               (errorMessage.contains('Kimlik doğrulama hatası') ||
-                errorMessage.contains('Oturum süresi doldu') ||
-                errorMessage.contains('Yetkisiz giriş'))) {
-             // Login sayfasına yönlendir
-             Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-             
-             ScaffoldMessenger.of(context).showSnackBar(
-               const SnackBar(
-                 content: Text('Oturum süresi doldu. Lütfen tekrar giriş yapın.'),
-                 backgroundColor: Colors.orange,
-               ),
-             );
-           } else {
-             ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(
-                 content: Text(errorMessage ?? 'Profil güncellenirken hata oluştu'),
-                 backgroundColor: Colors.red,
-               ),
-             );
-           }
-         }
+          // Güncelleme başarısız - hata mesajını kontrol et
+          final errorMessage = userViewModel.errorMessage;
+
+          // 401 hatası veya oturum süresi dolmuş hatası kontrolü
+          if (errorMessage != null &&
+              (errorMessage.contains('Kimlik doğrulama hatası') ||
+                  errorMessage.contains('Oturum süresi doldu') ||
+                  errorMessage.contains('Yetkisiz giriş'))) {
+            // Login sayfasına yönlendir
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+            );
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Oturum süresi doldu. Lütfen tekrar giriş yapın.',
+                ),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  errorMessage ?? 'Profil güncellenirken hata oluştu',
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -342,58 +399,60 @@ class _EditProfileViewState extends State<EditProfileView> {
                       children: [
                         _buildProfileImageSection(),
                         const SizedBox(height: 24),
-                    _buildTextFormField(
-                      controller: _firstNameController,
-                      label: 'Ad',
-                      icon: Icons.person,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Ad alanı boş bırakılamaz';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextFormField(
-                      controller: _lastNameController,
-                      label: 'Soyad',
-                      icon: Icons.person_outline,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Soyad alanı boş bırakılamaz';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextFormField(
-                      controller: _emailController,
-                      label: 'E-posta',
-                      icon: Icons.email,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'E-posta alanı boş bırakılamaz';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Geçerli bir e-posta adresi girin';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextFormField(
-                      controller: _phoneController,
-                      label: 'Telefon',
-                      icon: Icons.phone,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDateField(),
-                    const SizedBox(height: 16),
-                    _buildGenderDropdown(),
-                    const SizedBox(height: 16),
-                    const SizedBox(height: 32),
+                        _buildTextFormField(
+                          controller: _firstNameController,
+                          label: 'Ad',
+                          icon: Icons.person,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Ad alanı boş bırakılamaz';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextFormField(
+                          controller: _lastNameController,
+                          label: 'Soyad',
+                          icon: Icons.person_outline,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Soyad alanı boş bırakılamaz';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextFormField(
+                          controller: _emailController,
+                          label: 'E-posta',
+                          icon: Icons.email,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'E-posta alanı boş bırakılamaz';
+                            }
+                            if (!RegExp(
+                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                            ).hasMatch(value)) {
+                              return 'Geçerli bir e-posta adresi girin';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextFormField(
+                          controller: _phoneController,
+                          label: 'Telefon',
+                          icon: Icons.phone,
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDateField(),
+                        const SizedBox(height: 16),
+                        _buildGenderDropdown(),
+                        const SizedBox(height: 16),
+                        const SizedBox(height: 32),
                         _buildUpdateButton(),
                       ],
                     ),
@@ -407,7 +466,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   Widget _buildProfileImageSection() {
     final userViewModel = Provider.of<UserViewModel>(context);
     final user = userViewModel.currentUser;
-    
+
     return Center(
       child: Stack(
         children: [
@@ -417,14 +476,12 @@ class _EditProfileViewState extends State<EditProfileView> {
             backgroundImage: _selectedImage != null
                 ? FileImage(_selectedImage!)
                 : (user?.avatar != null && user!.avatar!.isNotEmpty)
-                    ? NetworkImage(user.avatar!)
-                    : null,
-            child: _selectedImage == null && (user?.avatar == null || user!.avatar!.isEmpty)
-                ? const Icon(
-                    Icons.person,
-                    size: 60,
-                    color: Colors.grey,
-                  )
+                ? NetworkImage(user.avatar!)
+                : null,
+            child:
+                _selectedImage == null &&
+                    (user?.avatar == null || user!.avatar!.isEmpty)
+                ? const Icon(Icons.person, size: 60, color: Colors.grey)
                 : null,
           ),
           Positioned(
@@ -461,20 +518,27 @@ class _EditProfileViewState extends State<EditProfileView> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textCapitalization: label == 'E-posta'
+          ? TextCapitalization.none
+          : TextCapitalization.sentences,
       inputFormatters: label == 'Telefon' ? [PhoneFormatter.phoneMask] : null,
-      validator: validator ?? (label == 'Telefon' ? (value) {
-        if (value != null && value.isNotEmpty && !PhoneFormatter.isValidPhoneNumber(value)) {
-          return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
-        }
-        return null;
-      } : null),
+      validator:
+          validator ??
+          (label == 'Telefon'
+              ? (value) {
+                  if (value != null &&
+                      value.isNotEmpty &&
+                      !PhoneFormatter.isValidPhoneNumber(value)) {
+                    return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
+                  }
+                  return null;
+                }
+              : null),
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
         hintText: label == 'Telefon' ? '0(5XX) XXX XX XX' : null,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppTheme.primary, width: 2),
@@ -487,14 +551,13 @@ class _EditProfileViewState extends State<EditProfileView> {
     return TextFormField(
       controller: _birthdayController,
       readOnly: true,
+      textCapitalization: TextCapitalization.sentences,
       onTap: _selectDate,
       decoration: InputDecoration(
         labelText: 'Doğum Tarihi',
         prefixIcon: const Icon(Icons.calendar_today),
         suffixIcon: const Icon(Icons.arrow_drop_down),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppTheme.primary, width: 2),
@@ -506,8 +569,10 @@ class _EditProfileViewState extends State<EditProfileView> {
   Widget _buildGenderDropdown() {
     // Geçerli değerleri kontrol et
     final validValues = ['1', '2', '3'];
-    final validValue = validValues.contains(_selectedGender) ? _selectedGender : null;
-    
+    final validValue = validValues.contains(_selectedGender)
+        ? _selectedGender
+        : null;
+
     return DropdownButtonFormField<String>(
       value: validValue,
       onChanged: (String? newValue) {
@@ -518,27 +583,16 @@ class _EditProfileViewState extends State<EditProfileView> {
       decoration: InputDecoration(
         labelText: 'Cinsiyet',
         prefixIcon: const Icon(Icons.person_pin),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppTheme.primary, width: 2),
         ),
       ),
       items: const [
-        DropdownMenuItem(
-          value: '1',
-          child: Text('Erkek'),
-        ),
-        DropdownMenuItem(
-          value: '2',
-          child: Text('Kadın'),
-        ),
-        DropdownMenuItem(
-          value: '3',
-          child: Text('Belirtilmemiş'),
-        ),
+        DropdownMenuItem(value: '1', child: Text('Erkek')),
+        DropdownMenuItem(value: '2', child: Text('Kadın')),
+        DropdownMenuItem(value: '3', child: Text('Belirtilmemiş')),
       ],
     );
   }
@@ -569,10 +623,7 @@ class _EditProfileViewState extends State<EditProfileView> {
               )
             : const Text(
                 'Profili Güncelle',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
