@@ -23,7 +23,11 @@ class _NoStretchScrollBehavior extends ScrollBehavior {
   }
 
   @override
-  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
     return NotificationListener<OverscrollIndicatorNotification>(
       onNotification: (notification) {
         notification.disallowIndicator();
@@ -56,35 +60,51 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
   @override
   void initState() {
     super.initState();
-    Logger.info('UserProfileDetailView initialized for userId: ${widget.userId}', tag: 'UserProfileDetailView');
+    Logger.info(
+      'UserProfileDetailView initialized for userId: ${widget.userId}',
+      tag: 'UserProfileDetailView',
+    );
     _viewModel = UserProfileDetailViewModel();
     _tabController = TabController(length: 2, vsync: this);
     _viewModel.setUserToken(widget.userToken);
     _loadProfileDetail();
   }
+
   Future<void> _loadProfileDetail() async {
-    Logger.debug('Loading profile detail for userId: ${widget.userId}', tag: 'UserProfileDetailView');
+    Logger.debug(
+      'Loading profile detail for userId: ${widget.userId}',
+      tag: 'UserProfileDetailView',
+    );
     await _viewModel.loadProfileDetail(
       userToken: widget.userToken,
       userId: widget.userId,
     );
-    
+
     // Debug: Profil detaylarını logla
     if (_viewModel.profileDetail != null) {
-      Logger.debug('Profile loaded - userFullname: ${_viewModel.profileDetail!.userFullname}', tag: 'UserProfileDetailView');
-      Logger.debug('Profile loaded - products count: ${_viewModel.profileDetail!.products.length}', tag: 'UserProfileDetailView');
-      
+      Logger.debug(
+        'Profile loaded - userFullname: ${_viewModel.profileDetail!.userFullname}',
+        tag: 'UserProfileDetailView',
+      );
+      Logger.debug(
+        'Profile loaded - products count: ${_viewModel.profileDetail!.products.length}',
+        tag: 'UserProfileDetailView',
+      );
+
       // İlk ürünün kategori bilgisini logla
       if (_viewModel.profileDetail!.products.isNotEmpty) {
         final firstProduct = _viewModel.profileDetail!.products.first;
-        Logger.debug('First product - categoryId: ${firstProduct.categoryId}, categoryName: ${firstProduct.categoryName}', tag: 'UserProfileDetailView');
+        Logger.debug(
+          'First product - categoryId: ${firstProduct.categoryId}, categoryName: ${firstProduct.categoryName}',
+          tag: 'UserProfileDetailView',
+        );
       }
     }
   }
 
   void _showReportDialog() {
     final authViewModel = context.read<AuthViewModel>();
-    
+
     // Kullanıcı kendini şikayet etmeye çalışıyorsa uyarı göster
     if (authViewModel.currentUser?.id == widget.userId.toString()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,12 +116,13 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       );
       return;
     }
-    
+
     showDialog(
       context: context,
       builder: (context) => ReportDialog(
         reportedUserID: widget.userId,
-        reportedUserName: _viewModel.profileDetail?.userFullname ?? 'Bilinmeyen Kullanıcı',
+        reportedUserName:
+            _viewModel.profileDetail?.userFullname ?? 'Bilinmeyen Kullanıcı',
       ),
     );
   }
@@ -126,7 +147,8 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
               backgroundColor: Colors.white,
               foregroundColor: Colors.black87,
               title: Text(
-                (viewModel.profileDetail != null && viewModel.profileDetail!.userFullname.isNotEmpty)
+                (viewModel.profileDetail != null &&
+                        viewModel.profileDetail!.userFullname.isNotEmpty)
                     ? viewModel.profileDetail!.userFullname
                     : 'Kullanıcı',
                 style: TextStyle(
@@ -146,70 +168,82 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
             body: viewModel.isLoading
                 ? const LoadingWidget()
                 : viewModel.hasError
-                    ? custom_error.CustomErrorWidget(
-                        message: viewModel.errorMessage,
-                        onRetry: _loadProfileDetail,
-                      )
-                    : !viewModel.hasData
-                        ? const Center(child: Text('Profil bilgisi bulunamadı'))
-                        : ScrollConfiguration(
-                            behavior: const _NoStretchScrollBehavior(),
-                            child: NestedScrollView(
-                              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                                SliverToBoxAdapter(
-                                  child: SafeArea(
-                                    bottom: false,
-                                    child: _buildProfileHeader(viewModel.profileDetail!),
-                                  ),
-                                ),
-                                SliverAppBar(
-                                  backgroundColor: Colors.white,
-                                  pinned: true,
-                                  primary: false,
-                                  automaticallyImplyLeading: false,
-                                  toolbarHeight: 0,
-                                  bottom: PreferredSize(
-                                    preferredSize: const Size.fromHeight(74),
-                                    child: Container(
-                                      color: Colors.white,
-                                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                                      child: _tabController != null
-                                          ? TabBar(
-                                              controller: _tabController!,
-                                              isScrollable: true,
-                                              tabAlignment: TabAlignment.center,
-                                              labelColor: AppTheme.primary,
-                                              unselectedLabelColor: Colors.grey[600],
-                                              indicatorColor: AppTheme.primary,
-                                              indicatorWeight: 2,
-                                              labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                                              tabs: const [
-                                                Tab(
-                                                  icon: Icon(Icons.inventory_2_outlined, size: 20),
-                                                  text: 'İlanlar',
-                                                ),
-                                                Tab(
-                                                  icon: Icon(Icons.rate_review_outlined, size: 20),
-                                                  text: 'Yorumlar',
-                                                ),
-                                              ],
-                                            )
-                                          : const SizedBox.shrink(),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              body: _tabController != null
-                                  ? TabBarView(
+                ? custom_error.CustomErrorWidget(
+                    message: viewModel.errorMessage,
+                    onRetry: _loadProfileDetail,
+                  )
+                : !viewModel.hasData
+                ? const Center(child: Text('Profil bilgisi bulunamadı'))
+                : ScrollConfiguration(
+                    behavior: const _NoStretchScrollBehavior(),
+                    child: NestedScrollView(
+                      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                        SliverToBoxAdapter(
+                          child: SafeArea(
+                            bottom: false,
+                            child: _buildProfileHeader(
+                              viewModel.profileDetail!,
+                            ),
+                          ),
+                        ),
+                        SliverAppBar(
+                          backgroundColor: Colors.white,
+                          pinned: true,
+                          primary: false,
+                          automaticallyImplyLeading: false,
+                          toolbarHeight: 0,
+                          bottom: PreferredSize(
+                            preferredSize: const Size.fromHeight(74),
+                            child: Container(
+                              color: Colors.white,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: _tabController != null
+                                  ? TabBar(
                                       controller: _tabController!,
-                                      children: [
-                                        _buildProductsTab(viewModel.profileDetail!),
-                                        _buildReviewsTab(viewModel.profileDetail!),
+                                      isScrollable: true,
+                                      tabAlignment: TabAlignment.center,
+                                      labelColor: AppTheme.primary,
+                                      unselectedLabelColor: Colors.grey[600],
+                                      indicatorColor: AppTheme.primary,
+                                      indicatorWeight: 2,
+                                      labelPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                      tabs: const [
+                                        Tab(
+                                          icon: Icon(
+                                            Icons.inventory_2_outlined,
+                                            size: 20,
+                                          ),
+                                          text: 'İlanlar',
+                                        ),
+                                        Tab(
+                                          icon: Icon(
+                                            Icons.rate_review_outlined,
+                                            size: 20,
+                                          ),
+                                          text: 'Yorumlar',
+                                        ),
                                       ],
                                     )
                                   : const SizedBox.shrink(),
                             ),
                           ),
+                        ),
+                      ],
+                      body: _tabController != null
+                          ? TabBarView(
+                              controller: _tabController!,
+                              children: [
+                                _buildProductsTab(viewModel.profileDetail!),
+                                _buildReviewsTab(viewModel.profileDetail!),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
           );
         },
       ),
@@ -234,22 +268,25 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                   borderRadius: BorderRadius.circular(100),
                   color: Colors.grey[100],
                 ),
-                child: profile.userImage != null && profile.userImage!.isNotEmpty
-                      ? ClipRRect(
+                child:
+                    profile.userImage != null && profile.userImage!.isNotEmpty
+                    ? ClipRRect(
                         borderRadius: BorderRadius.circular(100),
                         child: Image.network(
-                        profile.userImage!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildAvatarPlaceholder(profile.userFullname);
-                        },
+                          profile.userImage!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildAvatarPlaceholder(
+                              profile.userFullname,
+                            );
+                          },
                         ),
                       )
                     : _buildAvatarPlaceholder(profile.userFullname),
               ),
-              
+
               const SizedBox(width: 32),
-              
+
               // İstatistikler - Kurumsal tasarım
               Expanded(
                 child: Row(
@@ -272,9 +309,9 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Kullanıcı Bilgileri
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,7 +321,9 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                 children: [
                   Flexible(
                     child: Text(
-                      profile.userFullname.isNotEmpty ? profile.userFullname : 'Kullanıcı',
+                      profile.userFullname.isNotEmpty
+                          ? profile.userFullname
+                          : 'Kullanıcı',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -294,61 +333,60 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                     ),
                   ),
                   const SizedBox(width: 8),
-                                     // Onay Durumu Badge'i
-                   if (profile.isApproved) ...[
-                     const SizedBox(width: 8),
-                     Icon(
-                       Icons.verified,
-                       size: 18,
-                       color: AppTheme.primary,
-                     ),
-                   ] else ...[
-                     const SizedBox(width: 8),
-                     GestureDetector(
-                       onTap: () {
-                         // Doğrulama işlemi için gerekirse buraya navigasyon eklenebilir
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(
-                             content: Text('Bu kullanıcı henüz doğrulanmamış'),
-                             backgroundColor: Colors.orange,
-                             behavior: SnackBarBehavior.floating,
-                           ),
-                         );
-                       },
-                       child: Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                         decoration: BoxDecoration(
-                           color: Colors.orange.shade50,
-                           borderRadius: BorderRadius.circular(12),
-                           border: Border.all(color: Colors.orange.shade200),
-                         ),
-                         child: Row(
-                           mainAxisSize: MainAxisSize.min,
-                           children: [
-                             Icon(
-                               Icons.warning_amber_outlined,
-                               size: 14,
-                               color: Colors.orange.shade700,
-                             ),
-                             const SizedBox(width: 4),
-                             Text(
-                               "${profile.isApproved ? ' Doğrulanmamış' : 'Doğrulanmış'}",
-                               style: TextStyle(
-                                 fontSize: 11,
-                                 fontWeight: FontWeight.w500,
-                                 color: Colors.orange.shade700,
-                               ),
-                             ),
-                           ],
-                         ),
-                       ),
-                     ),
-                   ],
+                  // Onay Durumu Badge'i
+                  if (profile.isApproved) ...[
+                    const SizedBox(width: 8),
+                    Icon(Icons.verified, size: 18, color: AppTheme.primary),
+                  ] else ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        // Doğrulama işlemi için gerekirse buraya navigasyon eklenebilir
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Bu kullanıcı henüz doğrulanmamış'),
+                            backgroundColor: Colors.orange,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_outlined,
+                              size: 14,
+                              color: Colors.orange.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Doğrulanmamış',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.orange.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
-              
+
               const SizedBox(height: 6),
-              
+
               // Üyelik Tarihi
               if (profile.memberSince.isNotEmpty)
                 Text(
@@ -365,8 +403,6 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       ),
     );
   }
-
-  
 
   Widget _buildKurumsalStatItem({
     required String count,
@@ -399,34 +435,51 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
   Product _convertProfileProductToProduct(ProfileProduct profileProduct) {
     // Kategori ID'sini al
     String categoryId = '0';
-    if (profileProduct.categoryId != null && 
-        profileProduct.categoryId!.isNotEmpty && 
+    if (profileProduct.categoryId != null &&
+        profileProduct.categoryId!.isNotEmpty &&
         profileProduct.categoryId != 'null' &&
         profileProduct.categoryId != '0') {
       categoryId = profileProduct.categoryId!;
     }
-    
+
     // Kategori adını düzgün şekilde al - öncelik sırası: categoryList > categoryName > default
     String categoryName = 'Kategori';
-    
+
     // Önce categoryList'i kontrol et (yeni API)
-    if (profileProduct.categoryList != null && profileProduct.categoryList!.isNotEmpty) {
-      categoryName = profileProduct.categoryList!.map((cat) => cat.name).join(' > ');
-      Logger.debug('Converting product: ${profileProduct.title} - Using categoryList: $categoryName', tag: 'UserProfileDetailView');
-    } else if (profileProduct.categoryName != null && 
-        profileProduct.categoryName!.isNotEmpty && 
+    if (profileProduct.categoryList != null &&
+        profileProduct.categoryList!.isNotEmpty) {
+      categoryName = profileProduct.categoryList!
+          .map((cat) => cat.name)
+          .join(' > ');
+      Logger.debug(
+        'Converting product: ${profileProduct.title} - Using categoryList: $categoryName',
+        tag: 'UserProfileDetailView',
+      );
+    } else if (profileProduct.categoryName != null &&
+        profileProduct.categoryName!.isNotEmpty &&
         profileProduct.categoryName != 'null' &&
         profileProduct.categoryName != 'Kategori') {
       categoryName = profileProduct.categoryName!;
-      Logger.debug('Converting product: ${profileProduct.title} - Using categoryName: $categoryName', tag: 'UserProfileDetailView');
+      Logger.debug(
+        'Converting product: ${profileProduct.title} - Using categoryName: $categoryName',
+        tag: 'UserProfileDetailView',
+      );
     } else {
-      Logger.debug('Converting product: ${profileProduct.title} - Using default category: $categoryName', tag: 'UserProfileDetailView');
+      Logger.debug(
+        'Converting product: ${profileProduct.title} - Using default category: $categoryName',
+        tag: 'UserProfileDetailView',
+      );
     }
-    
-    Logger.debug('Converting product: ${profileProduct.title} - CategoryId: $categoryId - Final category: $categoryName', tag: 'UserProfileDetailView');
-    
+
+    Logger.debug(
+      'Converting product: ${profileProduct.title} - CategoryId: $categoryId - Final category: $categoryName',
+      tag: 'UserProfileDetailView',
+    );
+
     // Kategori nesnesini oluştur - categoryList'ten ilk kategoriyi kullan
-    final category = profileProduct.categoryList != null && profileProduct.categoryList!.isNotEmpty
+    final category =
+        profileProduct.categoryList != null &&
+            profileProduct.categoryList!.isNotEmpty
         ? profileProduct.categoryList!.first
         : Category(
             id: categoryId,
@@ -451,10 +504,14 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
 
     return Product(
       id: profileProduct.productID.toString(),
-      title: profileProduct.title.isNotEmpty ? profileProduct.title : 'İsimsiz Ürün',
+      title: profileProduct.title.isNotEmpty
+          ? profileProduct.title
+          : 'İsimsiz Ürün',
       description: profileProduct.description ?? '',
-      images: profileProduct.mainImage != null && profileProduct.mainImage!.isNotEmpty 
-          ? [profileProduct.mainImage!] 
+      images:
+          profileProduct.mainImage != null &&
+              profileProduct.mainImage!.isNotEmpty
+          ? [profileProduct.mainImage!]
           : [],
       categoryId: categoryId,
       catname: categoryName,
@@ -516,12 +573,14 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
           return ProductCard(
             product: product,
             heroTag: 'user_profile_product_${product.id}_$index',
-            hideFavoriteIcon: false, // Kullanıcı profilinde favori ikonunu göster
+            hideFavoriteIcon:
+                false, // Kullanıcı profilinde favori ikonunu göster
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ProductDetailView(productId: product.id),
+                  builder: (context) =>
+                      ProductDetailView(productId: product.id),
                 ),
               );
             },
@@ -530,8 +589,6 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       ),
     );
   }
-
-
 
   Widget _buildReviewsTab(UserProfileDetail profile) {
     if (profile.reviews.isEmpty) {
@@ -564,11 +621,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                   label: 'Ortalama Puan',
                   color: Colors.amber,
                 ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: Colors.grey[300],
-                ),
+                Container(width: 1, height: 40, color: Colors.grey[300]),
                 _buildReviewStatItem(
                   icon: Icons.rate_review,
                   value: profile.totalReviews.toString(),
@@ -578,9 +631,9 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
               ],
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Yorumlar listesi
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -608,11 +661,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: color,
-          size: 26,
-        ),
+        Icon(icon, color: color, size: 26),
         const SizedBox(height: 10),
         Text(
           value,
@@ -648,7 +697,8 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
               GestureDetector(
                 onTap: () {
                   final reviewerId = review.reviewerUserID ?? 0;
-                  final token = context.read<AuthViewModel>().currentUser?.token ?? '';
+                  final token =
+                      context.read<AuthViewModel>().currentUser?.token ?? '';
                   if (reviewerId > 0 && token.isNotEmpty) {
                     Navigator.push(
                       context,
@@ -662,50 +712,52 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                   }
                 },
                 child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: review.reviewerImage != null && review.reviewerImage!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: Image.network(
-                          review.reviewerImage!,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.person,
-                                color: Colors.grey,
-                                size: 20,
-                              ),
-                            );
-                          },
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child:
+                      review.reviewerImage != null &&
+                          review.reviewerImage!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: Image.network(
+                            review.reviewerImage!,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.grey,
+                                  size: 20,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
                         ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.grey,
-                          size: 20,
-                        ),
-                      ),
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               // Yorum yapan kişinin adı ve tarih
               Expanded(
                 child: Column(
@@ -714,7 +766,9 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                     GestureDetector(
                       onTap: () {
                         final reviewerId = review.reviewerUserID ?? 0;
-                        final token = context.read<AuthViewModel>().currentUser?.token ?? '';
+                        final token =
+                            context.read<AuthViewModel>().currentUser?.token ??
+                            '';
                         if (reviewerId > 0 && token.isNotEmpty) {
                           Navigator.push(
                             context,
@@ -747,7 +801,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                   ],
                 ),
               ),
-              
+
               // Yıldızlar
               Row(
                 children: List.generate(5, (index) {
@@ -761,7 +815,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Yorum metni
           if (review.comment.isNotEmpty)
             Text(
@@ -786,11 +840,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 64,
-          color: Colors.grey[400],
-        ),
+        Icon(icon, size: 64, color: Colors.grey[400]),
         const SizedBox(height: 16),
         Text(
           title,
@@ -804,10 +854,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
       ],
@@ -837,8 +884,4 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       ),
     );
   }
-
-
-
-  
-} 
+}
