@@ -49,6 +49,10 @@
 	
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3600325889588673~5340558560</string>
+	<key>GADIsAdManagerApp</key>
+	<false/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Uygulama size daha ilgili reklamlar gösterebilmek için cihaz tanımlayıcısını kullanabilir. İzni istediğiniz zaman Ayarlar üzerinden değiştirebilirsiniz.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>LSApplicationQueriesSchemes</key>
