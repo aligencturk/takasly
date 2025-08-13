@@ -53,6 +53,10 @@
 	<false/>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Uygulama size daha ilgili reklamlar gösterebilmek için cihaz tanımlayıcısını kullanabilir. İzni istediğiniz zaman Ayarlar üzerinden değiştirebilirsiniz.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Takasly, size yakın ürünleri gösterebilmek ve konum bazlı özellikler sunabilmek için konumunuza ihtiyaç duyar.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Takasly, size yakın ürünleri gösterebilmek ve konum bazlı özellikler sunabilmek için konumunuza ihtiyaç duyar.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>LSApplicationQueriesSchemes</key>
