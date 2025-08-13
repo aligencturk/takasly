@@ -12,10 +12,7 @@ import '../../services/auth_service.dart';
 class StartTradeView extends StatefulWidget {
   final Product receiverProduct;
 
-  const StartTradeView({
-    super.key,
-    required this.receiverProduct,
-  });
+  const StartTradeView({super.key, required this.receiverProduct});
 
   @override
   State<StartTradeView> createState() => _StartTradeViewState();
@@ -24,10 +21,11 @@ class StartTradeView extends StatefulWidget {
 class _StartTradeViewState extends State<StartTradeView> {
   Product? _selectedSenderProduct;
   int _selectedDeliveryType = 1; // Varsayılan: Elden Teslim
-  final TextEditingController _meetingLocationController = TextEditingController();
+  final TextEditingController _meetingLocationController =
+      TextEditingController();
   final TextEditingController _messageController = TextEditingController();
   final AuthService _authService = AuthService();
-  
+
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -35,7 +33,7 @@ class _StartTradeViewState extends State<StartTradeView> {
   void initState() {
     super.initState();
     Logger.info('StartTradeView başlatıldı', tag: 'StartTradeView');
-    
+
     // Kullanıcının ürünlerini yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserProducts();
@@ -46,14 +44,23 @@ class _StartTradeViewState extends State<StartTradeView> {
     try {
       final userId = await _authService.getCurrentUserId();
       if (userId != null) {
-        final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+        final productViewModel = Provider.of<ProductViewModel>(
+          context,
+          listen: false,
+        );
         await productViewModel.loadUserProducts(userId);
-        Logger.info('Kullanıcı ürünleri yüklendi: ${productViewModel.myProducts.length} ürün', tag: 'StartTradeView');
+        Logger.info(
+          'Kullanıcı ürünleri yüklendi: ${productViewModel.myProducts.length} ürün',
+          tag: 'StartTradeView',
+        );
       } else {
         Logger.error('Kullanıcı ID bulunamadı', tag: 'StartTradeView');
       }
     } catch (e) {
-      Logger.error('Kullanıcı ürünleri yükleme hatası: $e', tag: 'StartTradeView');
+      Logger.error(
+        'Kullanıcı ürünleri yükleme hatası: $e',
+        tag: 'StartTradeView',
+      );
     }
   }
 
@@ -112,40 +119,43 @@ class _StartTradeViewState extends State<StartTradeView> {
             );
           }
 
-          return SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Alıcı ürün kartı
-                _buildReceiverProductCard(),
-                
-                SizedBox(height: 24),
-                
-                // Takas etmek istediğiniz ürün
-                _buildSenderProductSection(productViewModel),
-                
-                SizedBox(height: 24),
-                
-                // Teslimat türü
-                _buildDeliveryTypeSection(),
-                
-                SizedBox(height: 24),
-                
-                // Buluşma yeri (sadece elden teslim için)
-                if (_selectedDeliveryType == 1) ...[
-                  _buildMeetingLocationSection(),
+          return SafeArea(
+            bottom: true,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Alıcı ürün kartı
+                  _buildReceiverProductCard(),
+
                   SizedBox(height: 24),
+
+                  // Takas etmek istediğiniz ürün
+                  _buildSenderProductSection(productViewModel),
+
+                  SizedBox(height: 24),
+
+                  // Teslimat türü
+                  _buildDeliveryTypeSection(),
+
+                  SizedBox(height: 24),
+
+                  // Buluşma yeri (sadece elden teslim için)
+                  if (_selectedDeliveryType == 1) ...[
+                    _buildMeetingLocationSection(),
+                    SizedBox(height: 24),
+                  ],
+
+                  // Mesaj
+                  _buildMessageSection(),
+
+                  SizedBox(height: 32),
+
+                  // Takas başlat butonu
+                  _buildStartTradeButton(),
                 ],
-                
-                // Mesaj
-                _buildMessageSection(),
-                
-                SizedBox(height: 32),
-                
-                // Takas başlat butonu
-                _buildStartTradeButton(),
-              ],
+              ),
             ),
           );
         },
@@ -198,7 +208,7 @@ class _StartTradeViewState extends State<StartTradeView> {
             ],
           ),
           SizedBox(height: 16),
-          
+
           // Ürün resmi
           if (widget.receiverProduct.images.isNotEmpty)
             Container(
@@ -229,9 +239,9 @@ class _StartTradeViewState extends State<StartTradeView> {
                 ),
               ),
             ),
-          
+
           SizedBox(height: 12),
-          
+
           // Ürün bilgileri
           Text(
             widget.receiverProduct.title,
@@ -244,10 +254,7 @@ class _StartTradeViewState extends State<StartTradeView> {
           SizedBox(height: 4),
           Text(
             widget.receiverProduct.description,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -306,14 +313,14 @@ class _StartTradeViewState extends State<StartTradeView> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  _selectedSenderProduct != null 
-                      ? 'Ürün Seçildi' 
+                  _selectedSenderProduct != null
+                      ? 'Ürün Seçildi'
                       : 'Takas Edeceğiniz Ürün',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: _selectedSenderProduct != null 
-                        ? AppTheme.primary 
+                    color: _selectedSenderProduct != null
+                        ? AppTheme.primary
                         : AppTheme.textPrimary,
                   ),
                 ),
@@ -321,7 +328,7 @@ class _StartTradeViewState extends State<StartTradeView> {
             ],
           ),
           SizedBox(height: 16),
-          
+
           // Seçili ürün gösterimi
           if (_selectedSenderProduct != null) ...[
             Container(
@@ -347,11 +354,17 @@ class _StartTradeViewState extends State<StartTradeView> {
                               _selectedSenderProduct!.images.first,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                return Icon(Icons.image_not_supported, color: Colors.grey.shade400);
+                                return Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey.shade400,
+                                );
                               },
                             ),
                           )
-                        : Icon(Icons.image_not_supported, color: Colors.grey.shade400),
+                        : Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey.shade400,
+                          ),
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -386,7 +399,11 @@ class _StartTradeViewState extends State<StartTradeView> {
                         _selectedSenderProduct = null;
                       });
                     },
-                    icon: Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
+                    icon: Icon(
+                      Icons.close,
+                      color: AppTheme.textSecondary,
+                      size: 20,
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: BoxConstraints(),
                   ),
@@ -395,7 +412,7 @@ class _StartTradeViewState extends State<StartTradeView> {
             ),
             SizedBox(height: 16),
           ],
-          
+
           if (_selectedSenderProduct == null) ...[
             if (productViewModel.myProducts.isEmpty)
               Container(
@@ -434,114 +451,122 @@ class _StartTradeViewState extends State<StartTradeView> {
                 ),
               )
             else
-            GridView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.8,
-              ),
-              itemCount: productViewModel.myProducts.length,
-              itemBuilder: (context, index) {
-                final product = productViewModel.myProducts[index];
-                final isSelected = _selectedSenderProduct?.id == product.id;
-                
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedSenderProduct = product;
-                    });
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.primary.withOpacity(0.1) : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? AppTheme.primary : Colors.grey.shade200,
-                        width: isSelected ? 2 : 1,
+              GridView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.8,
+                ),
+                itemCount: productViewModel.myProducts.length,
+                itemBuilder: (context, index) {
+                  final product = productViewModel.myProducts[index];
+                  final isSelected = _selectedSenderProduct?.id == product.id;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedSenderProduct = product;
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppTheme.primary.withOpacity(0.1)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppTheme.primary
+                              : Colors.grey.shade200,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Ürün resmi
+                          Expanded(
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(12),
+                                  topRight: Radius.circular(12),
+                                ),
+                                color: Colors.grey.shade200,
+                              ),
+                              child: product.images.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(12),
+                                        topRight: Radius.circular(12),
+                                      ),
+                                      child: Image.network(
+                                        product.images.first,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.grey.shade400,
+                                              );
+                                            },
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.grey.shade400,
+                                    ),
+                            ),
+                          ),
+
+                          // Ürün bilgileri
+                          Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  product.title,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: 4),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    product.condition,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Ürün resmi
-                        Expanded(
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                topRight: Radius.circular(12),
-                              ),
-                              color: Colors.grey.shade200,
-                            ),
-                            child: product.images.isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(12),
-                                      topRight: Radius.circular(12),
-                                    ),
-                                    child: Image.network(
-                                      product.images.first,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.grey.shade400,
-                                        );
-                                      },
-                                    ),
-                                  )
-                                : Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey.shade400,
-                                  ),
-                          ),
-                        ),
-                        
-                        // Ürün bilgileri
-                        Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                product.title,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.textPrimary,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              SizedBox(height: 4),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  product.condition,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
           ],
         ],
       ),
@@ -552,7 +577,7 @@ class _StartTradeViewState extends State<StartTradeView> {
     return Consumer<TradeViewModel>(
       builder: (context, tradeViewModel, child) {
         final deliveryTypes = tradeViewModel.deliveryTypes;
-        
+
         if (deliveryTypes.isEmpty) {
           return Container(
             padding: EdgeInsets.all(16),
@@ -624,10 +649,11 @@ class _StartTradeViewState extends State<StartTradeView> {
                 ],
               ),
               SizedBox(height: 16),
-              
+
               // Dinamik teslimat türleri
               ...deliveryTypes.map((deliveryType) {
-                final isSelected = _selectedDeliveryType == deliveryType.deliveryID;
+                final isSelected =
+                    _selectedDeliveryType == deliveryType.deliveryID;
                 return Padding(
                   padding: EdgeInsets.only(bottom: 12),
                   child: GestureDetector(
@@ -640,13 +666,13 @@ class _StartTradeViewState extends State<StartTradeView> {
                       width: double.infinity,
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isSelected 
-                            ? AppTheme.primary.withOpacity(0.1) 
+                        color: isSelected
+                            ? AppTheme.primary.withOpacity(0.1)
                             : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected 
-                              ? AppTheme.primary 
+                          color: isSelected
+                              ? AppTheme.primary
                               : Colors.grey.shade200,
                         ),
                       ),
@@ -654,8 +680,8 @@ class _StartTradeViewState extends State<StartTradeView> {
                         children: [
                           Icon(
                             _getDeliveryTypeIcon(deliveryType.deliveryID),
-                            color: isSelected 
-                                ? AppTheme.primary 
+                            color: isSelected
+                                ? AppTheme.primary
                                 : Colors.grey.shade600,
                             size: 24,
                           ),
@@ -666,8 +692,8 @@ class _StartTradeViewState extends State<StartTradeView> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: isSelected 
-                                    ? AppTheme.primary 
+                                color: isSelected
+                                    ? AppTheme.primary
                                     : Colors.grey.shade600,
                               ),
                             ),
@@ -745,7 +771,7 @@ class _StartTradeViewState extends State<StartTradeView> {
             ],
           ),
           SizedBox(height: 16),
-          
+
           TextField(
             controller: _meetingLocationController,
             textCapitalization: TextCapitalization.sentences,
@@ -763,7 +789,10 @@ class _StartTradeViewState extends State<StartTradeView> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: AppTheme.primary),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
         ],
@@ -814,7 +843,7 @@ class _StartTradeViewState extends State<StartTradeView> {
             ],
           ),
           SizedBox(height: 16),
-          
+
           TextField(
             controller: _messageController,
             maxLines: 3,
@@ -842,52 +871,56 @@ class _StartTradeViewState extends State<StartTradeView> {
   }
 
   Widget _buildStartTradeButton() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.primary, AppTheme.primary.withOpacity(0.8)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primary.withOpacity(0.3),
-            blurRadius: 20,
-            offset: Offset(0, 10),
+    return SafeArea(
+      bottom: true,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppTheme.primary, AppTheme.primary.withOpacity(0.8)],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : _startTrade,
           borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_isLoading)
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primary.withOpacity(0.3),
+              blurRadius: 20,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _isLoading ? null : _startTrade,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isLoading)
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  else
+                    Icon(Icons.swap_horiz, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    _isLoading ? 'Takas Başlatılıyor...' : 'Takas Başlat',
+                    style: TextStyle(
                       color: Colors.white,
-                      strokeWidth: 2,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
-                  )
-                else
-                  Icon(Icons.swap_horiz, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  _isLoading ? 'Takas Başlatılıyor...' : 'Takas Başlat',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -902,7 +935,8 @@ class _StartTradeViewState extends State<StartTradeView> {
       return;
     }
 
-    if (_selectedDeliveryType == 1 && _meetingLocationController.text.trim().isEmpty) {
+    if (_selectedDeliveryType == 1 &&
+        _meetingLocationController.text.trim().isEmpty) {
       _showError('Elden teslim için buluşma yeri zorunludur');
       return;
     }
@@ -922,21 +956,24 @@ class _StartTradeViewState extends State<StartTradeView> {
         return;
       }
 
-      final tradeViewModel = Provider.of<TradeViewModel>(context, listen: false);
-      
+      final tradeViewModel = Provider.of<TradeViewModel>(
+        context,
+        listen: false,
+      );
+
       final success = await tradeViewModel.startTrade(
         userToken: userToken,
         senderProductID: int.parse(_selectedSenderProduct!.id),
         receiverProductID: int.parse(widget.receiverProduct.id),
         deliveryTypeID: _selectedDeliveryType,
-        meetingLocation: _selectedDeliveryType == 1 
-            ? _meetingLocationController.text.trim() 
+        meetingLocation: _selectedDeliveryType == 1
+            ? _meetingLocationController.text.trim()
             : null,
       );
 
       if (success) {
         Logger.info('Takas başarıyla başlatıldı', tag: 'StartTradeView');
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -954,7 +991,7 @@ class _StartTradeViewState extends State<StartTradeView> {
               ),
             ),
           );
-          
+
           Navigator.pop(context, true); // Başarılı sonuç döndür
         }
       } else {
@@ -977,7 +1014,7 @@ class _StartTradeViewState extends State<StartTradeView> {
     setState(() {
       _errorMessage = message;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -989,10 +1026,8 @@ class _StartTradeViewState extends State<StartTradeView> {
         ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
-} 
+}

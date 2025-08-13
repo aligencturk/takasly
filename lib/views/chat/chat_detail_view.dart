@@ -16,10 +16,7 @@ import '../../widgets/report_dialog.dart';
 class ChatDetailView extends StatefulWidget {
   final Chat chat;
 
-  const ChatDetailView({
-    super.key,
-    required this.chat,
-  });
+  const ChatDetailView({super.key, required this.chat});
 
   @override
   State<ChatDetailView> createState() => _ChatDetailViewState();
@@ -35,10 +32,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   @override
   void initState() {
     super.initState();
-    
+
     // Scroll listener ekle - yukarı scroll ettiğinde eski mesajları yükle
     _scrollController.addListener(_onScroll);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadMessages();
       // Sayfa açıldığında en aşağıya scroll et
@@ -66,8 +63,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     if (!_isDisposed && !_hasMessageSent) {
       try {
         final chatViewModel = context.read<ChatViewModel>();
-        final chatMessages = chatViewModel.messages.where((message) => message.chatId == widget.chat.id).toList();
-        
+        final chatMessages = chatViewModel.messages
+            .where((message) => message.chatId == widget.chat.id)
+            .toList();
+
         // Eğer hiç mesaj yoksa chat'i sil
         if (chatMessages.isEmpty) {
           chatViewModel.deleteEmptyChat(widget.chat.id);
@@ -75,14 +74,18 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       } catch (e) {
         // Context artık geçerli değilse veya Provider erişim hatası varsa
         // Bu durumda hiçbir şey yapma, sadece logla
-        print('ChatDetailView: _cleanupEmptyChat hatası (widget dispose edilmiş olabilir): $e');
+        print(
+          'ChatDetailView: _cleanupEmptyChat hatası (widget dispose edilmiş olabilir): $e',
+        );
       }
     }
   }
 
   void _onScroll() {
     // Yukarı scroll edildiğinde ve en üstteyse eski mesajları yükle
-    if (!_isDisposed && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
+    if (!_isDisposed &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 100) {
       try {
         final chatViewModel = context.read<ChatViewModel>();
         if (chatViewModel.hasMoreMessages && !chatViewModel.isLoadingMore) {
@@ -90,23 +93,25 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         }
       } catch (e) {
         // Context artık geçerli değilse hata yakala
-        print('ChatDetailView: _onScroll hatası (widget dispose edilmiş olabilir): $e');
+        print(
+          'ChatDetailView: _onScroll hatası (widget dispose edilmiş olabilir): $e',
+        );
       }
     }
   }
 
   void _loadMessages() {
     if (_isDisposed) return;
-    
+
     try {
       final chatViewModel = context.read<ChatViewModel>();
       final authViewModel = context.read<AuthViewModel>();
-      
+
       chatViewModel.loadMessages(widget.chat.id);
-      
+
       // Chat'e ait ürün bilgisini yükle
       _loadChatProduct();
-      
+
       // Chat açıldığında mesajları okundu olarak işaretle (kısa bir gecikme ile)
       if (authViewModel.currentUser != null) {
         Future.delayed(const Duration(milliseconds: 500), () {
@@ -114,10 +119,15 @@ class _ChatDetailViewState extends State<ChatDetailView> {
             if (!_isDisposed) {
               final chatViewModel = context.read<ChatViewModel>();
               final authViewModel = context.read<AuthViewModel>();
-              chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+              chatViewModel.markMessagesAsRead(
+                widget.chat.id,
+                authViewModel.currentUser!.id,
+              );
             }
           } catch (e) {
-            print('ChatDetailView: markMessagesAsRead hatası (widget dispose edilmiş olabilir): $e');
+            print(
+              'ChatDetailView: markMessagesAsRead hatası (widget dispose edilmiş olabilir): $e',
+            );
           }
         });
       }
@@ -128,7 +138,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _loadChatProduct() async {
     if (_isDisposed) return;
-    
+
     try {
       // Öncelik: trade içindeki ürünler
       if (widget.chat.trade.offeredProducts.isNotEmpty) {
@@ -140,24 +150,26 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         if (!_isDisposed) setState(() {});
         return;
       }
-      
+
       // Eğer trade'de ürün yoksa, ürün mesajlarını kontrol et
       final chatViewModel = context.read<ChatViewModel>();
       final productMsgs = chatViewModel.messages.where(
         (m) => m.type == MessageType.product && m.product != null,
       );
-      
+
       if (productMsgs.isNotEmpty) {
         // En son gönderilen ürün mesajını al
         _chatProduct = productMsgs.last.product;
         if (!_isDisposed) setState(() {});
         return;
       }
-      
+
       // Eğer mesajlarda da yoksa, tradeId'den ürün bilgisini almaya çalış
       if (widget.chat.tradeId.isNotEmpty) {
         final productViewModel = context.read<ProductViewModel>();
-        final product = await productViewModel.getProductDetail(widget.chat.tradeId);
+        final product = await productViewModel.getProductDetail(
+          widget.chat.tradeId,
+        );
         if (!_isDisposed && product != null) {
           _chatProduct = product;
           setState(() {});
@@ -171,18 +183,18 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   // Mesajlar yüklendiğinde ürün bilgisini güncelle
   void _updateChatProductFromMessages() {
     if (_isDisposed) return;
-    
+
     try {
       // Eğer chat'in üst kısmında zaten bir ürün varsa (trade'den gelen), mesajlardan ürün alma
       if (_chatProduct != null) {
         return;
       }
-      
+
       final chatViewModel = context.read<ChatViewModel>();
       final productMsgs = chatViewModel.messages.where(
         (m) => m.type == MessageType.product && m.product != null,
       );
-      
+
       if (productMsgs.isNotEmpty && _chatProduct == null) {
         // En son gönderilen ürün mesajını al
         _chatProduct = productMsgs.last.product;
@@ -195,7 +207,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _sendMessage() {
     if (_isDisposed) return;
-    
+
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
 
@@ -211,17 +223,20 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         );
         _messageController.clear();
         _scrollToBottom();
-        
+
         // Mesaj gönderildi flag'ini set et
         _hasMessageSent = true;
-        
+
         // Mesaj gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
         Future.delayed(const Duration(milliseconds: 300), () {
           try {
             if (!_isDisposed) {
               final chatViewModel = context.read<ChatViewModel>();
               final authViewModel = context.read<AuthViewModel>();
-              chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+              chatViewModel.markMessagesAsRead(
+                widget.chat.id,
+                authViewModel.currentUser!.id,
+              );
             }
           } catch (e) {
             print('ChatDetailView: _sendMessage markMessagesAsRead hatası: $e');
@@ -235,7 +250,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _scrollToBottom() {
     if (_isDisposed) return;
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isDisposed && _scrollController.hasClients) {
         // reverse: true olduğu için en üste scroll et (en yeni mesajlar aşağıda)
@@ -252,10 +267,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     try {
       final authViewModel = context.read<AuthViewModel>();
       final productViewModel = context.read<ProductViewModel>();
-      
+
       // Kullanıcının kendi ürünlerini yükle
       productViewModel.loadUserProducts(authViewModel.currentUser!.id);
-      
+
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -273,7 +288,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -328,9 +345,16 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                       ),
                       child: IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
                         padding: const EdgeInsets.all(8),
-                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        constraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
                       ),
                     ),
                   ],
@@ -359,7 +383,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                         ),
                       );
                     }
-                    
+
                     if (vm.userProducts.isEmpty) {
                       return Center(
                         child: Column(
@@ -400,7 +424,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                         ),
                       );
                     }
-                    
+
                     return ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: vm.userProducts.length,
@@ -439,16 +463,23 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                                         borderRadius: BorderRadius.circular(12),
                                         color: Colors.grey[50],
                                       ),
-                                                                          child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: _buildProductImage(product.images.isNotEmpty ? product.images.first : '', 60, 60),
-                                    ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: _buildProductImage(
+                                          product.images.isNotEmpty
+                                              ? product.images.first
+                                              : '',
+                                          60,
+                                          60,
+                                        ),
+                                      ),
                                     ),
                                     const SizedBox(width: 16),
                                     // İçerik
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             product.title,
@@ -464,10 +495,16 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                                           Row(
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
                                                 decoration: BoxDecoration(
-                                                  color: AppTheme.primary.withValues(alpha: 0.1),
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  color: AppTheme.primary
+                                                      .withValues(alpha: 0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
                                                 ),
                                                 child: Text(
                                                   product.catname,
@@ -479,7 +516,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                                                 ),
                                               ),
                                               const Spacer(),
-                                              if (product.estimatedValue != null)
+                                              if (product.estimatedValue !=
+                                                  null)
                                                 Text(
                                                   '₺${product.estimatedValue!.toStringAsFixed(0)}',
                                                   style: const TextStyle(
@@ -498,7 +536,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.primary.withValues(alpha: 0.1),
+                                        color: AppTheme.primary.withValues(
+                                          alpha: 0.1,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Icon(
@@ -544,7 +584,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.08),
@@ -611,16 +653,20 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                     decoration: BoxDecoration(
                       color: Colors.grey[50],
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.grey[200]!,
-                        width: 1,
-                      ),
+                      border: Border.all(color: Colors.grey[200]!, width: 1),
                     ),
                     child: IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.grey,
+                        size: 20,
+                      ),
                       padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      constraints: const BoxConstraints(
+                        minWidth: 40,
+                        minHeight: 40,
+                      ),
                     ),
                   ),
                 ],
@@ -687,14 +733,14 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                     // Hazır mesajlar başlığı
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey[100]!,
-                          width: 1,
-                        ),
+                        border: Border.all(color: Colors.grey[100]!, width: 1),
                       ),
                       child: Row(
                         children: [
@@ -719,15 +765,35 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                     // Mesaj seçenekleri
                     Column(
                       children: [
-                        _buildMessageOption('Bu ilanım var, ilgilenir misin?', product, Icons.question_mark_rounded),
+                        _buildMessageOption(
+                          'Bu ilanım var, ilgilenir misin?',
+                          product,
+                          Icons.question_mark_rounded,
+                        ),
                         const SizedBox(height: 12),
-                        _buildMessageOption('Bu ürünü beğendin mi?', product, Icons.favorite_border_rounded),
+                        _buildMessageOption(
+                          'Bu ürünü beğendin mi?',
+                          product,
+                          Icons.favorite_border_rounded,
+                        ),
                         const SizedBox(height: 12),
-                        _buildMessageOption('Bu ilanım hoşuna gitti mi?', product, Icons.thumb_up_outlined),
+                        _buildMessageOption(
+                          'Bu ilanım hoşuna gitti mi?',
+                          product,
+                          Icons.thumb_up_outlined,
+                        ),
                         const SizedBox(height: 12),
-                        _buildMessageOption('Bu ürünle ilgileniyor musun?', product, Icons.visibility_outlined),
+                        _buildMessageOption(
+                          'Bu ürünle ilgileniyor musun?',
+                          product,
+                          Icons.visibility_outlined,
+                        ),
                         const SizedBox(height: 12),
-                        _buildMessageOption('Bu ilanım nasıl? Beğendin mi?', product, Icons.star_outline_rounded),
+                        _buildMessageOption(
+                          'Bu ilanım nasıl? Beğendin mi?',
+                          product,
+                          Icons.star_outline_rounded,
+                        ),
                       ],
                     ),
                   ],
@@ -745,10 +811,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey[200]!,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey[200]!, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -774,12 +837,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   decoration: BoxDecoration(
                     color: AppTheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    ),
-                  child: Icon(
-                    icon,
-                    color: AppTheme.primary,
-                    size: 20,
                   ),
+                  child: Icon(icon, color: AppTheme.primary, size: 20),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -809,7 +868,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _sendProductOnly(Product product) {
     if (_isDisposed) return;
-    
+
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
 
@@ -820,18 +879,21 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         senderId: authViewModel.currentUser!.id,
       );
       _scrollToBottom();
-      
+
       // Mesaj gönderildi flag'ini set et
       _hasMessageSent = true;
-      
+
       // Chat'e ait ürün bilgisini güncelleme kaldırıldı - bu chat'in üst kısmındaki ürün kartının değişmesine neden oluyordu
       // _chatProduct = product;
       // if (!_isDisposed) setState(() {});
-      
+
       // Ürün mesajı gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
       Future.delayed(const Duration(milliseconds: 300), () {
         if (!_isDisposed) {
-          chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+          chatViewModel.markMessagesAsRead(
+            widget.chat.id,
+            authViewModel.currentUser!.id,
+          );
         }
       });
     }
@@ -839,7 +901,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _sendProductWithMessage(Product product, String message) {
     if (_isDisposed) return;
-    
+
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
 
@@ -850,11 +912,11 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         product: product,
         senderId: authViewModel.currentUser!.id,
       );
-      
+
       // Chat'e ait ürün bilgisini güncelleme kaldırıldı - bu chat'in üst kısmındaki ürün kartının değişmesine neden oluyordu
       // _chatProduct = product;
       // if (!_isDisposed) setState(() {});
-      
+
       // Sonra seçilen mesajı gönder
       Future.delayed(const Duration(milliseconds: 500), () {
         if (!_isDisposed) {
@@ -865,22 +927,23 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           );
         }
       });
-      
+
       _scrollToBottom();
-      
+
       // Mesaj gönderildi flag'ini set et
       _hasMessageSent = true;
-      
+
       // Mesajlar gönderildikten sonra tüm mesajları okundu olarak işaretle (kısa gecikme ile)
       Future.delayed(const Duration(milliseconds: 800), () {
         if (!_isDisposed) {
-          chatViewModel.markMessagesAsRead(widget.chat.id, authViewModel.currentUser!.id);
+          chatViewModel.markMessagesAsRead(
+            widget.chat.id,
+            authViewModel.currentUser!.id,
+          );
         }
       });
     }
   }
-
-
 
   void _showReportDialog() {
     final authViewModel = context.read<AuthViewModel>();
@@ -913,8 +976,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
     try {
       final userId = int.parse(otherParticipant.id);
-      final productId = _chatProduct?.id != null ? int.tryParse(_chatProduct!.id) : null;
-      
+      final productId = _chatProduct?.id != null
+          ? int.tryParse(_chatProduct!.id)
+          : null;
+
       showDialog(
         context: context,
         builder: (context) => ReportDialog(
@@ -937,7 +1002,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _startTrade(BuildContext context, Product product) {
     final authViewModel = context.read<AuthViewModel>();
-    
+
     // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
     if (authViewModel.currentUser == null) {
       Navigator.pushNamed(context, '/login');
@@ -995,7 +1060,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: AppTheme.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -1004,10 +1072,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 ),
                 child: const Text(
                   'Takas Başlat',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -1061,11 +1126,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                     _updateChatProductFromMessages();
                   }
                 });
-                
+
                 if (chatViewModel.isLoading && chatViewModel.messages.isEmpty) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 if (chatViewModel.error != null) {
@@ -1143,7 +1206,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: chatViewModel.messages.length + (chatViewModel.isLoadingMore ? 1 : 0),
+                  itemCount:
+                      chatViewModel.messages.length +
+                      (chatViewModel.isLoadingMore ? 1 : 0),
                   reverse: true, // Mesajları ters çevir - en yeni en aşağıda
                   itemBuilder: (context, index) {
                     // Loading indicator için
@@ -1157,7 +1222,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                               SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                               SizedBox(width: 8),
                               Text(
@@ -1172,13 +1239,19 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                         ),
                       );
                     }
-                    
+
                     // Reverse olduğu için index'i ters çevir
-                    final messageIndex = chatViewModel.isLoadingMore ? index - 1 : index;
-                    final message = chatViewModel.messages[chatViewModel.messages.length - 1 - messageIndex];
+                    final messageIndex = chatViewModel.isLoadingMore
+                        ? index - 1
+                        : index;
+                    final message =
+                        chatViewModel.messages[chatViewModel.messages.length -
+                            1 -
+                            messageIndex];
                     return _MessageBubble(
                       message: message,
-                      isMe: message.senderId == 
+                      isMe:
+                          message.senderId ==
                           context.read<AuthViewModel>().currentUser?.id,
                     );
                   },
@@ -1212,7 +1285,11 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               width: 50,
               height: 50,
               color: Colors.grey[50],
-              child: _buildProductImage(product.images.isNotEmpty ? product.images.first : '', 50, 50),
+              child: _buildProductImage(
+                product.images.isNotEmpty ? product.images.first : '',
+                50,
+                50,
+              ),
             ),
             const SizedBox(width: 12),
             // Orta kısım - İçerik
@@ -1234,7 +1311,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   Row(
                     children: [
                       Text(
-                          product.catname,
+                        product.catname,
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 12,
@@ -1258,11 +1335,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
             ),
             const SizedBox(width: 8),
             // Sağ taraf - Tıklama göstergesi
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.grey[400],
-              size: 14,
-            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 14),
           ],
         ),
       ),
@@ -1274,7 +1347,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     if (url.isEmpty || url == 'null' || url == 'undefined') {
       return false;
     }
-    
+
     try {
       final uri = Uri.parse(url);
       // file:/// protokolü ile başlayan URL'ler geçersiz
@@ -1302,7 +1375,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         ),
       );
     }
-    
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.network(
@@ -1337,7 +1410,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       if (url.isEmpty || url == 'null' || url == 'undefined') {
         return false;
       }
-      
+
       try {
         final uri = Uri.parse(url);
         // file:/// protokolü ile başlayan URL'ler geçersiz
@@ -1359,14 +1432,20 @@ class _ChatDetailViewState extends State<ChatDetailView> {
             borderRadius: BorderRadius.circular(16),
             onTap: () async {
               print('🔍 Chat Detail - Kullanıcı resmine tıklandı');
-              print('🔍 Chat Detail - otherParticipant: ${otherParticipant?.id} - ${otherParticipant?.name}');
-              print('🔍 Chat Detail - currentUser: ${authViewModel.currentUser?.id}');
-              
+              print(
+                '🔍 Chat Detail - otherParticipant: ${otherParticipant?.id} - ${otherParticipant?.name}',
+              );
+              print(
+                '🔍 Chat Detail - currentUser: ${authViewModel.currentUser?.id}',
+              );
+
               // Token'ı SharedPreferences'dan al
               final prefs = await SharedPreferences.getInstance();
               final userToken = prefs.getString(AppConstants.userTokenKey);
-              print('🔍 Chat Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...');
-              
+              print(
+                '🔍 Chat Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...',
+              );
+
               // Basit test - sadece snackbar göster
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -1376,13 +1455,18 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   duration: const Duration(seconds: 2),
                 ),
               );
-              
-              if (otherParticipant != null && authViewModel.currentUser != null && userToken != null && userToken.isNotEmpty) {
+
+              if (otherParticipant != null &&
+                  authViewModel.currentUser != null &&
+                  userToken != null &&
+                  userToken.isNotEmpty) {
                 try {
                   final userId = int.parse(otherParticipant.id);
                   print('🔍 Chat Detail - userId parsed: $userId');
-                  print('🔍 Chat Detail - Navigating to UserProfileDetailView...');
-                  
+                  print(
+                    '🔍 Chat Detail - Navigating to UserProfileDetailView...',
+                  );
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -1406,15 +1490,23 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 }
               } else {
                 print('❌ Chat Detail - Navigation conditions not met');
-                print('❌ Chat Detail - otherParticipant: ${otherParticipant != null}');
-                print('❌ Chat Detail - currentUser: ${authViewModel.currentUser != null}');
-                print('❌ Chat Detail - token: ${authViewModel.currentUser?.token != null}');
+                print(
+                  '❌ Chat Detail - otherParticipant: ${otherParticipant != null}',
+                );
+                print(
+                  '❌ Chat Detail - currentUser: ${authViewModel.currentUser != null}',
+                );
+                print(
+                  '❌ Chat Detail - token: ${authViewModel.currentUser?.token != null}',
+                );
               }
             },
             child: CircleAvatar(
               radius: 16,
               backgroundColor: Colors.white,
-              child: otherParticipant?.avatar != null && _isValidImageUrl(otherParticipant!.avatar!)
+              child:
+                  otherParticipant?.avatar != null &&
+                      _isValidImageUrl(otherParticipant!.avatar!)
                   ? ClipOval(
                       child: Image.network(
                         otherParticipant!.avatar!,
@@ -1458,7 +1550,6 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            
             ],
           ),
         ),
@@ -1467,73 +1558,77 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
+    return SafeArea(
+      bottom: true,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.inventory_2_outlined, size: 20),
-              onPressed: () {
-                _showProductSelection();
-              },
-              tooltip: 'İlan Gönder',
-              color: Colors.grey[700],
-              padding: const EdgeInsets.all(8),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
               decoration: BoxDecoration(
                 color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: TextField(
-                controller: _messageController,
-                decoration: const InputDecoration(
-                  hintText: 'Mesajınızı yazın...',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+              child: IconButton(
+                icon: const Icon(Icons.inventory_2_outlined, size: 20),
+                onPressed: () {
+                  _showProductSelection();
+                },
+                tooltip: 'İlan Gönder',
+                color: Colors.grey[700],
+                padding: const EdgeInsets.all(8),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
-                maxLines: null,
-                textCapitalization: TextCapitalization.sentences,
-                onSubmitted: (_) => _sendMessage(),
+                child: TextField(
+                  controller: _messageController,
+                  decoration: const InputDecoration(
+                    hintText: 'Mesajınızı yazın...',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  maxLines: null,
+                  textCapitalization: TextCapitalization.sentences,
+                  onSubmitted: (_) => _sendMessage(),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: AppTheme.primary,
-              borderRadius: BorderRadius.circular(12),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, size: 20),
+                onPressed: _sendMessage,
+                color: Colors.white,
+                padding: const EdgeInsets.all(12),
+              ),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.send, size: 20),
-              onPressed: _sendMessage,
-              color: Colors.white,
-              padding: const EdgeInsets.all(12),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1543,17 +1638,14 @@ class _MessageBubble extends StatelessWidget {
   final Message message;
   final bool isMe;
 
-  const _MessageBubble({
-    required this.message,
-    required this.isMe,
-  });
+  const _MessageBubble({required this.message, required this.isMe});
 
   // URL validasyonu için yardımcı metod
   bool _isValidImageUrl(String url) {
     if (url.isEmpty || url == 'null' || url == 'undefined') {
       return false;
     }
-    
+
     try {
       final uri = Uri.parse(url);
       // file:/// protokolü ile başlayan URL'ler geçersiz
@@ -1568,7 +1660,12 @@ class _MessageBubble extends StatelessWidget {
   }
 
   // Güvenli resim widget'ı
-  Widget _buildProductImage(String imageUrl, double width, double height, {double borderRadius = 8}) {
+  Widget _buildProductImage(
+    String imageUrl,
+    double width,
+    double height, {
+    double borderRadius = 8,
+  }) {
     if (!_isValidImageUrl(imageUrl)) {
       return Container(
         width: width,
@@ -1584,7 +1681,7 @@ class _MessageBubble extends StatelessWidget {
         ),
       );
     }
-    
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: Image.network(
@@ -1624,7 +1721,9 @@ class _MessageBubble extends StatelessWidget {
             bottom: 8,
           ),
           child: Column(
-            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isMe
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               _buildProductCard(context, message.product!),
               const SizedBox(height: 4),
@@ -1635,10 +1734,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
                 child: Text(
                   _formatTime(message.createdAt),
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
                 ),
               ),
             ],
@@ -1648,7 +1744,12 @@ class _MessageBubble extends StatelessWidget {
     }
 
     // Güvenli resim widget'ı
-    Widget _buildProductImage(String imageUrl, double width, double height, {double borderRadius = 8}) {
+    Widget _buildProductImage(
+      String imageUrl,
+      double width,
+      double height, {
+      double borderRadius = 8,
+    }) {
       if (!_isValidImageUrl(imageUrl)) {
         return Container(
           width: width,
@@ -1664,7 +1765,7 @@ class _MessageBubble extends StatelessWidget {
           ),
         );
       }
-      
+
       return ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: Image.network(
@@ -1700,10 +1801,7 @@ class _MessageBubble extends StatelessWidget {
           right: isMe ? 0 : 64,
           bottom: 8,
         ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isMe ? AppTheme.primary : Colors.grey[200],
           borderRadius: BorderRadius.circular(18),
@@ -1720,7 +1818,8 @@ class _MessageBubble extends StatelessWidget {
                 ),
               ),
             ] else if (message.type == MessageType.image) ...[
-              if (message.imageUrl != null && _isValidImageUrl(message.imageUrl!))
+              if (message.imageUrl != null &&
+                  _isValidImageUrl(message.imageUrl!))
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
@@ -1810,12 +1909,21 @@ class _MessageBubble extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(16),
+                ),
                 color: Colors.grey[50],
               ),
               child: ClipRRect(
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-                child: _buildProductImage(product.images.isNotEmpty ? product.images.first : '', 80, 80, borderRadius: 16),
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(16),
+                ),
+                child: _buildProductImage(
+                  product.images.isNotEmpty ? product.images.first : '',
+                  80,
+                  80,
+                  borderRadius: 16,
+                ),
               ),
             ),
             // Sağ taraf - İçerik
@@ -1843,7 +1951,10 @@ class _MessageBubble extends StatelessWidget {
                       children: [
                         // Kategori badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
@@ -1862,7 +1973,10 @@ class _MessageBubble extends StatelessWidget {
                         // Fiyat
                         if (product.estimatedValue != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.green.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
@@ -1889,7 +2003,9 @@ class _MessageBubble extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(16),
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1918,4 +2034,4 @@ class _MessageBubble extends StatelessWidget {
   String _formatTime(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
-} 
+}

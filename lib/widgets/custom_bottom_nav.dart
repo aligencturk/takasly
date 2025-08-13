@@ -32,11 +32,31 @@ class CustomBottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(0, FontAwesomeIcons.house, FontAwesomeIcons.house, 'Ana Sayfa'),
-              _buildNavItem(1, FontAwesomeIcons.comments, FontAwesomeIcons.comments, 'Sohbet'),
+              _buildNavItem(
+                0,
+                FontAwesomeIcons.house,
+                FontAwesomeIcons.house,
+                'Ana Sayfa',
+              ),
+              _buildNavItem(
+                1,
+                FontAwesomeIcons.comments,
+                FontAwesomeIcons.comments,
+                'Sohbet',
+              ),
               _buildCenterTradeButton(),
-              _buildNavItem(2, FontAwesomeIcons.list, FontAwesomeIcons.list, 'Takaslarım'),
-              _buildNavItem(3, FontAwesomeIcons.user, FontAwesomeIcons.user, 'Hesap'),
+              _buildNavItem(
+                2,
+                FontAwesomeIcons.list,
+                FontAwesomeIcons.list,
+                'Takaslarım',
+              ),
+              _buildNavItem(
+                3,
+                FontAwesomeIcons.user,
+                FontAwesomeIcons.user,
+                'Hesap',
+              ),
             ],
           ),
         ),
@@ -44,9 +64,14 @@ class CustomBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label,
+  ) {
     final isActive = currentIndex == index;
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -111,10 +136,7 @@ class CustomBottomNav extends StatelessWidget {
                       offset: const Offset(0, 4),
                     ),
                   ],
-                  border: Border.all(
-                    color: AppTheme.surface,
-                    width: 3,
-                  ),
+                  border: Border.all(color: AppTheme.surface, width: 3),
                 ),
                 child: Icon(
                   FontAwesomeIcons.exchange,

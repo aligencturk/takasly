@@ -193,59 +193,63 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   // MARK: - Navigation Buttons
   Widget _buildNavigationButtons() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: _currentStep > 0 ? _previousStep : null,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: BorderSide(color: AppTheme.primary),
-              ),
-              child: const Text('Geri'),
+    return SafeArea(
+      bottom: true,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade200,
+              blurRadius: 4,
+              offset: const Offset(0, -2),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                if (_canGoToNextStep()) {
-                  switch (_currentStep) {
-                    case 0: // E-posta adımı
-                      _handleSendCode();
-                      break;
-                    case 1: // Kod doğrulama adımı
-                      _handleCodeVerification();
-                      break;
-                    case 2: // Şifre güncelleme adımı
-                      _handlePasswordUpdate();
-                      break;
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _currentStep > 0 ? _previousStep : null,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: AppTheme.primary),
+                ),
+                child: const Text('Geri'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_canGoToNextStep()) {
+                    switch (_currentStep) {
+                      case 0: // E-posta adımı
+                        _handleSendCode();
+                        break;
+                      case 1: // Kod doğrulama adımı
+                        _handleCodeVerification();
+                        break;
+                      case 2: // Şifre güncelleme adımı
+                        _handlePasswordUpdate();
+                        break;
+                    }
                   }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _canGoToNextStep()
-                    ? AppTheme.primary
-                    : Colors.grey,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _canGoToNextStep()
+                      ? AppTheme.primary
+                      : Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Text(_getButtonText()),
               ),
-              child: Text(_getButtonText()),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

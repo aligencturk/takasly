@@ -33,7 +33,7 @@ class _AddProductViewState extends State<AddProductView> {
   int _coverImageIndex = 0; // Kapak fotoğrafı indeksi
   final ImagePicker _imagePicker = ImagePicker();
   bool _isShowContact = true; // İletişim bilgilerinin görünürlüğü
-  
+
   // Konum servisi
   final LocationService _locationService = LocationService();
   Position? _currentPosition;
@@ -91,8 +91,9 @@ class _AddProductViewState extends State<AddProductView> {
         canGo = _selectedImages.isNotEmpty;
         break;
       case 1: // Ürün Detayları
-        canGo = _titleController.text.trim().isNotEmpty && 
-               _descriptionController.text.trim().isNotEmpty;
+        canGo =
+            _titleController.text.trim().isNotEmpty &&
+            _descriptionController.text.trim().isNotEmpty;
         break;
       case 2: // Kategorizasyon
         canGo = _selectedCategoryId != null && _selectedConditionId != null;
@@ -110,15 +111,13 @@ class _AddProductViewState extends State<AddProductView> {
       default:
         canGo = false;
     }
-    
+
     return canGo;
   }
 
-
-
   void _showValidationError() {
     String errorMessage = '';
-    
+
     switch (_currentStep) {
       case 0: // Fotoğraflar
         errorMessage = 'Lütfen en az bir fotoğraf seçin';
@@ -161,18 +160,13 @@ class _AddProductViewState extends State<AddProductView> {
             Icon(Icons.error_outline, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                errorMessage,
-                style: const TextStyle(fontSize: 16),
-              ),
+              child: Text(errorMessage, style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),
         backgroundColor: Colors.red.shade600,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
         action: SnackBarAction(
@@ -196,17 +190,19 @@ class _AddProductViewState extends State<AddProductView> {
 
   Future<void> _submitProduct() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Son validasyon kontrolü
     if (!_canGoToNextStep()) {
       _showValidationError();
       return;
     }
 
+    final categoryId =
+        _selectedSubSubSubCategoryId ??
+        _selectedSubSubCategoryId ??
+        _selectedSubCategoryId ??
+        _selectedCategoryId;
 
-
-    final categoryId = _selectedSubSubSubCategoryId ?? _selectedSubSubCategoryId ?? _selectedSubCategoryId ?? _selectedCategoryId;
-    
     // Yükleniyor durumunu göster
     showDialog(
       context: context,
@@ -256,12 +252,12 @@ class _AddProductViewState extends State<AddProductView> {
         );
       },
     );
-    
+
     // Şehir ve ilçe isimlerini al
     final vm = Provider.of<ProductViewModel>(context, listen: false);
     String? selectedCityTitle;
     String? selectedDistrictTitle;
-    
+
     if (_selectedCityId != null) {
       final selectedCity = vm.cities.firstWhere(
         (city) => city.id == _selectedCityId,
@@ -269,7 +265,7 @@ class _AddProductViewState extends State<AddProductView> {
       );
       selectedCityTitle = selectedCity.name;
     }
-    
+
     if (_selectedDistrictId != null) {
       final selectedDistrict = vm.districts.firstWhere(
         (district) => district.id == _selectedDistrictId,
@@ -277,22 +273,22 @@ class _AddProductViewState extends State<AddProductView> {
       );
       selectedDistrictTitle = selectedDistrict.name;
     }
-    
+
     final success = await vm.addProductWithEndpoint(
-          productTitle: _titleController.text.trim(),
-          productDescription: _descriptionController.text.trim(),
-          categoryId: categoryId!,
-          conditionId: _selectedConditionId!,
-          tradeFor: _tradeForController.text.trim(),
-          productImages: _selectedImages,
-          selectedCityId: _selectedCityId,
-          selectedDistrictId: _selectedDistrictId,
-          selectedCityTitle: selectedCityTitle,
-          selectedDistrictTitle: selectedDistrictTitle,
-          isShowContact: _isShowContact,
-          userProvidedLatitude: _currentPosition?.latitude,
-          userProvidedLongitude: _currentPosition?.longitude,
-        );
+      productTitle: _titleController.text.trim(),
+      productDescription: _descriptionController.text.trim(),
+      categoryId: categoryId!,
+      conditionId: _selectedConditionId!,
+      tradeFor: _tradeForController.text.trim(),
+      productImages: _selectedImages,
+      selectedCityId: _selectedCityId,
+      selectedDistrictId: _selectedDistrictId,
+      selectedCityTitle: selectedCityTitle,
+      selectedDistrictTitle: selectedDistrictTitle,
+      isShowContact: _isShowContact,
+      userProvidedLatitude: _currentPosition?.latitude,
+      userProvidedLongitude: _currentPosition?.longitude,
+    );
 
     // Yükleniyor dialog'unu kapat
     if (mounted) {
@@ -303,7 +299,7 @@ class _AddProductViewState extends State<AddProductView> {
       if (success) {
         // Ana sayfaya dön ve başarı durumunu bildir
         Navigator.of(context).pop(true);
-        
+
         // Başarı mesajını göster
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -363,23 +359,17 @@ class _AddProductViewState extends State<AddProductView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('İlan Ekle'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('İlan Ekle'), centerTitle: true),
       body: Column(
         children: [
           // Step Progress Header
           _buildStepProgressHeader(),
-          
+
           // Main Content
           Expanded(
-            child: Form(
-              key: _formKey,
-              child: _buildCurrentStep(),
-            ),
+            child: Form(key: _formKey, child: _buildCurrentStep()),
           ),
-          
+
           // Navigation Buttons
           _buildNavigationButtons(),
         ],
@@ -415,15 +405,15 @@ class _AddProductViewState extends State<AddProductView> {
               const Spacer(),
               Text(
                 _stepTitles[_currentStep],
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Progress bar
           LinearProgressIndicator(
             value: (_currentStep + 1) / _totalSteps,
@@ -431,21 +421,22 @@ class _AddProductViewState extends State<AddProductView> {
             valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
             minHeight: 6,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Step dots
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_totalSteps, (index) {
               final isCompleted = _isStepCompleted(index);
               final isCurrent = index == _currentStep;
-              
+
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 child: InkWell(
                   onTap: () {
-                    if (index <= _currentStep || (index == _currentStep + 1 && _canGoToNextStep())) {
+                    if (index <= _currentStep ||
+                        (index == _currentStep + 1 && _canGoToNextStep())) {
                       setState(() {
                         _currentStep = index;
                       });
@@ -455,11 +446,11 @@ class _AddProductViewState extends State<AddProductView> {
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: isCompleted 
+                      color: isCompleted
                           ? Colors.green
-                          : isCurrent 
-                              ? AppTheme.primary
-                              : Colors.grey.shade300,
+                          : isCurrent
+                          ? AppTheme.primary
+                          : Colors.grey.shade300,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -473,104 +464,121 @@ class _AddProductViewState extends State<AddProductView> {
   }
 
   Widget _buildNavigationButtons() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade200,
-            width: 1,
+    return SafeArea(
+      bottom: true,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+          border: Border(
+            top: BorderSide(color: Colors.grey.shade200, width: 1),
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: _currentStep > 0 ? _previousStep : null,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: BorderSide(
-                  color: _currentStep > 0 ? AppTheme.primary : Colors.grey.shade300,
-                  width: 1.5,
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _currentStep > 0 ? _previousStep : null,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(
+                    color: _currentStep > 0
+                        ? AppTheme.primary
+                        : Colors.grey.shade300,
+                    width: 1.5,
+                  ),
+                  backgroundColor: _currentStep > 0
+                      ? Colors.transparent
+                      : Colors.grey.shade50,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                backgroundColor: _currentStep > 0 ? Colors.transparent : Colors.grey.shade50,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                'Geri',
-                style: TextStyle(
-                  color: _currentStep > 0 ? AppTheme.primary : Colors.grey.shade400,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                if (_currentStep == _totalSteps - 1) {
-                  if (_canGoToNextStep()) {
-                    _submitProduct();
-                  } else {
-                    _showValidationError();
-                  }
-                } else {
-                  if (_canGoToNextStep()) {
-                    setState(() {
-                      _currentStep++;
-                    });
-                  } else {
-                    _showValidationError();
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _canGoToNextStep() ? AppTheme.primary : Colors.grey.shade300,
-                foregroundColor: _canGoToNextStep() ? Colors.white : Colors.grey.shade600,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: _canGoToNextStep() ? 2 : 0,
-                shadowColor: _canGoToNextStep() ? AppTheme.primary.withOpacity(0.3) : Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                _currentStep == _totalSteps - 1 ? 'Tamamla' : 'İleri',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                child: Text(
+                  'Geri',
+                  style: TextStyle(
+                    color: _currentStep > 0
+                        ? AppTheme.primary
+                        : Colors.grey.shade400,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 20),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_currentStep == _totalSteps - 1) {
+                    if (_canGoToNextStep()) {
+                      _submitProduct();
+                    } else {
+                      _showValidationError();
+                    }
+                  } else {
+                    if (_canGoToNextStep()) {
+                      setState(() {
+                        _currentStep++;
+                      });
+                    } else {
+                      _showValidationError();
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _canGoToNextStep()
+                      ? AppTheme.primary
+                      : Colors.grey.shade300,
+                  foregroundColor: _canGoToNextStep()
+                      ? Colors.white
+                      : Colors.grey.shade600,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation: _canGoToNextStep() ? 2 : 0,
+                  shadowColor: _canGoToNextStep()
+                      ? AppTheme.primary.withOpacity(0.3)
+                      : Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  _currentStep == _totalSteps - 1 ? 'Tamamla' : 'İleri',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   bool _isStepCompleted(int step) {
     switch (step) {
-      case 0: return _selectedImages.isNotEmpty;
-      case 1: return _titleController.text.trim().isNotEmpty && 
-                   _descriptionController.text.trim().isNotEmpty;
-      case 2: return _selectedCategoryId != null && _selectedConditionId != null;
-      case 3: return _selectedCityId != null && _selectedDistrictId != null;
-      case 4: return _tradeForController.text.trim().isNotEmpty;
-      case 5: return false; // Bu adım hiçbir zaman otomatik tamamlanmış sayılmaz
-      default: return false;
+      case 0:
+        return _selectedImages.isNotEmpty;
+      case 1:
+        return _titleController.text.trim().isNotEmpty &&
+            _descriptionController.text.trim().isNotEmpty;
+      case 2:
+        return _selectedCategoryId != null && _selectedConditionId != null;
+      case 3:
+        return _selectedCityId != null && _selectedDistrictId != null;
+      case 4:
+        return _tradeForController.text.trim().isNotEmpty;
+      case 5:
+        return false; // Bu adım hiçbir zaman otomatik tamamlanmış sayılmaz
+      default:
+        return false;
     }
   }
 
@@ -608,11 +616,7 @@ class _AddProductViewState extends State<AddProductView> {
                   color: AppTheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _stepIcons[0],
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                child: Icon(_stepIcons[0], color: AppTheme.primary, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -621,9 +625,8 @@ class _AddProductViewState extends State<AddProductView> {
                   children: [
                     Text(
                       'Ürün Fotoğrafları',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -637,9 +640,9 @@ class _AddProductViewState extends State<AddProductView> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Image picker
           _buildImagePicker(),
         ],
@@ -662,11 +665,7 @@ class _AddProductViewState extends State<AddProductView> {
                   color: AppTheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _stepIcons[1],
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                child: Icon(_stepIcons[1], color: AppTheme.primary, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -675,9 +674,8 @@ class _AddProductViewState extends State<AddProductView> {
                   children: [
                     Text(
                       'Ürün Detayları',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -691,9 +689,9 @@ class _AddProductViewState extends State<AddProductView> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Form fields
           TextFormField(
             controller: _titleController,
@@ -713,7 +711,8 @@ class _AddProductViewState extends State<AddProductView> {
             textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
               labelText: 'Açıklama',
-              hintText: 'Ürününüzün detaylarını, özelliklerini ve durumunu açıklayın',
+              hintText:
+                  'Ürününüzün detaylarını, özelliklerini ve durumunu açıklayın',
             ),
             maxLines: 6,
             validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
@@ -739,11 +738,7 @@ class _AddProductViewState extends State<AddProductView> {
                   color: AppTheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _stepIcons[2],
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                child: Icon(_stepIcons[2], color: AppTheme.primary, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -752,9 +747,8 @@ class _AddProductViewState extends State<AddProductView> {
                   children: [
                     Text(
                       'Kategorizasyon',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -768,9 +762,9 @@ class _AddProductViewState extends State<AddProductView> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Form fields
           _buildCategoryDropdown(),
           const SizedBox(height: 24),
@@ -838,11 +832,7 @@ class _AddProductViewState extends State<AddProductView> {
                   color: AppTheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _stepIcons[3],
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                child: Icon(_stepIcons[3], color: AppTheme.primary, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -851,9 +841,8 @@ class _AddProductViewState extends State<AddProductView> {
                   children: [
                     Text(
                       'Konum',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -867,13 +856,13 @@ class _AddProductViewState extends State<AddProductView> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Otomatik konum alma butonu
           _buildAutoLocationButton(),
           const SizedBox(height: 24),
-          
+
           // Manuel seçim
           Container(
             padding: const EdgeInsets.all(16),
@@ -887,7 +876,11 @@ class _AddProductViewState extends State<AddProductView> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.location_city, color: Colors.grey.shade700, size: 20),
+                    Icon(
+                      Icons.location_city,
+                      color: Colors.grey.shade700,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Manuel Konum Seçimi',
@@ -901,34 +894,32 @@ class _AddProductViewState extends State<AddProductView> {
                 const SizedBox(height: 8),
                 Text(
                   'İl ve ilçe seçimi zorunludur',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Form fields
           _buildCityDropdown(),
           const SizedBox(height: 24),
           _buildDistrictDropdown(),
           const SizedBox(height: 16),
-          
-          // Info card
 
-            
-             Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue),
-                const SizedBox(width: 12),
-                Expanded(
-                  child:                 Text(
+          // Info card
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
                   'İl ve ilçe seçimi zorunludur. GPS konumu isteğe bağlıdır.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.blue.shade700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.blue.shade700),
                 ),
               ),
             ],
@@ -953,11 +944,7 @@ class _AddProductViewState extends State<AddProductView> {
                   color: AppTheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _stepIcons[4],
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                child: Icon(_stepIcons[4], color: AppTheme.primary, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -966,9 +953,8 @@ class _AddProductViewState extends State<AddProductView> {
                   children: [
                     Text(
                       'Takas Tercihleri',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -982,9 +968,9 @@ class _AddProductViewState extends State<AddProductView> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Form fields
           TextFormField(
             controller: _tradeForController,
@@ -998,7 +984,7 @@ class _AddProductViewState extends State<AddProductView> {
             onChanged: (value) => setState(() {}),
           ),
           const SizedBox(height: 24),
-          
+
           // Info card
           Container(
             padding: const EdgeInsets.all(16),
@@ -1033,10 +1019,11 @@ class _AddProductViewState extends State<AddProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         // Seçili değerin listede olup olmadığını kontrol et
-        final validValue = vm.categories.any((cat) => cat.id == _selectedCategoryId) 
-            ? _selectedCategoryId 
+        final validValue =
+            vm.categories.any((cat) => cat.id == _selectedCategoryId)
+            ? _selectedCategoryId
             : null;
-            
+
         return DropdownButtonFormField<String>(
           value: validValue,
           decoration: const InputDecoration(labelText: 'Ana Kategori'),
@@ -1066,10 +1053,11 @@ class _AddProductViewState extends State<AddProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         // Seçili değerin listede olup olmadığını kontrol et
-        final validValue = vm.subCategories.any((cat) => cat.id == _selectedSubCategoryId) 
-            ? _selectedSubCategoryId 
+        final validValue =
+            vm.subCategories.any((cat) => cat.id == _selectedSubCategoryId)
+            ? _selectedSubCategoryId
             : null;
-            
+
         return DropdownButtonFormField<String>(
           value: validValue,
           decoration: InputDecoration(
@@ -1095,7 +1083,9 @@ class _AddProductViewState extends State<AddProductView> {
                   }
                 },
           validator: (v) {
-            if (_selectedCategoryId != null && vm.subCategories.isNotEmpty && v == null) {
+            if (_selectedCategoryId != null &&
+                vm.subCategories.isNotEmpty &&
+                v == null) {
               return 'Alt kategori seçimi zorunludur';
             }
             return null;
@@ -1109,36 +1099,45 @@ class _AddProductViewState extends State<AddProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         // Seçili değerin listede olup olmadığını kontrol et
-        final validValue = vm.subSubCategories.any((cat) => cat.id == _selectedSubSubCategoryId) 
-            ? _selectedSubSubCategoryId 
+        final validValue =
+            vm.subSubCategories.any(
+              (cat) => cat.id == _selectedSubSubCategoryId,
+            )
+            ? _selectedSubSubCategoryId
             : null;
-            
+
         return DropdownButtonFormField<String>(
           value: validValue,
           decoration: InputDecoration(
             labelText: 'Alt Alt Kategori',
-            enabled: _selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty,
+            enabled:
+                _selectedSubCategoryId != null &&
+                vm.subSubCategories.isNotEmpty,
           ),
           items: vm.subSubCategories
               .map(
                 (cat) => DropdownMenuItem(value: cat.id, child: Text(cat.name)),
               )
               .toList(),
-          onChanged: _selectedSubCategoryId == null || vm.subSubCategories.isEmpty
+          onChanged:
+              _selectedSubCategoryId == null || vm.subSubCategories.isEmpty
               ? null
-                              : (value) {
-                    setState(() {
-                      _selectedSubSubCategoryId = value;
-                      _selectedSubSubSubCategoryId = null; // 4. seviye kategoriyi sıfırla
-                    });
-                    if (value != null) {
-                      vm.loadSubSubSubCategories(value);
-                    } else {
-                      vm.clearSubSubSubCategories();
-                    }
-                  },
+              : (value) {
+                  setState(() {
+                    _selectedSubSubCategoryId = value;
+                    _selectedSubSubSubCategoryId =
+                        null; // 4. seviye kategoriyi sıfırla
+                  });
+                  if (value != null) {
+                    vm.loadSubSubSubCategories(value);
+                  } else {
+                    vm.clearSubSubSubCategories();
+                  }
+                },
           validator: (v) {
-            if (_selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty && v == null) {
+            if (_selectedSubCategoryId != null &&
+                vm.subSubCategories.isNotEmpty &&
+                v == null) {
               return 'Alt alt kategori seçimi zorunludur';
             }
             return null;
@@ -1152,28 +1151,37 @@ class _AddProductViewState extends State<AddProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         // Seçili değerin listede olup olmadığını kontrol et
-        final validValue = vm.subSubSubCategories.any((cat) => cat.id == _selectedSubSubSubCategoryId) 
-            ? _selectedSubSubSubCategoryId 
+        final validValue =
+            vm.subSubSubCategories.any(
+              (cat) => cat.id == _selectedSubSubSubCategoryId,
+            )
+            ? _selectedSubSubSubCategoryId
             : null;
-            
+
         return DropdownButtonFormField<String>(
           value: validValue,
           decoration: InputDecoration(
             labelText: 'Ürün Kategorisi',
-            enabled: _selectedSubSubCategoryId != null && vm.subSubSubCategories.isNotEmpty,
+            enabled:
+                _selectedSubSubCategoryId != null &&
+                vm.subSubSubCategories.isNotEmpty,
           ),
           items: vm.subSubSubCategories
               .map(
                 (cat) => DropdownMenuItem(value: cat.id, child: Text(cat.name)),
               )
               .toList(),
-          onChanged: _selectedSubSubCategoryId == null || vm.subSubSubCategories.isEmpty
+          onChanged:
+              _selectedSubSubCategoryId == null ||
+                  vm.subSubSubCategories.isEmpty
               ? null
-                              : (value) {
-                    setState(() => _selectedSubSubSubCategoryId = value);
-                  },
+              : (value) {
+                  setState(() => _selectedSubSubSubCategoryId = value);
+                },
           validator: (v) {
-            if (_selectedSubSubCategoryId != null && vm.subSubSubCategories.isNotEmpty && v == null) {
+            if (_selectedSubSubCategoryId != null &&
+                vm.subSubSubCategories.isNotEmpty &&
+                v == null) {
               return 'Alt alt alt kategori seçimi zorunludur';
             }
             return null;
@@ -1187,10 +1195,11 @@ class _AddProductViewState extends State<AddProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         // Seçili değerin listede olup olmadığını kontrol et
-        final validValue = vm.conditions.any((con) => con.id == _selectedConditionId) 
-            ? _selectedConditionId 
+        final validValue =
+            vm.conditions.any((con) => con.id == _selectedConditionId)
+            ? _selectedConditionId
             : null;
-            
+
         return DropdownButtonFormField<String>(
           value: validValue,
           decoration: const InputDecoration(labelText: 'Ürün Durumu'),
@@ -1212,10 +1221,10 @@ class _AddProductViewState extends State<AddProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         // Seçili değerin listede olup olmadığını kontrol et
-        final validValue = vm.cities.any((city) => city.id == _selectedCityId) 
-            ? _selectedCityId 
+        final validValue = vm.cities.any((city) => city.id == _selectedCityId)
+            ? _selectedCityId
             : null;
-            
+
         return DropdownButtonFormField<String>(
           value: validValue,
           decoration: const InputDecoration(
@@ -1229,7 +1238,8 @@ class _AddProductViewState extends State<AddProductView> {
               child: Text('İl seçiniz', style: TextStyle(color: Colors.grey)),
             ),
             ...vm.cities.map(
-              (city) => DropdownMenuItem(value: city.id, child: Text(city.name)),
+              (city) =>
+                  DropdownMenuItem(value: city.id, child: Text(city.name)),
             ),
           ],
           onChanged: (value) {
@@ -1253,10 +1263,11 @@ class _AddProductViewState extends State<AddProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         // Seçili değerin listede olup olmadığını kontrol et
-        final validValue = vm.districts.any((dist) => dist.id == _selectedDistrictId) 
-            ? _selectedDistrictId 
+        final validValue =
+            vm.districts.any((dist) => dist.id == _selectedDistrictId)
+            ? _selectedDistrictId
             : null;
-            
+
         return DropdownButtonFormField<String>(
           value: validValue,
           decoration: InputDecoration(
@@ -1271,14 +1282,15 @@ class _AddProductViewState extends State<AddProductView> {
               child: Text('İlçe seçiniz', style: TextStyle(color: Colors.grey)),
             ),
             ...vm.districts.map(
-              (dist) => DropdownMenuItem(value: dist.id, child: Text(dist.name)),
+              (dist) =>
+                  DropdownMenuItem(value: dist.id, child: Text(dist.name)),
             ),
           ],
           onChanged: _selectedCityId == null
               ? null
               : (value) async {
                   setState(() => _selectedDistrictId = value);
-                  
+
                   // İlçe seçildiğinde konum bilgisini güncelle
                   if (value != null) {
                     await _showDistrictLocationOnMap(value, vm);
@@ -1296,93 +1308,98 @@ class _AddProductViewState extends State<AddProductView> {
 
   Widget _buildAutoLocationButton() {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              _currentPosition != null ? Icons.location_on : Icons.my_location,
+              color: _currentPosition != null ? Colors.green : AppTheme.primary,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _currentPosition != null
+                        ? 'GPS Konumu Alındı'
+                        : 'GPS Konumu Al (İsteğe Bağlı)',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: _currentPosition != null
+                          ? Colors.green
+                          : AppTheme.primary,
+                    ),
+                  ),
+                  if (_currentPosition != null)
+                    Text(
+                      '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (_isGettingLocation)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+          ],
+        ),
+
+        if (_currentPosition != null) ...[
+          const SizedBox(height: 12),
           Row(
             children: [
-              Icon(
-                _currentPosition != null ? Icons.location_on : Icons.my_location,
-                color: _currentPosition != null ? Colors.green : AppTheme.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _currentPosition != null ? 'GPS Konumu Alındı' : 'GPS Konumu Al (İsteğe Bağlı)',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: _currentPosition != null ? Colors.green : AppTheme.primary,
-                      ),
-                    ),
-                    if (_currentPosition != null)
-                      Text(
-                        '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                  ],
+                child: OutlinedButton.icon(
+                  onPressed: () => _getCurrentLocation(),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Yenile'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primary,
+                    side: BorderSide(color: AppTheme.primary),
+                  ),
                 ),
               ),
-              if (_isGettingLocation)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _clearLocation(),
+                  icon: const Icon(Icons.clear, size: 16),
+                  label: const Text('Temizle'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: BorderSide(color: Colors.red),
+                  ),
                 ),
+              ),
             ],
           ),
-          
-          if (_currentPosition != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _getCurrentLocation(),
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('Yenile'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primary,
-                      side: BorderSide(color: AppTheme.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _clearLocation(),
-                    icon: const Icon(Icons.clear, size: 16),
-                    label: const Text('Temizle'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: BorderSide(color: Colors.red),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ] else ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isGettingLocation ? null : () => _getCurrentLocation(),
-                icon: const Icon(Icons.my_location),
-                label: const Text('GPS Konumu Al'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                ),
+        ] else ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isGettingLocation
+                  ? null
+                  : () => _getCurrentLocation(),
+              icon: const Icon(Icons.my_location),
+              label: const Text('GPS Konumu Al'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
               ),
             ),
-          ],
+          ),
         ],
-      );
-    
+      ],
+    );
   }
 
   Future<void> _getCurrentLocation() async {
@@ -1392,12 +1409,12 @@ class _AddProductViewState extends State<AddProductView> {
 
     try {
       final position = await _locationService.getCurrentLocation();
-      
+
       if (position != null) {
         setState(() {
           _currentPosition = position;
         });
-        
+
         // Kullanıcıya başarı mesajı göster
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1445,21 +1462,24 @@ class _AddProductViewState extends State<AddProductView> {
     });
   }
 
-  Future<void> _showCityLocationOnMap(String cityId, ProductViewModel vm) async {
+  Future<void> _showCityLocationOnMap(
+    String cityId,
+    ProductViewModel vm,
+  ) async {
     try {
       // Şehir ID'sine göre şehir adını bul
       final city = vm.cities.firstWhere((c) => c.id == cityId);
       final cityName = city.name;
-      
+
       // Şehir konumunu al
       final position = await _locationService.getLocationFromCityName(cityName);
-      
+
       if (position != null && mounted) {
         // Manuel konum olarak ayarla
         setState(() {
           _currentPosition = position;
         });
-        
+
         // Kullanıcıya bilgi ver
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1573,9 +1593,9 @@ class _AddProductViewState extends State<AddProductView> {
 
         Text(
           'En az 1, en fazla 5 fotoğraf ekleyebilirsiniz. Yıldız ikonuna tıklayarak kapak resmi seçebilirsiniz.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey.shade600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
         ),
       ],
     );
@@ -1624,7 +1644,7 @@ class _AddProductViewState extends State<AddProductView> {
 
   Widget _buildImagePreview(File image, int index) {
     final isCoverImage = index == _coverImageIndex;
-    
+
     return Container(
       width: 100,
       height: 100,
@@ -1688,11 +1708,7 @@ class _AddProductViewState extends State<AddProductView> {
                     color: Colors.black.withOpacity(0.7),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.star,
-                    color: Colors.white,
-                    size: 14,
-                  ),
+                  child: const Icon(Icons.star, color: Colors.white, size: 14),
                 ),
               ),
             ),
@@ -1744,9 +1760,9 @@ class _AddProductViewState extends State<AddProductView> {
 
               Text(
                 'Fotoğraf Seç',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
 
               const SizedBox(height: 20),
@@ -1808,8 +1824,9 @@ class _AddProductViewState extends State<AddProductView> {
       if (pickedFile != null) {
         // Seçilen görseli optimize et
         Logger.debug('🖼️ AddProductView - Optimizing selected image...');
-        final File optimizedFile = await ImageOptimizationService.optimizeSingleXFile(pickedFile);
-        
+        final File optimizedFile =
+            await ImageOptimizationService.optimizeSingleXFile(pickedFile);
+
         setState(() {
           _selectedImages.add(optimizedFile);
           // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
@@ -1863,8 +1880,10 @@ class _AddProductViewState extends State<AddProductView> {
       );
 
       if (pickedFiles.isNotEmpty) {
-        final List<XFile> filesToAdd = pickedFiles.take(remainingSlots).toList();
-        
+        final List<XFile> filesToAdd = pickedFiles
+            .take(remainingSlots)
+            .toList();
+
         // Kullanıcıya optimizasyon başladığını bildir
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1875,14 +1894,17 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           );
         }
-        
+
         // Seçilen görselleri optimize et
-        Logger.debug('🖼️ AddProductView - Optimizing ${filesToAdd.length} selected images...');
-        final List<File> optimizedFiles = await ImageOptimizationService.optimizeXFiles(
-          filesToAdd, 
-          maxImages: remainingSlots,
+        Logger.debug(
+          '🖼️ AddProductView - Optimizing ${filesToAdd.length} selected images...',
         );
-        
+        final List<File> optimizedFiles =
+            await ImageOptimizationService.optimizeXFiles(
+              filesToAdd,
+              maxImages: remainingSlots,
+            );
+
         setState(() {
           _selectedImages.addAll(optimizedFiles);
           // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
@@ -1895,7 +1917,9 @@ class _AddProductViewState extends State<AddProductView> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${optimizedFiles.length} fotoğraf optimize edilerek eklendi'),
+              content: Text(
+                '${optimizedFiles.length} fotoğraf optimize edilerek eklendi',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -1904,7 +1928,9 @@ class _AddProductViewState extends State<AddProductView> {
         if (pickedFiles.length > remainingSlots) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${pickedFiles.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 5 resim)'),
+              content: Text(
+                '${pickedFiles.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 5 resim)',
+              ),
               backgroundColor: Colors.orange,
             ),
           );
@@ -1926,7 +1952,7 @@ class _AddProductViewState extends State<AddProductView> {
   void _removeImage(int index) {
     setState(() {
       _selectedImages.removeAt(index);
-      
+
       // Eğer silinen resim kapak resmiyse, ilk resmi kapak resmi yap
       if (index == _coverImageIndex) {
         _coverImageIndex = 0;
@@ -1935,7 +1961,6 @@ class _AddProductViewState extends State<AddProductView> {
         _coverImageIndex--;
       }
     });
-
   }
 
   void _setCoverImage(int index) {
@@ -1943,7 +1968,6 @@ class _AddProductViewState extends State<AddProductView> {
       _coverImageIndex = index;
     });
 
-    
     // Kullanıcıya bilgi ver
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1957,9 +1981,7 @@ class _AddProductViewState extends State<AddProductView> {
         backgroundColor: AppTheme.primary,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -1979,11 +2001,7 @@ class _AddProductViewState extends State<AddProductView> {
                   color: AppTheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _stepIcons[5],
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                child: Icon(_stepIcons[5], color: AppTheme.primary, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -1992,9 +2010,8 @@ class _AddProductViewState extends State<AddProductView> {
                   children: [
                     Text(
                       'İletişim Ayarları',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -2008,9 +2025,9 @@ class _AddProductViewState extends State<AddProductView> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // İletişim ayarları kartı
           Container(
             padding: const EdgeInsets.all(20),
@@ -2047,9 +2064,9 @@ class _AddProductViewState extends State<AddProductView> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Switch
                 Row(
                   children: [
@@ -2059,16 +2076,14 @@ class _AddProductViewState extends State<AddProductView> {
                         children: [
                           Text(
                             'Telefon numaramı göster',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Açıksa, diğer kullanıcılar size arayabilir',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey.shade600),
                           ),
                         ],
                       ),
@@ -2084,78 +2099,81 @@ class _AddProductViewState extends State<AddProductView> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
-             
-              Row(
-                    children: [
-                      Icon(
-                        _isShowContact ? Icons.check_circle : Icons.info_outline,
-                        color: _isShowContact ? Colors.green : Colors.orange,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _isShowContact 
-                              ? 'Telefon numaranız görünür olacak. Kullanıcılar size arayabilecek.'
-                              : 'Telefon numaranız gizli olacak. Sadece mesajlaşma ile iletişim kurulabilir.',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: _isShowContact ? Colors.green.shade700 : Colors.orange.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
+
+                Row(
+                  children: [
+                    Icon(
+                      _isShowContact ? Icons.check_circle : Icons.info_outline,
+                      color: _isShowContact ? Colors.green : Colors.orange,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _isShowContact
+                            ? 'Telefon numaranız görünür olacak. Kullanıcılar size arayabilecek.'
+                            : 'Telefon numaranız gizli olacak. Sadece mesajlaşma ile iletişim kurulabilir.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: _isShowContact
+                              ? Colors.green.shade700
+                              : Colors.orange.shade700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ],
-                  ),
-                
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-     
-            Row(
-              children: [
-                Icon(Icons.security, color: Colors.blue, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Bu ayarı daha sonra ilan detay sayfasından değiştirebilirsiniz.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.blue.shade700,
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
-          
+          ),
+
+          const SizedBox(height: 24),
+
+          Row(
+            children: [
+              Icon(Icons.security, color: Colors.blue, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Bu ayarı daha sonra ilan detay sayfasından değiştirebilirsiniz.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.blue.shade700),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Future<void> _showDistrictLocationOnMap(String districtId, ProductViewModel vm) async {
+  Future<void> _showDistrictLocationOnMap(
+    String districtId,
+    ProductViewModel vm,
+  ) async {
     try {
       // İlçe ID'sine göre ilçe adını bul
       final district = vm.districts.firstWhere((d) => d.id == districtId);
       final districtName = district.name;
-      
+
       // Şehir adını da al (daha doğru konum için)
       final city = vm.cities.firstWhere((c) => c.id == _selectedCityId);
       final cityName = city.name;
-      
+
       // İlçe konumunu al (şehir + ilçe kombinasyonu ile)
-      final position = await _locationService.getLocationFromCityName('$districtName, $cityName, Turkey');
-      
+      final position = await _locationService.getLocationFromCityName(
+        '$districtName, $cityName, Turkey',
+      );
+
       if (position != null && mounted) {
         // Manuel konum olarak ayarla
         setState(() {
           _currentPosition = position;
         });
-        
+
         // Kullanıcıya bilgi ver
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
