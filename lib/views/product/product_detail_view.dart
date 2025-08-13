@@ -128,7 +128,11 @@ class ProductDetailView extends StatelessWidget {
   final String productId;
   const ProductDetailView({super.key, required this.productId});
 
-  void _showSnackBar(BuildContext context, String message, {bool error = false}) {
+  void _showSnackBar(
+    BuildContext context,
+    String message, {
+    bool error = false,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -142,7 +146,11 @@ class ProductDetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: Provider.of<ProductViewModel>(context, listen: false),
-      child: _ProductDetailBody(productId: productId, onShowSnackBar: (msg, {error = false}) => _showSnackBar(context, msg, error: error)),
+      child: _ProductDetailBody(
+        productId: productId,
+        onShowSnackBar: (msg, {error = false}) =>
+            _showSnackBar(context, msg, error: error),
+      ),
     );
   }
 }
@@ -167,8 +175,10 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductViewModel>(context, listen: false)
-          .getProductDetail(widget.productId);
+      Provider.of<ProductViewModel>(
+        context,
+        listen: false,
+      ).getProductDetail(widget.productId);
     });
   }
 
@@ -180,13 +190,13 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     }
   }
 
-
-
   void _shareProduct(BuildContext context, Product product) {
     // API'den gelen shareLink'i kullan, yoksa varsayılan link oluştur
-    final productUrl = product.shareLink ?? 'https://takasly.com/product/${product.id}';
-    
-    final shareText = '''
+    final productUrl =
+        product.shareLink ?? 'https://takasly.com/product/${product.id}';
+
+    final shareText =
+        '''
 ${product.title}
 
 $productUrl
@@ -196,10 +206,7 @@ Takasly uygulamasından paylaşıldı.
 ''';
 
     // Sistem paylaşma menüsünü kullan
-    Share.share(
-      shareText,
-      subject: 'Takasly - ${product.title}',
-    ).then((_) {
+    Share.share(shareText, subject: 'Takasly - ${product.title}').then((_) {
       // Paylaşma işlemi sonrasında kullanıcıya bildirim göster
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -240,7 +247,7 @@ Takasly uygulamasından paylaşıldı.
             body: LoadingWidget(),
           );
         }
-        
+
         if (vm.hasError) {
           return Scaffold(
             backgroundColor: AppTheme.background,
@@ -256,10 +263,7 @@ Takasly uygulamasından paylaşıldı.
           return const Scaffold(
             backgroundColor: AppTheme.background,
             body: Center(
-              child: Text(
-                'Ürün bulunamadı.',
-                style: TextStyle(fontSize: 16),
-              ),
+              child: Text('Ürün bulunamadı.', style: TextStyle(fontSize: 16)),
             ),
           );
         }
@@ -268,7 +272,7 @@ Takasly uygulamasından paylaşıldı.
           backgroundColor: AppTheme.background,
           appBar: AppBar(
             centerTitle: true,
-            backgroundColor: _scrollOffset > 50 
+            backgroundColor: _scrollOffset > 50
                 ? AppTheme.primary.withOpacity(0.95)
                 : AppTheme.primary,
             elevation: _scrollOffset > 50 ? 2 : 0,
@@ -287,11 +291,19 @@ Takasly uygulamasından paylaşıldı.
             ),
             actions: [
               // Favori ikonu - sadece kendi ilanı değilse göster
-              if (Provider.of<AuthViewModel>(context, listen: false).currentUser?.id != product.ownerId)
+              if (Provider.of<AuthViewModel>(
+                    context,
+                    listen: false,
+                  ).currentUser?.id !=
+                  product.ownerId)
                 IconButton(
                   icon: Icon(
-                    vm.isFavorite(product.id) ? Icons.favorite : Icons.favorite_border,
-                    color: vm.isFavorite(product.id) ? AppTheme.error : AppTheme.surface,
+                    vm.isFavorite(product.id)
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: vm.isFavorite(product.id)
+                        ? AppTheme.error
+                        : AppTheme.surface,
                   ),
                   onPressed: () => vm.toggleFavorite(product.id),
                 ),
@@ -322,7 +334,10 @@ Takasly uygulamasından paylaşıldı.
                   ],
                 ),
               ),
-              _ActionBar(product: product, onShowSnackBar: widget.onShowSnackBar),
+              _ActionBar(
+                product: product,
+                onShowSnackBar: widget.onShowSnackBar,
+              ),
             ],
           ),
         );
@@ -350,10 +365,8 @@ class _ImageCarousel extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FullScreenImageView(
-          images: images,
-          initialIndex: currentIndex,
-        ),
+        builder: (context) =>
+            FullScreenImageView(images: images, initialIndex: currentIndex),
       ),
     );
   }
@@ -410,18 +423,23 @@ class _ImageCarousel extends StatelessWidget {
                         color: AppTheme.background,
                         child: Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppTheme.primary,
+                            ),
                           ),
                         ),
                       ),
                       errorWidget: (context, url, error) => Container(
                         color: AppTheme.background,
                         child: Center(
-                          child: Icon(Icons.broken_image, size: 60, color: AppTheme.textSecondary),
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 60,
+                            color: AppTheme.textSecondary,
+                          ),
                         ),
                       ),
                     ),
-
                   ],
                 ),
               );
@@ -441,8 +459,8 @@ class _ImageCarousel extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: currentIndex == entry.key 
-                          ? AppTheme.primary 
+                      color: currentIndex == entry.key
+                          ? AppTheme.primary
                           : AppTheme.textSecondary,
                     ),
                   );
@@ -497,7 +515,7 @@ class _ProductInfoState extends State<_ProductInfo> {
 
   Future<void> _loadUserProfile() async {
     if (_isLoadingProfile) return;
-    
+
     if (!mounted) return;
     setState(() {
       _isLoadingProfile = true;
@@ -506,26 +524,32 @@ class _ProductInfoState extends State<_ProductInfo> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userToken = prefs.getString(AppConstants.userTokenKey);
-      
+
       if (userToken != null && userToken.isNotEmpty) {
         try {
           // Yeni API'den gelen userID'yi kullan
           final userId = int.parse(widget.product.ownerId);
-          Logger.debug('🔍 Product Detail - Loading user profile for ID: $userId');
-          
+          Logger.debug(
+            '🔍 Product Detail - Loading user profile for ID: $userId',
+          );
+
           final response = await _userService.getUserProfileDetail(
             userToken: userToken,
             userId: userId,
           );
-          
+
           if (mounted && response.isSuccess && response.data != null) {
             setState(() {
               _averageRating = response.data!.averageRating.toDouble();
               _totalReviews = response.data!.totalReviews;
             });
-            Logger.debug('✅ Product Detail - Profile loaded: Rating: $_averageRating, Reviews: $_totalReviews');
+            Logger.debug(
+              '✅ Product Detail - Profile loaded: Rating: $_averageRating, Reviews: $_totalReviews',
+            );
           } else {
-            Logger.error('❌ Product Detail - Profile load failed: ${response.error}');
+            Logger.error(
+              '❌ Product Detail - Profile load failed: ${response.error}',
+            );
           }
         } catch (e) {
           Logger.error('❌ Product Detail - Profile load error: $e');
@@ -566,11 +590,7 @@ class _ProductInfoState extends State<_ProductInfo> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(
-                    Icons.location_on, 
-                    size: 16, 
-                    color: AppTheme.error
-                  ),
+                  Icon(Icons.location_on, size: 16, color: AppTheme.error),
                   const SizedBox(width: 6),
                   Text(
                     '${widget.product.cityTitle} / ${widget.product.districtTitle}',
@@ -585,9 +605,9 @@ class _ProductInfoState extends State<_ProductInfo> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // 2. Kullanıcı Özeti (İletişim için önemli)
         Container(
           width: double.infinity,
@@ -609,44 +629,46 @@ class _ProductInfoState extends State<_ProductInfo> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // 3. Açıklama (Ürün detayı için kritik)
-        if (widget.product.description != null && widget.product.description.isNotEmpty)
+        if (widget.product.description != null &&
+            widget.product.description.isNotEmpty)
           Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          color: AppTheme.surface,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Açıklama',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: AppTheme.surface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Açıklama',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                widget.product.description,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.textPrimary,
-                  height: 1.5,
-                  fontWeight: FontWeight.w400,
+                const SizedBox(height: 12),
+                Text(
+                  widget.product.description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                    height: 1.5,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
-              ),
               ],
             ),
           ),
-        
+
         const SizedBox(height: 8),
-        
+
         // 4. Takas Tercihi (Takas uygulaması için önemli)
-        if (widget.product.tradeFor != null && widget.product.tradeFor!.isNotEmpty)
+        if (widget.product.tradeFor != null &&
+            widget.product.tradeFor!.isNotEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -663,34 +685,29 @@ class _ProductInfoState extends State<_ProductInfo> {
                   ),
                 ),
                 const SizedBox(height: 12),
-        
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.swap_horiz,
-                        color: AppTheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          widget.product.tradeFor!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppTheme.textPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
+
+                Row(
+                  children: [
+                    Icon(Icons.swap_horiz, color: AppTheme.primary, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.product.tradeFor!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
 
-        
         const SizedBox(height: 8),
-        
+
         // 5. Ürün Bilgileri (Teknik detaylar)
         Container(
           width: double.infinity,
@@ -709,29 +726,49 @@ class _ProductInfoState extends State<_ProductInfo> {
               ),
               const SizedBox(height: 16),
               // 1. En önemli bilgiler (üst sırada)
-              _InfoRow('İlan Sahibi :', widget.product.userFullname ?? widget.product.owner?.name ?? 'Belirtilmemiş'),
-              if (widget.product.isShowContact == true && widget.product.userPhone != null && widget.product.userPhone!.isNotEmpty)
+              _InfoRow(
+                'İlan Sahibi :',
+                widget.product.userFullname ??
+                    widget.product.owner?.name ??
+                    'Belirtilmemiş',
+              ),
+              if (widget.product.isShowContact == true &&
+                  widget.product.userPhone != null &&
+                  widget.product.userPhone!.isNotEmpty)
                 _InfoRow('İletişim :', widget.product.userPhone!),
-              _InfoRow('Durum :', widget.product.productCondition ?? widget.product.condition ?? 'Belirtilmemiş'),
+              _InfoRow(
+                'Durum :',
+                widget.product.productCondition ??
+                    widget.product.condition ??
+                    'Belirtilmemiş',
+              ),
               _InfoRow('Kategori :', _getCategoryDisplayName(widget.product)),
-              
+
               // 2. Orta önemdeki bilgiler
-              _InfoRow('İlan Tarihi :', 
-                "${widget.product.createdAt.day.toString().padLeft(2, '0')}.${widget.product.createdAt.month.toString().padLeft(2, '0')}.${widget.product.createdAt.year}"),
-              if (widget.product.proView != null && widget.product.proView!.isNotEmpty)
+              _InfoRow(
+                'İlan Tarihi :',
+                "${widget.product.createdAt.day.toString().padLeft(2, '0')}.${widget.product.createdAt.month.toString().padLeft(2, '0')}.${widget.product.createdAt.year}",
+              ),
+              if (widget.product.proView != null &&
+                  widget.product.proView!.isNotEmpty)
                 _InfoRow('Görüntülenme :', widget.product.proView!),
-              if (widget.product.favoriteCount != null && widget.product.favoriteCount! > 0)
-                _InfoRow('Favori :', 'Bu ilanı ${widget.product.favoriteCount} kişi favoriledi'),
-              
+              if (widget.product.favoriteCount != null &&
+                  widget.product.favoriteCount! > 0)
+                _InfoRow(
+                  'Favori :',
+                  'Bu ilanı ${widget.product.favoriteCount} kişi favoriledi',
+                ),
+
               // 3. Teknik bilgiler (alt sırada)
-              if (widget.product.productCode != null && widget.product.productCode!.isNotEmpty)
+              if (widget.product.productCode != null &&
+                  widget.product.productCode!.isNotEmpty)
                 _InfoRow('İlan Kodu :', widget.product.productCode!),
             ],
           ),
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // 6. Konum Detayı (En altta - harita ve detaylar)
         Container(
           width: double.infinity,
@@ -751,11 +788,7 @@ class _ProductInfoState extends State<_ProductInfo> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(
-                    Icons.location_city, 
-                    size: 18, 
-                    color: AppTheme.primary
-                  ),
+                  Icon(Icons.location_city, size: 18, color: AppTheme.primary),
                   const SizedBox(width: 10),
                   Text(
                     _getLocationDisplayText(widget.product),
@@ -769,14 +802,14 @@ class _ProductInfoState extends State<_ProductInfo> {
               ),
               const SizedBox(height: 16),
               // Harita
-              if (widget.product.productLat != null && 
+              if (widget.product.productLat != null &&
                   widget.product.productLong != null &&
                   widget.product.productLat!.isNotEmpty &&
                   widget.product.productLong!.isNotEmpty)
                 _buildLocationMap(widget.product),
               const SizedBox(height: 12),
               // Harita açma butonları
-              if (widget.product.productLat != null && 
+              if (widget.product.productLat != null &&
                   widget.product.productLong != null &&
                   widget.product.productLat!.isNotEmpty &&
                   widget.product.productLong!.isNotEmpty)
@@ -784,7 +817,7 @@ class _ProductInfoState extends State<_ProductInfo> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 80), // Bottom padding for action bar
       ],
     );
@@ -795,44 +828,44 @@ class _ProductInfoState extends State<_ProductInfo> {
     if (product.categoryList != null && product.categoryList!.isNotEmpty) {
       return product.categoryList!.map((cat) => cat.name).join(' > ');
     }
-    
+
     // Sonra categoryName'i kontrol et (API'den direkt gelen)
     if (product.catname.isNotEmpty) {
       return product.catname;
     }
-    
+
     // Sonra category objesini kontrol et
     if (product.category != null && product.category.name.isNotEmpty) {
       return product.category.name;
     }
-    
+
     // Son olarak categoryId'yi kontrol et
     if (product.categoryId.isNotEmpty) {
       return 'Kategori ID: ${product.categoryId}';
     }
-    
+
     return 'Belirtilmemiş';
   }
 
   String _getLocationDisplayText(Product product) {
     final cityTitle = product.cityTitle?.trim() ?? '';
     final districtTitle = product.districtTitle?.trim() ?? '';
-    
+
     // Her iki alan da boşsa
     if (cityTitle.isEmpty && districtTitle.isEmpty) {
       return 'Konum belirtilmemiş';
     }
-    
+
     // Sadece şehir varsa
     if (cityTitle.isNotEmpty && districtTitle.isEmpty) {
       return cityTitle;
     }
-    
+
     // Sadece ilçe varsa
     if (cityTitle.isEmpty && districtTitle.isNotEmpty) {
       return districtTitle;
     }
-    
+
     // Her ikisi de varsa
     return '$cityTitle / $districtTitle';
   }
@@ -841,7 +874,7 @@ class _ProductInfoState extends State<_ProductInfo> {
     try {
       final lat = double.tryParse(product.productLat ?? '');
       final lng = double.tryParse(product.productLong ?? '');
-      
+
       if (lat == null || lng == null) {
         return Container(
           height: 200,
@@ -886,11 +919,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                     point: LatLng(lat, lng),
                     width: 40,
                     height: 40,
-                    child: Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 40,
-                    ),
+                    child: Icon(Icons.location_on, color: Colors.red, size: 40),
                   ),
                 ],
               ),
@@ -950,31 +979,24 @@ class _ProductInfoState extends State<_ProductInfo> {
       icon: Icon(icon, size: 18),
       label: Text(
         title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
         elevation: 2,
         shadowColor: color.withOpacity(0.3),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       ),
     );
   }
 
-
-
   void _getDirections(Product product) async {
     try {
       final lat = double.tryParse(product.productLat ?? '');
       final lng = double.tryParse(product.productLong ?? '');
-      
+
       if (lat == null || lng == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1009,7 +1031,7 @@ class _ProductInfoState extends State<_ProductInfo> {
     try {
       final lat = double.tryParse(product.productLat ?? '');
       final lng = double.tryParse(product.productLong ?? '');
-      
+
       if (lat == null || lng == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1020,7 +1042,8 @@ class _ProductInfoState extends State<_ProductInfo> {
         return;
       }
 
-      final locationText = '${product.title}\n'
+      final locationText =
+          '${product.title}\n'
           '${product.cityTitle} / ${product.districtTitle}\n'
           'Konum: https://maps.google.com/?q=$lat,$lng';
 
@@ -1035,18 +1058,11 @@ class _ProductInfoState extends State<_ProductInfo> {
     }
   }
 
-
-
   Widget _InfoRow(String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Color(0xFFE0E0E0),
-            width: 1,
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1137,25 +1153,29 @@ class _ProductInfoState extends State<_ProductInfo> {
 
   Widget _buildUserSummary(BuildContext context, Product product) {
     // Yeni API'den gelen kullanıcı bilgilerini kullan
-    final userName = product.userFullname ?? product.owner?.name ?? 'Bilinmeyen Kullanıcı';
+    final userName =
+        product.userFullname ?? product.owner?.name ?? 'Bilinmeyen Kullanıcı';
     final owner = product.owner;
     final userPhone = product.userPhone;
-    
-    // Debug için log ekle
-    Logger.debug('Product Detail - isShowContact: ${product.isShowContact}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - userPhone: $userPhone', tag: 'ProductDetail');
-    Logger.debug('Product Detail - userPhone isNotEmpty: ${userPhone?.isNotEmpty}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - owner: ${owner?.id} - ${owner?.name}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - owner.avatar: ${owner?.avatar}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - userImage: ${product.userImage}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - userFullname: ${product.userFullname}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - userName: $userName', tag: 'ProductDetail');
-    Logger.debug('Product Detail - profilePhoto: ${product.profilePhoto}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - Using profile photo: ${product.profilePhoto ?? product.userImage ?? owner?.avatar}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - owner.avatar: ${owner?.avatar}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - owner.name: ${owner?.name}', tag: 'ProductDetail');
-    Logger.debug('Product Detail - owner.id: ${owner?.id}', tag: 'ProductDetail');
-    
+
+    // Debug loglar sadeleştirildi (gereksiz tekrarlar kaldırıldı)
+    Logger.debug(
+      'Product Detail - isShowContact: ${product.isShowContact}',
+      tag: 'ProductDetail',
+    );
+    Logger.debug(
+      'Product Detail - userPhone: $userPhone',
+      tag: 'ProductDetail',
+    );
+    Logger.debug(
+      'Product Detail - owner: ${owner?.id} - ${owner?.name}',
+      tag: 'ProductDetail',
+    );
+    Logger.debug(
+      'Product Detail - selected avatar src: ${product.profilePhoto ?? product.userImage ?? owner?.avatar}',
+      tag: 'ProductDetail',
+    );
+
     if (owner == null && product.userFullname == null) {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -1204,43 +1224,67 @@ class _ProductInfoState extends State<_ProductInfo> {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () async {
-          Logger.debug('Product Detail - Kullanıcı özetine tıklandı', tag: 'ProductDetail');
-          Logger.debug('Product Detail - owner: ${owner.id} - ${owner.name}', tag: 'ProductDetail');
-          
+          Logger.debug(
+            'Product Detail - Kullanıcı özetine tıklandı',
+            tag: 'ProductDetail',
+          );
+          Logger.debug(
+            'Product Detail - owner: ${owner.id} - ${owner.name}',
+            tag: 'ProductDetail',
+          );
+
           // Token'ı SharedPreferences'dan al
           final prefs = await SharedPreferences.getInstance();
           final userToken = prefs.getString(AppConstants.userTokenKey);
-          Logger.debug('Product Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...', tag: 'ProductDetail');
-          
+          Logger.debug(
+            'Product Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...',
+            tag: 'ProductDetail',
+          );
+
           if (userToken != null && userToken.isNotEmpty) {
-                      try {
-            // Yeni API'den gelen userID'yi kullan
-            final userId = int.parse(product.ownerId);
-            Logger.debug('Product Detail - userId parsed: $userId', tag: 'ProductDetail');
-            Logger.debug('Product Detail - Navigating to UserProfileDetailView...', tag: 'ProductDetail');
-            
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UserProfileDetailView(
-                  userId: userId,
-                  userToken: userToken,
+            try {
+              // Yeni API'den gelen userID'yi kullan
+              final userId = int.parse(product.ownerId);
+              Logger.debug(
+                'Product Detail - userId parsed: $userId',
+                tag: 'ProductDetail',
+              );
+              Logger.debug(
+                'Product Detail - Navigating to UserProfileDetailView...',
+                tag: 'ProductDetail',
+              );
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfileDetailView(
+                    userId: userId,
+                    userToken: userToken,
+                  ),
                 ),
-              ),
-            );
-            Logger.debug('Product Detail - Navigation completed', tag: 'ProductDetail');
-          } catch (e) {
-            Logger.error('Product Detail - ID parse error: $e', tag: 'ProductDetail');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Kullanıcı profili açılamadı'),
-                backgroundColor: AppTheme.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
+              );
+              Logger.debug(
+                'Product Detail - Navigation completed',
+                tag: 'ProductDetail',
+              );
+            } catch (e) {
+              Logger.error(
+                'Product Detail - ID parse error: $e',
+                tag: 'ProductDetail',
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Kullanıcı profili açılamadı'),
+                  backgroundColor: AppTheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
           } else {
-            Logger.error('Product Detail - Token not available', tag: 'ProductDetail');
+            Logger.error(
+              'Product Detail - Token not available',
+              tag: 'ProductDetail',
+            );
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Kullanıcı profili açılamadı'),
@@ -1269,16 +1313,25 @@ class _ProductInfoState extends State<_ProductInfo> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: (product.profilePhoto != null && product.profilePhoto!.isNotEmpty) ||
-                         (product.userImage != null && product.userImage!.isNotEmpty) ||
-                         (owner?.avatar != null && owner!.avatar!.isNotEmpty)
+                  child:
+                      (product.profilePhoto != null &&
+                              product.profilePhoto!.isNotEmpty) ||
+                          (product.userImage != null &&
+                              product.userImage!.isNotEmpty) ||
+                          (owner?.avatar != null && owner!.avatar!.isNotEmpty)
                       ? CachedNetworkImage(
-                          imageUrl: product.profilePhoto ?? product.userImage ?? owner?.avatar ?? '',
+                          imageUrl:
+                              product.profilePhoto ??
+                              product.userImage ??
+                              owner?.avatar ??
+                              '',
                           width: 32,
                           height: 32,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => _buildAvatarPlaceholder(userName),
-                          errorWidget: (context, url, error) => _buildAvatarPlaceholder(userName),
+                          placeholder: (context, url) =>
+                              _buildAvatarPlaceholder(userName),
+                          errorWidget: (context, url, error) =>
+                              _buildAvatarPlaceholder(userName),
                         )
                       : _buildAvatarPlaceholder(userName),
                 ),
@@ -1307,11 +1360,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Icon(
-                                Icons.star,
-                                size: 12,
-                                color: Colors.amber,
-                              ),
+                              Icon(Icons.star, size: 12, color: Colors.amber),
                               const SizedBox(width: 2),
                               Text(
                                 averageRating.toStringAsFixed(1),
@@ -1336,15 +1385,13 @@ class _ProductInfoState extends State<_ProductInfo> {
                       ),
                     ),
                     // Telefon numarası - sadece isShowContact true ise göster
-                    if (product.isShowContact == true && userPhone != null && userPhone.isNotEmpty)
+                    if (product.isShowContact == true &&
+                        userPhone != null &&
+                        userPhone.isNotEmpty)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.phone,
-                            size: 14,
-                            color: AppTheme.primary,
-                          ),
+                          Icon(Icons.phone, size: 14, color: AppTheme.primary),
                           const SizedBox(width: 4),
                           Text(
                             userPhone,
@@ -1360,12 +1407,18 @@ class _ProductInfoState extends State<_ProductInfo> {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(4),
                               onTap: () {
-                                Clipboard.setData(ClipboardData(text: userPhone));
+                                Clipboard.setData(
+                                  ClipboardData(text: userPhone),
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Row(
                                       children: [
-                                        Icon(Icons.copy, color: Colors.white, size: 16),
+                                        Icon(
+                                          Icons.copy,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
                                         SizedBox(width: 6),
                                         Text('Telefon kopyalandı'),
                                       ],
@@ -1424,19 +1477,21 @@ class _ActionBar extends StatelessWidget {
   Future<void> _startChat(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
-    
+
     if (authViewModel.currentUser == null) {
       Navigator.pushNamed(context, '/login');
       return;
     }
 
     if (authViewModel.currentUser!.id == product.ownerId) {
-      onShowSnackBar?.call('Kendi ürününüze mesaj gönderemezsiniz.', error: true);
+      onShowSnackBar?.call(
+        'Kendi ürününüze mesaj gönderemezsiniz.',
+        error: true,
+      );
       return;
     }
 
     try {
-      
       Chat? existingChat;
       try {
         existingChat = chatViewModel.chats.firstWhere(
@@ -1467,7 +1522,9 @@ class _ActionBar extends StatelessWidget {
           // Yeni chat'i doğrudan getir ve yönlendir
           final newChat = await chatViewModel.getChatById(chatId);
           if (newChat != null) {
-            Logger.info('Yeni chat doğrudan getirildi ve chat sayfasına yönlendiriliyor: ${newChat.id}');
+            Logger.info(
+              'Yeni chat doğrudan getirildi ve chat sayfasına yönlendiriliyor: ${newChat.id}',
+            );
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -1486,21 +1543,29 @@ class _ActionBar extends StatelessWidget {
             retryCount++;
             Logger.info('Chat arama denemesi $retryCount/$maxRetries...');
             try {
-              polledChat = chatViewModel.chats.firstWhere((chat) => chat.id == chatId);
+              polledChat = chatViewModel.chats.firstWhere(
+                (chat) => chat.id == chatId,
+              );
               Logger.info('Chat ID ile bulundu: ${polledChat.id}');
               break;
             } catch (e) {
               try {
-                polledChat = chatViewModel.chats.firstWhere((chat) => chat.tradeId == product.id);
+                polledChat = chatViewModel.chats.firstWhere(
+                  (chat) => chat.tradeId == product.id,
+                );
                 Logger.info('Chat tradeId ile bulundu: ${polledChat.id}');
                 break;
               } catch (e2) {
-                Logger.info('Chat henüz bulunamadı, tekrar deneniyor... (${chatViewModel.chats.length} chat var)');
+                Logger.info(
+                  'Chat henüz bulunamadı, tekrar deneniyor... (${chatViewModel.chats.length} chat var)',
+                );
               }
             }
           }
           if (polledChat != null) {
-            Logger.info('Polling ile chat bulundu ve chat sayfasına yönlendiriliyor: ${polledChat.id}');
+            Logger.info(
+              'Polling ile chat bulundu ve chat sayfasına yönlendiriliyor: ${polledChat.id}',
+            );
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -1508,11 +1573,19 @@ class _ActionBar extends StatelessWidget {
               ),
             );
           } else {
-            Logger.error('Chat oluşturuldu ama $maxRetries deneme sonrası bulunamadı: $chatId');
-            onShowSnackBar?.call('Chat oluşturuldu ama bulunamadı. Lütfen tekrar deneyin.', error: true);
+            Logger.error(
+              'Chat oluşturuldu ama $maxRetries deneme sonrası bulunamadı: $chatId',
+            );
+            onShowSnackBar?.call(
+              'Chat oluşturuldu ama bulunamadı. Lütfen tekrar deneyin.',
+              error: true,
+            );
           }
         } else {
-          onShowSnackBar?.call('Chat oluşturulamadı. Lütfen tekrar deneyin.', error: true);
+          onShowSnackBar?.call(
+            'Chat oluşturulamadı. Lütfen tekrar deneyin.',
+            error: true,
+          );
         }
       }
     } catch (e) {
@@ -1523,7 +1596,7 @@ class _ActionBar extends StatelessWidget {
 
   Future<void> _callOwner(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
-    
+
     if (authViewModel.currentUser == null) {
       Navigator.pushNamed(context, '/login');
       return;
@@ -1536,7 +1609,10 @@ class _ActionBar extends StatelessWidget {
 
     // isShowContact false ise telefon numarasını gösterme
     if (product.isShowContact == false) {
-      onShowSnackBar?.call('Bu kullanıcının iletişim bilgileri gizli.', error: true);
+      onShowSnackBar?.call(
+        'Bu kullanıcının iletişim bilgileri gizli.',
+        error: true,
+      );
       return;
     }
 
@@ -1544,7 +1620,10 @@ class _ActionBar extends StatelessWidget {
     if (product.userPhone != null && product.userPhone!.isNotEmpty) {
       // Telefon numarasını arama uygulamasında aç
       try {
-        final phoneNumber = product.userPhone!.replaceAll(RegExp(r'[^\d+]'), '');
+        final phoneNumber = product.userPhone!.replaceAll(
+          RegExp(r'[^\d+]'),
+          '',
+        );
         final url = 'tel:$phoneNumber';
         await launchUrl(Uri.parse(url));
       } catch (e) {
@@ -1560,12 +1639,12 @@ class _ActionBar extends StatelessWidget {
     final authViewModel = context.read<AuthViewModel>();
     final isOwnProduct = authViewModel.currentUser?.id == product.ownerId;
 
-          return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          boxShadow: AppTheme.cardShadow,
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        boxShadow: AppTheme.cardShadow,
+      ),
       child: isOwnProduct
           ? _buildOwnProductActions(context)
           : _buildOtherProductActions(context),
@@ -1575,28 +1654,23 @@ class _ActionBar extends StatelessWidget {
   Widget _buildOwnProductActions(BuildContext context) {
     return Column(
       children: [
-                
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline, 
-                  color: AppTheme.error, 
-                  size: 20
+        Row(
+          children: [
+            Icon(Icons.info_outline, color: AppTheme.error, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Bu sizin ilanınız. Düzenlemek için profil sayfanıza gidin.',
+                style: TextStyle(
+                  color: AppTheme.error,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Bu sizin ilanınız. Düzenlemek için profil sayfanıza gidin.',
-                    style: TextStyle(
-                      color: AppTheme.error,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          const SizedBox(height: 8),
+          ],
+        ),
+        const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
           height: 50,
@@ -1613,10 +1687,7 @@ class _ActionBar extends StatelessWidget {
             label: const Text(
               'İlanımı Düzenle',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.primary,
@@ -1671,10 +1742,7 @@ class _ActionBar extends StatelessWidget {
                   icon: const Icon(Icons.message, size: 16),
                   label: const Text(
                     'Mesaj Gönder',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
@@ -1692,6 +1760,4 @@ class _ActionBar extends StatelessWidget {
       ],
     );
   }
-
-
 }
