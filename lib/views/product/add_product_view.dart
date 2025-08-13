@@ -1480,54 +1480,13 @@ class _AddProductViewState extends State<AddProductView> {
           _currentPosition = position;
         });
 
-        // Kullanıcıya bilgi ver
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.location_city, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text('$cityName konumu manuel olarak ayarlandı'),
-              ],
-            ),
-            backgroundColor: AppTheme.primary,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        // Sessiz: sadece logla
+        Logger.info('İl seçildi, manuel konum atandı: $cityName');
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text('$cityName için konum bulunamadı'),
-              ],
-            ),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        Logger.warning('İl konumu bulunamadı: $cityName');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.white, size: 16),
-                SizedBox(width: 8),
-                Text('Şehir konumu alınırken hata oluştu'),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      Logger.error('Şehir konumu alınırken hata: $e');
     }
   }
 
@@ -1836,15 +1795,8 @@ class _AddProductViewState extends State<AddProductView> {
         });
 
         // Kullanıcıya bilgi ver
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fotoğraf optimize edilerek eklendi'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        // Sessiz: sadece log
+        Logger.info('Fotoğraf optimize edilerek eklendi');
       }
     } catch (e) {
       Logger.error('❌ Error picking image: $e');
@@ -1884,16 +1836,8 @@ class _AddProductViewState extends State<AddProductView> {
             .take(remainingSlots)
             .toList();
 
-        // Kullanıcıya optimizasyon başladığını bildir
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fotoğraflar optimize ediliyor...'),
-              backgroundColor: Colors.blue,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        // Sessiz: sadece log
+        Logger.info('Fotoğraflar optimize ediliyor...');
 
         // Seçilen görselleri optimize et
         Logger.debug(
@@ -1913,17 +1857,10 @@ class _AddProductViewState extends State<AddProductView> {
           }
         });
 
-        // Kullanıcıya optimizasyon tamamlandığını bildir
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${optimizedFiles.length} fotoğraf optimize edilerek eklendi',
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
+        // Sessiz: sadece log
+        Logger.info(
+          '${optimizedFiles.length} fotoğraf optimize edilerek eklendi',
+        );
 
         if (pickedFiles.length > remainingSlots) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2174,54 +2111,13 @@ class _AddProductViewState extends State<AddProductView> {
           _currentPosition = position;
         });
 
-        // Kullanıcıya bilgi ver
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.location_on, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text('$districtName konumu manuel olarak ayarlandı'),
-              ],
-            ),
-            backgroundColor: AppTheme.primary,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        // Sessiz: sadece logla
+        Logger.info('İlçe seçildi, manuel konum atandı: $districtName');
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text('$districtName için konum bulunamadı'),
-              ],
-            ),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        Logger.warning('İlçe konumu bulunamadı: $districtName');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.white, size: 16),
-                SizedBox(width: 8),
-                Text('İlçe konumu alınırken hata oluştu'),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      Logger.error('İlçe konumu alınırken hata: $e');
     }
   }
 }
