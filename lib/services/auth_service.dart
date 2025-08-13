@@ -138,7 +138,7 @@ class AuthService {
   Future<ApiResponse<User>> loginSocial({
     required String platform, // 'google' | 'apple'
     String? accessToken, // google
-    String? idToken, // apple
+    String? idToken, // google ve apple için
     required String deviceID,
     String? fcmToken,
   }) async {
@@ -149,14 +149,20 @@ class AuthService {
       final Map<String, dynamic> body = {
         'platform': platform,
         'deviceID': deviceID,
+        'version': '1.0.0',
       };
 
       if (fcmToken != null && fcmToken.isNotEmpty) {
         body['fcmToken'] = fcmToken;
       }
 
-      if (platform.toLowerCase() == 'google' && accessToken != null) {
-        body['accessToken'] = accessToken;
+      if (platform.toLowerCase() == 'google') {
+        if (accessToken != null) {
+          body['accessToken'] = accessToken;
+        }
+        if (idToken != null) {
+          body['idToken'] = idToken;
+        }
       }
 
       if (platform.toLowerCase() == 'apple' && idToken != null) {

@@ -242,16 +242,25 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<bool> loginWithGoogle({
     required String googleAccessToken,
+    required String googleIdToken,
     required String deviceID,
     String? fcmToken,
   }) async {
     _setLoading(true);
     _clearError();
 
+    // Önce eski kullanıcı verilerini temizle
+    _currentUser = null;
+    _isLoggedIn = false;
+
+    // Ürün verilerini de temizle (kullanıcı değişikliği)
+    _productViewModel?.clearAllProductData();
+
     try {
       final response = await _authService.loginSocial(
         platform: 'google',
         accessToken: googleAccessToken,
+        idToken: googleIdToken,
         deviceID: deviceID,
         fcmToken: fcmToken,
       );
@@ -260,12 +269,23 @@ class AuthViewModel extends ChangeNotifier {
         _currentUser = response.data;
         _isLoggedIn = true;
 
+        // Firebase'e kullanıcıyı kaydet
+        try {
+          await _firebaseChatService.saveUser(_currentUser!);
+          Logger.info('✅ Google login - User saved to Firebase');
+        } catch (e) {
+          Logger.warning('⚠️ Google login - Firebase save error: $e');
+        }
+
         // FCM başlat
         try {
           if (_notificationViewModel != null) {
             await _notificationViewModel!.initializeFCM();
+            Logger.info('✅ Google login - FCM başarıyla başlatıldı');
           }
-        } catch (_) {}
+        } catch (e) {
+          Logger.error('❌ Google login - FCM başlatma hatası: $e', error: e);
+        }
 
         _setLoading(false);
         notifyListeners();
@@ -276,6 +296,7 @@ class AuthViewModel extends ChangeNotifier {
         return false;
       }
     } catch (e) {
+      Logger.error('💥 Google login exception: $e', error: e);
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;

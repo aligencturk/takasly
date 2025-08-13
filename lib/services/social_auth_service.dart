@@ -10,14 +10,17 @@ class SocialAuthService {
     scopes: <String>[
       'email',
       'profile',
+      'openid', // idToken için gerekli
     ],
     // iOS için özel konfigürasyon - iOS 14.0+ optimize edilmiş
     signInOption: SignInOption.standard,
-    // iOS ve Android için clientId otomatik olarak GoogleService dosyalarından alınır
-    clientId: null,
+    // iOS için clientId belirtilmeli - GoogleService-Info.plist'ten CLIENT_ID değeri
+    clientId: Platform.isIOS 
+        ? '422264804561-llio284tijfqkh873at3ci09fna2epl0.apps.googleusercontent.com'
+        : null, // Android için null bırak
   );
 
-  Future<String?> signInWithGoogleAndGetAccessToken() async {
+  Future<Map<String, String?>?> signInWithGoogleAndGetTokens() async {
     try {
       Logger.info('Google Sign-In başlatılıyor');
 
@@ -38,15 +41,28 @@ class SocialAuthService {
       // Authentication token alımı - iOS 14.0+ için optimize edilmiş
       final auth = await account.authentication;
       final accessToken = auth.accessToken;
+      final idToken = auth.idToken;
+      
       if (accessToken == null || accessToken.isEmpty) {
         Logger.error('Google accessToken alınamadı');
         return null;
       }
 
+      if (idToken == null || idToken.isEmpty) {
+        Logger.error('Google idToken alınamadı');
+        return null;
+      }
+
       Logger.info(
-        'Google accessToken alındı (ilk 10): ${accessToken.substring(0, 10)}...',
+        'Google tokenları alındı - accessToken (ilk 10): ${accessToken.substring(0, 10)}..., idToken (ilk 10): ${idToken.substring(0, 10)}...',
       );
-      return accessToken;
+      
+      return {
+        'accessToken': accessToken,
+        'idToken': idToken,
+        'email': account.email,
+        'displayName': account.displayName,
+      };
     } catch (e, s) {
       Logger.error('Google Sign-In hatası: $e', stackTrace: s);
       

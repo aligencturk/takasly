@@ -478,7 +478,7 @@ class NotificationViewModel extends ChangeNotifier {
       final success = await _notificationService.sendFCMMessage(
         accessToken: bearer,
         token: null,
-        topic: "2", // TOPIC = KULLANICI ID
+        topic: "3", // TOPIC = KULLANICI ID
         title: 'Test Bildirimi',
         body: 'Ali ıslak kek yaptım yicen mi - ${DateTime.now().toString().substring(11, 19)}',
         data: {

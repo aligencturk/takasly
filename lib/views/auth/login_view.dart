@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 import '../../services/notification_service.dart';
 import '../../services/social_auth_service.dart';
-import '../../core/constants.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
+import '../../utils/device_id.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -31,23 +29,24 @@ class _LoginViewState extends State<LoginView> {
       resizeToAvoidBottomInset: false,
       backgroundColor: AppTheme.background,
       body: Transform.translate(
-        offset: Offset(0, -MediaQuery.of(context).viewInsets.bottom * 0.5),
+        offset: const Offset(0, 0),
         child: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/auth/1.png'),
+              image: AssetImage('assets/auth/1.jpg'),
               fit: BoxFit.cover,
             ),
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 29.0),
               child: Column(
                 children: [
-                  const Spacer(flex: 26),
+                  const Spacer(flex: 24),
                   const _EmailPasswordForm(),
                   const Spacer(flex: 3),
                   const _BottomButtons(),
+                  const SizedBox(height: 56),
                 ],
               ),
             ),
@@ -89,7 +88,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 100),
 
         // E-posta input
         Container(
@@ -181,7 +179,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
               child: const Text(
                 'Şifremi Unuttum',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.primary,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -194,7 +192,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
               child: const Text(
                 'Kayıt Ol',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.primary,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -203,7 +201,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ],
         ),
 
-        const SizedBox(height: 24),
 
         ElevatedButton(
           onPressed: () => _submitLogin(context),
@@ -291,7 +288,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
               child: Text(
                 'veya',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: AppTheme.primary,
                   fontSize: 14,
                 ),
               ),
@@ -302,58 +299,112 @@ class _BottomButtonsState extends State<_BottomButtons> {
           ],
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 26),
 
         // Google ve Apple ile Giriş
         Row(
           children: [
             Expanded(
-              child: SizedBox(
-                height: 40,
-                child: OutlinedButton.icon(
-                  onPressed: () => _handleGoogleLogin(context),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 12,
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _handleGoogleLogin(context),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/icons/google_icon.png',
+                            width: 20,
+                            height: 20,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const SizedBox(width: 20, height: 20);
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          const Flexible(
+                            child: Text(
+                              'Google ile Giriş',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    side: BorderSide.none,
-                  ),
-                  icon: const Icon(Icons.g_mobiledata, size: 18),
-                  label: const Text(
-                    'Google',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 16),
             Expanded(
-              child: SizedBox(
-                height: 40,
-                child: OutlinedButton.icon(
-                  onPressed: () => _handleAppleLogin(context),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 12,
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _handleAppleLogin(context),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.apple,
+                            size: 22,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          const Flexible(
+                            child: Text(
+                              'Apple ile Giriş',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    side: BorderSide.none,
-                  ),
-                  icon: const Icon(Icons.apple, size: 18),
-                  label: const Text(
-                    'Apple',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
@@ -423,11 +474,13 @@ class _BottomButtonsState extends State<_BottomButtons> {
 
       Logger.info('Google Sign-In başlatılıyor...', tag: 'LoginView');
 
-      final String? googleAccessToken = await SocialAuthService.instance
-          .signInWithGoogleAndGetAccessToken();
+      final Map<String, String?>? googleTokens = await SocialAuthService.instance
+          .signInWithGoogleAndGetTokens();
 
-      if (googleAccessToken == null || googleAccessToken.isEmpty) {
-        Logger.warning('Google access token alınamadı', tag: 'LoginView');
+      if (googleTokens == null || 
+          googleTokens['accessToken'] == null || 
+          googleTokens['idToken'] == null) {
+        Logger.warning('Google tokenları alınamadı', tag: 'LoginView');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -440,18 +493,23 @@ class _BottomButtonsState extends State<_BottomButtons> {
         return;
       }
 
-      Logger.info('Google access token başarıyla alındı', tag: 'LoginView');
+      final String googleAccessToken = googleTokens['accessToken']!;
+      final String googleIdToken = googleTokens['idToken']!;
 
+      Logger.info('Google tokenları başarıyla alındı', tag: 'LoginView');
       Logger.info(
-        'Google access token alındı, giriş yapılıyor',
+        'Google tokenları alındı, giriş yapılıyor - Email: ${googleTokens['email']}, Name: ${googleTokens['displayName']}',
         tag: 'LoginView',
       );
 
-      final String deviceID = await _getOrCreateDeviceId();
+      final String deviceID = await DeviceIdHelper.getOrCreateDeviceId();
       final String? fcmToken = await NotificationService.instance.getFCMToken();
+
+      Logger.info('Device ID: $deviceID, FCM Token: ${fcmToken?.substring(0, 20)}...', tag: 'LoginView');
 
       final success = await authVm.loginWithGoogle(
         googleAccessToken: googleAccessToken,
+        googleIdToken: googleIdToken,
         deviceID: deviceID,
         fcmToken: fcmToken,
       );
@@ -503,13 +561,30 @@ class _BottomButtonsState extends State<_BottomButtons> {
   Future<void> _handleAppleLogin(BuildContext context) async {
     final authVm = Provider.of<AuthViewModel>(context, listen: false);
 
-    // Apple Sign In akışı UI dışı; burada endpoint’e uygun çağrı yapıyoruz
-    final String appleIdToken = '';
-    final String deviceID = await _getOrCreateDeviceId();
+    Logger.info('Apple Sign-In başlatılıyor', tag: 'LoginView');
+
+    final Map<String, String?>? appleTokens = await SocialAuthService.instance
+        .signInWithGoogleAndGetTokens();
+
+    if (appleTokens == null || appleTokens['accessToken'] == null || appleTokens['idToken'] == null) {
+      Logger.warning('Apple idToken alınamadı', tag: 'LoginView');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Apple oturumu açılamadı. Lütfen tekrar deneyin.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    final String deviceID = await DeviceIdHelper.getOrCreateDeviceId();
     final String? fcmToken = await NotificationService.instance.getFCMToken();
 
     final success = await authVm.loginWithApple(
-      appleIdToken: appleIdToken,
+      appleIdToken: appleTokens['idToken']!,
       deviceID: deviceID,
       fcmToken: fcmToken,
     );
@@ -529,14 +604,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
     }
   }
 
-  Future<String> _getOrCreateDeviceId() async {
-    final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getString(AppConstants.deviceIdKey);
-    if (existing != null && existing.isNotEmpty) return existing;
-    final String newId = const Uuid().v4();
-    await prefs.setString(AppConstants.deviceIdKey, newId);
-    return newId;
-  }
+
 
   // Test login
   Future<void> _handleTestLogin(BuildContext context, String testUser) async {
