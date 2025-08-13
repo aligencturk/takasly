@@ -25,9 +25,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macOS - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -51,7 +57,7 @@ class DefaultFirebaseOptions {
     measurementId: 'G-BFQQ20VFLK',
   );
 
-  // Bu değerleri Firebase Console'dan almanız gerekiyor
+  // Sadece iOS, Android ve Web platformları destekleniyor
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBrF93iVesLFoTpDXBQG6ILnd_Z1B7jeI4',
@@ -70,25 +76,5 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://takasla-b2aa5-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'takasla-b2aa5.firebasestorage.app',
     iosBundleId: 'com.rivorya.takaslyapp',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'your-api-key',
-    appId: 'your-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    databaseURL: 'https://your-project-id-default-rtdb.firebaseio.com',
-    storageBucket: 'your-project-id.appspot.com',
-    iosClientId: 'your-ios-client-id',
-    iosBundleId: 'com.rivorya.takaslyapp',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'your-api-key',
-    appId: 'your-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    databaseURL: 'https://your-project-id-default-rtdb.firebaseio.com',
-    storageBucket: 'your-project-id.appspot.com',
   );
 } 
