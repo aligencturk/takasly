@@ -317,6 +317,8 @@ class AuthService {
             final userData = json['data'];
 
             // API'den gelen verilerle user objesi oluştur
+            final tokenString =
+                (userData['userToken'] ?? userData['token'] ?? '').toString();
             final user = User(
               id: userData['userID'].toString(),
               name:
@@ -340,7 +342,7 @@ class AuthService {
                   ? DateTime.tryParse(userData['userUpdatedAt']) ??
                         DateTime.now()
                   : DateTime.now(),
-              token: userData['token'], // Token'ı User nesnesine dahil et
+              token: tokenString, // Token'ı User nesnesine dahil et
             );
 
             Logger.debug(
@@ -348,7 +350,8 @@ class AuthService {
             );
             return {
               'user': user,
-              'token': userData['token'] ?? '', // Register'da token olmayabilir
+              'token':
+                  tokenString, // Register'da token userToken olarak gelebilir
             };
           } else {
             // Standart format (eğer farklı response gelirse)

@@ -521,7 +521,7 @@ class _EditProfileViewState extends State<EditProfileView> {
       textCapitalization: label == 'E-posta'
           ? TextCapitalization.none
           : TextCapitalization.sentences,
-      inputFormatters: label == 'Telefon' ? [PhoneFormatter.phoneMask] : null,
+      inputFormatters: label == 'Telefon' ? const [] : null,
       validator:
           validator ??
           (label == 'Telefon'
@@ -537,7 +537,7 @@ class _EditProfileViewState extends State<EditProfileView> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        hintText: label == 'Telefon' ? '0(5XX) XXX XX XX' : null,
+        hintText: label == 'Telefon' ? '05XXXXXXXXX' : null,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

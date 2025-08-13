@@ -11,7 +11,9 @@ class RegisterView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme; // used above in header and footer
+    final textTheme = Theme.of(
+      context,
+    ).textTheme; // used above in header and footer
     final colorScheme = Theme.of(context).colorScheme;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
@@ -31,97 +33,52 @@ class RegisterView extends StatelessWidget {
         behavior: HitTestBehavior.translucent,
         onTap: () => FocusScope.of(context).unfocus(),
         child: Column(
-        children: [
-          // Üst yeşil bölüm
-          Container(
-            height: MediaQuery.of(context).size.height * 0.3,
-            decoration: const BoxDecoration(
-              color: Color(0xFF27AE60),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-            child: Stack(
-              children: [
-                // Sol taraftaki "Hemen Hesap Oluştur" metni
-                Positioned(
-                  left: 24,
-                  top: 80,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 40),
-                      Text(
-                        'Hemen',
-                        style: textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      Text(
-                        'Hesap',
-                        style: textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      Text(
-                        'Oluştur',
-                        style: textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ],
-                  ),
+          children: [
+            // Üst yeşil bölüm
+            Container(
+              height: MediaQuery.of(context).size.height * 0.3,
+              decoration: const BoxDecoration(
+                color: Color(0xFF27AE60),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
-              ],
-            ),
-          ),
-          
-          // Alt beyaz bölüm
-          Expanded(
-            child: Container(
-              color: Colors.white,
-              padding: EdgeInsets.fromLTRB(
-                24,
-                isKeyboardOpen ? 8 : 24,
-                24,
-                isKeyboardOpen ? 8 : 24,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Stack(
                 children: [
-                  // Kayıt Formu
-                  const Expanded(
-                    child: SingleChildScrollView(
-                      child: _RegisterForm(),
-                    ),
-                  ),
-
-
-                  // Giriş Yap Butonu
-                  Visibility(
-                    visible: !isKeyboardOpen,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  // Sol taraftaki "Hemen Hesap Oluştur" metni
+                  Positioned(
+                    left: 24,
+                    top: 80,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Zaten hesabın var mı?", style: textTheme.bodyMedium),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text(
-                            'Giriş Yap',
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const SizedBox(height: 40),
+                        Text(
+                          'Hemen',
+                          style: textTheme.headlineMedium?.copyWith(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                        Text(
+                          'Hesap',
+                          style: textTheme.headlineMedium?.copyWith(
+                            color: Colors.white,
+                            fontSize: 34,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                        Text(
+                          'Oluştur',
+                          style: textTheme.headlineMedium?.copyWith(
+                            color: Colors.white,
+                            fontSize: 34,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Poppins',
                           ),
                         ),
                       ],
@@ -130,9 +87,54 @@ class RegisterView extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ],
-      ),
+
+            // Alt beyaz bölüm
+            Expanded(
+              child: Container(
+                color: Colors.white,
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  isKeyboardOpen ? 8 : 24,
+                  24,
+                  isKeyboardOpen ? 8 : 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Kayıt Formu
+                    const Expanded(
+                      child: SingleChildScrollView(child: _RegisterForm()),
+                    ),
+
+                    // Giriş Yap Butonu
+                    Visibility(
+                      visible: !isKeyboardOpen,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Zaten hesabın var mı?",
+                            style: textTheme.bodyMedium,
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              'Giriş Yap',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -184,11 +186,17 @@ class _RegisterFormState extends State<_RegisterForm> {
     }
 
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    
+
     Logger.debug('🚀 Kayıt işlemi başlatılıyor...', tag: 'RegisterView');
-    Logger.debug('📧 Email: ${_emailController.text.trim()}', tag: 'RegisterView');
-    Logger.debug('📱 Telefon: ${_phoneController.text.trim()}', tag: 'RegisterView');
-    
+    Logger.debug(
+      '📧 Email: ${_emailController.text.trim()}',
+      tag: 'RegisterView',
+    );
+    Logger.debug(
+      '📱 Telefon: ${_phoneController.text.trim()}',
+      tag: 'RegisterView',
+    );
+
     final success = await authViewModel.register(
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
@@ -200,52 +208,87 @@ class _RegisterFormState extends State<_RegisterForm> {
     );
 
     Logger.debug('📊 Kayıt sonucu: $success', tag: 'RegisterView');
-    Logger.debug('❌ AuthViewModel error: ${authViewModel.errorMessage}', tag: 'RegisterView');
-    Logger.debug('👤 Current user: ${authViewModel.currentUser?.name}', tag: 'RegisterView');
+    Logger.debug(
+      '❌ AuthViewModel error: ${authViewModel.errorMessage}',
+      tag: 'RegisterView',
+    );
+    Logger.debug(
+      '👤 Current user: ${authViewModel.currentUser?.name}',
+      tag: 'RegisterView',
+    );
 
     if (mounted) {
       if (success) {
         // Kayıt başarılıysa önce doğrulama kodu gönder ve codeToken al
-        Logger.debug('✅ Kayıt başarılı, doğrulama kodu gönderiliyor...', tag: 'RegisterView');
-        
+        Logger.debug(
+          '✅ Kayıt başarılı, doğrulama kodu gönderiliyor...',
+          tag: 'RegisterView',
+        );
+
         // Önce email ile deneyelim
         var resendResponse = await authViewModel.resendEmailVerificationCode(
           email: _emailController.text.trim(),
         );
-        
-        Logger.debug('📧 Email ile resend response: $resendResponse', tag: 'RegisterView');
-        
+
+        Logger.debug(
+          '📧 Email ile resend response: $resendResponse',
+          tag: 'RegisterView',
+        );
+
         // Eğer başarısız olursa, token ile deneyelim
         if (resendResponse == null) {
-          Logger.debug('⚠️ Email ile resend başarısız, token ile deneyelim...', tag: 'RegisterView');
-          
+          Logger.debug(
+            '⚠️ Email ile resend başarısız, token ile deneyelim...',
+            tag: 'RegisterView',
+          );
+
           final user = authViewModel.currentUser;
           Logger.debug('👤 Current user: ${user?.name}', tag: 'RegisterView');
-          Logger.debug('🔑 User token: ${user?.token?.substring(0, 10)}...', tag: 'RegisterView');
-          
+          Logger.debug(
+            '🔑 User token: ${user?.token?.substring(0, 10)}...',
+            tag: 'RegisterView',
+          );
+
           if (user != null && user.token != null && user.token!.isNotEmpty) {
-            resendResponse = await authViewModel.resendEmailVerificationCodeWithToken(
-              userToken: user.token!,
+            resendResponse = await authViewModel
+                .resendEmailVerificationCodeWithToken(userToken: user.token!);
+            Logger.debug(
+              '🔑 Token ile resend response: $resendResponse',
+              tag: 'RegisterView',
             );
-            Logger.debug('🔑 Token ile resend response: $resendResponse', tag: 'RegisterView');
           } else {
             Logger.warning('⚠️ User token bulunamadı', tag: 'RegisterView');
           }
         }
-        
-        Logger.debug('📊 Final resend response: $resendResponse', tag: 'RegisterView');
-        Logger.debug('❌ AuthViewModel error: ${authViewModel.errorMessage}', tag: 'RegisterView');
-        
+
+        Logger.debug(
+          '📊 Final resend response: $resendResponse',
+          tag: 'RegisterView',
+        );
+        Logger.debug(
+          '❌ AuthViewModel error: ${authViewModel.errorMessage}',
+          tag: 'RegisterView',
+        );
+
         String codeToken = 'temp_code_token';
-        
+
         if (resendResponse != null && resendResponse.containsKey('codeToken')) {
           codeToken = resendResponse['codeToken'].toString();
-          Logger.debug('✅ Gerçek codeToken alındı: ${codeToken.substring(0, 10)}...', tag: 'RegisterView');
+          Logger.debug(
+            '✅ Gerçek codeToken alındı: ${codeToken.substring(0, 10)}...',
+            tag: 'RegisterView',
+          );
         } else {
-          Logger.warning('⚠️ codeToken alınamadı, geçici değer kullanılıyor', tag: 'RegisterView');
-          Logger.debug('📋 ResendResponse keys: ${resendResponse?.keys.toList()}', tag: 'RegisterView');
+          Logger.warning(
+            '⚠️ codeToken alınamadı, geçici değer kullanılıyor',
+            tag: 'RegisterView',
+          );
+          Logger.debug(
+            '📋 ResendResponse keys: ${resendResponse?.keys.toList()}',
+            tag: 'RegisterView',
+          );
         }
-        
+
         Navigator.of(context).pushReplacementNamed(
           '/email-verification',
           arguments: {
@@ -255,14 +298,16 @@ class _RegisterFormState extends State<_RegisterForm> {
         );
       } else {
         // Hata mesajını daha detaylı göster
-        String errorMessage = authViewModel.errorMessage ?? 'Kayıt başarısız oldu.';
+        String errorMessage =
+            authViewModel.errorMessage ?? 'Kayıt başarısız oldu.';
         Logger.error('❌ Kayıt hatası: $errorMessage', tag: 'RegisterView');
-        
+
         // Eğer "Bilinmeyen bir hata oluştu" ise daha açıklayıcı mesaj ver
         if (errorMessage == 'Bilinmeyen bir hata oluştu') {
-          errorMessage = 'Kayıt işlemi sırasında bir sorun oluştu. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.';
+          errorMessage =
+              'Kayıt işlemi sırasında bir sorun oluştu. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.';
         }
-        
+
         _showErrorSnackBar(errorMessage);
       }
     }
@@ -308,7 +353,9 @@ class _RegisterFormState extends State<_RegisterForm> {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                final Uri url = Uri.parse('https://www.todobus.tr/kvkk-aydinlatma-metni');
+                final Uri url = Uri.parse(
+                  'https://www.todobus.tr/kvkk-aydinlatma-metni',
+                );
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 }
@@ -342,7 +389,10 @@ class _RegisterFormState extends State<_RegisterForm> {
                   decoration: const InputDecoration(
                     labelText: 'Ad',
                     prefixIcon: Icon(Icons.person_outline, size: 20),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     isDense: true,
                   ),
                   validator: (value) {
@@ -366,7 +416,10 @@ class _RegisterFormState extends State<_RegisterForm> {
                   decoration: const InputDecoration(
                     labelText: 'Soyad',
                     prefixIcon: Icon(Icons.person_outline, size: 20),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     isDense: true,
                   ),
                   validator: (value) {
@@ -399,7 +452,9 @@ class _RegisterFormState extends State<_RegisterForm> {
               if (value == null || value.trim().isEmpty) {
                 return 'E-posta gerekli';
               }
-              if (!RegExp(r'^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4} ').hasMatch(value.trim())) {
+              final email = value.trim();
+              final emailRegex = RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,}$');
+              if (!emailRegex.hasMatch(email)) {
                 return 'Geçerli bir e-posta adresi girin';
               }
               return null;
@@ -411,12 +466,13 @@ class _RegisterFormState extends State<_RegisterForm> {
           TextFormField(
             controller: _phoneController,
             keyboardType: TextInputType.phone,
-            inputFormatters: [PhoneFormatter.phoneMask],
+            // Maskeyi kaldırıyoruz; kullanıcı tamamen serbest girsin
+            inputFormatters: const [],
             style: const TextStyle(fontSize: 14),
             decoration: const InputDecoration(
               labelText: 'Telefon',
               prefixIcon: Icon(Icons.phone_outlined, size: 20),
-              hintText: '0(5XX) XXX XX XX',
+              hintText: '05XXXXXXXXX',
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               isDense: true,
             ),
@@ -442,14 +498,19 @@ class _RegisterFormState extends State<_RegisterForm> {
               prefixIcon: const Icon(Icons.lock_outline, size: 20),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   size: 20,
                 ),
                 onPressed: () {
                   setState(() => _obscurePassword = !_obscurePassword);
                 },
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
               isDense: true,
             ),
             validator: (value) {
@@ -469,19 +530,28 @@ class _RegisterFormState extends State<_RegisterForm> {
               prefixIcon: const Icon(Icons.lock_outline, size: 20),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscureConfirmPassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   size: 20,
                 ),
                 onPressed: () {
-                  setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                  setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  );
                 },
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
               isDense: true,
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Şifre tekrarı gerekli';
-              if (value != _passwordController.text) return 'Şifreler eşleşmiyor';
+              if (value == null || value.isEmpty)
+                return 'Şifre tekrarı gerekli';
+              if (value != _passwordController.text)
+                return 'Şifreler eşleşmiyor';
               return null;
             },
           ),
@@ -493,7 +563,10 @@ class _RegisterFormState extends State<_RegisterForm> {
             onChanged: (value) {
               setState(() => _acceptPolicy = value ?? false);
             },
-            title: const Text('Kullanım Koşullarını kabul ediyorum', style: TextStyle(fontSize: 12)),
+            title: const Text(
+              'Kullanım Koşullarını kabul ediyorum',
+              style: TextStyle(fontSize: 12),
+            ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             activeColor: colorScheme.primary,
@@ -515,7 +588,8 @@ class _RegisterFormState extends State<_RegisterForm> {
                       color: colorScheme.primary,
                       decoration: TextDecoration.underline,
                     ),
-                    recognizer: TapGestureRecognizer()..onTap = () => _showKvkkDialog(context),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => _showKvkkDialog(context),
                   ),
                   const TextSpan(text: ' okudum ve kabul ediyorum'),
                 ],
