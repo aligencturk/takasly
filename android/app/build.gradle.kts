@@ -8,6 +8,9 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.io.FileInputStream
+import java.util.Properties
+
 android {
     namespace = "com.rivorya.takaslyapp"
     compileSdk = flutter.compileSdkVersion
@@ -34,11 +37,63 @@ android {
         versionName = flutter.versionName
     }
 
+    // Load keystore properties if present (android/key.properties)
+    val keystorePropertiesFile = file("key.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        FileInputStream(keystorePropertiesFile).use { stream ->
+            keystoreProperties.load(stream)
+        }
+    }
+
+    signingConfigs {
+        if (keystoreProperties.isNotEmpty()) {
+            create("release") {
+                val storeFilePath = keystoreProperties.getProperty("storeFile")
+                if (!storeFilePath.isNullOrBlank()) {
+                    val candidates = listOf(
+                        file(storeFilePath),
+                        // resolve relative to android/ (parent of app)
+                        file("../$storeFilePath"),
+                        rootProject.file(storeFilePath),
+                        rootProject.file("android/$storeFilePath"),
+                        rootProject.file("android/app/$storeFilePath")
+                    )
+                    val resolved = candidates.firstOrNull { it.exists() }
+                    if (resolved != null) {
+                        storeFile = resolved
+                    } else {
+                        // Fallback to given path; Gradle will error if missing which is explicit
+                        storeFile = file(storeFilePath)
+                    }
+                }
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Release build için keystore zorunlu
+            if (keystoreProperties.isEmpty()) {
+                throw GradleException("Release build için keystore gerekli! android/key.properties dosyası bulunamadı veya boş.")
+            }
+            
+            // Keystore yapılandırmasını kontrol et ve gerekirse oluştur
+            val releaseSigningConfig = signingConfigs.maybeCreate("release")
+            if (releaseSigningConfig.storeFile == null) {
+                throw GradleException("Release signing config yapılandırılamadı! Keystore dosyası bulunamadı.")
+            }
+            
+            signingConfig = releaseSigningConfig
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

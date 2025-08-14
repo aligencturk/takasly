@@ -4,7 +4,7 @@ description: "Takas uygulaması - E-ticaret mantığında ürün takası platfor
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 1.0.0+6
 
 environment:
   sdk: ^3.8.1
@@ -37,7 +37,7 @@ dependencies:
   flutter_svg: ^2.0.10+1
   
   # Local Storage
-  shared_preferences: ^2.3.3
+  shared_preferences: ^2.3.4
   path_provider: ^2.1.4
   uuid: ^4.5.1
   
