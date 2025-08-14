@@ -217,6 +217,8 @@ class User {
     if (lastSeenAt != null) {
       json['lastSeenAt'] = lastSeenAt!.toIso8601String();
     }
+    // Nested modelleri primitive JSON'a dönüştür (Firebase RTDB uyumu)
+    json['myReviews'] = myReviews.map((r) => r.toJson()).toList();
     // Toplam sayıları da serileştir
     json['totalProducts'] = totalProducts;
     json['totalFavorites'] = totalFavorites;

@@ -440,8 +440,30 @@ class NotificationService {
       }
       
       // Final message wrapper
+      // iOS güvenilirliği için APNs override ekle
+      final Map<String, dynamic> apnsOverride = {
+        'headers': {
+          'apns-priority': '10',
+          'apns-push-type': 'alert',
+          // iOS için bundle id'yi topic olarak belirt (APNs doğrulaması)
+          'apns-topic': 'com.rivorya.takaslyapp',
+          // Anında teslim
+          'apns-expiration': '0',
+        },
+        'payload': {
+          'aps': {
+            'sound': 'default',
+            // Foreground gösterimi için mutable-content (rich notification desteği)
+            'mutable-content': 1,
+          }
+        }
+      };
+
       Map<String, dynamic> message = {
-        'message': messageContent,
+        'message': {
+          ...messageContent,
+          'apns': apnsOverride,
+        },
       };
       Logger.debug('Final message wrapper created', tag: _tag);
       
@@ -472,6 +494,10 @@ class NotificationService {
       
       Logger.debug('FCM message response: ${response.statusCode}', tag: _tag);
       Logger.debug('FCM message response body: ${response.body}', tag: _tag);
+
+      if (response.statusCode == 401) {
+        Logger.error('FCM yetkilendirme hatası (401). APNs/FCM yapılandırmasını kontrol edin. "THIRD_PARTY_AUTH_ERROR" genellikle Firebase projesine APNs Auth Key (.p8) yüklenmediğinde, TeamID/KeyID hatalı olduğunda veya bundleId eşleşmediğinde görülür.', tag: _tag);
+      }
       
       // Status code kontrolü - 410 ve 200 başarılı sayılıyor
       if (response.statusCode == 410 || response.statusCode == 200) {

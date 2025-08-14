@@ -219,6 +219,14 @@ class NotificationViewModel extends ChangeNotifier {
       Logger.debug('🔐 Bildirim İzni: ${permissionGranted ? "VERİLDİ ✅" : "REDDEDİLDİ ❌"}', tag: _tag);
       
       if (permissionGranted) {
+        // NotificationService içinde FLN ve dinleyicileri başlat
+        try {
+          await _notificationService.init();
+          Logger.debug('✅ NotificationService.init() çağrıldı', tag: _tag);
+        } catch (e) {
+          Logger.warning('⚠️ NotificationService.init() hatası: $e', tag: _tag);
+        }
+
         // iOS foreground bildirim gösterimi için sunum seçeneklerini ayarla
         await _notificationService.setBadgeCount(0);
         
@@ -443,6 +451,7 @@ class NotificationViewModel extends ChangeNotifier {
   /// Sadece test amaçlı: Elle girilen Bearer ile KULLANICI ID topic'ine gönderir
   Future<bool> sendTestNotificationWithBearer({
     required String bearer,
+    bool toDevice = true,
   }) async {
     try {
       if (bearer.trim().isEmpty) {
@@ -451,7 +460,7 @@ class NotificationViewModel extends ChangeNotifier {
       }
       
       final masked = bearer.length > 12 ? '${bearer.substring(0, 6)}...${bearer.substring(bearer.length - 6)}' : '***';
-      Logger.debug('Bearer test bildirimi gönderiliyor... ($masked) - hedef: kullanıcı topic', tag: _tag);
+      Logger.debug('Bearer test bildirimi gönderiliyor... ($masked) - hedef: ${toDevice ? 'cihaz token' : 'kullanıcı topic'}', tag: _tag);
 
       // Kullanıcı ID topic'ini al ve garanti abonelik
       final user = await _userService.getCurrentUser();
@@ -474,11 +483,25 @@ class NotificationViewModel extends ChangeNotifier {
         Logger.warning('⚠️ Topic aboneliği hatası: $e', tag: _tag);
       }
 
+      String? token;
+      String? topic;
+      if (toDevice) {
+        token = await _notificationService.getFCMToken();
+        if (token == null || token.isEmpty) {
+          Logger.error('❌ FCM token alınamadı, token ile gönderilemedi', tag: _tag);
+          return false;
+        }
+        Logger.debug('🎯 Hedef token: ${token.substring(0, 16)}...', tag: _tag);
+      } else {
+        topic = 'test_topic';
+        Logger.debug('🎯 Hedef topic: $topic', tag: _tag);
+      }
+
       // Basit test mesajı gönder
       final success = await _notificationService.sendFCMMessage(
         accessToken: bearer,
-        token: null,
-        topic: "3", // TOPIC = KULLANICI ID
+        token: token,
+        topic: topic,
         title: 'Test Bildirimi',
         body: 'Ali ıslak kek yaptım yicen mi - ${DateTime.now().toString().substring(11, 19)}',
         data: {

@@ -65,6 +65,10 @@ import UserNotifications
           if let error = error {
             NSLog("⚠️ Push bildirim izin hatası: \(error.localizedDescription)")
           }
+          // İzin akışı tamamlandıktan sonra APNs'e register ol
+          DispatchQueue.main.async {
+            application.registerForRemoteNotifications()
+          }
         }
       )
     } else {
@@ -73,8 +77,8 @@ import UserNotifications
       application.registerUserNotificationSettings(settings)
     }
 
-    // Remote notifications için register
-    application.registerForRemoteNotifications()
+    // Remote notifications için register (iOS < 10 fallback)
+    // iOS 10+ tarafında izin akışı tamamlandığında register ediyoruz
     
     // Firebase Messaging delegate set et
     Messaging.messaging().delegate = self
@@ -140,9 +144,9 @@ import UserNotifications
     
     // Foreground'da da notification'ı göster
     if #available(iOS 14.0, *) {
-      completionHandler([[.banner, .badge, .sound]])
+      completionHandler([.banner, .badge, .sound])
     } else {
-      completionHandler([[.alert, .badge, .sound]])
+      completionHandler([.alert, .badge, .sound])
     }
   }
 

@@ -104,7 +104,10 @@ class _NotificationListViewState extends State<NotificationListView> {
                               return;
                             }
                             final vm = Provider.of<NotificationViewModel>(context, listen: false);
-                            await vm.sendTestNotificationWithBearer(bearer: bearer);
+                            await vm.sendTestNotificationWithBearer(
+                              bearer: bearer,
+                              toDevice: toDevice,
+                            );
                             if (mounted) Navigator.of(ctx).pop();
                           },
                           child: const Text('Gönder'),

@@ -240,13 +240,19 @@ class MyApp extends StatelessWidget {
          debugShowCheckedModeBanner: false,
          theme: AppTheme.lightTheme,
          navigatorKey: ErrorHandlerService.navigatorKey, // Navigator key ekle
-         home: Builder(
+          home: Builder(
            builder: (context) {
              // ViewModel'ler arasında bağlantı kur
              WidgetsBinding.instance.addPostFrameCallback((_) {
                final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
                final notificationViewModel = Provider.of<NotificationViewModel>(context, listen: false);
                authViewModel.setNotificationViewModel(notificationViewModel);
+                // Uygulama açılışında iOS/Android fark etmeksizin FCM'i başlatmayı dene
+                // Kullanıcı login ise, topic aboneliği ve izin akışı kurulacak
+                // Login değilse, izinler ve token yine alınır; login sonrası topic'e abone olunur
+                if (!notificationViewModel.fcmInitialized) {
+                  notificationViewModel.initializeFCM();
+                }
              });
              return SplashVideoPage();
            },
