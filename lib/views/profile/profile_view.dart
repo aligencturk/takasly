@@ -122,28 +122,14 @@ class _ProfileViewState extends State<ProfileView>
         Logger.debug('👤 ProfileView - _loadUserProfileDetail - MyReviews count: ${profile.myReviews.length}');
         Logger.debug('👤 ProfileView - _loadUserProfileDetail - Reviews count: ${profile.reviews.length}');
         
-        // MyReviews detaylarını daha detaylı logla
-        if (profile.myReviews.isEmpty) {
-          Logger.warning('⚠️ ProfileView - _loadUserProfileDetail - MyReviews array is empty!');
-          Logger.debug('👤 ProfileView - _loadUserProfileDetail - This might indicate:');
-          Logger.debug('👤 ProfileView - _loadUserProfileDetail - 1. User has not made any reviews yet');
-          Logger.debug('👤 ProfileView - _loadUserProfileDetail - 2. API is not returning myReviews field');
-          Logger.debug('👤 ProfileView - _loadUserProfileDetail - 3. Field name mismatch in API response');
-        } else {
-          Logger.info('👤 ProfileView - _loadUserProfileDetail - MyReviews found:');
-          for (int i = 0; i < profile.myReviews.length; i++) {
-            final review = profile.myReviews[i];
-            Logger.debug('👤 ProfileView - _loadUserProfileDetail - MyReview $i: ID=${review.reviewID}, Name="${review.reviewerName}", Rating=${review.rating}, Comment="${review.comment}"');
-          }
+        // MyReviews detaylarını logla
+        if (profile.myReviews.isNotEmpty) {
+          Logger.info('👤 ProfileView - _loadUserProfileDetail - MyReviews found: ${profile.myReviews.length}');
         }
         
-        // Reviews detaylarını da logla
+        // Reviews detaylarını logla
         if (profile.reviews.isNotEmpty) {
-          Logger.info('👤 ProfileView - _loadUserProfileDetail - Reviews found:');
-          for (int i = 0; i < profile.reviews.length; i++) {
-            final review = profile.reviews[i];
-            Logger.debug('👤 ProfileView - _loadUserProfileDetail - Review $i: ID=${review.reviewID}, Name="${review.reviewerName}", Rating=${review.rating}, Comment="${review.comment}"');
-          }
+          Logger.info('👤 ProfileView - _loadUserProfileDetail - Reviews found: ${profile.reviews.length}');
         }
       }
     } else {
