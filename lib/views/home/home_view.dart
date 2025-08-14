@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
-import '../../models/product_filter.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/notification_viewmodel.dart';
 
@@ -67,13 +66,13 @@ class _HomeViewState extends State<HomeView> {
       if (authViewModelForLocation.currentUser != null) {
         final currentFilter = productViewModel.currentFilter;
         // Kullanıcının kendi filtresini ezmemek için sadece varsayılanda ve aktif filtre yokken uygula
-        if (currentFilter.sortType == SortType.defaultSort.value &&
+        if (currentFilter.sortType == 'default' &&
             !currentFilter.hasActiveFilters) {
           Logger.info(
             '📍 HomeView - Logged-in user detected, applying nearest-to-me sorting',
           );
           await productViewModel.applyFilter(
-            currentFilter.copyWith(sortType: SortType.nearestToMe.value),
+            currentFilter.copyWith(sortType: 'location'),
           );
         }
       }
@@ -227,10 +226,22 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _buildHomeTab() {
     return RefreshIndicator(
-      onRefresh: () => Provider.of<ProductViewModel>(
-        context,
-        listen: false,
-      ).refreshProducts(),
+      onRefresh: () async {
+        final productViewModel = Provider.of<ProductViewModel>(
+          context,
+          listen: false,
+        );
+
+        // Mevcut filtreleri koruyarak yenile
+        await productViewModel.refreshProducts();
+
+        // UI'ın yenilenmesini garanti altına al
+        if (mounted) {
+          setState(() {
+            // State'i yenilemek için boş bir setState çağrısı
+          });
+        }
+      },
       color: Colors.grey[600],
       child: CustomScrollView(
         controller: _scrollController,
