@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../utils/logger.dart';
 
 class SocialAuthService {
@@ -95,6 +96,52 @@ class SocialAuthService {
         Logger.warning('Google Sign-In oturum temizleme hatası: $cleanupError');
       }
       
+      return null;
+    }
+  }
+
+  Future<Map<String, String?>?> signInWithAppleAndGetTokens() async {
+    try {
+      if (!Platform.isIOS) {
+        Logger.warning('Apple Sign-In yalnızca iOS üzerinde desteklenir');
+        return null;
+      }
+
+      Logger.info('Apple Sign-In başlatılıyor');
+
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final String? identityToken = credential.identityToken;
+
+      if (identityToken == null || identityToken.isEmpty) {
+        Logger.error('Apple idToken alınamadı');
+        return null;
+      }
+
+      final String? email = credential.email;
+      final String? givenName = credential.givenName;
+      final String? familyName = credential.familyName;
+      final String displayName = [givenName, familyName]
+          .whereType<String>()
+          .where((s) => s.trim().isNotEmpty)
+          .join(' ');
+
+      Logger.info(
+        'Apple token alındı - idToken (ilk 10): ${identityToken.substring(0, 10)}...',
+      );
+
+      return {
+        'idToken': identityToken,
+        'email': email,
+        'displayName': displayName.isEmpty ? null : displayName,
+      };
+    } catch (e, s) {
+      Logger.error('Apple Sign-In hatası: $e', stackTrace: s);
       return null;
     }
   }

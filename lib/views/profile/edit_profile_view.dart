@@ -368,6 +368,111 @@ class _EditProfileViewState extends State<EditProfileView> {
     }
   }
 
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.delete_forever, color: Colors.red[700], size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('Hesabı Sil'),
+          ],
+        ),
+        content: const Text(
+          'Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz?\n\n'
+          'Bu işlem geri alınamaz ve tüm verileriniz silinecektir.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: _isLoading
+                ? null
+                : () async {
+                    Navigator.pop(dialogContext);
+                    await _deleteAccount();
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Hesabı Sil'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      Logger.debug('Hesap silme işlemi başlatılıyor...', tag: 'EditProfile');
+
+      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+
+      final success = await userViewModel.deleteUserAccountNew();
+
+      if (success) {
+        Logger.debug('Hesap başarıyla silindi', tag: 'EditProfile');
+
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/login',
+            (route) => false,
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Hesabınız başarıyla silindi'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        throw Exception(userViewModel.errorMessage ?? 'Hesap silme işlemi başarısız');
+      }
+    } catch (e) {
+      Logger.error('Hesap silme hatası: $e', tag: 'EditProfile');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hesap silme işlemi başarısız: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -452,7 +557,23 @@ class _EditProfileViewState extends State<EditProfileView> {
                         const SizedBox(height: 16),
                         _buildGenderDropdown(),
                         const SizedBox(height: 16),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: InkWell(
+                            onTap: _isLoading ? null : _showDeleteAccountDialog,
+                            child: Text(
+                              'Hesabı Sil',
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
                         _buildUpdateButton(),
                       ],
                     ),

@@ -559,48 +559,99 @@ class _BottomButtonsState extends State<_BottomButtons> {
 
   // Apple ile giriş
   Future<void> _handleAppleLogin(BuildContext context) async {
-    final authVm = Provider.of<AuthViewModel>(context, listen: false);
+    try {
+      Logger.info('Apple giriş başlatılıyor', tag: 'LoginView');
 
-    Logger.info('Apple Sign-In başlatılıyor', tag: 'LoginView');
+      final authVm = Provider.of<AuthViewModel>(context, listen: false);
 
-    final Map<String, String?>? appleTokens = await SocialAuthService.instance
-        .signInWithGoogleAndGetTokens();
-
-    if (appleTokens == null || appleTokens['accessToken'] == null || appleTokens['idToken'] == null) {
-      Logger.warning('Apple idToken alınamadı', tag: 'LoginView');
+      // Loading göster
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Apple oturumu açılamadı. Lütfen tekrar deneyin.'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
+            content: Text('Apple ile giriş yapılıyor...'),
+            duration: Duration(seconds: 2),
           ),
         );
       }
-      return;
-    }
 
-    final String deviceID = await DeviceIdHelper.getOrCreateDeviceId();
-    final String? fcmToken = await NotificationService.instance.getFCMToken();
+      Logger.info('Apple Sign-In başlatılıyor...', tag: 'LoginView');
 
-    final success = await authVm.loginWithApple(
-      appleIdToken: appleTokens['idToken']!,
-      deviceID: deviceID,
-      fcmToken: fcmToken,
-    );
+      final Map<String, String?>? appleTokens = await SocialAuthService.instance
+          .signInWithAppleAndGetTokens(); // DÜZELTİLDİ: Apple servisi çağrılıyor
 
-    if (!mounted) return;
-
-    if (success) {
-      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-      if (authVm.currentUser != null) {
-        userViewModel.setCurrentUser(authVm.currentUser!);
+      if (appleTokens == null || appleTokens['idToken'] == null) {
+        Logger.warning('Apple idToken alınamadı', tag: 'LoginView');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Apple oturumu açılamadı. Lütfen tekrar deneyin.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
       }
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authVm.errorMessage ?? 'Giriş başarısız oldu.')),
+
+      final String appleIdToken = appleTokens['idToken']!;
+
+      Logger.info('Apple tokenları başarıyla alındı', tag: 'LoginView');
+      Logger.info(
+        'Apple tokenları alındı, giriş yapılıyor - Email: ${appleTokens['email']}, Name: ${appleTokens['displayName']}',
+        tag: 'LoginView',
       );
+
+      final String deviceID = await DeviceIdHelper.getOrCreateDeviceId();
+      final String? fcmToken = await NotificationService.instance.getFCMToken();
+
+      Logger.info('Device ID: $deviceID, FCM Token: ${fcmToken?.substring(0, 20)}...', tag: 'LoginView');
+
+      final success = await authVm.loginWithApple(
+        appleIdToken: appleIdToken,
+        deviceID: deviceID,
+        fcmToken: fcmToken,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        final userViewModel = Provider.of<UserViewModel>(
+          context,
+          listen: false,
+        );
+        if (authVm.currentUser != null) {
+          userViewModel.setCurrentUser(authVm.currentUser!);
+        }
+
+        Logger.info('Apple giriş başarılı', tag: 'LoginView');
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Logger.error(
+          'Apple giriş başarısız: ${authVm.errorMessage}',
+          tag: 'LoginView',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                authVm.errorMessage ?? 'Apple ile giriş başarısız oldu.',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    } catch (e, s) {
+      Logger.error('Apple giriş hatası: $e', stackTrace: s, tag: 'LoginView');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Beklenmeyen hata: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 

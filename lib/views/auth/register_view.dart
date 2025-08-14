@@ -29,69 +29,22 @@ class RegisterView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Column(
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/auth/2.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Column(
           children: [
-            // Üst yeşil bölüm
-            Container(
-              height: MediaQuery.of(context).size.height * 0.3,
-              decoration: const BoxDecoration(
-                color: Color(0xFF27AE60),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
-              child: Stack(
-                children: [
-                  // Sol taraftaki "Hemen Hesap Oluştur" metni
-                  Positioned(
-                    left: 24,
-                    top: 80,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 40),
-                        Text(
-                          'Hemen',
-                          style: textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                        Text(
-                          'Hesap',
-                          style: textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
-                            fontSize: 34,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                        Text(
-                          'Oluştur',
-                          style: textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
-                            fontSize: 34,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Alt beyaz bölüm
+            // İçerik bölümü (arka plan görseli üzerinden)
             Expanded(
               child: Container(
-                color: Colors.white,
+                color: Colors.transparent,
                 padding: EdgeInsets.fromLTRB(
                   24,
                   isKeyboardOpen ? 8 : 24,
@@ -134,6 +87,7 @@ class RegisterView extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -378,6 +332,7 @@ class _RegisterFormState extends State<_RegisterForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Ad Soyad
+          SizedBox(height: 280),
           Row(
             children: [
               Expanded(

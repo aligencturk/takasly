@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/app_theme.dart';
-import '../../core/constants.dart';
-import '../../services/user_service.dart';
-import '../../utils/logger.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
-import '../auth/reset_password_view.dart';
 import 'change_password_view.dart';
 import 'edit_profile_view.dart';
 
@@ -19,8 +13,7 @@ class SettingsView extends StatefulWidget {
 }
 
 class _SettingsViewState extends State<SettingsView> {
-  final UserService _userService = UserService();
-  bool _isDeletingAccount = false;
+  
 
   @override
   Widget build(BuildContext context) {
@@ -207,18 +200,6 @@ class _SettingsViewState extends State<SettingsView> {
             textColor: Colors.orange[700],
             onTap: _showLogoutConfirmDialog,
           ),
-          Container(
-            height: 1,
-            color: Colors.grey[200],
-          ),
-          _buildSettingItem(
-            icon: Icons.delete_forever_outlined,
-            title: 'Hesabı Sil',
-            subtitle: 'Hesabınızı kalıcı olarak silin',
-            textColor: Colors.red[700],
-            onTap: _showDeleteAccountDialog,
-            showLoading: _isDeletingAccount,
-          ),
         ],
       ),
     );
@@ -290,111 +271,6 @@ class _SettingsViewState extends State<SettingsView> {
         ),
       ),
     );
-  }
-
-  void _showDeleteAccountDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.delete_forever, color: Colors.red[700], size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Text('Hesabı Sil'),
-          ],
-        ),
-        content: const Text(
-          'Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz?\n\n'
-          'Bu işlem geri alınamaz ve tüm verileriniz silinecektir.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              _deleteAccount();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Hesabı Sil'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _deleteAccount() async {
-    setState(() {
-      _isDeletingAccount = true;
-    });
-
-    try {
-      Logger.debug('Hesap silme işlemi başlatılıyor...', tag: 'SettingsView');
-
-      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-      
-      // UserViewModel üzerinden hesabı sil
-      final success = await userViewModel.deleteUserAccountNew();
-
-      if (success) {
-        Logger.debug('Hesap başarıyla silindi', tag: 'SettingsView');
-
-        if (mounted) {
-          // Ana sayfaya yönlendir
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/login',
-            (route) => false,
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Hesabınız başarıyla silindi'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } else {
-        throw Exception(userViewModel.errorMessage ?? 'Hesap silme işlemi başarısız');
-      }
-    } catch (e) {
-      Logger.error('Hesap silme hatası: $e', tag: 'SettingsView');
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hesap silme işlemi başarısız: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isDeletingAccount = false;
-        });
-      }
-    }
   }
 
   void _showLogoutConfirmDialog() {
