@@ -12,9 +12,8 @@
     <!-- Kamera izni -->
     <uses-permission android:name="android.permission.CAMERA" />
     
-    <!-- Depolama izinleri -->
+    <!-- Depolama izinleri - Scoped Storage kullanılıyor -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     
     <!-- AdMob için gerekli izinler -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -33,13 +32,12 @@
         android:icon="@mipmap/ic_launcher"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
-        android:usesCleartextTraffic="true"
-        android:requestLegacyExternalStorage="true">
+        android:usesCleartextTraffic="false">
         
         <!-- AdMob uygulama ID'si -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-3600325889588673~3347511713" />
         
         <activity
             android:name=".MainActivity"

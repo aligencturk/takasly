@@ -43,5 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Keystore files - NEVER commit these to version control!
+key.properties
+**/*.keystore
+**/*.jks
+*.keystore
+*.jks
+
 .cursor/rules/my-custom-rules.mdc
 .cursor/rules/my-custom-rules.mdc
