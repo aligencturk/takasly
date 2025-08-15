@@ -150,6 +150,11 @@ class _StartTradeViewState extends State<StartTradeView> {
                   // Mesaj
                   _buildMessageSection(),
 
+                  SizedBox(height: 24),
+
+                  // Güvenlik Uyarısı
+                  _buildSecurityWarning(),
+
                   SizedBox(height: 32),
 
                   // Takas başlat butonu
@@ -867,6 +872,127 @@ class _StartTradeViewState extends State<StartTradeView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSecurityWarning() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.shade200, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.1),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.security_outlined,
+                  color: Colors.orange.shade700,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Güvenlik Uyarısı',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.orange.shade800,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade100, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange.shade700,
+                      size: 16,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Önemli Güvenlik Bilgileri',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+
+                _buildWarningItem(
+                  Icons.people_outline,
+                  'Takas işlemlerinizi her zaman yüzyüze gerçekleştirmeniz önerilmektedir.',
+                ),
+
+                SizedBox(height: 8),
+
+                _buildWarningItem(
+                  Icons.check_circle_outline,
+                  'Takas işlemi tam olarak gerçekleşmeden takası tamamlamayınız.',
+                ),
+
+                SizedBox(height: 8),
+
+                _buildWarningItem(
+                  Icons.warning_outlined,
+                  'Herhangi bir anlaşmazlık durumunda Takasly platformu sorumluluk kabul etmemektedir.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWarningItem(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Colors.orange.shade600, size: 16),
+        SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.orange.shade700,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

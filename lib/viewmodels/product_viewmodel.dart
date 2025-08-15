@@ -169,14 +169,38 @@ class ProductViewModel extends ChangeNotifier {
         );
 
         if (_currentPage == 1) {
-          _products = newProducts;
-          Logger.info(
-            '✅ ProductViewModel.loadAllProducts - set products for first page',
-          );
+          // Null safety kontrolü
+          if (newProducts.isNotEmpty) {
+            _products = newProducts
+                .where(
+                  (product) =>
+                      product != null &&
+                      product.id != null &&
+                      product.id.isNotEmpty,
+                )
+                .toList();
+            Logger.info(
+              '✅ ProductViewModel.loadAllProducts - set products for first page (filtered: ${_products.length})',
+            );
+          } else {
+            _products = [];
+            Logger.warning(
+              '⚠️ ProductViewModel.loadAllProducts - Empty products list received',
+            );
+          }
         } else {
-          _products.addAll(newProducts);
+          // Null safety kontrolü ile ekleme
+          final validProducts = newProducts
+              .where(
+                (product) =>
+                    product != null &&
+                    product.id != null &&
+                    product.id.isNotEmpty,
+              )
+              .toList();
+          _products.addAll(validProducts);
           Logger.info(
-            '✅ ProductViewModel.loadAllProducts - added products to existing list',
+            '✅ ProductViewModel.loadAllProducts - added products to existing list (filtered: ${validProducts.length})',
           );
         }
 
@@ -302,14 +326,38 @@ class ProductViewModel extends ChangeNotifier {
         );
 
         if (_currentPage == 1) {
-          _products = newProducts;
-          Logger.info(
-            '✅ ProductViewModel.loadProducts - First page: replaced products list',
-          );
+          // Null safety kontrolü
+          if (newProducts.isNotEmpty) {
+            _products = newProducts
+                .where(
+                  (product) =>
+                      product != null &&
+                      product.id != null &&
+                      product.id.isNotEmpty,
+                )
+                .toList();
+            Logger.info(
+              '✅ ProductViewModel.loadProducts - First page: replaced products list (filtered: ${_products.length})',
+            );
+          } else {
+            _products = [];
+            Logger.warning(
+              '⚠️ ProductViewModel.loadProducts - Empty products list received',
+            );
+          }
         } else {
-          _products.addAll(newProducts);
+          // Null safety kontrolü ile ekleme
+          final validProducts = newProducts
+              .where(
+                (product) =>
+                    product != null &&
+                    product.id != null &&
+                    product.id.isNotEmpty,
+              )
+              .toList();
+          _products.addAll(validProducts);
           Logger.info(
-            '✅ ProductViewModel.loadProducts - Next page: added ${newProducts.length} products to existing list',
+            '✅ ProductViewModel.loadProducts - Next page: added ${validProducts.length} products to existing list',
           );
         }
 
@@ -2092,7 +2140,25 @@ class ProductViewModel extends ChangeNotifier {
           '✅ ProductViewModel.applyFilter - pagination: page=${paginatedData.currentPage}, totalPages=${paginatedData.totalPages}, totalItems=${paginatedData.totalItems}, hasMore=${paginatedData.hasMore}',
         );
 
-        _products = newProducts;
+        // Null safety kontrolü
+        if (newProducts.isNotEmpty) {
+          _products = newProducts
+              .where(
+                (product) =>
+                    product != null &&
+                    product.id != null &&
+                    product.id.isNotEmpty,
+              )
+              .toList();
+          Logger.info(
+            '✅ ProductViewModel.applyFilter - filtered products count: ${_products.length}',
+          );
+        } else {
+          _products = [];
+          Logger.warning(
+            '⚠️ ProductViewModel.applyFilter - Empty products list received',
+          );
+        }
         _hasMore = paginatedData.hasMore;
         _currentPage = paginatedData.currentPage + 1; // Bir sonraki sayfa
 
