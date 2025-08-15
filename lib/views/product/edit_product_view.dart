@@ -24,7 +24,6 @@ class _EditProductViewState extends State<EditProductView> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-
   final _tradePreferencesController = TextEditingController();
 
   String? _selectedCategoryId;
@@ -37,66 +36,54 @@ class _EditProductViewState extends State<EditProductView> {
   List<String> _existingImages = [];
   List<File> _newImages = [];
   final ImagePicker _imagePicker = ImagePicker();
-  bool _isShowContact = false; // İletişim bilgilerinin görünürlüğü
+  bool _isShowContact = false;
   
-  // Yeni state değişkenleri
   bool _isLoadingProductDetail = false;
   bool _isUpdating = false;
   Product? _currentProduct;
 
+  // ExpansionTile durumları
+  bool _isBasicInfoExpanded = true;  // Temel bilgiler açık
+  bool _isCategoryExpanded = false;  // Kategorizasyon kapalı
+  bool _isLocationExpanded = false;  // Konum kapalı
+  bool _isImagesExpanded = false;    // Resimler kapalı
+  bool _isContactExpanded = false;   // İletişim ayarları kapalı
+
   @override
   void initState() {
     super.initState();
-    // Önce güncel ürün detaylarını yükle, sonra form alanlarını initialize et
+    // Paralel veri yükleme ile performansı artır
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadProductDetailAndInitialize();
+      _loadDataInParallel();
     });
   }
 
-  /// Ürün detaylarını API'den yükle ve form alanlarını initialize et
-  Future<void> _loadProductDetailAndInitialize() async {
+  /// Tüm verileri paralel olarak yükle - performans artışı
+  Future<void> _loadDataInParallel() async {
     try {
       setState(() {
         _isLoadingProductDetail = true;
       });
       
-      Logger.info('🔄 EditProductView - Loading product detail for ID: ${widget.product.id}');
+      Logger.info('🚀 EditProductView - Parallel data loading started');
       
       final productViewModel = context.read<ProductViewModel>();
       
-      // Güncel ürün detaylarını API'den yükle
-      final productDetail = await productViewModel.getProductDetail(widget.product.id);
+      // Tüm verileri paralel olarak yükle
+      await Future.wait([
+        _loadProductDetail(productViewModel),
+        _loadInitialData(productViewModel),
+      ]);
       
-      if (productDetail != null) {
-        Logger.info('✅ EditProductView - Product detail loaded successfully');
-        setState(() {
-          _currentProduct = productDetail;
-        });
-        
-        // Form alanlarını güncel verilerle doldur
-        _initializeFieldsWithProductData(productDetail);
-        
-        // Şehirleri, kategorileri ve koşulları yükle
-        await _loadInitialData();
-        
-      } else {
-        Logger.error('❌ EditProductView - Failed to load product detail, using widget product data');
-        // API'den yüklenemezse widget'tan gelen veriyi kullan
-        setState(() {
-          _currentProduct = widget.product;
-        });
-        _initializeFieldsWithProductData(widget.product);
-        await _loadInitialData();
-      }
+      Logger.info('✅ EditProductView - All data loaded successfully');
       
     } catch (e) {
-      Logger.error('💥 EditProductView - Exception while loading product detail: $e');
+      Logger.error('💥 EditProductView - Error in parallel loading: $e');
       // Hata durumunda widget'tan gelen veriyi kullan
       setState(() {
         _currentProduct = widget.product;
       });
       _initializeFieldsWithProductData(widget.product);
-      await _loadInitialData();
     } finally {
       setState(() {
         _isLoadingProductDetail = false;
@@ -104,14 +91,38 @@ class _EditProductViewState extends State<EditProductView> {
     }
   }
 
-  /// Şehirleri, kategorileri ve koşulları yükle
-  Future<void> _loadInitialData() async {
+  /// Ürün detaylarını yükle
+  Future<void> _loadProductDetail(ProductViewModel productViewModel) async {
     try {
-      final vm = context.read<ProductViewModel>();
+      final productDetail = await productViewModel.getProductDetail(widget.product.id);
+      
+      if (productDetail != null) {
+        setState(() {
+          _currentProduct = productDetail;
+        });
+        _initializeFieldsWithProductData(productDetail);
+      } else {
+        setState(() {
+          _currentProduct = widget.product;
+        });
+        _initializeFieldsWithProductData(widget.product);
+      }
+    } catch (e) {
+      Logger.error('Error loading product detail: $e');
+      setState(() {
+        _currentProduct = widget.product;
+      });
+      _initializeFieldsWithProductData(widget.product);
+    }
+  }
+
+  /// Şehirleri, kategorileri ve koşulları paralel yükle
+  Future<void> _loadInitialData(ProductViewModel productViewModel) async {
+    try {
       await Future.wait([
-        vm.loadCities(),
-        vm.loadConditions(),
-        vm.categories.isEmpty ? vm.loadCategories() : Future.value(),
+        productViewModel.loadCities(),
+        productViewModel.loadConditions(),
+        productViewModel.categories.isEmpty ? productViewModel.loadCategories() : Future.value(),
       ]);
     } catch (e) {
       Logger.error('Error loading initial data: $e');
@@ -120,10 +131,8 @@ class _EditProductViewState extends State<EditProductView> {
 
   void _initializeFieldsWithProductData(Product product) {
     try {
-      // Güncel ürün bilgilerini form alanlarına yükle
       _titleController.text = product.title;
       _descriptionController.text = product.description;
-
       _tradePreferencesController.text = product.tradePreferences.join(', ');
       
       _selectedCategoryId = product.categoryId;
@@ -132,15 +141,13 @@ class _EditProductViewState extends State<EditProductView> {
       _selectedSubSubSubCategoryId = product.subSubSubCategoryId?.isNotEmpty == true ? product.subSubSubCategoryId : null;
       _existingImages = List.from(product.images);
       
-      // İletişim bilgileri görünürlüğünü yükle
       _isShowContact = product.isShowContact ?? true;
       
-      // Location bilgilerini yükle
       if (product.cityId.isNotEmpty) {
         _selectedCityId = product.cityId;
         _selectedDistrictId = product.districtId;
         
-        // Eğer şehir seçili ise ilçeleri yükle
+        // İlçeleri yükle
         if (_selectedCityId != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             try {
@@ -152,14 +159,14 @@ class _EditProductViewState extends State<EditProductView> {
         }
       }
       
-      // Kategorileri yükle ve ürün kategorilerini seç - biraz gecikme ile
+      // Kategorileri yükle ve seç
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(const Duration(milliseconds: 500), () {
+        Future.delayed(const Duration(milliseconds: 300), () {
           _loadAndSelectCategories(product);
         });
       });
       
-      // Condition'ı name'den id'ye çevir
+      // Condition'ı ayarla
       WidgetsBinding.instance.addPostFrameCallback((_) {
         try {
           final productViewModel = context.read<ProductViewModel>();
@@ -185,10 +192,8 @@ class _EditProductViewState extends State<EditProductView> {
     try {
       final productViewModel = context.read<ProductViewModel>();
       
-      // Ana kategorileri yükle
       await productViewModel.loadCategories();
       
-      // Eğer categoryList boşsa, categoryId'yi kullan
       if (product.categoryList == null || product.categoryList?.isEmpty == true) {
         if (product.categoryId.isNotEmpty) {
           setState(() {
@@ -198,20 +203,16 @@ class _EditProductViewState extends State<EditProductView> {
         }
       }
       
-      // Ürün kategori listesi varsa kategorileri seç
       if (product.categoryList != null && product.categoryList?.isNotEmpty == true) {
         final productCategories = product.categoryList!;
         
-        // İlk kategori ana kategori
         final mainCategory = productCategories.first;
         setState(() {
           _selectedCategoryId = mainCategory.id;
         });
         
-        // Ana kategorinin alt kategorilerini yükle
         await productViewModel.loadSubCategories(mainCategory.id);
         
-        // İkinci kategori varsa alt kategori olarak seç
         if (productCategories.length > 1) {
           final subCategory = productCategories[1];
           final subCategoryExists = productViewModel.subCategories.any((cat) => cat.id == subCategory.id);
@@ -221,10 +222,8 @@ class _EditProductViewState extends State<EditProductView> {
               _selectedSubCategoryId = subCategory.id;
             });
             
-            // Alt kategorinin alt kategorilerini yükle
             await productViewModel.loadSubSubCategories(subCategory.id);
             
-            // Üçüncü kategori varsa alt alt kategori olarak seç
             if (productCategories.length > 2) {
               final subSubCategory = productCategories[2];
               final subSubCategoryExists = productViewModel.subSubCategories.any((cat) => cat.id == subSubCategory.id);
@@ -234,10 +233,8 @@ class _EditProductViewState extends State<EditProductView> {
                   _selectedSubSubCategoryId = subSubCategory.id;
                 });
                 
-                // Alt alt kategorinin alt kategorilerini yükle
                 await productViewModel.loadSubSubSubCategories(subSubCategory.id);
                 
-                // Dördüncü kategori varsa alt alt alt kategori olarak seç
                 if (productCategories.length > 3) {
                   final subSubSubCategory = productCategories[3];
                   final subSubSubCategoryExists = productViewModel.subSubSubCategories.any((cat) => cat.id == subSubSubCategory.id);
@@ -255,15 +252,6 @@ class _EditProductViewState extends State<EditProductView> {
       }
     } catch (e) {
       Logger.error('Error loading and selecting categories: $e');
-      // Hata durumunda kullanıcıya bilgi ver
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Kategoriler yüklenirken hata oluştu: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
@@ -285,7 +273,6 @@ class _EditProductViewState extends State<EditProductView> {
       ),
       body: Consumer<ProductViewModel>(
         builder: (context, productViewModel, child) {
-          // İlan detayları ilk kez yüklenirken tam ekran loader göster
           if (_isLoadingProductDetail) {
             return const Center(
               child: Column(
@@ -311,123 +298,17 @@ class _EditProductViewState extends State<EditProductView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionTitle(context, 'İlan Bilgileri'),
+                      _buildBasicInfoSection(),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _titleController,
-                         textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(
-                          labelText: 'İlan Başlığı',
-                          counterText: '',
-                        ),
-                        maxLength: 40,
-                        validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
-                      ),
+                      _buildCategorySection(),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _descriptionController,
-                         textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(labelText: 'Açıklama'),
-                        maxLines: 4,
-                        validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
-                      ),
-                      const SizedBox(height: 24),
-
-                      _buildSectionTitle(context, 'Kategorizasyon'),
+                      _buildLocationSection(),
                       const SizedBox(height: 16),
-                      _buildCategoryDropdown(),
+                      _buildImagesSection(),
                       const SizedBox(height: 16),
-                      Consumer<ProductViewModel>(
-                        builder: (context, vm, child) {
-                          // Sadece alt kategorileri varsa 2. seviye dropdown'ı göster
-                          if (vm.subCategories.isNotEmpty) {
-                            return Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                _buildSubCategoryDropdown(),
-                              ],
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                      Consumer<ProductViewModel>(
-                        builder: (context, vm, child) {
-                          // Sadece alt kategorileri varsa 3. seviye dropdown'ı göster
-                          if (vm.subSubCategories.isNotEmpty) {
-                            return Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                _buildSubSubCategoryDropdown(),
-                              ],
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                      Consumer<ProductViewModel>(
-                        builder: (context, vm, child) {
-                          // Sadece alt kategorileri varsa 4. seviye dropdown'ı göster
-                          if (vm.subSubSubCategories.isNotEmpty) {
-                            return Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                _buildSubSubSubCategoryDropdown(),
-                              ],
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildConditionDropdown(),
-                      const SizedBox(height: 24),
-
-                      _buildSectionTitle(context, 'Ek Bilgiler'),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _tradePreferencesController,
-                         textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(
-                          labelText: 'Takas Tercihleri (virgülle ayırın)',
-                          hintText: 'Örn: telefon, laptop, kitap',
-                        ),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 24),
-
-                      _buildSectionTitle(context, 'Konum'),
-                      const SizedBox(height: 16),
-                      _buildCityDropdown(),
-                      const SizedBox(height: 16),
-                      _buildDistrictDropdown(),
-                      const SizedBox(height: 24),
-
-                      _buildSectionTitle(context, 'Resimler'),
-                      const SizedBox(height: 16),
-                      _buildImageSection(),
-                      const SizedBox(height: 24),
-
-                      _buildSectionTitle(context, 'İletişim Ayarları'),
-                      const SizedBox(height: 16),
-                      _buildContactSettingsSection(),
+                      _buildContactSection(),
                       const SizedBox(height: 32),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _updateProduct,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primary,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text(
-                            'Ürünü Güncelle',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
+                      _buildUpdateButton(),
                     ],
                   ),
                 ),
@@ -459,13 +340,225 @@ class _EditProductViewState extends State<EditProductView> {
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
+  Widget _buildBasicInfoSection() {
+    return ExpansionTile(
+      initiallyExpanded: _isBasicInfoExpanded,
+      onExpansionChanged: (expanded) {
+        setState(() {
+          _isBasicInfoExpanded = expanded;
+        });
+      },
+      leading: Icon(
+        Icons.info_outline,
         color: AppTheme.primary,
       ),
+      title: Text(
+        'Temel Bilgiler',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: AppTheme.primary,
+        ),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _titleController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'İlan Başlığı',
+                  counterText: '',
+                ),
+                maxLength: 40,
+                validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Açıklama'),
+                maxLines: 4,
+                validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _tradePreferencesController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Takas Tercihleri (virgülle ayırın)',
+                  hintText: 'Örn: telefon, laptop, kitap',
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategorySection() {
+    return ExpansionTile(
+      initiallyExpanded: _isCategoryExpanded,
+      onExpansionChanged: (expanded) {
+        setState(() {
+          _isCategoryExpanded = expanded;
+        });
+      },
+      leading: Icon(
+        Icons.category,
+        color: AppTheme.primary,
+      ),
+      title: Text(
+        'Kategorizasyon',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: AppTheme.primary,
+        ),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildCategoryDropdown(),
+              const SizedBox(height: 16),
+              Consumer<ProductViewModel>(
+                builder: (context, vm, child) {
+                  if (vm.subCategories.isNotEmpty) {
+                    return Column(
+                      children: [
+                        _buildSubCategoryDropdown(),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              Consumer<ProductViewModel>(
+                builder: (context, vm, child) {
+                  if (vm.subSubCategories.isNotEmpty) {
+                    return Column(
+                      children: [
+                        _buildSubSubCategoryDropdown(),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              Consumer<ProductViewModel>(
+                builder: (context, vm, child) {
+                  if (vm.subSubSubCategories.isNotEmpty) {
+                    return Column(
+                      children: [
+                        _buildSubSubSubCategoryDropdown(),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              _buildConditionDropdown(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationSection() {
+    return ExpansionTile(
+      initiallyExpanded: _isLocationExpanded,
+      onExpansionChanged: (expanded) {
+        setState(() {
+          _isLocationExpanded = expanded;
+        });
+      },
+      leading: Icon(
+        Icons.location_on,
+        color: AppTheme.primary,
+      ),
+      title: Text(
+        'Konum',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: AppTheme.primary,
+        ),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildCityDropdown(),
+              const SizedBox(height: 16),
+              _buildDistrictDropdown(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagesSection() {
+    return ExpansionTile(
+      initiallyExpanded: _isImagesExpanded,
+      onExpansionChanged: (expanded) {
+        setState(() {
+          _isImagesExpanded = expanded;
+        });
+      },
+      leading: Icon(
+        Icons.photo_library,
+        color: AppTheme.primary,
+      ),
+      title: Text(
+        'Resimler',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: AppTheme.primary,
+        ),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: _buildImageSection(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactSection() {
+    return ExpansionTile(
+      initiallyExpanded: _isContactExpanded,
+      onExpansionChanged: (expanded) {
+        setState(() {
+          _isContactExpanded = expanded;
+        });
+      },
+      leading: Icon(
+        Icons.contact_phone,
+        color: AppTheme.primary,
+      ),
+      title: Text(
+        'İletişim Ayarları',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: AppTheme.primary,
+        ),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: _buildContactSettingsSection(),
+        ),
+      ],
     );
   }
 
@@ -473,7 +566,6 @@ class _EditProductViewState extends State<EditProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         try {
-          // Seçili değer geçerli mi kontrol et
           String? validValue = _selectedCategoryId;
           if (validValue != null) {
             final hasValidValue = vm.categories.any((c) => c.id == validValue);
@@ -484,7 +576,10 @@ class _EditProductViewState extends State<EditProductView> {
 
           return DropdownButtonFormField<String>(
             value: validValue,
-            decoration: const InputDecoration(labelText: 'Ana Kategori'),
+            decoration: const InputDecoration(
+              labelText: 'Ana Kategori',
+              border: OutlineInputBorder(),
+            ),
             items: vm.categories
                 .map(
                   (cat) => DropdownMenuItem(
@@ -496,9 +591,8 @@ class _EditProductViewState extends State<EditProductView> {
             onChanged: (value) {
               setState(() {
                 _selectedCategoryId = value;
-                _selectedSubCategoryId = null; // Alt kategoriyi sıfırla
+                _selectedSubCategoryId = null;
               });
-              // Alt kategorileri yükle
               if (value != null) {
                 vm.loadSubCategories(value);
               }
@@ -508,7 +602,10 @@ class _EditProductViewState extends State<EditProductView> {
         } catch (e) {
           Logger.error('Error building category dropdown: $e');
           return DropdownButtonFormField<String>(
-            decoration: const InputDecoration(labelText: 'Ana Kategori'),
+            decoration: const InputDecoration(
+              labelText: 'Ana Kategori',
+              border: OutlineInputBorder(),
+            ),
             items: const [],
             onChanged: (value) {},
           );
@@ -521,7 +618,6 @@ class _EditProductViewState extends State<EditProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         try {
-          // Seçili değer geçerli mi kontrol et
           String? validValue = _selectedSubCategoryId;
           if (validValue != null) {
             final hasValidValue = vm.subCategories.any((c) => c.id == validValue);
@@ -535,6 +631,7 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Alt Kategori',
               enabled: _selectedCategoryId != null,
+              border: const OutlineInputBorder(),
             ),
             items: vm.subCategories
                 .map(
@@ -565,6 +662,7 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Alt Kategori',
               enabled: _selectedCategoryId != null,
+              border: const OutlineInputBorder(),
             ),
             items: const [],
             onChanged: (value) {},
@@ -578,7 +676,6 @@ class _EditProductViewState extends State<EditProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         try {
-          // Seçili değer geçerli mi kontrol et
           String? validValue = _selectedSubSubCategoryId;
           if (validValue != null) {
             final hasValidValue = vm.subSubCategories.any((c) => c.id == validValue);
@@ -592,6 +689,7 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Alt Alt Kategori',
               enabled: _selectedSubCategoryId != null && vm.subSubCategories.isNotEmpty,
+              border: const OutlineInputBorder(),
             ),
             items: vm.subSubCategories
                 .map(
@@ -606,12 +704,12 @@ class _EditProductViewState extends State<EditProductView> {
                 : (value) {
                     setState(() {
                       _selectedSubSubCategoryId = value;
-                      _selectedSubSubSubCategoryId = null; // 4. seviye kategoriyi sıfırla
+                      _selectedSubSubSubCategoryId = null;
                     });
                     if (value != null) {
                       vm.loadSubSubSubCategories(value);
                     } else {
-                      vm.clearSubSubSubCategories();
+                      vm.clearSubSubCategories();
                     }
                   },
             validator: (v) => v == null ? 'Alt alt kategori seçimi zorunludur' : null,
@@ -622,6 +720,7 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Alt Alt Kategori',
               enabled: _selectedSubCategoryId != null,
+              border: const OutlineInputBorder(),
             ),
             items: const [],
             onChanged: (value) {},
@@ -635,7 +734,6 @@ class _EditProductViewState extends State<EditProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         try {
-          // Seçili değer geçerli mi kontrol et
           String? validValue = _selectedSubSubSubCategoryId;
           if (validValue != null) {
             final hasValidValue = vm.subSubSubCategories.any((c) => c.id == validValue);
@@ -649,6 +747,7 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Ürün Kategorisi',
               enabled: _selectedSubSubCategoryId != null && vm.subSubSubCategories.isNotEmpty,
+              border: const OutlineInputBorder(),
             ),
             items: vm.subSubSubCategories
                 .map(
@@ -671,6 +770,7 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Ürün Kategorisi',
               enabled: _selectedSubSubCategoryId != null,
+              border: const OutlineInputBorder(),
             ),
             items: const [],
             onChanged: (value) {},
@@ -684,7 +784,6 @@ class _EditProductViewState extends State<EditProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         try {
-          // Seçili değer geçerli mi kontrol et
           String? validValue = _selectedConditionId;
           if (validValue != null) {
             final hasValidValue = vm.conditions.any((c) => c.id == validValue);
@@ -695,7 +794,10 @@ class _EditProductViewState extends State<EditProductView> {
 
           return DropdownButtonFormField<String>(
             value: validValue,
-            decoration: const InputDecoration(labelText: 'Ürün Durumu'),
+            decoration: const InputDecoration(
+              labelText: 'Ürün Durumu',
+              border: OutlineInputBorder(),
+            ),
             items: vm.conditions
                 .map(
                   (con) => DropdownMenuItem(value: con.id, child: Text(con.name)),
@@ -707,7 +809,10 @@ class _EditProductViewState extends State<EditProductView> {
         } catch (e) {
           Logger.error('Error building condition dropdown: $e');
           return DropdownButtonFormField<String>(
-            decoration: const InputDecoration(labelText: 'Ürün Durumu'),
+            decoration: const InputDecoration(
+              labelText: 'Ürün Durumu',
+              border: OutlineInputBorder(),
+            ),
             items: const [],
             onChanged: (value) {},
           );
@@ -720,7 +825,6 @@ class _EditProductViewState extends State<EditProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         try {
-          // Seçili değer geçerli mi kontrol et
           String? validValue = _selectedCityId;
           if (validValue != null) {
             final hasValidValue = vm.cities.any((c) => c.id == validValue);
@@ -731,7 +835,10 @@ class _EditProductViewState extends State<EditProductView> {
 
           return DropdownButtonFormField<String>(
             value: validValue,
-            decoration: const InputDecoration(labelText: 'İl'),
+            decoration: const InputDecoration(
+              labelText: 'İl',
+              border: OutlineInputBorder(),
+            ),
             items: vm.cities
                 .map(
                   (city) =>
@@ -752,7 +859,10 @@ class _EditProductViewState extends State<EditProductView> {
         } catch (e) {
           Logger.error('Error building city dropdown: $e');
           return DropdownButtonFormField<String>(
-            decoration: const InputDecoration(labelText: 'İl'),
+            decoration: const InputDecoration(
+              labelText: 'İl',
+              border: OutlineInputBorder(),
+            ),
             items: const [],
             onChanged: (value) {},
           );
@@ -765,7 +875,6 @@ class _EditProductViewState extends State<EditProductView> {
     return Consumer<ProductViewModel>(
       builder: (context, vm, child) {
         try {
-          // Seçili değer geçerli mi kontrol et
           String? validValue = _selectedDistrictId;
           if (validValue != null) {
             final hasValidValue = vm.districts.any((c) => c.id == validValue);
@@ -779,6 +888,7 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'İlçe',
               enabled: _selectedCityId != null,
+              border: const OutlineInputBorder(),
             ),
             items: vm.districts
                 .map(
@@ -797,6 +907,7 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'İlçe',
               enabled: _selectedCityId != null,
+              border: const OutlineInputBorder(),
             ),
             items: const [],
             onChanged: (value) {},
@@ -832,9 +943,7 @@ class _EditProductViewState extends State<EditProductView> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                // Mevcut resimler
                 ..._existingImages.map((imageUrl) => _buildExistingImageItem(imageUrl)),
-                // Yeni eklenen resimler
                 ..._newImages.map((imageFile) => _buildNewImageItem(imageFile)),
               ],
             ),
@@ -868,7 +977,6 @@ class _EditProductViewState extends State<EditProductView> {
             borderRadius: BorderRadius.circular(8),
             child: Builder(
               builder: (context) {
-                // Resim URL'si geçersizse placeholder göster
                 if (imageUrl.isEmpty || imageUrl == 'null' || imageUrl == 'undefined') {
                   return Container(
                     width: 120,
@@ -986,7 +1094,6 @@ class _EditProductViewState extends State<EditProductView> {
       if (pickedFiles.isNotEmpty) {
         final List<XFile> filesToAdd = pickedFiles.take(remainingSlots).toList();
         
-        // Kullanıcıya optimizasyon başladığını bildir
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -997,7 +1104,6 @@ class _EditProductViewState extends State<EditProductView> {
           );
         }
         
-        // Seçilen görselleri optimize et
         Logger.debug('🖼️ EditProductView - Optimizing ${filesToAdd.length} selected images...');
         final List<File> optimizedFiles = await ImageOptimizationService.optimizeXFiles(
           filesToAdd, 
@@ -1008,7 +1114,6 @@ class _EditProductViewState extends State<EditProductView> {
           _newImages.addAll(optimizedFiles);
         });
 
-        // Kullanıcıya optimizasyon tamamlandığını bildir
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1081,7 +1186,6 @@ class _EditProductViewState extends State<EditProductView> {
           
           const SizedBox(height: 16),
           
-          // Switch
           Row(
             children: [
               Expanded(
@@ -1161,7 +1265,28 @@ class _EditProductViewState extends State<EditProductView> {
     );
   }
 
-    Future<void> _updateProduct() async {
+  Widget _buildUpdateButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: _updateProduct,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          'Ürünü Güncelle',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _updateProduct() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -1178,14 +1303,12 @@ class _EditProductViewState extends State<EditProductView> {
       Logger.info('🔄 EditProductView - Product update started');
       final productViewModel = context.read<ProductViewModel>();
       
-      // Resimleri ayır: mevcut resimler URL, yeni resimler dosya yolu
       List<String> existingImageUrls = List.from(_existingImages);
       List<String> newImagePaths = _newImages.map((file) => file.path).toList();
       
       Logger.info('🖼️ EditProductView - Existing images: ${existingImageUrls.length}');
       Logger.info('🆕 EditProductView - New images: ${newImagePaths.length}');
       
-      // Trade preferences'ı liste haline getir
       List<String>? tradePreferences;
       if (_tradePreferencesController.text.trim().isNotEmpty) {
         tradePreferences = _tradePreferencesController.text
@@ -1195,14 +1318,12 @@ class _EditProductViewState extends State<EditProductView> {
             .toList();
       }
       
-      // Location oluştur
       String? cityId;
       String? cityTitle;
       String? districtId;
       String? districtTitle;
       if (_selectedCityId != null && _selectedDistrictId != null) {
         cityId = _selectedCityId;
-        // City ve district title'larını ProductViewModel'den al
         final selectedCity = productViewModel.cities.firstWhere(
           (city) => city.id == _selectedCityId,
           orElse: () => City(id: _selectedCityId!, name: '', plateCode: _selectedCityId!),
@@ -1216,15 +1337,14 @@ class _EditProductViewState extends State<EditProductView> {
         districtTitle = selectedDistrict.name;
       }
       
-             // Condition ID'sini direkt gönder
-       String? conditionId = _selectedConditionId;
+      String? conditionId = _selectedConditionId;
 
       final success = await productViewModel.updateProduct(
         productId: _currentProduct?.id ?? widget.product.id,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        images: newImagePaths.isNotEmpty ? newImagePaths : null, // Sadece yeni dosya yolları
-        existingImageUrls: existingImageUrls, // Mevcut URL'ler ayrı olarak
+        images: newImagePaths.isNotEmpty ? newImagePaths : null,
+        existingImageUrls: existingImageUrls,
         categoryId: _selectedSubSubSubCategoryId ?? _selectedSubSubCategoryId ?? _selectedSubCategoryId ?? _selectedCategoryId,
         conditionId: conditionId,
         tradePreferences: tradePreferences,
@@ -1244,11 +1364,10 @@ class _EditProductViewState extends State<EditProductView> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(true); // Başarılı güncelleme sinyali gönder
+        Navigator.of(context).pop(true);
       } else {
         final errorMessage = productViewModel.errorMessage ?? 'İlan güncellenirken hata oluştu';
         
-        // Token hatası durumunda kullanıcıyı login sayfasına yönlendir
         if (errorMessage.contains('token') || errorMessage.contains('giriş')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1258,7 +1377,6 @@ class _EditProductViewState extends State<EditProductView> {
             ),
           );
           
-          // Kısa bir gecikme sonrası login sayfasına yönlendir
           Future.delayed(const Duration(seconds: 2), () {
             Navigator.of(context).pushNamedAndRemoveUntil(
               '/login',
