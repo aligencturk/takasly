@@ -88,7 +88,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-
         // E-posta input
         Container(
           height: 56,
@@ -201,7 +200,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ],
         ),
 
-
         ElevatedButton(
           onPressed: () => _submitLogin(context),
           style: ElevatedButton.styleFrom(
@@ -233,6 +231,27 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
 
+    // Loading dialog göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Giriş yapılıyor...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
     final success = await authViewModel.login(
       _emailController.text.trim(),
       _passwordController.text.trim(),
@@ -244,6 +263,11 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         'Login failed: ${authViewModel.errorMessage}',
         tag: 'LoginView',
       );
+    }
+
+    // Loading dialog'u kapat
+    if (mounted) {
+      Navigator.of(context).pop();
     }
 
     if (mounted) {
@@ -287,10 +311,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'veya',
-                style: TextStyle(
-                  color: AppTheme.primary,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: AppTheme.primary, fontSize: 14),
               ),
             ),
             Expanded(
@@ -324,7 +345,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
                     borderRadius: BorderRadius.circular(16),
                     onTap: () => _handleGoogleLogin(context),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -379,7 +403,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
                     borderRadius: BorderRadius.circular(16),
                     onTap: () => _handleAppleLogin(context),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -413,44 +440,6 @@ class _BottomButtonsState extends State<_BottomButtons> {
         ),
 
         const SizedBox(height: 16),
-
-        // Test butonları (geliştirme için)
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => _handleTestLogin(context, 'ali'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.withOpacity(0.8),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Test Ali', style: TextStyle(fontSize: 14)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => _handleTestLogin(context, 'ridvan'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.withOpacity(0.8),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Test Ridvan',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -460,25 +449,37 @@ class _BottomButtonsState extends State<_BottomButtons> {
     try {
       Logger.info('Google giriş başlatılıyor', tag: 'LoginView');
 
-      final authVm = Provider.of<AuthViewModel>(context, listen: false);
-
-      // Loading göster
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google ile giriş yapılıyor...'),
-            duration: Duration(seconds: 2),
+      // Loading dialog göster
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Google ile giriş yapılıyor...'),
+                ],
+              ),
+            ),
           ),
-        );
-      }
+        ),
+      );
+
+      final authVm = Provider.of<AuthViewModel>(context, listen: false);
 
       Logger.info('Google Sign-In başlatılıyor...', tag: 'LoginView');
 
-      final Map<String, String?>? googleTokens = await SocialAuthService.instance
+      final Map<String, String?>? googleTokens = await SocialAuthService
+          .instance
           .signInWithGoogleAndGetTokens();
 
-      if (googleTokens == null || 
-          googleTokens['accessToken'] == null || 
+      if (googleTokens == null ||
+          googleTokens['accessToken'] == null ||
           googleTokens['idToken'] == null) {
         Logger.warning('Google tokenları alınamadı', tag: 'LoginView');
         if (mounted) {
@@ -505,7 +506,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
       final String deviceID = await DeviceIdHelper.getOrCreateDeviceId();
       final String? fcmToken = await NotificationService.instance.getFCMToken();
 
-      Logger.info('Device ID: $deviceID, FCM Token: ${fcmToken?.substring(0, 20)}...', tag: 'LoginView');
+      Logger.info(
+        'Device ID: $deviceID, FCM Token: ${fcmToken?.substring(0, 20)}...',
+        tag: 'LoginView',
+      );
 
       final success = await authVm.loginWithGoogle(
         googleAccessToken: googleAccessToken,
@@ -513,6 +517,11 @@ class _BottomButtonsState extends State<_BottomButtons> {
         deviceID: deviceID,
         fcmToken: fcmToken,
       );
+
+      // Loading dialog'u kapat
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
 
       if (!mounted) return;
 
@@ -562,17 +571,28 @@ class _BottomButtonsState extends State<_BottomButtons> {
     try {
       Logger.info('Apple giriş başlatılıyor', tag: 'LoginView');
 
-      final authVm = Provider.of<AuthViewModel>(context, listen: false);
-
-      // Loading göster
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Apple ile giriş yapılıyor...'),
-            duration: Duration(seconds: 2),
+      // Loading dialog göster
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Apple ile giriş yapılıyor...'),
+                ],
+              ),
+            ),
           ),
-        );
-      }
+        ),
+      );
+
+      final authVm = Provider.of<AuthViewModel>(context, listen: false);
 
       Logger.info('Apple Sign-In başlatılıyor...', tag: 'LoginView');
 
@@ -604,13 +624,21 @@ class _BottomButtonsState extends State<_BottomButtons> {
       final String deviceID = await DeviceIdHelper.getOrCreateDeviceId();
       final String? fcmToken = await NotificationService.instance.getFCMToken();
 
-      Logger.info('Device ID: $deviceID, FCM Token: ${fcmToken?.substring(0, 20)}...', tag: 'LoginView');
+      Logger.info(
+        'Device ID: $deviceID, FCM Token: ${fcmToken?.substring(0, 20)}...',
+        tag: 'LoginView',
+      );
 
       final success = await authVm.loginWithApple(
         appleIdToken: appleIdToken,
         deviceID: deviceID,
         fcmToken: fcmToken,
       );
+
+      // Loading dialog'u kapat
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
 
       if (!mounted) return;
 
@@ -648,54 +676,6 @@ class _BottomButtonsState extends State<_BottomButtons> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Beklenmeyen hata: ${e.toString()}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
-
-
-
-  // Test login
-  Future<void> _handleTestLogin(BuildContext context, String testUser) async {
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-
-    String email, password;
-    if (testUser == 'ali') {
-      email = 'alitalipgencturk@gmail.com';
-      password = '151281';
-    } else {
-      email = 'ridvan.dasdelen@gmail.com';
-      password = '123a';
-    }
-
-    Logger.info(
-      'Test login başlatılıyor: $testUser ($email)',
-      tag: 'LoginView',
-    );
-
-    final success = await authViewModel.login(email, password);
-
-    if (context.mounted) {
-      if (success) {
-        if (authViewModel.currentUser != null) {
-          userViewModel.setCurrentUser(authViewModel.currentUser!);
-        }
-
-        Logger.info('Test login başarılı: $testUser', tag: 'LoginView');
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        Logger.error(
-          'Test login başarısız: $testUser - ${authViewModel.errorMessage}',
-          tag: 'LoginView',
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Test login başarısız: ${authViewModel.errorMessage ?? 'Bilinmeyen hata'}',
-            ),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
