@@ -8,6 +8,7 @@ import '../../models/chat.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 import 'chat_detail_view.dart';
+import '../../widgets/native_ad_list_tile.dart';
 
 class ChatListView extends StatefulWidget {
   const ChatListView({super.key});
@@ -26,16 +27,14 @@ class _ChatListViewState extends State<ChatListView> {
     });
   }
 
-
-
-
-
   void _loadChats() {
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
-    
+
     if (authViewModel.currentUser != null) {
-      Logger.info('ChatListView: Loading chats for user ${authViewModel.currentUser!.id}');
+      Logger.info(
+        'ChatListView: Loading chats for user ${authViewModel.currentUser!.id}',
+      );
       chatViewModel.loadChats(authViewModel.currentUser!.id);
       chatViewModel.loadUnreadCount(authViewModel.currentUser!.id);
     } else {
@@ -47,7 +46,14 @@ class _ChatListViewState extends State<ChatListView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mesajlar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),),
+        title: const Text(
+          'Mesajlar',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -66,10 +72,7 @@ class _ChatListViewState extends State<ChatListView> {
                   SizedBox(height: 16),
                   Text(
                     'Mesajlar yükleniyor...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -81,26 +84,16 @@ class _ChatListViewState extends State<ChatListView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
                     'Bir hata oluştu',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     chatViewModel.error!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -129,18 +122,12 @@ class _ChatListViewState extends State<ChatListView> {
                   const SizedBox(height: 16),
                   Text(
                     'Henüz mesajınız yok',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Takas teklifleri gönderdiğinizde\nburada görünecek',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -152,128 +139,168 @@ class _ChatListViewState extends State<ChatListView> {
             onRefresh: () async {
               _loadChats();
             },
-            child: ListView.builder(
-              itemCount: chatViewModel.chats.length,
-              itemBuilder: (context, index) {
+            child: Builder(
+              builder: (context) {
                 // Pinli sohbetler üstte gözüksün diye sıralama
                 final sortedChats = [
                   ...chatViewModel.chats.where((c) => c.isPinned == true),
                   ...chatViewModel.chats.where((c) => c.isPinned != true),
                 ];
-                final chat = sortedChats[index];
-                return Slidable(
-                  key: Key(chat.id),
-                  startActionPane: ActionPane(
-                    motion: const DrawerMotion(),
-                    extentRatio: 0.25,
-                    children: [
-                      SlidableAction(
-                        onPressed: (context) {
-                          chatViewModel.togglePinChat(chat.id);
-                        },
-                        backgroundColor: chat.isPinned == true ? Colors.orange : AppTheme.primary,
-                        foregroundColor: Colors.white,
-                        icon: chat.isPinned == true ? FontAwesomeIcons.thumbtackSlash : FontAwesomeIcons.thumbtack,
-                        label: chat.isPinned == true ? 'Kaldır' : 'Sabitle',
+
+                // Her 6 sohbetten sonra 1 reklam satırı eklemek için toplam öğe sayısını hesapla
+                const int adInterval = 6; // 6 satırda bir reklam
+                final int adCount = sortedChats.isEmpty
+                    ? 0
+                    : (sortedChats.length / adInterval).floor();
+                final int totalItemCount = sortedChats.length + adCount;
+
+                return ListView.builder(
+                  itemCount: totalItemCount,
+                  itemBuilder: (context, displayIndex) {
+                    // Bu index reklam mı?
+                    if (displayIndex != 0 &&
+                        (displayIndex + 1) % (adInterval + 1) == 0) {
+                      // 6 sohbet + 1 reklam = 7'li bloklar
+                      return const NativeAdListTile();
+                    }
+
+                    // Görünen index'i veri index'ine dönüştür (öncesindeki reklam sayısını düş)
+                    final int numAdsBefore = (displayIndex / (adInterval + 1))
+                        .floor();
+                    final int dataIndex = displayIndex - numAdsBefore;
+
+                    final chat = sortedChats[dataIndex];
+                    return Slidable(
+                      key: Key(chat.id),
+                      startActionPane: ActionPane(
+                        motion: const DrawerMotion(),
+                        extentRatio: 0.25,
+                        children: [
+                          SlidableAction(
+                            onPressed: (context) {
+                              chatViewModel.togglePinChat(chat.id);
+                            },
+                            backgroundColor: chat.isPinned == true
+                                ? Colors.orange
+                                : AppTheme.primary,
+                            foregroundColor: Colors.white,
+                            icon: chat.isPinned == true
+                                ? FontAwesomeIcons.thumbtackSlash
+                                : FontAwesomeIcons.thumbtack,
+                            label: chat.isPinned == true ? 'Kaldır' : 'Sabitle',
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  endActionPane: ActionPane(
-                    motion: const DrawerMotion(),
-                    extentRatio: 0.25,
-                    children: [
-                      SlidableAction(
-                        onPressed: (context) async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Sohbeti Sil'),
-                              content: const Text('Bu sohbeti silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
-                                  child: const Text('Vazgeç'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(true),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.red,
+                      endActionPane: ActionPane(
+                        motion: const DrawerMotion(),
+                        extentRatio: 0.25,
+                        children: [
+                          SlidableAction(
+                            onPressed: (context) async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Sohbeti Sil'),
+                                  content: const Text(
+                                    'Bu sohbeti silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz.',
                                   ),
-                                  child: const Text('Sil'),
-                                ),
-                              ],
-                            ),
-                          );
-                          
-                          if (confirm == true && context.mounted) {
-                            try {
-                              // Loading göster
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Vazgeç'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
                                       ),
-                                      SizedBox(width: 12),
-                                      Text('Sohbet siliniyor...'),
-                                    ],
-                                  ),
-                                  duration: Duration(seconds: 2),
+                                      child: const Text('Sil'),
+                                    ),
+                                  ],
                                 ),
                               );
-                              
-                              await chatViewModel.deleteChat(chat.id);
-                              
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Sohbet başarıyla silindi'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
+
+                              if (confirm == true && context.mounted) {
+                                try {
+                                  // Loading göster
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Colors.white,
+                                                  ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 12),
+                                          Text('Sohbet siliniyor...'),
+                                        ],
+                                      ),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+
+                                  await chatViewModel.deleteChat(chat.id);
+
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Sohbet başarıyla silindi',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  Logger.error('Chat silme hatası: $e');
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Sohbet silinirken hata oluştu: ${e.toString()}',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
                               }
-                            } catch (e) {
-                              Logger.error('Chat silme hatası: $e');
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Sohbet silinirken hata oluştu: ${e.toString()}'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          }
-                        },
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        icon: Icons.delete,
-                        label: 'Sil',
+                            },
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            icon: Icons.delete,
+                            label: 'Sil',
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: _ChatListItem(
-                    chat: chat,
-                    currentUserId: authViewModel.currentUser?.id ?? '',
-                    unreadCount: chatViewModel.chatUnreadCounts[chat.id] ?? 0,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatDetailView(chat: chat),
-                        ),
-                      );
-                    },
-                    onPinToggle: () {
-                      chatViewModel.togglePinChat(chat.id);
-                    },
-                  ),
+                      child: _ChatListItem(
+                        chat: chat,
+                        currentUserId: authViewModel.currentUser?.id ?? '',
+                        unreadCount:
+                            chatViewModel.chatUnreadCounts[chat.id] ?? 0,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatDetailView(chat: chat),
+                            ),
+                          );
+                        },
+                        onPinToggle: () {
+                          chatViewModel.togglePinChat(chat.id);
+                        },
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -310,10 +337,7 @@ class _ChatListItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          bottom: BorderSide(
-            color: Colors.grey[200]!,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
         ),
       ),
       child: ListTile(
@@ -361,7 +385,10 @@ class _ChatListItem extends StatelessWidget {
                 top: 0,
                 left: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.primary,
                     borderRadius: BorderRadius.circular(8),
@@ -382,13 +409,15 @@ class _ChatListItem extends StatelessWidget {
               child: Text(
                 otherParticipant?.name ?? 'Bilinmeyen Kullanıcı',
                 style: TextStyle(
-                  fontWeight: unreadCount > 0 ? FontWeight.w700 : FontWeight.w600,
+                  fontWeight: unreadCount > 0
+                      ? FontWeight.w700
+                      : FontWeight.w600,
                   fontSize: 13,
                   color: unreadCount > 0 ? Colors.black87 : Colors.black87,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-              ),  
+              ),
             ),
             const SizedBox(width: 8),
             Text(
@@ -413,19 +442,25 @@ class _ChatListItem extends StatelessWidget {
                     Icon(
                       Icons.inventory_2_outlined,
                       size: 15,
-                      color: unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
+                      color: unreadCount > 0
+                          ? AppTheme.primary
+                          : Colors.grey[500],
                     )
                   else if (chat.lastMessage!.type == MessageType.image)
                     Icon(
                       Icons.image_outlined,
                       size: 15,
-                      color: unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
+                      color: unreadCount > 0
+                          ? AppTheme.primary
+                          : Colors.grey[500],
                     )
                   else
                     Icon(
                       Icons.message_outlined,
                       size: 15,
-                      color: unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
+                      color: unreadCount > 0
+                          ? AppTheme.primary
+                          : Colors.grey[500],
                     ),
                   const SizedBox(width: 4),
                 ],
@@ -436,9 +471,13 @@ class _ChatListItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: unreadCount > 0 ? Colors.black87 : Colors.grey[600],
+                      color: unreadCount > 0
+                          ? Colors.black87
+                          : Colors.grey[600],
                       fontSize: 12,
-                      fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.w400,
+                      fontWeight: unreadCount > 0
+                          ? FontWeight.w500
+                          : FontWeight.w400,
                     ),
                   ),
                 ),
@@ -446,7 +485,10 @@ class _ChatListItem extends StatelessWidget {
                 if (unreadCount > 0) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.primary,
                       borderRadius: BorderRadius.circular(10),
@@ -477,8 +519,10 @@ class _ChatListItem extends StatelessWidget {
     }
 
     final message = chat.lastMessage!;
-    Logger.debug('ChatListItem: lastMessage type: ${message.type}, content: ${message.content}');
-    
+    Logger.debug(
+      'ChatListItem: lastMessage type: ${message.type}, content: ${message.content}',
+    );
+
     switch (message.type) {
       case MessageType.text:
         return message.content;
@@ -512,4 +556,4 @@ class _ChatListItem extends StatelessWidget {
       return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}';
     }
   }
-} 
+}
