@@ -37,7 +37,7 @@
         <!-- AdMob uygulama ID'si -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3600325889588673~3347511713" />
+            android:value="ca-app-pub-3600325889588673~2182319863" />
         
         <activity
             android:name=".MainActivity"

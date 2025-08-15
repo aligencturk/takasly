@@ -12,7 +12,7 @@ class AdMobService {
 
   // App IDs (bilgi amaçlı)
   static const String _androidAppId =
-      'ca-app-pub-3940256099942544~3347511713'; // Test
+      'ca-app-pub-3600325889588673~2182319863'; // Prod (AndroidManifest.xml'de de tanımlı)
   static const String _iosAppId =
       'ca-app-pub-3600325889588673~5340558560'; // Prod (Info.plist'den kullanılıyor)
 
@@ -28,6 +28,19 @@ class AdMobService {
       'ca-app-pub-3600325889588673/5822213790'; // Gerçek Android prod ID
   static const String _iosNativeAdUnitIdProd =
       'ca-app-pub-3600325889588673/3365147820';
+
+  // Banner Ad Unit IDs
+  // Debug/Test (Google Resmi Test ID'leri)
+  static const String _androidBannerAdUnitIdTest =
+      'ca-app-pub-3940256099942544/6300978111';
+  static const String _iosBannerAdUnitIdTest =
+      'ca-app-pub-3940256099942544/2934735716';
+
+  // Production (kendi birimleriniz)
+  static const String _androidBannerAdUnitIdProd =
+      'ca-app-pub-3600325889588673/7805712447';
+  static const String _iosBannerAdUnitIdProd =
+      'ca-app-pub-3600325889588673/0000000000'; // Placeholder, bilinmiyor
 
   bool _isInitialized = false;
   NativeAd? _nativeAd;
@@ -150,6 +163,45 @@ class AdMobService {
     return isDebug
         ? _androidNativeAdUnitIdTest
         : _androidNativeAdUnitIdProd; // Default
+  }
+
+  /// Banner Ad Unit ID'sini al (Debug'da test ID'leri, Release'de prod ID'leri)
+  String get bannerAdUnitId {
+    final bool isDebug = kDebugMode;
+    if (Platform.isAndroid) {
+      final id = isDebug
+          ? _androidBannerAdUnitIdTest
+          : _androidBannerAdUnitIdProd;
+      Logger.info(
+        '📡 AdMobService - Android BannerAdUnitId: $id (debug=$isDebug)',
+      );
+      if (isDebug) {
+        Logger.warning(
+          '⚠️ AdMobService - DEBUG MODDA TEST REKLAMLAR GÖSTERİLİYOR!',
+        );
+      } else {
+        Logger.info(
+          '✅ AdMobService - RELEASE MODDA GERÇEK REKLAMLAR GÖSTERİLİYOR!',
+        );
+      }
+      return id;
+    } else if (Platform.isIOS) {
+      final id = isDebug ? _iosBannerAdUnitIdTest : _iosBannerAdUnitIdProd;
+      Logger.info('📡 AdMobService - iOS BannerAdUnitId: $id (debug=$isDebug)');
+      if (isDebug) {
+        Logger.warning(
+          '⚠️ AdMobService - DEBUG MODDA TEST REKLAMLAR GÖSTERİLİYOR!',
+        );
+      } else {
+        Logger.info(
+          '✅ AdMobService - RELEASE MODDA GERÇEK REKLAMLAR GÖSTERİLİYOR!',
+        );
+      }
+      return id;
+    }
+    return isDebug
+        ? _androidBannerAdUnitIdTest
+        : _androidBannerAdUnitIdProd; // Default
   }
 
   /// Native reklam yükle (performans optimizasyonlu)

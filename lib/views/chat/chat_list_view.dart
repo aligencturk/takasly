@@ -161,7 +161,7 @@ class _ChatListViewState extends State<ChatListView> {
                     if (displayIndex != 0 &&
                         (displayIndex + 1) % (adInterval + 1) == 0) {
                       // 6 sohbet + 1 reklam = 7'li bloklar
-                      return const NativeAdListTile();
+                      return const BannerAdListTile();
                     }
 
                     // Görünen index'i veri index'ine dönüştür (öncesindeki reklam sayısını düş)

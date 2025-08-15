@@ -5,25 +5,21 @@ import '../services/admob_service.dart';
 import '../utils/logger.dart';
 
 /// Chat listesinde tek satır (ListTile) görünümlü native reklam
-class NativeAdListTile extends StatefulWidget {
-  const NativeAdListTile({super.key});
+class BannerAdListTile extends StatefulWidget {
+  const BannerAdListTile({super.key});
 
   @override
-  State<NativeAdListTile> createState() => _NativeAdListTileState();
+  State<BannerAdListTile> createState() => _BannerAdListTileState();
 }
 
-class _NativeAdListTileState extends State<NativeAdListTile>
+class _BannerAdListTileState extends State<BannerAdListTile>
     with AutomaticKeepAliveClientMixin {
   final AdMobService _adMobService = AdMobService();
-  NativeAd? _nativeAd;
-  Widget? _adWidget;
-  Key? _adKey;
+  BannerAd? _bannerAd;
   bool _isLoaded = false;
   bool _isDisposed = false;
   bool _isLoading = false;
   bool _hasError = false;
-  int _retryCount = 0;
-  static const int _maxRetries = 2;
 
   @override
   void initState() {
@@ -35,7 +31,7 @@ class _NativeAdListTileState extends State<NativeAdListTile>
   void dispose() {
     _isDisposed = true;
     try {
-      _nativeAd?.dispose();
+      _bannerAd?.dispose();
     } catch (_) {}
     super.dispose();
   }
@@ -47,58 +43,40 @@ class _NativeAdListTileState extends State<NativeAdListTile>
       await _adMobService.initialize();
 
       try {
-        _nativeAd?.dispose();
+        _bannerAd?.dispose();
       } catch (_) {}
-      _nativeAd = null;
-      _adWidget = null;
-      _adKey = null;
-      _isLoaded = false;
-      _hasError = false;
-
-      final ad = NativeAd(
-        adUnitId: _adMobService.nativeAdUnitId,
-        factoryId: 'listTile',
+      _bannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: _adMobService.bannerAdUnitId,
         request: const AdRequest(),
-        listener: NativeAdListener(
+        listener: BannerAdListener(
           onAdLoaded: (ad) {
             if (_isDisposed) {
               ad.dispose();
               return;
             }
-            _nativeAd = ad as NativeAd;
-            _adWidget = AdWidget(ad: _nativeAd!);
-            _adKey = ValueKey(_nativeAd);
             _isLoaded = true;
             _hasError = false;
             if (mounted) setState(() {});
-            Logger.info('✅ NativeAdListTile - Reklam yüklendi');
+            Logger.info('✅ BannerAdListTile - Reklam yüklendi');
           },
           onAdFailedToLoad: (ad, error) {
             Logger.error(
-              '❌ NativeAdListTile - Yükleme hatası: ${error.code} ${error.message}',
+              '❌ BannerAdListTile - Yükleme hatası: ${error.code} ${error.message}',
             );
             try {
               ad.dispose();
             } catch (_) {}
-            _nativeAd = null;
             _isLoaded = false;
             _hasError = true;
             if (mounted) setState(() {});
-            if (!_isDisposed && _retryCount < _maxRetries) {
-              _retryCount++;
-              Timer(const Duration(seconds: 4), () {
-                if (mounted && !_isDisposed) {
-                  _loadAd();
-                }
-              });
-            }
           },
         ),
       );
 
-      await ad.load();
+      await _bannerAd!.load();
     } catch (e) {
-      Logger.error('❌ NativeAdListTile load error: $e');
+      Logger.error('❌ BannerAdListTile load error: $e');
       _hasError = true;
       if (mounted) setState(() {});
     } finally {
@@ -112,14 +90,14 @@ class _NativeAdListTileState extends State<NativeAdListTile>
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Chat satırı ile uyumlu tek satır yüksekliği
-    final double height = screenWidth < 360 ? 76 : 84;
+    final double height = 60; // Banner yüksekliği için sabit değer
 
     final decoration = BoxDecoration(
       color: Colors.white,
       border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 0.5)),
     );
 
-    if (!_isLoaded || _nativeAd == null) {
+    if (!_isLoaded || _bannerAd == null) {
       return Container(
         height: height,
         decoration: decoration,
@@ -148,12 +126,12 @@ class _NativeAdListTileState extends State<NativeAdListTile>
     return Container(
       height: height,
       decoration: decoration,
-      padding: const EdgeInsets.symmetric(horizontal: 0),
-      child: _adWidget == null
-          ? Container(color: Colors.grey[200])
-          : SizedBox.expand(
-              child: KeyedSubtree(key: _adKey, child: _adWidget!),
-            ),
+      alignment: Alignment.center,
+      child: SizedBox(
+        width: _bannerAd!.size.width.toDouble(),
+        height: _bannerAd!.size.height.toDouble(),
+        child: AdWidget(ad: _bannerAd!),
+      ),
     );
   }
 

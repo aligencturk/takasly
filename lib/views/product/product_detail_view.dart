@@ -11,7 +11,6 @@ import 'dart:io';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
-import '../../viewmodels/trade_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
@@ -21,7 +20,6 @@ import '../../widgets/error_widget.dart';
 import '../chat/chat_detail_view.dart';
 import '../profile/user_profile_detail_view.dart';
 import 'edit_product_view.dart';
-import '../../viewmodels/user_profile_detail_viewmodel.dart';
 import '../../services/user_service.dart';
 import '../../utils/logger.dart';
 import '../../widgets/native_ad_detail_footer.dart';
@@ -816,8 +814,8 @@ class _ProductInfoState extends State<_ProductInfo> {
                   widget.product.productLong!.isNotEmpty)
                 _buildMapButtons(widget.product),
               const SizedBox(height: 12),
-              // Harita butonlarının altına küçük native reklam
-              const NativeAdDetailFooter(),
+              // Harita butonlarının altına banner reklam
+              const BannerAdDetailFooter(),
             ],
           ),
         ),

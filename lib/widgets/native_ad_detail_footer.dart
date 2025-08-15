@@ -171,3 +171,145 @@ class _NativeAdDetailFooterState extends State<NativeAdDetailFooter>
   @override
   bool get wantKeepAlive => true;
 }
+
+/// Ürün detay sayfasında haritanın altındaki alan için Banner reklam
+class BannerAdDetailFooter extends StatefulWidget {
+  const BannerAdDetailFooter({super.key});
+
+  @override
+  State<BannerAdDetailFooter> createState() => _BannerAdDetailFooterState();
+}
+
+class _BannerAdDetailFooterState extends State<BannerAdDetailFooter>
+    with AutomaticKeepAliveClientMixin {
+  final AdMobService _adMobService = AdMobService();
+  BannerAd? _bannerAd;
+  bool _isLoaded = false;
+  bool _isDisposed = false;
+  bool _isLoading = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    try {
+      _bannerAd?.dispose();
+    } catch (_) {}
+    super.dispose();
+  }
+
+  Future<void> _loadAd() async {
+    if (_isLoading || _isDisposed) return;
+    _isLoading = true;
+    try {
+      await _adMobService.initialize();
+      try {
+        _bannerAd?.dispose();
+      } catch (_) {}
+      _bannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: _adMobService.bannerAdUnitId,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            if (_isDisposed) {
+              ad.dispose();
+              return;
+            }
+            _isLoaded = true;
+            _hasError = false;
+            if (mounted) setState(() {});
+            Logger.info('✅ BannerAdDetailFooter - Reklam yüklendi');
+          },
+          onAdFailedToLoad: (ad, error) {
+            Logger.error(
+              '❌ BannerAdDetailFooter - Yükleme hatası: ${error.code} ${error.message}',
+            );
+            try {
+              ad.dispose();
+            } catch (_) {}
+            _isLoaded = false;
+            _hasError = true;
+            if (mounted) setState(() {});
+          },
+        ),
+      );
+      await _bannerAd!.load();
+    } catch (e) {
+      Logger.error('❌ BannerAdDetailFooter load error: $e');
+      _hasError = true;
+      if (mounted) setState(() {});
+    } finally {
+      _isLoading = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final decoration = BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey[200]!),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.03),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+
+    final double height = 60;
+
+    if (!_isLoaded || _bannerAd == null) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: decoration,
+        height: height,
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: screenWidth < 360 ? 16 : 18,
+              height: screenWidth < 360 ? 16 : 18,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              _hasError ? 'Reklam yüklenemedi' : 'Reklam yükleniyor',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: decoration,
+      height: height,
+      alignment: Alignment.center,
+      child: SizedBox(
+        width: _bannerAd!.size.width.toDouble(),
+        height: _bannerAd!.size.height.toDouble(),
+        child: AdWidget(ad: _bannerAd!),
+      ),
+    );
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+}
