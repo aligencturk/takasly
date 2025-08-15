@@ -182,6 +182,11 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
 
             // MARK: - Resend Code Button
             _buildResendCodeButton(),
+
+            const SizedBox(height: 16),
+
+            // MARK: - Skip Verification Option
+            _buildSkipSection(),
           ],
         ),
       ),
@@ -332,6 +337,21 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
     );
   }
 
+  // MARK: - Skip Section
+  Widget _buildSkipSection() {
+    return Column(
+      children: [
+        TextButton(
+          onPressed: () => _showSkipVerificationDialog(),
+          child: const Text(
+            'Bu adımı atla',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+
   // MARK: - Business Logic
   void _handleEmailVerification(AuthViewModel authViewModel) async {
     if (!_formKey.currentState!.validate()) return;
@@ -372,6 +392,62 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
         );
       }
     }
+  }
+
+  void _showSkipVerificationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text(
+            'Doğrulamayı Atlama',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'E-posta adresinizi henüz doğrulamadan devam etmek üzeresiniz.',
+                style: TextStyle(height: 1.4),
+              ),
+              SizedBox(height: 12),
+              Text(
+                '• Hesabınız bazı kullanıcılar tarafından doğrulanmamış olarak görünebilir.',
+              ),
+              SizedBox(height: 6),
+              Text(
+                '• Dilediğiniz zaman ayarlar bölümünden e-posta doğrulamasını tamamlayabilirsiniz.',
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Vazgeç'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Devam Et'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _resendVerificationCode() async {
