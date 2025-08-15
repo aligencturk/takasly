@@ -51,6 +51,25 @@
 	<string>ca-app-pub-3600325889588673~5340558560</string>
 	<key>GADIsAdManagerApp</key>
 	<false/>
+	
+	<!-- CAA (Children's Advertising Act) Uyumluluğu -->
+	<key>GADIsChildDirected</key>
+	<false/>
+	
+	<!-- Reklam izinleri ve CAA uyumluluğu -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Uygulama size daha ilgili reklamlar gösterebilmek için cihaz tanımlayıcısını kullanabilir. İzni istediğiniz zaman Ayarlar üzerinden değiştirebilirsiniz.</string>
+	
+	<!-- CAA için ek reklam ayarları -->
+	<key>GADRequestConfiguration</key>
+	<dict>
+		<key>GADIsChildDirected</key>
+		<false/>
+		<key>GADTagForChildDirectedTreatment</key>
+		<false/>
+		<key>GADTagForUnderAgeOfConsent</key>
+		<false/>
+	</dict>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>googlegmail</string>
@@ -66,8 +85,6 @@
 	<string>Takasly, size yakın ürünleri gösterebilmek ve konum bazlı özellikler sunabilmek için konumunuza ihtiyaç duyar.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Takasly, size yakın ürünleri gösterebilmek ve konum bazlı özellikler sunabilmek için konumunuza ihtiyaç duyar.</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Uygulama size daha ilgili reklamlar gösterebilmek için cihaz tanımlayıcısını kullanabilir. İzni istediğiniz zaman Ayarlar üzerinden değiştirebilirsiniz.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

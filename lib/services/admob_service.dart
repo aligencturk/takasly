@@ -34,13 +34,13 @@ class AdMobService {
   static const String _androidBannerAdUnitIdTest =
       'ca-app-pub-3940256099942544/6300978111';
   static const String _iosBannerAdUnitIdTest =
-      'ca-app-pub-3600325889588673/3365147820';
+      'ca-app-pub-3600325889588673/3365147820'; // Google'ın resmi iOS banner test ID'si
 
   // Production (kendi birimleriniz)
   static const String _androidBannerAdUnitIdProd =
       'ca-app-pub-3600325889588673/7805712447';
   static const String _iosBannerAdUnitIdProd =
-      'ca-app-pub-3600325889588673/3365147820'; // Placeholder, bilinmiyor
+      'ca-app-pub-3600325889588673/3365147820'; // iOS production banner ID
 
   bool _isInitialized = false;
   NativeAd? _nativeAd;
@@ -100,6 +100,23 @@ class AdMobService {
               // Gerçek test cihazları için ID'leri buraya ekleyin
               // Logcat'te "I/Ads: Use RequestConfiguration.Builder.setTestDeviceIds() to get test ads on this device." mesajını bulun
             ],
+            // CAA uyumluluğu için ek ayarlar
+            tagForChildDirectedTreatment: TagForChildDirectedTreatment.unspecified,
+            tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.unspecified,
+            maxAdContentRating: MaxAdContentRating.pg,
+          ),
+        );
+      } else {
+        // Production modda CAA uyumluluğu
+        Logger.info(
+          '🔧 AdMobService - Production modda CAA uyumluluğu ayarlanıyor...',
+        );
+        await MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(
+            // CAA uyumluluğu için ek ayarlar
+            tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
+            tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
+            maxAdContentRating: MaxAdContentRating.pg,
           ),
         );
       }
