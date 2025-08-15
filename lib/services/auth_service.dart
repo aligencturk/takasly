@@ -293,7 +293,7 @@ class AuthService {
     }
   }
 
-  Future<ApiResponse<User>> register({
+  Future<ApiResponse<Map<String, dynamic>>> register({
     required String firstName,
     required String lastName,
     required String email,
@@ -364,11 +364,24 @@ class AuthService {
             Logger.debug(
               '✅ User objesi oluşturuldu: ${user.id} - ${user.name}',
             );
-            return {
+
+            // codeToken'ı da response'a ekle
+            final result = {
               'user': user,
               'token':
                   tokenString, // Register'da token userToken olarak gelebilir
             };
+
+            // codeToken varsa ekle
+            if (userData.containsKey('codeToken') &&
+                userData['codeToken'] != null) {
+              result['codeToken'] = userData['codeToken'].toString();
+              Logger.debug(
+                '🔑 CodeToken found in response: ${result['codeToken']}',
+              );
+            }
+
+            return result;
           } else {
             // Standart format (eğer farklı response gelirse)
             Logger.debug('✅ Register - Standard response format');
@@ -397,6 +410,15 @@ class AuthService {
           '🔑 Token saved after register: ${token.substring(0, 10)}...',
         );
 
+        // codeToken'ı da kaydet (email verification için)
+        if (data.containsKey('codeToken') && data['codeToken'] != null) {
+          final codeToken = data['codeToken'].toString();
+          Logger.debug('🔑 CodeToken saved after register: $codeToken');
+          // codeToken'ı SharedPreferences'a kaydet
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('codeToken', codeToken);
+        }
+
         // Register sonrasında tam kullanıcı bilgilerini çek (token varsa)
         if (token.isNotEmpty) {
           try {
@@ -414,7 +436,14 @@ class AuthService {
               // Token'ı her zaman güncelle (API'den yeni token gelebilir)
               await _updateTokenIfNeeded(token);
 
-              return ApiResponse.success(completeUser);
+              // Kullanıcı verilerini SharedPreferences'a kaydet
+              await _saveUserData(completeUser, token);
+              
+              return ApiResponse.success({
+                'user': completeUser,
+                'token': token,
+                'codeToken': data['codeToken'],
+              });
             } else {
               Logger.warning(
                 '⚠️ Failed to fetch complete profile, using register data',
@@ -430,7 +459,14 @@ class AuthService {
           await _updateTokenIfNeeded(token);
         }
 
-        return ApiResponse.success(user);
+        // Kullanıcı verilerini SharedPreferences'a kaydet
+        await _saveUserData(user, token);
+        
+        return ApiResponse.success({
+          'user': user,
+          'token': token,
+          'codeToken': data['codeToken'],
+        });
       }
 
       Logger.error('❌ Register failed: ${response.error}');
@@ -532,7 +568,7 @@ class AuthService {
     }
   }
 
-  Future<ApiResponse<void>> checkEmailVerificationCode({
+  Future<ApiResponse<bool>> checkEmailVerificationCode({
     required String code,
     required String codeToken,
   }) async {
@@ -584,7 +620,7 @@ class AuthService {
           Logger.warning('⚠️ Failed to update user verification status: $e');
         }
 
-        return ApiResponse.success(null);
+        return ApiResponse.success(true);
       }
 
       Logger.error('❌ Email verification failed: ${response.error}');
@@ -1420,6 +1456,41 @@ class AuthService {
         error: e,
       );
       return null;
+    }
+  }
+
+  // Kayıt sonrası alınan codeToken'ı al
+  Future<String?> getStoredCodeToken() async {
+    try {
+      Logger.debug('🔍 AuthService.getStoredCodeToken called');
+      final prefs = await SharedPreferences.getInstance();
+      final codeToken = prefs.getString('codeToken');
+
+      if (codeToken != null && codeToken.isNotEmpty) {
+        Logger.debug('✅ CodeToken found: $codeToken');
+      } else {
+        Logger.debug('❌ No codeToken found');
+      }
+
+      return codeToken;
+    } catch (e) {
+      Logger.error(
+        '❌ AuthService.getStoredCodeToken - Exception: $e',
+        error: e,
+      );
+      return null;
+    }
+  }
+
+  // codeToken'ı temizle (kullanıldıktan sonra)
+  Future<void> clearStoredCodeToken() async {
+    try {
+      Logger.debug('🧹 Clearing stored codeToken');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('codeToken');
+      Logger.debug('✅ CodeToken cleared');
+    } catch (e) {
+      Logger.error('❌ Error clearing codeToken: $e', error: e);
     }
   }
 }

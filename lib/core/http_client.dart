@@ -35,7 +35,7 @@ class HttpClient {
       print('⚠️ HttpClient: 401 error handler already running, skipping...');
       return;
     }
-    
+
     _isHandlingForbiddenError = true;
     print('🚨 401 Unauthorized - Clearing user data and forcing logout');
     try {
@@ -44,7 +44,7 @@ class HttpClient {
       await prefs.remove(AppConstants.userIdKey);
       await prefs.remove(AppConstants.userDataKey);
       print('✅ User data cleared successfully');
-      
+
       // Global error handler'ı çağır
       ErrorHandlerService.handleUnauthorizedError(null);
     } catch (e) {
@@ -64,7 +64,7 @@ class HttpClient {
       print('⚠️ HttpClient: 403 error handler already running, skipping...');
       return;
     }
-    
+
     _isHandlingForbiddenError = true;
     print('🚨 403 Forbidden - Clearing user data and forcing logout');
     try {
@@ -73,7 +73,7 @@ class HttpClient {
       await prefs.remove(AppConstants.userIdKey);
       await prefs.remove(AppConstants.userDataKey);
       print('✅ User data cleared successfully for 403 error');
-      
+
       // Global error handler'ı çağır
       ErrorHandlerService.handleForbiddenError(null);
     } catch (e) {
@@ -222,9 +222,11 @@ class HttpClient {
     try {
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       final uri = Uri.parse(fullUrl);
-      
+
       // useBasicAuth parametresine göre header seç
-      final headers = useBasicAuth ? _getBasicAuthHeaders() : await _getHeaders();
+      final headers = useBasicAuth
+          ? _getBasicAuthHeaders()
+          : await _getHeaders();
       final bodyString = body != null ? json.encode(body) : null;
 
       print('🌐 Full URL: $fullUrl');
@@ -240,7 +242,11 @@ class HttpClient {
       print('📥 Response Headers: ${response.headers}');
       print('📥 Response Body: ${response.body}');
 
-      return await _handleResponse<T>(response, fromJson, isBasicAuth: useBasicAuth);
+      return await _handleResponse<T>(
+        response,
+        fromJson,
+        isBasicAuth: useBasicAuth,
+      );
     } on SocketException catch (e) {
       print('🚫 Socket Exception: $e');
       return ApiResponse<T>.error(ErrorMessages.networkError);
@@ -377,8 +383,14 @@ class HttpClient {
       print('📥 DELETE Response Body Length: ${response.body.length}');
       print('📥 DELETE Response Body isEmpty: ${response.body.isEmpty}');
 
-      final apiResponse = await _handleResponse<T>(response, fromJson, isBasicAuth: true);
-      print('📥 DELETE _handleResponse result - isSuccess: ${apiResponse.isSuccess}');
+      final apiResponse = await _handleResponse<T>(
+        response,
+        fromJson,
+        isBasicAuth: true,
+      );
+      print(
+        '📥 DELETE _handleResponse result - isSuccess: ${apiResponse.isSuccess}',
+      );
       print('📥 DELETE _handleResponse result - error: ${apiResponse.error}');
       return apiResponse;
     } on SocketException catch (e) {
@@ -427,12 +439,14 @@ class HttpClient {
           } catch (e) {
             print('⚠️ 410 - Failed to parse JSON: $e');
             print('⚠️ 410 - Raw response body: "${response.body}"');
-            
+
             // JSON parse edilemiyorsa, response body'yi kontrol et
-            if (response.body.contains('success') || 
+            if (response.body.contains('success') ||
                 response.body.contains('true') ||
                 response.body.contains('ok')) {
-              print('✅ 410 - Response contains success indicators, treating as success');
+              print(
+                '✅ 410 - Response contains success indicators, treating as success',
+              );
               if (fromJson != null) {
                 try {
                   // Boş bir Map ile fromJson'u çağır
@@ -482,32 +496,22 @@ class HttpClient {
         }
       }
 
-      // Özel durum: 417 statusCode'unda kullanıcıya görünür hata mesajı ver
+      // Özel durum: 417 statusCode'unda kullanıcıya görünür ama genel hata mesajı ver
       if (response.statusCode == ApiConstants.expectationFailed) {
         print('❌ 417 Status - Expectation Failed');
-        String errorMessage = ErrorMessages.unknownError;
+        // Sunucudan gelen spesifik mesaj (örn. "179 saniye") yerine genel bir mesaj göster
+        const String genericMessage =
+            'Çok sık istek yapıldı. Lütfen biraz sonra tekrar deneyin.';
+        // Log için orijinal gövdeyi yazdırmaya devam edelim (kullanıcıya gösterilmeyecek)
         if (response.body.isNotEmpty) {
           try {
             final data = json.decode(response.body);
             print('❌ 417 - Parsed error data: $data');
-
-            // error_message field'ını öncelikle kontrol et
-            if (data['error_message'] != null &&
-                data['error_message'] is String) {
-              errorMessage = data['error_message'];
-            } else if (data['message'] != null && data['message'] is String) {
-              errorMessage = data['message'];
-            } else if (data['error'] != null && data['error'] is String) {
-              errorMessage = data['error'];
-            }
-
-            print('❌ 417 - Extracted error message: "$errorMessage"');
           } catch (e) {
             print('⚠️ 417 - Failed to parse error JSON: $e');
-            errorMessage = response.body; // Raw response'u göster
           }
         }
-        return ApiResponse<T>.error(errorMessage);
+        return ApiResponse<T>.error(genericMessage);
       }
 
       // Özel durum: 403 statusCode'unda kullanıcıya görünür hata mesajı ver
@@ -581,15 +585,15 @@ class HttpClient {
         if (!trimmedBody.startsWith('{') && !trimmedBody.startsWith('[')) {
           // JSON değil, text response
           print('⚠️ Success - Non-JSON response body: "$trimmedBody"');
-          
+
           // "Method geçersiz!" gibi hata mesajlarını kontrol et
-          if (trimmedBody.contains('Method geçersiz') || 
+          if (trimmedBody.contains('Method geçersiz') ||
               trimmedBody.contains('geçersiz') ||
               trimmedBody.contains('invalid') ||
               trimmedBody.contains('error')) {
             return ApiResponse<T>.error(trimmedBody);
           }
-          
+
           // Text response'u success olarak döndür (eğer hata mesajı değilse)
           // Generic type uyumsuzluğu nedeniyle null döndür
           return ApiResponse<T>.success(null);
@@ -819,13 +823,15 @@ class HttpClient {
         // API response'unda success field'ını kontrol et
         // Bazı API'ler garip status code gönderebilir ama body'de success bilgisi doğru olur
         final bool apiSuccess = jsonData['success'] == true;
-        
+
         // Error message kontrolü - eğer error_message varsa başarısız
-        final bool hasErrorMessage = jsonData['error_message'] != null && 
-                                   jsonData['error_message'].toString().isNotEmpty;
-        
+        final bool hasErrorMessage =
+            jsonData['error_message'] != null &&
+            jsonData['error_message'].toString().isNotEmpty;
+
         // 403 Forbidden kontrolü
-        final bool isForbidden = jsonData['403'] != null || response.statusCode == 403;
+        final bool isForbidden =
+            jsonData['403'] != null || response.statusCode == 403;
 
         print('📊 API Success check: $apiSuccess');
         print('📊 Has Error Message: $hasErrorMessage');
@@ -841,11 +847,14 @@ class HttpClient {
         // 1. Error message varsa
         // 2. 403 Forbidden varsa
         // 3. Success false ise ve error message varsa
-        if (hasErrorMessage || isForbidden || (jsonData['success'] == false && hasErrorMessage)) {
+        if (hasErrorMessage ||
+            isForbidden ||
+            (jsonData['success'] == false && hasErrorMessage)) {
           print('❌ API Error detected - Has error message or forbidden');
-          final errorMessage = jsonData['error_message']?.toString() ?? 
-                             jsonData['message']?.toString() ?? 
-                             'Unknown error';
+          final errorMessage =
+              jsonData['error_message']?.toString() ??
+              jsonData['message']?.toString() ??
+              'Unknown error';
           print('❌ Error message: $errorMessage');
           return ApiResponse.error(errorMessage);
         }
@@ -862,10 +871,11 @@ class HttpClient {
           print(
             '❌ API Error detected - Status: ${response.statusCode}, API Success: $apiSuccess',
           );
-          final errorMessage = jsonData['error_message']?.toString() ?? 
-                             jsonData['message']?.toString() ?? 
-                             jsonData['error']?.toString() ?? 
-                             'Unknown error';
+          final errorMessage =
+              jsonData['error_message']?.toString() ??
+              jsonData['message']?.toString() ??
+              jsonData['error']?.toString() ??
+              'Unknown error';
           print('❌ Error message: $errorMessage');
           return ApiResponse.error(errorMessage);
         }

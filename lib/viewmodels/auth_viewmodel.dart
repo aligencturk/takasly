@@ -449,10 +449,38 @@ class AuthViewModel extends ChangeNotifier {
           '✅ Register başarılı, user data alındı',
           tag: 'AuthViewModel',
         );
-        _currentUser = response.data;
-        _isLoggedIn = true;
-        _setLoading(false);
-        return true;
+
+        // Response'dan user ve codeToken'ı al
+        // response.data bir Map<String, dynamic> olarak geliyor
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+          final user = data['user'] as User;
+          final codeToken = data['codeToken'] as String?;
+
+          _currentUser = user;
+          _isLoggedIn = true;
+
+          // codeToken varsa logla
+          if (codeToken != null && codeToken.isNotEmpty) {
+            Logger.info(
+              '🔑 CodeToken received: $codeToken',
+              tag: 'AuthViewModel',
+            );
+          } else {
+            Logger.warning('⚠️ No codeToken received', tag: 'AuthViewModel');
+          }
+
+          _setLoading(false);
+          notifyListeners(); // UI'ı güncelle
+          return true;
+        } else {
+          // Eğer response.data direkt User objesi ise
+          Logger.warning('⚠️ Unexpected response format, data is not Map', tag: 'AuthViewModel');
+          _setError('Beklenmeyen response formatı');
+          _setLoading(false);
+          notifyListeners(); // UI'ı güncelle
+          return false;
+        }
       } else {
         Logger.error('❌ Register başarısız', tag: 'AuthViewModel');
         Logger.error(
@@ -461,12 +489,14 @@ class AuthViewModel extends ChangeNotifier {
         );
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
+        notifyListeners(); // UI'ı güncelle
         return false;
       }
     } catch (e) {
       Logger.error('💥 Register exception: $e', tag: 'AuthViewModel', error: e);
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
+      notifyListeners(); // UI'ı güncelle
       return false;
     }
   }
@@ -505,9 +535,9 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<bool> checkEmailVerificationCode({
     required String code,
-    required String codeToken,
+    String? codeToken,
   }) async {
-    if (code.trim().isEmpty || codeToken.trim().isEmpty) {
+    if (code.trim().isEmpty) {
       _setError(ErrorMessages.fieldRequired);
       return false;
     }
@@ -517,16 +547,30 @@ class AuthViewModel extends ChangeNotifier {
       return false;
     }
 
+    // Eğer codeToken verilmemişse, kayıtlı olanı kullan
+    String? tokenToUse = codeToken;
+    if (tokenToUse == null || tokenToUse.trim().isEmpty) {
+      tokenToUse = await getStoredCodeToken();
+      if (tokenToUse == null || tokenToUse.trim().isEmpty) {
+        _setError('Doğrulama token\'ı bulunamadı. Lütfen tekrar kayıt olun.');
+        return false;
+      }
+      Logger.info(
+        '🔑 Using stored codeToken: $tokenToUse',
+        tag: 'AuthViewModel',
+      );
+    }
+
     _setLoading(true);
     _clearError();
 
     try {
       final response = await _authService.checkEmailVerificationCode(
         code: code,
-        codeToken: codeToken,
+        codeToken: tokenToUse!,
       );
 
-      if (response.isSuccess) {
+      if (response.isSuccess && response.data == true) {
         // Kullanıcının isVerified durumunu güncelle
         if (_currentUser != null) {
           _currentUser = User(
@@ -545,6 +589,13 @@ class AuthViewModel extends ChangeNotifier {
           notifyListeners();
           Logger.info('✅ User verification status updated in ViewModel');
         }
+
+        // Email verification başarılı olduktan sonra codeToken'ı temizle
+        await clearStoredCodeToken();
+        Logger.info(
+          '🧹 CodeToken cleared after successful verification',
+          tag: 'AuthViewModel',
+        );
 
         _setLoading(false);
         return true;
@@ -731,6 +782,25 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('❌ AuthViewModel.getStoredUserToken error: $e');
       return null;
+    }
+  }
+
+  /// Kayıt sonrası alınan codeToken'ı döner
+  Future<String?> getStoredCodeToken() async {
+    try {
+      return await _authService.getStoredCodeToken();
+    } catch (e) {
+      Logger.error('❌ AuthViewModel.getStoredCodeToken error: $e');
+      return null;
+    }
+  }
+
+  /// codeToken'ı temizle (kullanıldıktan sonra)
+  Future<void> clearStoredCodeToken() async {
+    try {
+      await _authService.clearStoredCodeToken();
+    } catch (e) {
+      Logger.error('❌ AuthViewModel.clearStoredCodeToken error: $e');
     }
   }
 

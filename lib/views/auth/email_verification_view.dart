@@ -7,7 +7,7 @@ import '../../utils/logger.dart';
 class EmailVerificationView extends StatefulWidget {
   final String email;
   final String codeToken;
-  
+
   const EmailVerificationView({
     super.key,
     required this.email,
@@ -27,6 +27,13 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
   void initState() {
     super.initState();
     _currentCodeToken = widget.codeToken;
+
+    // Eğer codeToken yoksa, otomatik olarak kod gönder
+    if (_currentCodeToken.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _resendVerificationCode();
+      });
+    }
   }
 
   @override
@@ -63,15 +70,15 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              
+
               // MARK: - Header Section
               _buildHeaderSection(),
-              
+
               const SizedBox(height: 40),
-              
+
               // MARK: - Form Section
               _buildFormSection(),
-              
+
               const SizedBox(height: 40),
             ],
           ),
@@ -98,9 +105,9 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
             color: AppTheme.primary,
           ),
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         // Title
         Text(
           'E-posta Doğrulama',
@@ -111,9 +118,9 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
           ),
           textAlign: TextAlign.center,
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // Email Display
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -131,9 +138,9 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
             textAlign: TextAlign.center,
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Subtitle
         Text(
           'E-posta adresinize gönderilen 6 haneli doğrulama kodunu girin',
@@ -170,14 +177,14 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
           children: [
             // MARK: - Verification Code Field
             _buildVerificationCodeField(),
-            
+
             const SizedBox(height: 24),
-            
+
             // MARK: - Submit Button
             _buildSubmitButton(),
-            
+
             const SizedBox(height: 16),
-            
+
             // MARK: - Resend Code Button
             _buildResendCodeButton(),
           ],
@@ -206,7 +213,10 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: AppTheme.primary),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
       keyboardType: TextInputType.text,
       textAlign: TextAlign.center,
@@ -264,13 +274,13 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Submit Button
             SizedBox(
               height: 48,
               child: ElevatedButton(
-                onPressed: authViewModel.isLoading 
-                    ? null 
+                onPressed: authViewModel.isLoading
+                    ? null
                     : () => _handleEmailVerification(authViewModel),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
@@ -286,7 +296,9 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : const Text(
@@ -309,8 +321,8 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
     return Consumer<AuthViewModel>(
       builder: (context, authViewModel, child) {
         return TextButton(
-          onPressed: authViewModel.isLoading 
-              ? null 
+          onPressed: authViewModel.isLoading
+              ? null
               : () => _resendVerificationCode(),
           child: Text(
             'Kodu Tekrar Gönder',
@@ -328,20 +340,26 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
   // MARK: - Business Logic
   void _handleEmailVerification(AuthViewModel authViewModel) async {
     if (!_formKey.currentState!.validate()) return;
-    
-    Logger.debug('E-posta doğrulama başlatılıyor...', tag: 'EmailVerificationView');
-    
+
+    Logger.debug(
+      'E-posta doğrulama başlatılıyor...',
+      tag: 'EmailVerificationView',
+    );
+
     authViewModel.clearError();
-    
+
     final success = await authViewModel.checkEmailVerificationCode(
       code: _codeController.text.trim(),
       codeToken: _currentCodeToken,
     );
-    
+
     if (mounted) {
       if (success) {
-        Logger.debug('E-posta doğrulama başarılı', tag: 'EmailVerificationView');
-        
+        Logger.debug(
+          'E-posta doğrulama başarılı',
+          tag: 'EmailVerificationView',
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('E-posta adresiniz başarıyla doğrulandı'),
@@ -349,44 +367,55 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        
+
         // Login sayfasına geri dön
         Navigator.of(context).popUntil((route) => route.isFirst);
       } else {
-        Logger.error('E-posta doğrulama başarısız: ${authViewModel.errorMessage}', tag: 'EmailVerificationView');
+        Logger.error(
+          'E-posta doğrulama başarısız: ${authViewModel.errorMessage}',
+          tag: 'EmailVerificationView',
+        );
       }
     }
   }
 
   void _resendVerificationCode() async {
-    Logger.debug('Doğrulama kodu tekrar gönderiliyor...', tag: 'EmailVerificationView');
-    
+    Logger.debug(
+      'Doğrulama kodu tekrar gönderiliyor...',
+      tag: 'EmailVerificationView',
+    );
+
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    
+
     authViewModel.clearError();
-    
+
     // User token'ı al
     final userToken = authViewModel.currentUser?.token;
     if (userToken == null || userToken.isEmpty) {
       Logger.error('User token bulunamadı', tag: 'EmailVerificationView');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.'),
+          content: Text(
+            'Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.',
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
-    
+
     final response = await authViewModel.resendEmailVerificationCodeWithToken(
       userToken: userToken,
     );
-    
+
     if (mounted) {
       if (response != null) {
-        Logger.debug('Doğrulama kodu tekrar gönderildi', tag: 'EmailVerificationView');
-        
+        Logger.debug(
+          'Doğrulama kodu tekrar gönderildi',
+          tag: 'EmailVerificationView',
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Doğrulama kodu e-posta adresinize gönderildi'),
@@ -394,26 +423,34 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        
+
         // Yeni codeToken varsa güncelle
-        if (response.containsKey('codeToken') && response['codeToken'] != null) {
+        if (response.containsKey('codeToken') &&
+            response['codeToken'] != null) {
           final newCodeToken = response['codeToken'].toString();
           setState(() {
             _currentCodeToken = newCodeToken;
           });
-          Logger.debug('Yeni codeToken alındı ve güncellendi: ${newCodeToken.substring(0, 10)}...', tag: 'EmailVerificationView');
+          Logger.debug(
+            'Yeni codeToken alındı ve güncellendi: ${newCodeToken.substring(0, 10)}...',
+            tag: 'EmailVerificationView',
+          );
         }
       } else {
-        Logger.error('Doğrulama kodu gönderilemedi: ${authViewModel.errorMessage}', tag: 'EmailVerificationView');
-        
+        Logger.error(
+          'Doğrulama kodu gönderilemedi: ${authViewModel.errorMessage}',
+          tag: 'EmailVerificationView',
+        );
+
         // 417 hatası veya diğer hatalar için kullanıcıya bilgi ver
         String errorMessage = authViewModel.errorMessage ?? 'Kod gönderilemedi';
-        
+
         // 417 hatası için özel mesaj
         if (errorMessage.contains('Zorunlu değerler boş gönderilemez')) {
-          errorMessage = 'E-posta adresi geçersiz. Lütfen profil sayfanızdan e-posta adresinizi kontrol edin.';
+          errorMessage =
+              'E-posta adresi geçersiz. Lütfen profil sayfanızdan e-posta adresinizi kontrol edin.';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -425,4 +462,4 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
       }
     }
   }
-} 
+}

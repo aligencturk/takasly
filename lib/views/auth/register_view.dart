@@ -115,6 +115,8 @@ class _RegisterFormState extends State<_RegisterForm> {
   bool _acceptPolicy = false;
   bool _acceptKvkk = false;
 
+
+
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -179,66 +181,19 @@ class _RegisterFormState extends State<_RegisterForm> {
           tag: 'RegisterView',
         );
 
-        Map<String, dynamic>? resendResponse;
-
-        // Her zaman userToken ile resend yap (email ile değil)
-        String? tokenForResend = authViewModel.currentUser?.token;
-        if (tokenForResend == null || tokenForResend.isEmpty) {
-          // ViewModel üzerinden depodaki token'ı al
-          tokenForResend = await authViewModel.getStoredUserToken();
-        }
-
-        if (tokenForResend == null || tokenForResend.isEmpty) {
-          Logger.error(
-            '❌ userToken bulunamadı, codeToken alınamadı',
-            tag: 'RegisterView',
-          );
-          _showErrorSnackBar(
-            'Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.',
-          );
-          return;
-        }
-
+        // Kayıt başarılı, doğrudan email verification sayfasına yönlendir
         Logger.debug(
-          '🔑 Token ile resend denemesi yapılıyor...',
-          tag: 'RegisterView',
-        );
-        resendResponse = await authViewModel
-            .resendEmailVerificationCodeWithToken(userToken: tokenForResend);
-        Logger.debug(
-          '🔑 Token ile resend response: $resendResponse',
+          '✅ Kayıt başarılı, email verification sayfasına yönlendiriliyor...',
           tag: 'RegisterView',
         );
 
-        // 3) codeToken doğrula
-        final String? codeToken =
-            resendResponse != null &&
-                resendResponse['codeToken'] != null &&
-                resendResponse['codeToken'].toString().isNotEmpty
-            ? resendResponse['codeToken'].toString()
-            : null;
-
-        if (codeToken == null) {
-          Logger.error(
-            '❌ codeToken alınamadı, yönlendirme iptal edildi',
-            tag: 'RegisterView',
-          );
-          _showErrorSnackBar(
-            'Doğrulama kodu gönderilemedi. Lütfen tekrar deneyin.',
-          );
-          return;
-        }
-
-        Logger.debug(
-          '✅ codeToken hazır: ${codeToken.substring(0, 10)}...',
-          tag: 'RegisterView',
-        );
-
+        // Email verification sayfasına yönlendir
         Navigator.of(context).pushReplacementNamed(
           '/email-verification',
           arguments: {
             'email': _emailController.text.trim(),
-            'codeToken': codeToken,
+            'codeToken':
+                null, // codeToken email verification sayfasında alınacak
           },
         );
       } else {
