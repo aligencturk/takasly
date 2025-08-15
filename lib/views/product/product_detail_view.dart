@@ -24,6 +24,7 @@ import 'edit_product_view.dart';
 import '../../viewmodels/user_profile_detail_viewmodel.dart';
 import '../../services/user_service.dart';
 import '../../utils/logger.dart';
+import '../../widgets/native_ad_detail_footer.dart';
 
 // Tam ekran görsel görüntüleme sayfası
 class FullScreenImageView extends StatefulWidget {
@@ -814,11 +815,16 @@ class _ProductInfoState extends State<_ProductInfo> {
                   widget.product.productLat!.isNotEmpty &&
                   widget.product.productLong!.isNotEmpty)
                 _buildMapButtons(widget.product),
+              const SizedBox(height: 12),
+              // Harita butonlarının altına küçük native reklam
+              const NativeAdDetailFooter(),
             ],
           ),
         ),
 
-        const SizedBox(height: 80), // Bottom padding for action bar
+        const SizedBox(
+          height: 0,
+        ), // Bottom padding for action bar removed to avoid grey gap
       ],
     );
   }
