@@ -11,17 +11,23 @@ class AdMobService {
   AdMobService._internal();
 
   // App IDs (bilgi amaçlı)
-  static const String _androidAppId = 'ca-app-pub-3940256099942544~3347511713'; // Test
-  static const String _iosAppId = 'ca-app-pub-3600325889588673~5340558560'; // Prod (Info.plist'den kullanılıyor)
+  static const String _androidAppId =
+      'ca-app-pub-3940256099942544~3347511713'; // Test
+  static const String _iosAppId =
+      'ca-app-pub-3600325889588673~5340558560'; // Prod (Info.plist'den kullanılıyor)
 
   // Native Advanced Ad Unit IDs
   // Debug/Test (Google Resmi Test ID'leri)
-  static const String _androidNativeAdUnitIdTest = 'ca-app-pub-3940256099942544/2247696110';
-  static const String _iosNativeAdUnitIdTest = 'ca-app-pub-3940256099942544/3986624511';
+  static const String _androidNativeAdUnitIdTest =
+      'ca-app-pub-3940256099942544/2247696110';
+  static const String _iosNativeAdUnitIdTest =
+      'ca-app-pub-3940256099942544/3986624511';
 
-  // Production (kendi birimleriniz) - iOS prod şu an mevcut değer
-  static const String _androidNativeAdUnitIdProd = 'ca-app-pub-3940256099942544/2247696110'; // TODO: Gerçek Android prod ID ile değiştirin
-  static const String _iosNativeAdUnitIdProd = 'ca-app-pub-3600325889588673/3365147820';
+  // Production (kendi birimleriniz)
+  static const String _androidNativeAdUnitIdProd =
+      'ca-app-pub-3600325889588673/5822213790'; // Gerçek Android prod ID
+  static const String _iosNativeAdUnitIdProd =
+      'ca-app-pub-3600325889588673/3365147820';
 
   bool _isInitialized = false;
   NativeAd? _nativeAd;
@@ -32,7 +38,7 @@ class AdMobService {
   int _retryCount = 0;
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 5);
-  
+
   // Thread güvenliği için mutex
   final Completer<void> _initCompleter = Completer<void>();
   bool _isInitializing = false;
@@ -54,24 +60,34 @@ class AdMobService {
 
     try {
       Logger.info('🚀 AdMobService - AdMob başlatılıyor...');
-      
+
       // WidgetsFlutterBinding'in hazır olduğundan emin ol
       if (!WidgetsBinding.instance.isRootWidgetAttached) {
-        Logger.warning('⚠️ AdMobService - WidgetsBinding henüz hazır değil, bekleniyor...');
+        Logger.warning(
+          '⚠️ AdMobService - WidgetsBinding henüz hazır değil, bekleniyor...',
+        );
         await Future.delayed(const Duration(milliseconds: 1000));
       }
-      
+
       // Flutter binding'in tamamen hazır olduğundan emin ol
       WidgetsFlutterBinding.ensureInitialized();
-      
+
       // AdMob'u doğrudan başlat
       await MobileAds.instance.initialize();
-      
+
       // Test modunu etkinleştir (sadece debug modda)
       if (kDebugMode) {
-        Logger.info('🔧 AdMobService - Debug modda test cihazları ayarlanıyor...');
+        Logger.info(
+          '🔧 AdMobService - Debug modda test cihazları ayarlanıyor...',
+        );
         await MobileAds.instance.updateRequestConfiguration(
-          RequestConfiguration(testDeviceIds: ['EMULATOR']),
+          RequestConfiguration(
+            testDeviceIds: [
+              'EMULATOR', // Android Emulator
+              // Gerçek test cihazları için ID'leri buraya ekleyin
+              // Logcat'te "I/Ads: Use RequestConfiguration.Builder.setTestDeviceIds() to get test ads on this device." mesajını bulun
+            ],
+          ),
         );
       }
 
@@ -87,8 +103,6 @@ class AdMobService {
     }
   }
 
-
-
   /// Uygulama ID'sini al
   String get appId {
     if (Platform.isAndroid) {
@@ -103,15 +117,39 @@ class AdMobService {
   String get nativeAdUnitId {
     final bool isDebug = kDebugMode;
     if (Platform.isAndroid) {
-      final id = isDebug ? _androidNativeAdUnitIdTest : _androidNativeAdUnitIdProd;
-      Logger.debug('📡 AdMobService - Android NativeAdUnitId: $id (debug=$isDebug)');
+      final id = isDebug
+          ? _androidNativeAdUnitIdTest
+          : _androidNativeAdUnitIdProd;
+      Logger.info(
+        '📡 AdMobService - Android NativeAdUnitId: $id (debug=$isDebug)',
+      );
+      if (isDebug) {
+        Logger.warning(
+          '⚠️ AdMobService - DEBUG MODDA TEST REKLAMLAR GÖSTERİLİYOR!',
+        );
+      } else {
+        Logger.info(
+          '✅ AdMobService - RELEASE MODDA GERÇEK REKLAMLAR GÖSTERİLİYOR!',
+        );
+      }
       return id;
     } else if (Platform.isIOS) {
       final id = isDebug ? _iosNativeAdUnitIdTest : _iosNativeAdUnitIdProd;
-      Logger.debug('📡 AdMobService - iOS NativeAdUnitId: $id (debug=$isDebug)');
+      Logger.info('📡 AdMobService - iOS NativeAdUnitId: $id (debug=$isDebug)');
+      if (isDebug) {
+        Logger.warning(
+          '⚠️ AdMobService - DEBUG MODDA TEST REKLAMLAR GÖSTERİLİYOR!',
+        );
+      } else {
+        Logger.info(
+          '✅ AdMobService - RELEASE MODDA GERÇEK REKLAMLAR GÖSTERİLİYOR!',
+        );
+      }
       return id;
     }
-    return isDebug ? _androidNativeAdUnitIdTest : _androidNativeAdUnitIdProd; // Default
+    return isDebug
+        ? _androidNativeAdUnitIdTest
+        : _androidNativeAdUnitIdProd; // Default
   }
 
   /// Native reklam yükle (performans optimizasyonlu)
@@ -129,7 +167,9 @@ class AdMobService {
 
     // Eğer daha önce hata aldıysak ve maksimum deneme sayısına ulaştıysak, tekrar deneme
     if (_hasFailed && _retryCount >= _maxRetries) {
-      Logger.warning('⚠️ AdMobService - Maksimum deneme sayısına ulaşıldı, reklam yüklenmeyecek');
+      Logger.warning(
+        '⚠️ AdMobService - Maksimum deneme sayısına ulaşıldı, reklam yüklenmeyecek',
+      );
       return;
     }
 
@@ -143,11 +183,12 @@ class AdMobService {
     _retryCount++;
 
     try {
-      Logger.info('🚀 AdMobService - Native reklam yükleniyor... (Deneme: $_retryCount)');
-      
+      Logger.info(
+        '🚀 AdMobService - Native reklam yükleniyor... (Deneme: $_retryCount)',
+      );
+
       // Reklam yükleme işlemini arka planda yap
       await _loadAdInBackground();
-      
     } catch (e) {
       Logger.error('❌ AdMobService - Native reklam yüklenirken hata: $e');
       _handleLoadError();
@@ -160,10 +201,10 @@ class AdMobService {
   bool _isAdValid() {
     try {
       if (_nativeAd == null) return false;
-      
+
       // Reklamın durumunu kontrol et - daha detaylı kontrol
       if (!_isAdLoaded) return false;
-      
+
       return true;
     } catch (e) {
       Logger.error('❌ AdMobService - Reklam gecerlilik kontrolu hatasi: $e');
@@ -192,7 +233,9 @@ class AdMobService {
             _retryCount = 0; // Başarılı yüklemede sayacı sıfırla
           },
           onAdFailedToLoad: (ad, error) {
-            Logger.error('❌ AdMobService - Native reklam yuklenemedi: ${error.message}');
+            Logger.error(
+              '❌ AdMobService - Native reklam yuklenemedi: ${error.message}',
+            );
             Logger.error('❌ AdMobService - Error code: ${error.code}');
             _handleLoadError();
             _safeDisposeAd(ad as NativeAd);
@@ -219,7 +262,6 @@ class AdMobService {
           throw TimeoutException('Reklam yukleme zaman asimi');
         },
       );
-      
     } catch (e) {
       Logger.error('❌ AdMobService - Arka plan reklam yukleme hatasi: $e');
       // Hata durumunda reklamı temizle
@@ -241,10 +283,10 @@ class AdMobService {
   void _handleLoadError() {
     _isAdLoaded = false;
     _hasFailed = true;
-    
+
     // Hata durumunda reklamı temizle
     _disposeCurrentAd();
-    
+
     // Eğer maksimum deneme sayısına ulaşmadıysak, tekrar dene
     if (_retryCount < _maxRetries) {
       Logger.info('🔄 AdMobService - $_retryDelay sonra tekrar denenecek...');
@@ -276,7 +318,9 @@ class AdMobService {
     try {
       // Eğer nativeAd objesi varsa ama _isAdLoaded false ise, true döndür
       if (_nativeAd != null && !_isAdLoaded && _isAdValid()) {
-        Logger.warning('⚠️ AdMobService - nativeAd mevcut ama _isAdLoaded false, duzeltiliyor...');
+        Logger.warning(
+          '⚠️ AdMobService - nativeAd mevcut ama _isAdLoaded false, duzeltiliyor...',
+        );
         _isAdLoaded = true;
       }
       return _isAdLoaded && _isAdValid();
@@ -326,4 +370,4 @@ class AdMobService {
 
   /// Yükleme durumunu kontrol et
   bool get isLoading => _isLoading;
-} 
+}

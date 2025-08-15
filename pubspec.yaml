@@ -4,7 +4,7 @@ description: "Takas uygulaması - E-ticaret mantığında ürün takası platfor
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+6
+version: 1.0.0+7
 
 environment:
   sdk: ^3.8.1
@@ -165,6 +165,8 @@ flutter_launcher_icons:
   image_path: "assets/logo/takasly image.png"
   min_sdk_android: 23 # android min sdk min:16, default 21
   remove_alpha_ios: false
+  adaptive_icon_background: "#10B981"
+  adaptive_icon_foreground: "assets/logo/takasly image.png"
   web:
     generate: true
     image_path: "assets/logo/takasly image.png"

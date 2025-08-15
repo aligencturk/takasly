@@ -384,20 +384,10 @@ class ProfileProduct {
 
   factory ProfileReview.fromJson(Map<String, dynamic> json) {
     try {
-      Logger.debug('🔍 ProfileReview.fromJson - Parsing: $json', tag: 'ProfileReview');
-      Logger.debug('🔍 ProfileReview.fromJson - Available keys: ${json.keys.toList()}', tag: 'ProfileReview');
-      
       // API'den gelen farklı field isimlerini kontrol et
       final reviewID = json['reviewID'] ?? json['id'] ?? 0;
       // Kullanıcı ID'sini farklı olası alanlardan oku
       int? reviewerUserID;
-      Logger.debug('🔍 ProfileReview.fromJson - All JSON data: $json', tag: 'ProfileReview');
-      Logger.debug('🔍 ProfileReview.fromJson - Checking revieweeID: ${json['revieweeID']}', tag: 'ProfileReview');
-      Logger.debug('🔍 ProfileReview.fromJson - Checking reviewerID: ${json['reviewerID']}', tag: 'ProfileReview');
-      Logger.debug('🔍 ProfileReview.fromJson - Checking userID: ${json['userID']}', tag: 'ProfileReview');
-      Logger.debug('🔍 ProfileReview.fromJson - Checking userId: ${json['userId']}', tag: 'ProfileReview');
-      Logger.debug('🔍 ProfileReview.fromJson - Checking fromUserID: ${json['fromUserID']}', tag: 'ProfileReview');
-      Logger.debug('🔍 ProfileReview.fromJson - Checking reviewerUserID: ${json['reviewerUserID']}', tag: 'ProfileReview');
       
       final dynamic reviewerIdRaw = json['revieweeID'] ?? json['reviewerID'] ?? json['userID'] ?? json['userId'] ?? json['fromUserID'] ?? json['reviewerUserID'] ?? json['revieweeUserID'] ?? json['user_id'] ?? json['reviewer_id'] ?? json['reviewee_id'] ?? json['from_user_id'] ?? json['fromUserId'] ?? json['reviewerId'] ?? json['revieweeId'];
       if (reviewerIdRaw is int) {
@@ -406,7 +396,6 @@ class ProfileProduct {
         reviewerUserID = int.tryParse(reviewerIdRaw);
       }
       
-      Logger.debug('🔍 ProfileReview.fromJson - Final reviewerUserID: $reviewerUserID (from raw: $reviewerIdRaw)', tag: 'ProfileReview');
       final rating = json['rating'] ?? 0;
       final comment = json['comment'] ?? '';
       final reviewDate = json['reviewDate'] ?? json['date'] ?? '';
@@ -415,62 +404,49 @@ class ProfileProduct {
       String reviewerName = '';
       if (json['revieweeName'] != null && json['revieweeName'].toString().isNotEmpty && json['revieweeName'].toString() != 'null') {
         reviewerName = json['revieweeName'].toString();
-        Logger.debug('🔍 ProfileReview.fromJson - Using revieweeName: $reviewerName', tag: 'ProfileReview');
       } else if (json['reviewerName'] != null && json['reviewerName'].toString().isNotEmpty && json['reviewerName'].toString() != 'null') {
         reviewerName = json['reviewerName'].toString();
-        Logger.debug('🔍 ProfileReview.fromJson - Using reviewerName: $reviewerName', tag: 'ProfileReview');
       } else if (json['name'] != null && json['name'].toString().isNotEmpty && json['name'].toString() != 'null') {
         reviewerName = json['name'].toString();
-        Logger.debug('🔍 ProfileReview.fromJson - Using name: $reviewerName', tag: 'ProfileReview');
       } else if (json['userName'] != null && json['userName'].toString().isNotEmpty && json['userName'].toString() != 'null') {
         reviewerName = json['userName'].toString();
-        Logger.debug('🔍 ProfileReview.fromJson - Using userName: $reviewerName', tag: 'ProfileReview');
       } else {
         Logger.warning('⚠️ ProfileReview.fromJson - No valid reviewer name found', tag: 'ProfileReview');
         reviewerName = 'Kullanıcı';
       }
       
-             // Reviewer image için farklı field isimlerini kontrol et
-       String? reviewerImage;
-       if (json['revieweeImage'] != null && json['revieweeImage'].toString().isNotEmpty && json['revieweeImage'].toString() != 'null') {
-         reviewerImage = json['revieweeImage'].toString();
-         Logger.debug('🔍 ProfileReview.fromJson - Using revieweeImage: $reviewerImage', tag: 'ProfileReview');
-       } else if (json['reviewerImage'] != null && json['reviewerImage'].toString().isNotEmpty && json['reviewerImage'].toString() != 'null') {
-         reviewerImage = json['reviewerImage'].toString();
-         Logger.debug('🔍 ProfileReview.fromJson - Using reviewerImage: $reviewerImage', tag: 'ProfileReview');
-       } else if (json['image'] != null && json['image'].toString().isNotEmpty && json['image'].toString() != 'null') {
-         reviewerImage = json['image'].toString();
-         Logger.debug('🔍 ProfileReview.fromJson - Using image: $reviewerImage', tag: 'ProfileReview');
-       } else if (json['avatar'] != null && json['avatar'].toString().isNotEmpty && json['avatar'].toString() != 'null') {
-         reviewerImage = json['avatar'].toString();
-         Logger.debug('🔍 ProfileReview.fromJson - Using avatar: $reviewerImage', tag: 'ProfileReview');
-       }
+      // Reviewer image için farklı field isimlerini kontrol et
+      String? reviewerImage;
+      if (json['revieweeImage'] != null && json['revieweeImage'].toString().isNotEmpty && json['revieweeImage'].toString() != 'null') {
+        reviewerImage = json['revieweeImage'].toString();
+      } else if (json['reviewerImage'] != null && json['reviewerImage'].toString().isNotEmpty && json['reviewerImage'].toString() != 'null') {
+        reviewerImage = json['reviewerImage'].toString();
+      } else if (json['image'] != null && json['image'].toString().isNotEmpty && json['image'].toString() != 'null') {
+        reviewerImage = json['image'].toString();
+      } else if (json['avatar'] != null && json['avatar'].toString().isNotEmpty && json['avatar'].toString() != 'null') {
+        reviewerImage = json['avatar'].toString();
+      }
 
-       // Reviewee name için - kim için yorum yapıldı
-       String? revieweeName;
-       if (json['revieweeName'] != null && json['revieweeName'].toString().isNotEmpty && json['revieweeName'].toString() != 'null') {
-         revieweeName = json['revieweeName'].toString();
-         Logger.debug('🔍 ProfileReview.fromJson - Using revieweeName: $revieweeName', tag: 'ProfileReview');
-       } else if (json['toUserName'] != null && json['toUserName'].toString().isNotEmpty && json['toUserName'].toString() != 'null') {
-         revieweeName = json['toUserName'].toString();
-         Logger.debug('🔍 ProfileReview.fromJson - Using toUserName: $revieweeName', tag: 'ProfileReview');
-       } else if (json['targetUserName'] != null && json['targetUserName'].toString().isNotEmpty && json['targetUserName'].toString() != 'null') {
-         revieweeName = json['targetUserName'].toString();
-         Logger.debug('🔍 ProfileReview.fromJson - Using targetUserName: $revieweeName', tag: 'ProfileReview');
-       }
-       
-       final result = ProfileReview(
-         reviewID: reviewID,
-         reviewerUserID: reviewerUserID,
-         reviewerName: reviewerName,
-         reviewerImage: reviewerImage,
-         revieweeName: revieweeName,
-         rating: rating,
-         comment: comment,
-         reviewDate: reviewDate,
-       );
+      // Reviewee name için - kim için yorum yapıldı
+      String? revieweeName;
+      if (json['revieweeName'] != null && json['revieweeName'].toString().isNotEmpty && json['revieweeName'].toString() != 'null') {
+        revieweeName = json['revieweeName'].toString();
+      } else if (json['toUserName'] != null && json['toUserName'].toString().isNotEmpty && json['toUserName'].toString() != 'null') {
+        revieweeName = json['toUserName'].toString();
+      } else if (json['targetUserName'] != null && json['targetUserName'].toString().isNotEmpty && json['targetUserName'].toString() != 'null') {
+        revieweeName = json['targetUserName'].toString();
+      }
       
-      Logger.debug('🔍 ProfileReview.fromJson - Parsed successfully: ID=${result.reviewID}, Name="${result.reviewerName}", Rating=${result.rating}, Comment="${result.comment}"', tag: 'ProfileReview');
+      final result = ProfileReview(
+        reviewID: reviewID,
+        reviewerUserID: reviewerUserID,
+        reviewerName: reviewerName,
+        reviewerImage: reviewerImage,
+        revieweeName: revieweeName,
+        rating: rating,
+        comment: comment,
+        reviewDate: reviewDate,
+      );
       
       return result;
     } catch (e) {

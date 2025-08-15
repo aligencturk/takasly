@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
-import '../../models/product_filter.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/notification_viewmodel.dart';
 
@@ -67,13 +66,13 @@ class _HomeViewState extends State<HomeView> {
       if (authViewModelForLocation.currentUser != null) {
         final currentFilter = productViewModel.currentFilter;
         // Kullanıcının kendi filtresini ezmemek için sadece varsayılanda ve aktif filtre yokken uygula
-        if (currentFilter.sortType == SortType.defaultSort.value &&
+        if (currentFilter.sortType == 'default' &&
             !currentFilter.hasActiveFilters) {
           Logger.info(
             '📍 HomeView - Logged-in user detected, applying nearest-to-me sorting',
           );
           await productViewModel.applyFilter(
-            currentFilter.copyWith(sortType: SortType.nearestToMe.value),
+            currentFilter.copyWith(sortType: 'location'),
           );
         }
       }
@@ -197,6 +196,36 @@ class _HomeViewState extends State<HomeView> {
               }
             }
           } else {
+            // Ana sayfa butonuna (index 0) tekrar basıldığında sayfayı yenile
+            if (index == 0 && _currentIndex == 0) {
+              Logger.info(
+                '🔄 HomeView - Ana sayfa butonuna tekrar basıldı, sayfa yenileniyor',
+              );
+
+              final productViewModel = Provider.of<ProductViewModel>(
+                context,
+                listen: false,
+              );
+
+              // Ürünleri yenile
+              await productViewModel.refreshProducts();
+
+              // Favorileri yenile
+              await productViewModel.loadFavoriteProducts();
+
+              // Kategorileri yenile (eğer boşsa)
+              if (productViewModel.categories.isEmpty) {
+                productViewModel.loadCategories();
+              }
+
+              // UI'ın yenilenmesini garanti altına al
+              if (mounted) {
+                setState(() {
+                  // State'i yenilemek için boş bir setState çağrısı
+                });
+              }
+            }
+
             setState(() {
               _currentIndex = index;
             });
@@ -227,10 +256,22 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _buildHomeTab() {
     return RefreshIndicator(
-      onRefresh: () => Provider.of<ProductViewModel>(
-        context,
-        listen: false,
-      ).refreshProducts(),
+      onRefresh: () async {
+        final productViewModel = Provider.of<ProductViewModel>(
+          context,
+          listen: false,
+        );
+
+        // Mevcut filtreleri koruyarak yenile
+        await productViewModel.refreshProducts();
+
+        // UI'ın yenilenmesini garanti altına al
+        if (mounted) {
+          setState(() {
+            // State'i yenilemek için boş bir setState çağrısı
+          });
+        }
+      },
       color: Colors.grey[600],
       child: CustomScrollView(
         controller: _scrollController,
@@ -266,6 +307,7 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
+        // Ürün listesi null safety kontrolü
         if (vm.products.isEmpty) {
           return const SliverFillRemaining(
             child: Center(
@@ -277,16 +319,64 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
-        final int productCount = vm.products.length;
+        // Ürün listesi geçerlilik kontrolü
+        final validProducts = vm.products
+            .where(
+              (product) =>
+                  product != null &&
+                  product.id != null &&
+                  product.id.isNotEmpty,
+            )
+            .toList();
+
+        if (validProducts.isEmpty) {
+          Logger.warning(
+            '⚠️ HomeView - No valid products found after filtering',
+          );
+          return const SliverFillRemaining(
+            child: Center(
+              child: Text(
+                'Geçerli ürün bulunamadı.',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            ),
+          );
+        }
+
+        final int productCount =
+            validProducts.length; // Geçerli ürün sayısını kullan
         Logger.info(
           '📊 HomeView - Toplam ürün: $productCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}',
         );
+
+        // Ürün listesi null safety kontrolü
+        if (productCount == 0) {
+          return const SliverFillRemaining(
+            child: Center(
+              child: Text(
+                'Gösterilecek ürün bulunamadı.',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            ),
+          );
+        }
 
         // Ürünleri 8'lik parçalara böl, her parçadan sonra geniş reklam yerleştir
         final List<Widget> sections = [];
         for (int start = 0; start < productCount; start += 8) {
           final end = math.min(start + 8, productCount);
-          final chunk = vm.products.sublist(start, end);
+          final chunk = validProducts.sublist(
+            start,
+            end,
+          ); // Geçerli ürünlerden chunk oluştur
+
+          // Chunk null safety kontrolü
+          if (chunk.isEmpty) {
+            Logger.warning(
+              '⚠️ HomeView - Empty chunk detected at start: $start',
+            );
+            continue;
+          }
 
           sections.add(
             SliverPadding(
@@ -303,25 +393,55 @@ class _HomeViewState extends State<HomeView> {
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final product = chunk[index];
 
-                  bool isOwnProduct = false;
-                  if (vm.myProducts.isNotEmpty) {
-                    isOwnProduct = vm.myProducts.any(
-                      (myProduct) => myProduct.id == product.id,
+                  // Null safety kontrolü
+                  if (product == null) {
+                    Logger.warning(
+                      '⚠️ HomeView - Null product detected at index $index',
                     );
-                  } else {
-                    final authViewModel = Provider.of<AuthViewModel>(
-                      context,
-                      listen: false,
-                    );
-                    final currentUserId = authViewModel.currentUser?.id;
-                    isOwnProduct =
-                        currentUserId != null &&
-                        product.ownerId == currentUserId;
+                    return const SizedBox.shrink();
                   }
 
+                  // Product ID kontrolü
+                  if (product.id == null || product.id.isEmpty) {
+                    Logger.warning(
+                      '⚠️ HomeView - Invalid product ID at index $index: ${product.id}',
+                    );
+                    return const SizedBox.shrink();
+                  }
+
+                  bool isOwnProduct = false;
+                  try {
+                    if (vm.myProducts.isNotEmpty) {
+                      isOwnProduct = vm.myProducts.any(
+                        (myProduct) => myProduct.id == product.id,
+                      );
+                    } else {
+                      final authViewModel = Provider.of<AuthViewModel>(
+                        context,
+                        listen: false,
+                      );
+                      final currentUserId = authViewModel.currentUser?.id;
+                      isOwnProduct =
+                          currentUserId != null &&
+                          product.ownerId == currentUserId;
+                    }
+                  } catch (e) {
+                    Logger.error(
+                      '❌ HomeView - Error checking product ownership: $e',
+                    );
+                    isOwnProduct = false;
+                  }
+
+                  // Unique hero tag oluştur
+                  final uniqueHeroTag =
+                      'home_product_${product.id}_${DateTime.now().millisecondsSinceEpoch}_$index';
+
                   return ProductCard(
+                    key: ValueKey(
+                      'product_${product.id}_$index',
+                    ), // Unique key ekle
                     product: product,
-                    heroTag: 'home_product_${product.id}_${start + index}',
+                    heroTag: uniqueHeroTag,
                     hideFavoriteIcon: isOwnProduct,
                   );
                 }, childCount: chunk.length),
