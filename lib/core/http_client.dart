@@ -496,22 +496,41 @@ class HttpClient {
         }
       }
 
-      // Özel durum: 417 statusCode'unda kullanıcıya görünür ama genel hata mesajı ver
+      // Özel durum: 417 statusCode'unda kullanıcıya görünür hata mesajı ver
       if (response.statusCode == ApiConstants.expectationFailed) {
         print('❌ 417 Status - Expectation Failed');
-        // Sunucudan gelen spesifik mesaj (örn. "179 saniye") yerine genel bir mesaj göster
-        const String genericMessage =
-            'Çok sık istek yapıldı. Lütfen biraz sonra tekrar deneyin.';
-        // Log için orijinal gövdeyi yazdırmaya devam edelim (kullanıcıya gösterilmeyecek)
+        String errorMessage = ErrorMessages.unknownError;
         if (response.body.isNotEmpty) {
           try {
             final data = json.decode(response.body);
             print('❌ 417 - Parsed error data: $data');
+            if (data['error_message'] != null &&
+                data['error_message'] is String) {
+              errorMessage = data['error_message'];
+            } else if (data['message'] != null && data['message'] is String) {
+              errorMessage = data['message'];
+            } else if (data['error'] != null && data['error'] is String) {
+              errorMessage = data['error'];
+            }
           } catch (e) {
             print('⚠️ 417 - Failed to parse error JSON: $e');
+            errorMessage = response.body; // Raw fallback
           }
         }
-        return ApiResponse<T>.error(genericMessage);
+
+        // Cooldown/bekleme içeren mesajları kurumsal mesaja çevir, diğerlerini aynen ver
+        final String lower = errorMessage.toLowerCase();
+        final bool looksLikeCooldown =
+            lower.contains('saniye') ||
+            lower.contains('bekleyin') ||
+            lower.contains('çok sık') ||
+            RegExp(r"\d+\s*saniye").hasMatch(lower);
+        if (looksLikeCooldown) {
+          errorMessage =
+              'Çok sık istek yapıldı. Lütfen biraz sonra tekrar deneyin.';
+        }
+
+        return ApiResponse<T>.error(errorMessage);
       }
 
       // Özel durum: 403 statusCode'unda kullanıcıya görünür hata mesajı ver

@@ -1378,8 +1378,33 @@ class _ProfileViewState extends State<ProfileView>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/add-product');
+                    onPressed: () async {
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/add-product',
+                      );
+                      if (!mounted) return;
+
+                      if (result == true) {
+                        // Sadece ilan sayısı ve ilan listesi için gerekli minimal yenileme
+                        final userViewModel = Provider.of<UserViewModel>(
+                          context,
+                          listen: false,
+                        );
+                        final productViewModel = Provider.of<ProductViewModel>(
+                          context,
+                          listen: false,
+                        );
+
+                        // Kullanıcı toplamları güncellensin (ilan sayısı vs.)
+                        await userViewModel.forceRefreshUser();
+
+                        // 'İlanlarım' sekmesi datasını yenile
+                        final userId = userViewModel.currentUser?.id;
+                        if (userId != null) {
+                          await productViewModel.loadUserProducts(userId);
+                        }
+                      }
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
