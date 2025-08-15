@@ -17,6 +17,7 @@ import '../../widgets/skeletons/favorite_grid_skeleton.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 import 'trade_detail_view.dart';
+import '../../widgets/native_ad_trade_card.dart';
 
 class TradeView extends StatefulWidget {
   final int initialTabIndex;
@@ -405,420 +406,450 @@ class _TradeViewState extends State<TradeView>
           child: Column(
             children: [
               Expanded(
-                child: ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: trades.length,
-                  itemBuilder: (context, index) {
-                    final trade = trades[index];
+                child: Builder(
+                  builder: (context) {
+                    // Her 5 takastan sonra 1 reklam kartı ekle
+                    const int adInterval = 4;
+                    final int adCount = trades.isEmpty
+                        ? 0
+                        : (trades.length / adInterval).floor();
+                    final int totalItemCount = trades.length + adCount;
 
-                    // TradeViewModel'den güncel trade bilgisini al
-                    final updatedTrade =
-                        tradeViewModel.getTradeByOfferId(trade.offerID) ??
-                        trade;
+                    return ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: totalItemCount,
+                      itemBuilder: (context, displayIndex) {
+                        // Reklam yerleşimi: 5 takas + 1 reklam = 6'lı bloklar
+                        if (displayIndex != 0 &&
+                            (displayIndex + 1) % (adInterval + 1) == 0) {
+                          return const NativeAdTradeCard();
+                        }
 
-                    // Debug: Tüm trade'lerin durumunu log'la
-                    Logger.info(
-                      '🔍 Trade #${updatedTrade.offerID} render ediliyor:',
-                      tag: 'TradeView',
-                    );
-                    Logger.info(
-                      '  • senderStatusID: ${updatedTrade.senderStatusID}',
-                      tag: 'TradeView',
-                    );
-                    Logger.info(
-                      '  • receiverStatusID: ${updatedTrade.receiverStatusID}',
-                      tag: 'TradeView',
-                    );
-                    Logger.info(
-                      '  • senderStatusTitle: "${updatedTrade.senderStatusTitle}"',
-                      tag: 'TradeView',
-                    );
-                    Logger.info(
-                      '  • receiverStatusTitle: "${updatedTrade.receiverStatusTitle}"',
-                      tag: 'TradeView',
-                    );
-                    Logger.info(
-                      '  • isSenderConfirm: ${updatedTrade.isSenderConfirm}',
-                      tag: 'TradeView',
-                    );
-                    Logger.info(
-                      '  • isReceiverConfirm: ${updatedTrade.isReceiverConfirm}',
-                      tag: 'TradeView',
-                    );
+                        // Görünen index'i veri index'ine dönüştür
+                        final int numAdsBefore =
+                            (displayIndex / (adInterval + 1)).floor();
+                        final int dataIndex = displayIndex - numAdsBefore;
+                        final trade = trades[dataIndex];
 
-                    // Mevcut kullanıcının durumunu belirle
-                    final currentUserId = tradeViewModel.currentUserId;
-                    int currentUserStatusID;
-                    bool currentUserConfirmStatus;
+                        // TradeViewModel'den güncel trade bilgisini al
+                        final updatedTrade =
+                            tradeViewModel.getTradeByOfferId(trade.offerID) ??
+                            trade;
 
-                    final currentUserIdInt =
-                        int.tryParse(currentUserId ?? '0') ?? 0;
-                    if (currentUserIdInt == updatedTrade.senderUserID) {
-                      currentUserStatusID = updatedTrade.senderStatusID;
-                      currentUserConfirmStatus = updatedTrade.isSenderConfirm;
-                    } else if (currentUserIdInt ==
-                        updatedTrade.receiverUserID) {
-                      currentUserStatusID = updatedTrade.receiverStatusID;
-                      currentUserConfirmStatus = updatedTrade.isReceiverConfirm;
-                    } else {
-                      // Varsayılan olarak receiver durumunu kullan
-                      currentUserStatusID = updatedTrade.receiverStatusID;
-                      currentUserConfirmStatus = updatedTrade.isReceiverConfirm;
-                    }
-
-                    // Buton gösterme koşullarını kontrol et
-                    bool shouldShowButtons = false;
-
-                    // StatusID=1 (Beklemede) olan trade'ler için kontrol
-                    if (currentUserStatusID == 1) {
-                      // Henüz onaylanmamışsa butonları göster
-                      if (!currentUserConfirmStatus) {
-                        shouldShowButtons = true;
+                        // Debug: Tüm trade'lerin durumunu log'la
                         Logger.info(
-                          '✅ Trade #${updatedTrade.offerID} için henüz onaylanmamış, butonlar gösterilecek',
+                          '🔍 Trade #${updatedTrade.offerID} render ediliyor:',
                           tag: 'TradeView',
                         );
-                      } else {
-                        shouldShowButtons =
-                            false; // Onaylanmışsa "onay bekliyor" mesajı gösterilecek
                         Logger.info(
-                          '❌ Trade #${updatedTrade.offerID} için butonlar gösterilmeyecek (zaten onaylanmış), "onay bekliyor" mesajı gösterilecek',
+                          '  • senderStatusID: ${updatedTrade.senderStatusID}',
                           tag: 'TradeView',
                         );
-                      }
-                    }
-                    // Diğer durumlar için butonlar TradeCard'da gösterilir
-                    else {
-                      shouldShowButtons = false;
-                      Logger.info(
-                        '✅ Trade #${updatedTrade.offerID} için statusID=$currentUserStatusID, butonlar TradeCard\'da gösterilecek',
-                        tag: 'TradeView',
-                      );
-                    }
+                        Logger.info(
+                          '  • receiverStatusID: ${updatedTrade.receiverStatusID}',
+                          tag: 'TradeView',
+                        );
+                        Logger.info(
+                          '  • senderStatusTitle: "${updatedTrade.senderStatusTitle}"',
+                          tag: 'TradeView',
+                        );
+                        Logger.info(
+                          '  • receiverStatusTitle: "${updatedTrade.receiverStatusTitle}"',
+                          tag: 'TradeView',
+                        );
+                        Logger.info(
+                          '  • isSenderConfirm: ${updatedTrade.isSenderConfirm}',
+                          tag: 'TradeView',
+                        );
+                        Logger.info(
+                          '  • isReceiverConfirm: ${updatedTrade.isReceiverConfirm}',
+                          tag: 'TradeView',
+                        );
 
-                    // Ürün bilgilerini kontrol et
-                    final myProduct = _getMyProduct(updatedTrade);
-                    final theirProduct = _getTheirProduct(updatedTrade);
-                    Logger.info(
-                      '  • MyProductID: ${myProduct?.productID}',
-                      tag: 'TradeView',
-                    );
-                    Logger.info(
-                      '  • TheirProductID: ${theirProduct?.productID}',
-                      tag: 'TradeView',
-                    );
-                    Logger.info(
-                      '  • ShouldShowButtons: $shouldShowButtons',
-                      tag: 'TradeView',
-                    );
+                        // Mevcut kullanıcının durumunu belirle
+                        final currentUserId = tradeViewModel.currentUserId;
+                        int currentUserStatusID;
+                        bool currentUserConfirmStatus;
 
-                    // "Takası Tamamla" butonunun gösterilip gösterilmeyeceğini kontrol et
-                    bool shouldShowCompleteButton = false;
-                    if (currentUserStatusID == 2) {
-                      // Karşı tarafın durumunu kontrol et
-                      int otherUserStatusID;
-                      if (currentUserIdInt == updatedTrade.senderUserID) {
-                        otherUserStatusID = updatedTrade.receiverStatusID;
-                      } else {
-                        otherUserStatusID = updatedTrade.senderStatusID;
-                      }
-                      // Karşı taraf da onayladıysa (statusID >= 2) "Takası Tamamla" butonu göster
-                      shouldShowCompleteButton = otherUserStatusID >= 2;
-                    } else if (currentUserStatusID == 4) {
-                      // Karşı tarafın durumunu kontrol et
-                      int otherUserStatusID;
-                      if (currentUserIdInt == updatedTrade.senderUserID) {
-                        otherUserStatusID = updatedTrade.receiverStatusID;
-                      } else {
-                        otherUserStatusID = updatedTrade.senderStatusID;
-                      }
-                      // Karşı taraf henüz tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
-                      // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
-                      shouldShowCompleteButton = otherUserStatusID < 4;
-                    }
-                    Logger.info(
-                      '  • ShouldShowCompleteButton: $shouldShowCompleteButton',
-                      tag: 'TradeView',
-                    );
+                        final currentUserIdInt =
+                            int.tryParse(currentUserId ?? '0') ?? 0;
+                        if (currentUserIdInt == updatedTrade.senderUserID) {
+                          currentUserStatusID = updatedTrade.senderStatusID;
+                          currentUserConfirmStatus =
+                              updatedTrade.isSenderConfirm;
+                        } else if (currentUserIdInt ==
+                            updatedTrade.receiverUserID) {
+                          currentUserStatusID = updatedTrade.receiverStatusID;
+                          currentUserConfirmStatus =
+                              updatedTrade.isReceiverConfirm;
+                        } else {
+                          // Varsayılan olarak receiver durumunu kullan
+                          currentUserStatusID = updatedTrade.receiverStatusID;
+                          currentUserConfirmStatus =
+                              updatedTrade.isReceiverConfirm;
+                        }
 
-                    // "Puan Ver" butonu artık TradeCard'da kendi mantığıyla kontrol ediliyor
-                    Logger.info(
-                      '  • Review button logic handled by TradeCard',
-                      tag: 'TradeView',
-                    );
+                        // Buton gösterme koşullarını kontrol et
+                        bool shouldShowButtons = false;
 
-                    return Container(
-                      margin: EdgeInsets.only(bottom: 12),
-                      child: TradeCard(
-                        trade: updatedTrade,
-                        currentUserId: currentUserId.toString(),
-                        showButtons:
-                            shouldShowButtons, // Sadece shouldShowButtons değerini kullan
-                        onTap: () {
-                          // Takas detayına git
-                          Logger.info(
-                            'Takas detayına gidiliyor: ${updatedTrade.offerID}',
-                            tag: 'TradeView',
-                          );
-                        },
-                        onDetailTap: () {
-                          // Takas detay sayfasına git
-                          Logger.info(
-                            'Takas detay sayfasına gidiliyor: ${updatedTrade.offerID}',
-                            tag: 'TradeView',
-                          );
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => TradeDetailView(
-                                offerID: updatedTrade.offerID,
-                              ),
-                            ),
-                          );
-                        },
-                        onReject: (trade) {
-                          // Reddetme sebebi dialog'unu göster
-                          _showRejectReasonDialog(trade);
-                        },
-                        onReview: (UserTrade trade, int rating, String comment) async {
-                          // Puan Ver butonu tıklandığında yorum yapma işlemini gerçekleştir
-                          Logger.info(
-                            'Puan Ver butonu tıklandı - Trade #${trade.offerID}, Rating: $rating, Comment: $comment',
-                            tag: 'TradeView',
-                          );
-                          final success = await _reviewTrade(
-                            trade,
-                            rating,
-                            comment,
-                          );
-
-                          // Başarılı yorum sonrası takasları yeniden yükle
-                          if (success &&
-                              _currentUserId != null &&
-                              _tradeViewModel != null) {
+                        // StatusID=1 (Beklemede) olan trade'ler için kontrol
+                        if (currentUserStatusID == 1) {
+                          // Henüz onaylanmamışsa butonları göster
+                          if (!currentUserConfirmStatus) {
+                            shouldShowButtons = true;
                             Logger.info(
-                              '🔄 Yorum sonrası takaslar yeniden yükleniyor...',
+                              '✅ Trade #${updatedTrade.offerID} için henüz onaylanmamış, butonlar gösterilecek',
                               tag: 'TradeView',
                             );
-                            await _tradeViewModel!.loadUserTrades(
-                              int.parse(_currentUserId!),
+                          } else {
+                            shouldShowButtons =
+                                false; // Onaylanmışsa "onay bekliyor" mesajı gösterilecek
+                            Logger.info(
+                              '❌ Trade #${updatedTrade.offerID} için butonlar gösterilmeyecek (zaten onaylanmış), "onay bekliyor" mesajı gösterilecek',
+                              tag: 'TradeView',
                             );
-
-                            // UI'ı güncelle
-                            if (mounted) {
-                              setState(() {});
-                            }
                           }
-                        },
-                        onCompleteSimple: (trade) {
-                          // Takası Tamamla butonu tıklandığında takas tamamlama dialog'unu göster
+                        }
+                        // Diğer durumlar için butonlar TradeCard'da gösterilir
+                        else {
+                          shouldShowButtons = false;
                           Logger.info(
-                            'Takası Tamamla butonu tıklandı - Trade #${trade.offerID}',
+                            '✅ Trade #${updatedTrade.offerID} için statusID=$currentUserStatusID, butonlar TradeCard\'da gösterilecek',
                             tag: 'TradeView',
                           );
-                          _showTradeCompleteDialog(trade);
-                        },
-                        onStatusChange: (newStatusId) async {
-                          Logger.info(
-                            'TradeCard onStatusChange çağrıldı: $newStatusId',
-                            tag: 'TradeView',
-                          );
+                        }
 
-                          // AuthService'den userToken al
-                          final authService = AuthService();
-                          final userToken = await authService.getToken();
+                        // Ürün bilgilerini kontrol et
+                        final myProduct = _getMyProduct(updatedTrade);
+                        final theirProduct = _getTheirProduct(updatedTrade);
+                        Logger.info(
+                          '  • MyProductID: ${myProduct?.productID}',
+                          tag: 'TradeView',
+                        );
+                        Logger.info(
+                          '  • TheirProductID: ${theirProduct?.productID}',
+                          tag: 'TradeView',
+                        );
+                        Logger.info(
+                          '  • ShouldShowButtons: $shouldShowButtons',
+                          tag: 'TradeView',
+                        );
 
-                          if (userToken == null || userToken.isEmpty) {
-                            Logger.error(
-                              'UserToken bulunamadı',
-                              tag: 'TradeView',
-                            );
-                            if (mounted && _scaffoldMessenger != null) {
-                              _scaffoldMessenger!.showSnackBar(
-                                SnackBar(
-                                  content: Text('Oturum bilgisi bulunamadı'),
-                                ),
-                              );
-                            }
-                            return;
+                        // "Takası Tamamla" butonunun gösterilip gösterilmeyeceğini kontrol et
+                        bool shouldShowCompleteButton = false;
+                        if (currentUserStatusID == 2) {
+                          // Karşı tarafın durumunu kontrol et
+                          int otherUserStatusID;
+                          if (currentUserIdInt == updatedTrade.senderUserID) {
+                            otherUserStatusID = updatedTrade.receiverStatusID;
+                          } else {
+                            otherUserStatusID = updatedTrade.senderStatusID;
                           }
-
-                          if (!mounted) return;
-                          final tradeViewModel = _tradeViewModel;
-
-                          if (tradeViewModel == null) {
-                            Logger.error(
-                              'TradeViewModel referansı bulunamadı',
-                              tag: 'TradeView',
-                            );
-                            return;
+                          // Karşı taraf da onayladıysa (statusID >= 2) "Takası Tamamla" butonu göster
+                          shouldShowCompleteButton = otherUserStatusID >= 2;
+                        } else if (currentUserStatusID == 4) {
+                          // Karşı tarafın durumunu kontrol et
+                          int otherUserStatusID;
+                          if (currentUserIdInt == updatedTrade.senderUserID) {
+                            otherUserStatusID = updatedTrade.receiverStatusID;
+                          } else {
+                            otherUserStatusID = updatedTrade.senderStatusID;
                           }
+                          // Karşı taraf henüz tamamlamamışsa (statusID < 4) "Takası Tamamla" butonu göster
+                          // İki taraftan biri takası tamamladıktan sonra "Takası Tamamla" butonu kaybolacak
+                          shouldShowCompleteButton = otherUserStatusID < 4;
+                        }
+                        Logger.info(
+                          '  • ShouldShowCompleteButton: $shouldShowCompleteButton',
+                          tag: 'TradeView',
+                        );
 
-                          try {
-                            bool success = false;
+                        // "Puan Ver" butonu artık TradeCard'da kendi mantığıyla kontrol ediliyor
+                        Logger.info(
+                          '  • Review button logic handled by TradeCard',
+                          tag: 'TradeView',
+                        );
 
-                            if (newStatusId == 2) {
-                              // Onaylama işlemi
+                        return Container(
+                          margin: EdgeInsets.only(bottom: 12),
+                          child: TradeCard(
+                            trade: updatedTrade,
+                            currentUserId: currentUserId.toString(),
+                            showButtons:
+                                shouldShowButtons, // Sadece shouldShowButtons değerini kullan
+                            onTap: () {
+                              // Takas detayına git
                               Logger.info(
-                                'Trade #${updatedTrade.offerID} onaylanıyor...',
+                                'Takas detayına gidiliyor: ${updatedTrade.offerID}',
                                 tag: 'TradeView',
                               );
-                              success = await tradeViewModel.confirmTrade(
-                                userToken: userToken,
-                                offerID: updatedTrade.offerID,
-                                isConfirm: true,
+                            },
+                            onDetailTap: () {
+                              // Takas detay sayfasına git
+                              Logger.info(
+                                'Takas detay sayfasına gidiliyor: ${updatedTrade.offerID}',
+                                tag: 'TradeView',
+                              );
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => TradeDetailView(
+                                    offerID: updatedTrade.offerID,
+                                  ),
+                                ),
+                              );
+                            },
+                            onReject: (trade) {
+                              // Reddetme sebebi dialog'unu göster
+                              _showRejectReasonDialog(trade);
+                            },
+                            onReview: (UserTrade trade, int rating, String comment) async {
+                              // Puan Ver butonu tıklandığında yorum yapma işlemini gerçekleştir
+                              Logger.info(
+                                'Puan Ver butonu tıklandı - Trade #${trade.offerID}, Rating: $rating, Comment: $comment',
+                                tag: 'TradeView',
+                              );
+                              final success = await _reviewTrade(
+                                trade,
+                                rating,
+                                comment,
                               );
 
-                              // Onaylama başarılıysa, takasları yeniden yükle
-                              if (success) {
+                              // Başarılı yorum sonrası takasları yeniden yükle
+                              if (success &&
+                                  _currentUserId != null &&
+                                  _tradeViewModel != null) {
                                 Logger.info(
-                                  'Trade #${updatedTrade.offerID} onaylandı, takaslar yeniden yükleniyor...',
+                                  '🔄 Yorum sonrası takaslar yeniden yükleniyor...',
                                   tag: 'TradeView',
                                 );
-
-                                // Takasları yeniden yükle
-                                final userId = await _authService
-                                    .getCurrentUserId();
-                                if (userId != null && tradeViewModel != null) {
-                                  await tradeViewModel.loadUserTrades(
-                                    int.parse(userId),
-                                  );
-                                  Logger.info(
-                                    '✅ TradeViewModel yenilendi (onaylama sonrası)',
-                                    tag: 'TradeView',
-                                  );
-                                }
-
-                                // UI'ı güncelle
+                                await _tradeViewModel!.loadUserTrades(
+                                  int.parse(_currentUserId!),
+                                );
 
                                 // UI'ı güncelle
                                 if (mounted) {
                                   setState(() {});
                                 }
+                              }
+                            },
+                            onCompleteSimple: (trade) {
+                              // Takası Tamamla butonu tıklandığında takas tamamlama dialog'unu göster
+                              Logger.info(
+                                'Takası Tamamla butonu tıklandı - Trade #${trade.offerID}',
+                                tag: 'TradeView',
+                              );
+                              _showTradeCompleteDialog(trade);
+                            },
+                            onStatusChange: (newStatusId) async {
+                              Logger.info(
+                                'TradeCard onStatusChange çağrıldı: $newStatusId',
+                                tag: 'TradeView',
+                              );
 
-                                // Başarı mesajını göster
+                              // AuthService'den userToken al
+                              final authService = AuthService();
+                              final userToken = await authService.getToken();
+
+                              if (userToken == null || userToken.isEmpty) {
+                                Logger.error(
+                                  'UserToken bulunamadı',
+                                  tag: 'TradeView',
+                                );
                                 if (mounted && _scaffoldMessenger != null) {
                                   _scaffoldMessenger!.showSnackBar(
                                     SnackBar(
-                                      content: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.check_circle,
-                                            color: Colors.white,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text('Takas onaylandı!'),
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.green,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                      content: Text(
+                                        'Oturum bilgisi bulunamadı',
                                       ),
                                     ),
                                   );
                                 }
+                                return;
+                              }
 
-                                // Başarı mesajını zaten gösterdik, success'i false yap
-                                success = false;
-                                return; // İşlem tamamlandı, return yap
-                              }
-                            } else if (newStatusId == 3) {
-                              // Reddetme işlemi - artık onReject callback'i ile yapılıyor
-                              Logger.info(
-                                'Trade #${updatedTrade.offerID} reddetme işlemi onReject callback\'i ile yapılacak',
-                                tag: 'TradeView',
-                              );
-                              return; // Bu durumda işlem yapma, onReject callback'i kullanılacak
-                            } else if (newStatusId == 4) {
-                              // Tamamlama işlemi
-                              Logger.info(
-                                'Trade #${updatedTrade.offerID} tamamlanıyor...',
-                                tag: 'TradeView',
-                              );
-                              if (mounted) {
-                                _showTradeCompleteDialog(updatedTrade);
-                              }
-                              return;
-                            } else if (newStatusId == 5) {
-                              // Yorum yapma işlemi (zaten tamamlanmış takas)
-                              Logger.info(
-                                'Trade #${updatedTrade.offerID} için yorum yapılıyor...',
-                                tag: 'TradeView',
-                              );
-                              if (mounted) {
-                                _showTradeCompleteDialog(updatedTrade);
-                              }
-                              return;
-                            } else {
-                              // Diğer durum değişiklikleri için
-                              Logger.info(
-                                'Trade #${updatedTrade.offerID} durumu güncelleniyor: $newStatusId',
-                                tag: 'TradeView',
-                              );
-                              success = await tradeViewModel.updateTradeStatus(
-                                userToken: userToken,
-                                offerID: updatedTrade.offerID,
-                                newStatusID: newStatusId,
-                              );
-                            }
+                              if (!mounted) return;
+                              final tradeViewModel = _tradeViewModel;
 
-                            if (success) {
-                              Logger.info(
-                                'Trade #${updatedTrade.offerID} durumu başarıyla güncellendi',
-                                tag: 'TradeView',
-                              );
-                              if (mounted && _scaffoldMessenger != null) {
-                                _scaffoldMessenger!.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      newStatusId == 2
-                                          ? 'Takas onaylandı'
-                                          : newStatusId == 3
-                                          ? 'Takas reddedildi'
-                                          : 'Durum güncellendi',
-                                    ),
-                                    backgroundColor: Colors.green,
-                                  ),
+                              if (tradeViewModel == null) {
+                                Logger.error(
+                                  'TradeViewModel referansı bulunamadı',
+                                  tag: 'TradeView',
                                 );
+                                return;
                               }
 
-                              // UI'ı güncelle
-                              if (mounted) {
-                                setState(() {});
-                              }
-                            } else {
-                              Logger.error(
-                                'Trade #${updatedTrade.offerID} durumu güncellenemedi',
-                                tag: 'TradeView',
-                              );
-                              if (mounted && _scaffoldMessenger != null) {
-                                _scaffoldMessenger!.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      tradeViewModel.errorMessage ??
-                                          'Bir hata oluştu',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
+                              try {
+                                bool success = false;
+
+                                if (newStatusId == 2) {
+                                  // Onaylama işlemi
+                                  Logger.info(
+                                    'Trade #${updatedTrade.offerID} onaylanıyor...',
+                                    tag: 'TradeView',
+                                  );
+                                  success = await tradeViewModel.confirmTrade(
+                                    userToken: userToken,
+                                    offerID: updatedTrade.offerID,
+                                    isConfirm: true,
+                                  );
+
+                                  // Onaylama başarılıysa, takasları yeniden yükle
+                                  if (success) {
+                                    Logger.info(
+                                      'Trade #${updatedTrade.offerID} onaylandı, takaslar yeniden yükleniyor...',
+                                      tag: 'TradeView',
+                                    );
+
+                                    // Takasları yeniden yükle
+                                    final userId = await _authService
+                                        .getCurrentUserId();
+                                    if (userId != null &&
+                                        tradeViewModel != null) {
+                                      await tradeViewModel.loadUserTrades(
+                                        int.parse(userId),
+                                      );
+                                      Logger.info(
+                                        '✅ TradeViewModel yenilendi (onaylama sonrası)',
+                                        tag: 'TradeView',
+                                      );
+                                    }
+
+                                    // UI'ı güncelle
+
+                                    // UI'ı güncelle
+                                    if (mounted) {
+                                      setState(() {});
+                                    }
+
+                                    // Başarı mesajını göster
+                                    if (mounted && _scaffoldMessenger != null) {
+                                      _scaffoldMessenger!.showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.check_circle,
+                                                color: Colors.white,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text('Takas onaylandı!'),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.green,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+
+                                    // Başarı mesajını zaten gösterdik, success'i false yap
+                                    success = false;
+                                    return; // İşlem tamamlandı, return yap
+                                  }
+                                } else if (newStatusId == 3) {
+                                  // Reddetme işlemi - artık onReject callback'i ile yapılıyor
+                                  Logger.info(
+                                    'Trade #${updatedTrade.offerID} reddetme işlemi onReject callback\'i ile yapılacak',
+                                    tag: 'TradeView',
+                                  );
+                                  return; // Bu durumda işlem yapma, onReject callback'i kullanılacak
+                                } else if (newStatusId == 4) {
+                                  // Tamamlama işlemi
+                                  Logger.info(
+                                    'Trade #${updatedTrade.offerID} tamamlanıyor...',
+                                    tag: 'TradeView',
+                                  );
+                                  if (mounted) {
+                                    _showTradeCompleteDialog(updatedTrade);
+                                  }
+                                  return;
+                                } else if (newStatusId == 5) {
+                                  // Yorum yapma işlemi (zaten tamamlanmış takas)
+                                  Logger.info(
+                                    'Trade #${updatedTrade.offerID} için yorum yapılıyor...',
+                                    tag: 'TradeView',
+                                  );
+                                  if (mounted) {
+                                    _showTradeCompleteDialog(updatedTrade);
+                                  }
+                                  return;
+                                } else {
+                                  // Diğer durum değişiklikleri için
+                                  Logger.info(
+                                    'Trade #${updatedTrade.offerID} durumu güncelleniyor: $newStatusId',
+                                    tag: 'TradeView',
+                                  );
+                                  success = await tradeViewModel
+                                      .updateTradeStatus(
+                                        userToken: userToken,
+                                        offerID: updatedTrade.offerID,
+                                        newStatusID: newStatusId,
+                                      );
+                                }
+
+                                if (success) {
+                                  Logger.info(
+                                    'Trade #${updatedTrade.offerID} durumu başarıyla güncellendi',
+                                    tag: 'TradeView',
+                                  );
+                                  if (mounted && _scaffoldMessenger != null) {
+                                    _scaffoldMessenger!.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          newStatusId == 2
+                                              ? 'Takas onaylandı'
+                                              : newStatusId == 3
+                                              ? 'Takas reddedildi'
+                                              : 'Durum güncellendi',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+
+                                  // UI'ı güncelle
+                                  if (mounted) {
+                                    setState(() {});
+                                  }
+                                } else {
+                                  Logger.error(
+                                    'Trade #${updatedTrade.offerID} durumu güncellenemedi',
+                                    tag: 'TradeView',
+                                  );
+                                  if (mounted && _scaffoldMessenger != null) {
+                                    _scaffoldMessenger!.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          tradeViewModel.errorMessage ??
+                                              'Bir hata oluştu',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
+                                Logger.error(
+                                  'Trade durumu güncelleme hatası: $e',
+                                  tag: 'TradeView',
                                 );
+                                if (mounted && _scaffoldMessenger != null) {
+                                  _scaffoldMessenger!.showSnackBar(
+                                    SnackBar(
+                                      content: Text('Bir hata oluştu: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                               }
-                            }
-                          } catch (e) {
-                            Logger.error(
-                              'Trade durumu güncelleme hatası: $e',
-                              tag: 'TradeView',
-                            );
-                            if (mounted && _scaffoldMessenger != null) {
-                              _scaffoldMessenger!.showSnackBar(
-                                SnackBar(
-                                  content: Text('Bir hata oluştu: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      ),
+                            },
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
