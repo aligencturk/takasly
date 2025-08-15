@@ -17,7 +17,6 @@ import 'settings_view.dart';
 import '../product/edit_product_view.dart';
 import '../product/product_detail_view.dart';
 
-
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
 
@@ -41,7 +40,7 @@ class _ProfileViewState extends State<ProfileView>
 
   Future<void> _loadProfileData() async {
     if (!mounted) return;
-    
+
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
     final productViewModel = Provider.of<ProductViewModel>(
       context,
@@ -50,7 +49,9 @@ class _ProfileViewState extends State<ProfileView>
 
     // Eğer kullanıcı henüz yüklenmemişse, UserViewModel'in initialize olmasını bekle
     if (userViewModel.currentUser == null && !userViewModel.isLoading) {
-      Logger.info('👤 ProfileView - User not loaded yet, waiting for initialization...');
+      Logger.info(
+        '👤 ProfileView - User not loaded yet, waiting for initialization...',
+      );
       // UserViewModel'in initialize olmasını bekle
       await Future.delayed(Duration(milliseconds: 500));
       if (!mounted) return;
@@ -64,76 +65,117 @@ class _ProfileViewState extends State<ProfileView>
     final userId = userViewModel.currentUser?.id;
     if (userId != null) {
       Logger.info('👤 ProfileView - Loading data for user ID: $userId');
-      
+
       // Kullanıcının ürünlerini yükle
-      Logger.info('👤 ProfileView - Loading user products for user ID: $userId');
+      Logger.info(
+        '👤 ProfileView - Loading user products for user ID: $userId',
+      );
       await productViewModel.loadUserProducts(userId);
       if (!mounted) return;
-      
+
       // Yüklenen ürünlerin adres bilgilerini kontrol et
-      Logger.info('👤 ProfileView - Loaded ${productViewModel.myProducts.length} products');
+      Logger.info(
+        '👤 ProfileView - Loaded ${productViewModel.myProducts.length} products',
+      );
       for (int i = 0; i < productViewModel.myProducts.length; i++) {
         final product = productViewModel.myProducts[i];
         Logger.debug('👤 ProfileView - Product $i: ${product.title}');
-        Logger.debug('👤 ProfileView - Product $i location: cityTitle="${product.cityTitle}", districtTitle="${product.districtTitle}"');
+        Logger.debug(
+          '👤 ProfileView - Product $i location: cityTitle="${product.cityTitle}", districtTitle="${product.districtTitle}"',
+        );
       }
-      
+
       // Favori ürünleri liste içinde kullanılmıyor; gereksiz API çağrısını kaldırdık
       // Kullanıcının profil detaylarını yükle (değerlendirmeler için)
       await _loadUserProfileDetail(int.parse(userId));
     } else {
-      Logger.warning('⚠️ ProfileView - User ID is null, cannot load profile data');
-      Logger.warning('⚠️ ProfileView - UserViewModel state: isLoading=${userViewModel.isLoading}, hasError=${userViewModel.hasError}');
+      Logger.warning(
+        '⚠️ ProfileView - User ID is null, cannot load profile data',
+      );
+      Logger.warning(
+        '⚠️ ProfileView - UserViewModel state: isLoading=${userViewModel.isLoading}, hasError=${userViewModel.hasError}',
+      );
     }
+  }
 
-}
-
-// (Taşındı) No-stretch davranış sınıfı bu dosyanın en altına taşındı
+  // (Taşındı) No-stretch davranış sınıfı bu dosyanın en altına taşındı
 
   Future<void> _loadUserProfileDetail(int userId) async {
     if (!mounted) return;
-    
-    Logger.info('👤 ProfileView - _loadUserProfileDetail - Starting for user ID: $userId');
-    
+
+    Logger.info(
+      '👤 ProfileView - _loadUserProfileDetail - Starting for user ID: $userId',
+    );
+
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-    final profileDetailViewModel = Provider.of<UserProfileDetailViewModel>(context, listen: false);
+    final profileDetailViewModel = Provider.of<UserProfileDetailViewModel>(
+      context,
+      listen: false,
+    );
     final userToken = userViewModel.currentUser?.token;
-    
-    Logger.debug('👤 ProfileView - _loadUserProfileDetail - User token: ${userToken?.substring(0, 10)}...');
-    
+
+    Logger.debug(
+      '👤 ProfileView - _loadUserProfileDetail - User token: ${userToken?.substring(0, 10)}...',
+    );
+
     if (userToken != null) {
       profileDetailViewModel.setUserToken(userToken);
-      Logger.info('👤 ProfileView - _loadUserProfileDetail - Loading profile detail...');
-      
+      Logger.info(
+        '👤 ProfileView - _loadUserProfileDetail - Loading profile detail...',
+      );
+
       await profileDetailViewModel.loadProfileDetail(
         userToken: userToken,
         userId: userId,
       );
-      
-      Logger.info('👤 ProfileView - _loadUserProfileDetail - Profile detail loading completed');
-      Logger.debug('👤 ProfileView - _loadUserProfileDetail - Has data: ${profileDetailViewModel.hasData}');
-      Logger.debug('👤 ProfileView - _loadUserProfileDetail - Has error: ${profileDetailViewModel.hasError}');
-      Logger.debug('👤 ProfileView - _loadUserProfileDetail - Error message: ${profileDetailViewModel.errorMessage}');
-      
-      if (profileDetailViewModel.hasData && profileDetailViewModel.profileDetail != null) {
+
+      Logger.info(
+        '👤 ProfileView - _loadUserProfileDetail - Profile detail loading completed',
+      );
+      Logger.debug(
+        '👤 ProfileView - _loadUserProfileDetail - Has data: ${profileDetailViewModel.hasData}',
+      );
+      Logger.debug(
+        '👤 ProfileView - _loadUserProfileDetail - Has error: ${profileDetailViewModel.hasError}',
+      );
+      Logger.debug(
+        '👤 ProfileView - _loadUserProfileDetail - Error message: ${profileDetailViewModel.errorMessage}',
+      );
+
+      if (profileDetailViewModel.hasData &&
+          profileDetailViewModel.profileDetail != null) {
         final profile = profileDetailViewModel.profileDetail!;
-        Logger.info('👤 ProfileView - _loadUserProfileDetail - Profile loaded successfully');
-        Logger.debug('👤 ProfileView - _loadUserProfileDetail - User: ${profile.userFullname}');
-        Logger.debug('👤 ProfileView - _loadUserProfileDetail - MyReviews count: ${profile.myReviews.length}');
-        Logger.debug('👤 ProfileView - _loadUserProfileDetail - Reviews count: ${profile.reviews.length}');
-        
+        Logger.info(
+          '👤 ProfileView - _loadUserProfileDetail - Profile loaded successfully',
+        );
+        Logger.debug(
+          '👤 ProfileView - _loadUserProfileDetail - User: ${profile.userFullname}',
+        );
+        Logger.debug(
+          '👤 ProfileView - _loadUserProfileDetail - MyReviews count: ${profile.myReviews.length}',
+        );
+        Logger.debug(
+          '👤 ProfileView - _loadUserProfileDetail - Reviews count: ${profile.reviews.length}',
+        );
+
         // MyReviews detaylarını logla
         if (profile.myReviews.isNotEmpty) {
-          Logger.info('👤 ProfileView - _loadUserProfileDetail - MyReviews found: ${profile.myReviews.length}');
+          Logger.info(
+            '👤 ProfileView - _loadUserProfileDetail - MyReviews found: ${profile.myReviews.length}',
+          );
         }
-        
+
         // Reviews detaylarını logla
         if (profile.reviews.isNotEmpty) {
-          Logger.info('👤 ProfileView - _loadUserProfileDetail - Reviews found: ${profile.reviews.length}');
+          Logger.info(
+            '👤 ProfileView - _loadUserProfileDetail - Reviews found: ${profile.reviews.length}',
+          );
         }
       }
     } else {
-      Logger.error('❌ ProfileView - _loadUserProfileDetail - User token is null');
+      Logger.error(
+        '❌ ProfileView - _loadUserProfileDetail - User token is null',
+      );
     }
   }
 
@@ -146,7 +188,7 @@ class _ProfileViewState extends State<ProfileView>
   double _calculateChildAspectRatio(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
-    
+
     // Responsive aspect ratio hesaplama
     if (screenWidth < 360) {
       return 0.75; // Küçük ekranlar için daha yüksek oran
@@ -162,7 +204,7 @@ class _ProfileViewState extends State<ProfileView>
   double _calculateGridSpacing(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
-    
+
     // Responsive grid spacing hesaplama
     if (screenWidth < 360) {
       return 6.0; // Küçük ekranlar için daha az spacing
@@ -176,7 +218,7 @@ class _ProfileViewState extends State<ProfileView>
   double _calculateHorizontalPadding(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
-    
+
     // Responsive horizontal padding hesaplama
     if (screenWidth < 360) {
       return 12.0; // Küçük ekranlar için daha az padding
@@ -203,60 +245,73 @@ class _ProfileViewState extends State<ProfileView>
           final productCount = user.totalProducts;
           final favoriteCount = user.totalFavorites;
           String score = '0';
-          if (profileDetailVm.hasData && profileDetailVm.profileDetail != null) {
-            score = profileDetailVm.profileDetail!.averageRating.toStringAsFixed(1);
+          if (profileDetailVm.hasData &&
+              profileDetailVm.profileDetail != null) {
+            score = profileDetailVm.profileDetail!.averageRating
+                .toStringAsFixed(1);
           }
           int myReviewsCount = 0;
           // Öncelik: User modelindeki myReviews (daha erken yüklenebilir)
           if (user.myReviews.isNotEmpty) {
             myReviewsCount = user.myReviews.length;
-          } else if (profileDetailVm.hasData && profileDetailVm.profileDetail != null) {
+          } else if (profileDetailVm.hasData &&
+              profileDetailVm.profileDetail != null) {
             myReviewsCount = profileDetailVm.profileDetail!.myReviews.length;
           }
 
           Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
           Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
-          Logger.debug('👤 ProfileView - Product count: $productCount, Favorite count: $favoriteCount, Score: $score');
+          Logger.debug(
+            '👤 ProfileView - Product count: $productCount, Favorite count: $favoriteCount, Score: $score',
+          );
 
-           return ScrollConfiguration(
+          return ScrollConfiguration(
             behavior: const _NoStretchScrollBehavior(),
             child: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              SliverToBoxAdapter(
-                child: SafeArea(
-                  bottom: false,
-                  child: _buildProfileHeader(context, user, productCount, favoriteCount, score),
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverToBoxAdapter(
+                  child: SafeArea(
+                    bottom: false,
+                    child: _buildProfileHeader(
+                      context,
+                      user,
+                      productCount,
+                      favoriteCount,
+                      score,
+                    ),
+                  ),
                 ),
-              ),
-              SliverAppBar(
-                backgroundColor: Colors.white,
-                pinned: true,
-                primary: false,
-                automaticallyImplyLeading: false,
-                toolbarHeight: 0,
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(74),
-                  child: Container(
-                    color: Colors.white,
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    child: TabBar(
-                      controller: _tabController,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.center,
-                      labelColor: AppTheme.primary,
-                      unselectedLabelColor: Colors.grey[600],
-                      indicatorColor: AppTheme.primary,
-                      indicatorWeight: 2,
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                      tabs: [
-                        const Tab(
-                          icon: Icon(Icons.inventory_2_outlined, size: 20),
-                          text: 'İlanlarım',
+                SliverAppBar(
+                  backgroundColor: Colors.white,
+                  pinned: true,
+                  primary: false,
+                  automaticallyImplyLeading: false,
+                  toolbarHeight: 0,
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(74),
+                    child: Container(
+                      color: Colors.white,
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      child: TabBar(
+                        controller: _tabController,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.center,
+                        labelColor: AppTheme.primary,
+                        unselectedLabelColor: Colors.grey[600],
+                        indicatorColor: AppTheme.primary,
+                        indicatorWeight: 2,
+                        labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
                         ),
-                        const Tab(
-                          icon: Icon(Icons.rate_review_outlined, size: 20),
-                          text: 'Yorumlar',
-                        ),
+                        tabs: [
+                          const Tab(
+                            icon: Icon(Icons.inventory_2_outlined, size: 20),
+                            text: 'İlanlarım',
+                          ),
+                          const Tab(
+                            icon: Icon(Icons.rate_review_outlined, size: 20),
+                            text: 'Yorumlar',
+                          ),
                           Tab(
                             icon: const Icon(Icons.rate_review, size: 20),
                             child: Padding(
@@ -271,7 +326,10 @@ class _ProfileViewState extends State<ProfileView>
                                   const SizedBox(width: 6),
                                   // Rozeti her zaman göster, 0 ise "0" yazsın
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.grey[200],
                                       borderRadius: BorderRadius.circular(10),
@@ -289,26 +347,26 @@ class _ProfileViewState extends State<ProfileView>
                               ),
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildProductsTab(user),
-                _buildReviewsTab(),
-                _buildMyReviewsTab(),
               ],
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildProductsTab(user),
+                  _buildReviewsTab(),
+                  _buildMyReviewsTab(),
+                ],
+              ),
             ),
-          ));
+          );
         },
       ),
     );
   }
-
 
   Widget _buildProductsTab(User user) {
     return Consumer<ProductViewModel>(
@@ -350,10 +408,7 @@ class _ProfileViewState extends State<ProfileView>
                   ),
                   child: const Text(
                     'İlan Ekle',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
@@ -362,7 +417,9 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         return Container(
-          margin: EdgeInsets.symmetric(horizontal: _calculateHorizontalPadding(context)),
+          margin: EdgeInsets.symmetric(
+            horizontal: _calculateHorizontalPadding(context),
+          ),
           padding: const EdgeInsets.all(5),
           color: Colors.white,
           child: GridView.builder(
@@ -381,81 +438,83 @@ class _ProfileViewState extends State<ProfileView>
                   ProductCard(
                     product: product,
                     heroTag: 'profile_my_product_${product.id}_$index',
-                    hideFavoriteIcon: true, // Kullanıcının kendi ilanlarında favori ikonunu gizle
+                    hideFavoriteIcon:
+                        true, // Kullanıcının kendi ilanlarında favori ikonunu gizle
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProductDetailView(productId: product.id),
+                          builder: (context) =>
+                              ProductDetailView(productId: product.id),
                         ),
                       );
                     },
                   ),
-                    // İlanı Güncelle butonu (sol üst)
-                    Positioned(
-                      top: 7,
-                      left: 7,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                  // İlanı Güncelle butonu (sol üst)
+                  Positioned(
+                    top: 7,
+                    left: 7,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _editProduct(product),
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _editProduct(product),
-                            borderRadius: BorderRadius.circular(16),
-                            child: const Padding(
-                              padding: EdgeInsets.all(6),
-                              child: Icon(
-                                Icons.edit_outlined,
-                                color: Colors.orange,
-                                size: 18,
-                              ),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.edit_outlined,
+                              color: Colors.orange,
+                              size: 18,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    // İlanı Sil butonu (sağ üst)
-                    Positioned(
-                      top: 7,
-                      right: 7,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                  ),
+                  // İlanı Sil butonu (sağ üst)
+                  Positioned(
+                    top: 7,
+                    right: 7,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _showDeleteConfirmDialog(product),
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _showDeleteConfirmDialog(product),
-                            borderRadius: BorderRadius.circular(16),
-                            child: const Padding(
-                              padding: EdgeInsets.all(6),
-                              child: Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                                size: 18,
-                              ),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                              size: 18,
                             ),
                           ),
                         ),
                       ),
+                    ),
                   ),
                 ],
               );
@@ -486,11 +545,7 @@ class _ProfileViewState extends State<ProfileView>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Colors.grey[400],
-                ),
+                Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
                   'Değerlendirmeler yüklenemedi',
@@ -504,7 +559,10 @@ class _ProfileViewState extends State<ProfileView>
                 ElevatedButton(
                   onPressed: () {
                     if (!mounted) return;
-                    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                    final userViewModel = Provider.of<UserViewModel>(
+                      context,
+                      listen: false,
+                    );
                     final userId = userViewModel.currentUser?.id;
                     if (userId != null) {
                       _loadUserProfileDetail(int.parse(userId));
@@ -531,7 +589,7 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         final profile = profileDetailVm.profileDetail!;
-        
+
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
@@ -550,11 +608,7 @@ class _ProfileViewState extends State<ProfileView>
                       label: 'Ortalama Puan',
                       color: Colors.amber,
                     ),
-                    Container(
-                      width: 1,
-                      height: 40,
-                      color: Colors.grey[300],
-                    ),
+                    Container(width: 1, height: 40, color: Colors.grey[300]),
                     _buildReviewStatItem(
                       icon: Icons.rate_review,
                       value: profile.totalReviews.toString(),
@@ -564,16 +618,18 @@ class _ProfileViewState extends State<ProfileView>
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Yorumlar listesi
               if (profile.reviews.isNotEmpty)
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   color: Colors.white,
                   child: Column(
-                    children: profile.reviews.map((review) => _buildReviewItem(review)).toList(),
+                    children: profile.reviews
+                        .map((review) => _buildReviewItem(review))
+                        .toList(),
                   ),
                 )
               else
@@ -602,11 +658,7 @@ class _ProfileViewState extends State<ProfileView>
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: color,
-          size: 26,
-        ),
+        Icon(icon, color: color, size: 26),
         const SizedBox(height: 10),
         Text(
           value,
@@ -646,7 +698,9 @@ class _ProfileViewState extends State<ProfileView>
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: review.reviewerImage != null && review.reviewerImage!.isNotEmpty
+                child:
+                    review.reviewerImage != null &&
+                        review.reviewerImage!.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(100),
                         child: Image.network(
@@ -682,7 +736,7 @@ class _ProfileViewState extends State<ProfileView>
                       ),
               ),
               const SizedBox(width: 12),
-              
+
               // Yorum yapan kişinin adı ve tarih
               Expanded(
                 child: Column(
@@ -707,7 +761,7 @@ class _ProfileViewState extends State<ProfileView>
                   ],
                 ),
               ),
-              
+
               // Yıldızlar
               Row(
                 children: List.generate(5, (index) {
@@ -721,7 +775,7 @@ class _ProfileViewState extends State<ProfileView>
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Yorum metni
           if (review.comment.isNotEmpty)
             Text(
@@ -742,15 +796,19 @@ class _ProfileViewState extends State<ProfileView>
     return Consumer2<UserViewModel, UserProfileDetailViewModel>(
       builder: (context, userVm, profileDetailVm, child) {
         // Debug logları ekle
-        Logger.debug('👤 ProfileView - _buildMyReviewsTab - State: isLoading=${profileDetailVm.isLoading}, hasError=${profileDetailVm.hasError}, hasData=${profileDetailVm.hasData}');
-        
+        Logger.debug(
+          '👤 ProfileView - _buildMyReviewsTab - State: isLoading=${profileDetailVm.isLoading}, hasError=${profileDetailVm.hasError}, hasData=${profileDetailVm.hasData}',
+        );
+
         // Önce User modelindeki myReviews'i kontrol et
         final user = userVm.currentUser;
         if (user != null && user.myReviews.isNotEmpty) {
-          Logger.debug('👤 ProfileView - _buildMyReviewsTab - Found myReviews in User model: ${user.myReviews.length}');
+          Logger.debug(
+            '👤 ProfileView - _buildMyReviewsTab - Found myReviews in User model: ${user.myReviews.length}',
+          );
           return _buildMyReviewsContent(user.myReviews, 'User Model');
         }
-        
+
         // Eğer User modelinde yoksa UserProfileDetailViewModel'i kullan
         if (profileDetailVm.isLoading) {
           Logger.debug('👤 ProfileView - _buildMyReviewsTab - Loading state');
@@ -763,7 +821,9 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         if (profileDetailVm.hasError) {
-          Logger.debug('👤 ProfileView - _buildMyReviewsTab - Error state: ${profileDetailVm.errorMessage}');
+          Logger.debug(
+            '👤 ProfileView - _buildMyReviewsTab - Error state: ${profileDetailVm.errorMessage}',
+          );
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(40.0),
@@ -771,11 +831,7 @@ class _ProfileViewState extends State<ProfileView>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Colors.grey[400],
-                ),
+                Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
                   'Değerlendirmeleriniz yüklenemedi',
@@ -789,7 +845,10 @@ class _ProfileViewState extends State<ProfileView>
                 ElevatedButton(
                   onPressed: () {
                     if (!mounted) return;
-                    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+                    final userViewModel = Provider.of<UserViewModel>(
+                      context,
+                      listen: false,
+                    );
                     final userId = userViewModel.currentUser?.id;
                     if (userId != null) {
                       _loadUserProfileDetail(int.parse(userId));
@@ -803,7 +862,9 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         if (!profileDetailVm.hasData || profileDetailVm.profileDetail == null) {
-          Logger.debug('👤 ProfileView - _buildMyReviewsTab - No data available');
+          Logger.debug(
+            '👤 ProfileView - _buildMyReviewsTab - No data available',
+          );
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(40.0),
@@ -817,41 +878,55 @@ class _ProfileViewState extends State<ProfileView>
         }
 
         final profile = profileDetailVm.profileDetail!;
-        
+
         // Profile detaylarını logla
         Logger.debug('👤 ProfileView - _buildMyReviewsTab - Profile loaded');
-        Logger.debug('👤 ProfileView - _buildMyReviewsTab - User: ${profile.userFullname} (ID: ${profile.userID})');
-        Logger.debug('👤 ProfileView - _buildMyReviewsTab - MyReviews count: ${profile.myReviews.length}');
-        Logger.debug('👤 ProfileView - _buildMyReviewsTab - Reviews count: ${profile.reviews.length}');
-        Logger.debug('👤 ProfileView - _buildMyReviewsTab - Products count: ${profile.products.length}');
-        
+        Logger.debug(
+          '👤 ProfileView - _buildMyReviewsTab - User: ${profile.userFullname} (ID: ${profile.userID})',
+        );
+        Logger.debug(
+          '👤 ProfileView - _buildMyReviewsTab - MyReviews count: ${profile.myReviews.length}',
+        );
+        Logger.debug(
+          '👤 ProfileView - _buildMyReviewsTab - Reviews count: ${profile.reviews.length}',
+        );
+        Logger.debug(
+          '👤 ProfileView - _buildMyReviewsTab - Products count: ${profile.products.length}',
+        );
+
         // MyReviews detaylarını logla
         for (int i = 0; i < profile.myReviews.length; i++) {
           final review = profile.myReviews[i];
-          Logger.debug('👤 ProfileView - _buildMyReviewsTab - MyReview $i: ID=${review.reviewID}, Rating=${review.rating}, Comment="${review.comment}"');
+          Logger.debug(
+            '👤 ProfileView - _buildMyReviewsTab - MyReview $i: ID=${review.reviewID}, Rating=${review.rating}, Comment="${review.comment}"',
+          );
         }
-        
+
         return _buildMyReviewsContent(profile.myReviews, 'Profile Detail');
       },
     );
   }
 
   Widget _buildMyReviewsContent(List<dynamic> myReviews, String source) {
-    Logger.debug('👤 ProfileView - _buildMyReviewsContent - Building content from $source with ${myReviews.length} reviews');
-    
+    Logger.debug(
+      '👤 ProfileView - _buildMyReviewsContent - Building content from $source with ${myReviews.length} reviews',
+    );
+
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
           // Başlık yanına küçük rozet taşındığı için üst sayım kutusu kaldırıldı
-          
+
           // Değerlendirmeler listesi
           if (myReviews.isNotEmpty)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               color: Colors.white,
               child: Column(
-                children: myReviews.map((review) => _buildMyReviewItem(review)).toList(),
+                children: myReviews
+                    .map((review) => _buildMyReviewItem(review))
+                    .toList(),
               ),
             )
           else
@@ -894,7 +969,9 @@ class _ProfileViewState extends State<ProfileView>
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: currentUser.avatar != null && currentUser.avatar!.isNotEmpty
+                    child:
+                        currentUser.avatar != null &&
+                            currentUser.avatar!.isNotEmpty
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(100),
                             child: Image.network(
@@ -910,7 +987,9 @@ class _ProfileViewState extends State<ProfileView>
                                   ),
                                   child: Center(
                                     child: Text(
-                                      currentUser.name.isNotEmpty ? currentUser.name[0].toUpperCase() : '?',
+                                      currentUser.name.isNotEmpty
+                                          ? currentUser.name[0].toUpperCase()
+                                          : '?',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
@@ -929,7 +1008,9 @@ class _ProfileViewState extends State<ProfileView>
                             ),
                             child: Center(
                               child: Text(
-                                currentUser.name.isNotEmpty ? currentUser.name[0].toUpperCase() : '?',
+                                currentUser.name.isNotEmpty
+                                    ? currentUser.name[0].toUpperCase()
+                                    : '?',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -940,7 +1021,7 @@ class _ProfileViewState extends State<ProfileView>
                           ),
                   ),
                   const SizedBox(width: 12),
-                  
+
                   // Kullanıcının kendi adı ve tarih
                   Expanded(
                     child: Column(
@@ -965,23 +1046,26 @@ class _ProfileViewState extends State<ProfileView>
                       ],
                     ),
                   ),
-                  
+
                   // Yıldızlar
                   Row(
                     children: List.generate(5, (index) {
                       return Icon(
                         index < review.rating ? Icons.star : Icons.star_border,
                         size: 18,
-                        color: index < review.rating ? Colors.amber : Colors.grey,
+                        color: index < review.rating
+                            ? Colors.amber
+                            : Colors.grey,
                       );
                     }),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Kim için yorum yapıldığı bilgisi
-              if (review.revieweeName != null && review.revieweeName!.isNotEmpty)
+              if (review.revieweeName != null &&
+                  review.revieweeName!.isNotEmpty)
                 Text(
                   '${review.revieweeName} için yapılan değerlendirme',
                   style: TextStyle(
@@ -990,10 +1074,11 @@ class _ProfileViewState extends State<ProfileView>
                     fontWeight: FontWeight.w400,
                   ),
                 ),
-              
-              if (review.revieweeName != null && review.revieweeName!.isNotEmpty)
+
+              if (review.revieweeName != null &&
+                  review.revieweeName!.isNotEmpty)
                 const SizedBox(height: 8),
-              
+
               // Yorum metni
               if (review.comment.isNotEmpty)
                 Text(
@@ -1030,9 +1115,7 @@ class _ProfileViewState extends State<ProfileView>
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const SettingsView(),
-              ),
+              MaterialPageRoute(builder: (context) => const SettingsView()),
             );
           },
           icon: const Icon(Icons.settings_outlined, size: 24),
@@ -1042,7 +1125,13 @@ class _ProfileViewState extends State<ProfileView>
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, User user, int productCount, int favoriteCount, String score) {
+  Widget _buildProfileHeader(
+    BuildContext context,
+    User user,
+    int productCount,
+    int favoriteCount,
+    String score,
+  ) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -1060,28 +1149,30 @@ class _ProfileViewState extends State<ProfileView>
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(100),
                         child: Image.network(
-                        user.avatar!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary,
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            child: Center(
-                              child: Text(
-                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                          user.avatar!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary,
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  user.name.isNotEmpty
+                                      ? user.name[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    )
+                            );
+                          },
+                        ),
+                      )
                     : Container(
                         decoration: BoxDecoration(
                           color: AppTheme.primary,
@@ -1089,7 +1180,9 @@ class _ProfileViewState extends State<ProfileView>
                         ),
                         child: Center(
                           child: Text(
-                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                            user.name.isNotEmpty
+                                ? user.name[0].toUpperCase()
+                                : '?',
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w600,
@@ -1099,9 +1192,9 @@ class _ProfileViewState extends State<ProfileView>
                         ),
                       ),
               ),
-              
+
               const SizedBox(width: 32),
-              
+
               // Kullanıcı Bilgileri
               Expanded(
                 child: Column(
@@ -1133,35 +1226,40 @@ class _ProfileViewState extends State<ProfileView>
                           GestureDetector(
                             onTap: () => _navigateToEmailVerification(),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.orange.shade50,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.orange.shade200),
+                                border: Border.all(
+                                  color: Colors.orange.shade200,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    user.isVerified 
-                                      ? Icons.verified_outlined
-                                      : Icons.warning_amber_outlined,
+                                    user.isVerified
+                                        ? Icons.verified_outlined
+                                        : Icons.warning_amber_outlined,
                                     size: 14,
-                                    color: user.isVerified 
-                                      ? Colors.green.shade700
-                                      : Colors.orange.shade700,
+                                    color: user.isVerified
+                                        ? Colors.green.shade700
+                                        : Colors.orange.shade700,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    user.isVerified 
-                                      ? 'Doğrulandı'
-                                      : 'Doğrulanmamış',
+                                    user.isVerified
+                                        ? 'Doğrulandı'
+                                        : 'Doğrulanmamış',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w500,
-                                      color: user.isVerified 
-                                        ? Colors.green.shade700
-                                        : Colors.orange.shade700,
+                                      color: user.isVerified
+                                          ? Colors.green.shade700
+                                          : Colors.orange.shade700,
                                     ),
                                   ),
                                 ],
@@ -1171,9 +1269,9 @@ class _ProfileViewState extends State<ProfileView>
                         ],
                       ],
                     ),
-                    
+
                     const SizedBox(height: 6),
-                    
+
                     // Email
                     Text(
                       user.email,
@@ -1183,7 +1281,7 @@ class _ProfileViewState extends State<ProfileView>
                         fontWeight: FontWeight.w400,
                       ),
                     ),
-                    
+
                     // Telefon (varsa)
                     if (user.phone != null && user.phone!.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -1201,9 +1299,9 @@ class _ProfileViewState extends State<ProfileView>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // İstatistikler - Kurumsal tasarım
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1216,15 +1314,12 @@ class _ProfileViewState extends State<ProfileView>
                 count: favoriteCount.toString(),
                 label: 'Favori',
               ),
-              _buildKurumsalStatItem(
-                count: score,
-                label: 'Puan',
-              ),
+              _buildKurumsalStatItem(count: score, label: 'Puan'),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Butonlar - Kurumsal tasarım
           Row(
             children: [
@@ -1238,16 +1333,19 @@ class _ProfileViewState extends State<ProfileView>
                   child: TextButton(
                     onPressed: () async {
                       if (!mounted) return;
-                      
-                      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
-                      
+
+                      final userViewModel = Provider.of<UserViewModel>(
+                        context,
+                        listen: false,
+                      );
+
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const EditProfileView(),
                         ),
                       );
-                      
+
                       if (result == true && mounted) {
                         userViewModel.forceRefreshUser();
                       }
@@ -1269,9 +1367,9 @@ class _ProfileViewState extends State<ProfileView>
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               Expanded(
                 child: Container(
                   height: 40,
@@ -1343,11 +1441,7 @@ class _ProfileViewState extends State<ProfileView>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 64,
-          color: Colors.grey[400],
-        ),
+        Icon(icon, size: 64, color: Colors.grey[400]),
         const SizedBox(height: 16),
         Text(
           title,
@@ -1361,23 +1455,17 @@ class _ProfileViewState extends State<ProfileView>
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
-        if (actionButton != null) ...[
-          const SizedBox(height: 20),
-          actionButton,
-        ],
+        if (actionButton != null) ...[const SizedBox(height: 20), actionButton],
       ],
     );
   }
 
   void _editProduct(Product product) async {
     if (!mounted) return;
-    
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -1393,13 +1481,11 @@ class _ProfileViewState extends State<ProfileView>
 
   void _showDeleteConfirmDialog(Product product) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             Container(
@@ -1408,7 +1494,11 @@ class _ProfileViewState extends State<ProfileView>
                 color: Colors.red[50],
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.delete_outline, color: Colors.red[700], size: 20),
+              child: Icon(
+                Icons.delete_outline,
+                color: Colors.red[700],
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             const Text('İlanı Sil'),
@@ -1444,15 +1534,13 @@ class _ProfileViewState extends State<ProfileView>
 
   Future<void> _deleteProduct(Product product) async {
     if (!mounted) return;
-    
+
     // Loading dialog göster
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Row(
           children: [
             const CircularProgressIndicator(),
@@ -1464,7 +1552,10 @@ class _ProfileViewState extends State<ProfileView>
     );
 
     try {
-      final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+      final productViewModel = Provider.of<ProductViewModel>(
+        context,
+        listen: false,
+      );
       final success = await productViewModel.deleteUserProduct(product.id);
 
       // Loading dialog'u kapat
@@ -1473,7 +1564,7 @@ class _ProfileViewState extends State<ProfileView>
       if (success) {
         // Başarılı silme işleminden sonra profil verilerini yenile
         await _loadProfileData();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1494,7 +1585,8 @@ class _ProfileViewState extends State<ProfileView>
         }
       } else {
         if (mounted) {
-          final errorMessage = productViewModel.errorMessage ?? 'İlan silinemedi';
+          final errorMessage =
+              productViewModel.errorMessage ?? 'İlan silinemedi';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -1538,29 +1630,33 @@ class _ProfileViewState extends State<ProfileView>
     }
   }
 
-
-
   void _navigateToEmailVerification() async {
     if (!mounted) return;
-    
+
     final userViewModel = Provider.of<UserViewModel>(context, listen: false);
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    
+
     // Önce UserViewModel'den user'ı al
     User? user = userViewModel.currentUser;
-    
+
     // Eğer UserViewModel'de user yoksa AuthViewModel'den al
     if (user == null) {
-      Logger.warning('⚠️ ProfileView: User not found in UserViewModel, trying AuthViewModel...');
+      Logger.warning(
+        '⚠️ ProfileView: User not found in UserViewModel, trying AuthViewModel...',
+      );
       user = authViewModel.currentUser;
     }
-    
+
     if (user == null) {
-      Logger.error('❌ ProfileView: User is null in both ViewModels, cannot proceed with email verification');
+      Logger.error(
+        '❌ ProfileView: User is null in both ViewModels, cannot proceed with email verification',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.'),
+            content: Text(
+              'Kullanıcı bilgileri bulunamadı. Lütfen tekrar giriş yapın.',
+            ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -1568,33 +1664,43 @@ class _ProfileViewState extends State<ProfileView>
       }
       return;
     }
-    
-    Logger.info('📧 ProfileView: Starting email verification for user: ${user.email}');
-    Logger.debug('📧 ProfileView: User details - ID: ${user.id}, Name: ${user.name}, Email: ${user.email}');
-    Logger.debug('📧 ProfileView: User token: ${user.token?.substring(0, 10)}...');
+
+    Logger.info(
+      '📧 ProfileView: Starting email verification for user: ${user.email}',
+    );
+    Logger.debug(
+      '📧 ProfileView: User details - ID: ${user.id}, Name: ${user.name}, Email: ${user.email}',
+    );
+    Logger.debug(
+      '📧 ProfileView: User token: ${user.token?.substring(0, 10)}...',
+    );
     Logger.debug('📧 ProfileView: User token length: ${user.token?.length}');
     Logger.debug('📧 ProfileView: User token is null: ${user.token == null}');
     Logger.debug('📧 ProfileView: User token is empty: ${user.token?.isEmpty}');
-    
+
     // Token validation
     if (user.token == null || user.token!.trim().isEmpty) {
       Logger.error('❌ ProfileView: User token is empty');
-      
+
       // Token'ı UserService'den almaya çalış
       final userService = UserService();
       final tokenFromService = await userService.getUserToken();
-      Logger.debug('📧 ProfileView: Token from UserService: ${tokenFromService?.substring(0, 10)}...');
-      
+      Logger.debug(
+        '📧 ProfileView: Token from UserService: ${tokenFromService?.substring(0, 10)}...',
+      );
+
       if (tokenFromService != null && tokenFromService.isNotEmpty) {
         Logger.info('📧 ProfileView: Using token from UserService');
         // UserService'den alınan token ile devam et
         await _sendEmailVerificationWithToken(tokenFromService);
         return;
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.'),
+          content: Text(
+            'Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.',
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -1607,9 +1713,7 @@ class _ProfileViewState extends State<ProfileView>
       context: context,
       barrierDismissible: false,
       builder: (loadingContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Row(
           children: [
             const CircularProgressIndicator(),
@@ -1622,17 +1726,21 @@ class _ProfileViewState extends State<ProfileView>
 
     try {
       print('📧 ProfileView: Sending email verification code with token');
-      
+
       // Önce e-posta doğrulama kodunu gönder (userToken ile)
       final response = await authViewModel.resendEmailVerificationCodeWithToken(
         userToken: user.token ?? '',
       );
-      
+
       Logger.debug('📧 ProfileView: Email verification response received');
       Logger.debug('📧 ProfileView: Response is null: ${response == null}');
       if (response != null) {
-        Logger.debug('📧 ProfileView: Response keys: ${response.keys.toList()}');
-        Logger.debug('📧 ProfileView: Response contains codeToken: ${response.containsKey('codeToken')}');
+        Logger.debug(
+          '📧 ProfileView: Response keys: ${response.keys.toList()}',
+        );
+        Logger.debug(
+          '📧 ProfileView: Response contains codeToken: ${response.containsKey('codeToken')}',
+        );
       }
 
       // Loading dialog'u kapat
@@ -1650,37 +1758,50 @@ class _ProfileViewState extends State<ProfileView>
           );
         }
 
-        // API'den gelen codeToken'ı al veya geçici değer kullan
-        String codeToken = 'temp_code_token';
-        if (response.containsKey('codeToken') && response['codeToken'] != null) {
-          codeToken = response['codeToken'].toString();
+        // API'den gelen codeToken zorunlu
+        if (!response.containsKey('codeToken') ||
+            response['codeToken'] == null ||
+            response['codeToken'].toString().isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Doğrulama kodu alınamadı. Lütfen tekrar deneyin.',
+                ),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
         }
+
+        final String codeToken = response['codeToken'].toString();
 
         // E-posta doğrulama sayfasına yönlendir
         if (mounted) {
           Navigator.pushNamed(
             context,
             '/email-verification',
-            arguments: {
-              'email': user.email,
-              'codeToken': codeToken,
-            },
+            arguments: {'email': user.email, 'codeToken': codeToken},
           );
         }
       } else {
         // Token hatası varsa login sayfasına yönlendir
-        if (authViewModel.errorMessage?.contains('oturum') == true || 
+        if (authViewModel.errorMessage?.contains('oturum') == true ||
             authViewModel.errorMessage?.contains('token') == true ||
             authViewModel.errorMessage?.contains('giriş') == true) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.'),
+                content: Text(
+                  'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.',
+                ),
                 backgroundColor: Colors.red,
                 behavior: SnackBarBehavior.floating,
               ),
             );
-            
+
             // Login sayfasına yönlendir
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -1689,24 +1810,16 @@ class _ProfileViewState extends State<ProfileView>
             );
           }
         } else {
-          // Diğer hatalar için e-posta doğrulama sayfasına yönlendir
+          // Diğer hatalar için uyarı göster ve yönlendirme yapma
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(authViewModel.errorMessage ?? 'E-posta gönderilemedi'),
+                content: Text(
+                  authViewModel.errorMessage ?? 'E-posta gönderilemedi',
+                ),
                 backgroundColor: Colors.orange,
                 behavior: SnackBarBehavior.floating,
               ),
-            );
-            
-            // E-posta doğrulama sayfasına yönlendir (hata olsa bile)
-            Navigator.pushNamed(
-              context,
-              '/email-verification',
-              arguments: {
-                'email': user.email,
-                'codeToken': 'temp_code_token',
-              },
             );
           }
         }
@@ -1715,7 +1828,7 @@ class _ProfileViewState extends State<ProfileView>
       // Loading dialog'u kapat
       if (mounted) Navigator.pop(context);
 
-      // Hata mesajı göster ve e-posta doğrulama sayfasına yönlendir
+      // Hata mesajı göster ve yönlendirme yapma
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1724,31 +1837,19 @@ class _ProfileViewState extends State<ProfileView>
             behavior: SnackBarBehavior.floating,
           ),
         );
-        
-        // E-posta doğrulama sayfasına yönlendir
-        Navigator.pushNamed(
-          context,
-          '/email-verification',
-          arguments: {
-            'email': user.email,
-            'codeToken': 'temp_code_token',
-          },
-        );
       }
     }
   }
 
   Future<void> _sendEmailVerificationWithToken(String userToken) async {
     if (!mounted) return;
-    
+
     // Loading dialog göster
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (loadingContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Row(
           children: [
             const CircularProgressIndicator(),
@@ -1760,20 +1861,26 @@ class _ProfileViewState extends State<ProfileView>
     );
 
     try {
-      Logger.debug('📧 ProfileView: Sending email verification code with token');
-      
+      Logger.debug(
+        '📧 ProfileView: Sending email verification code with token',
+      );
+
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      
+
       // E-posta doğrulama kodunu gönder (userToken ile)
       final response = await authViewModel.resendEmailVerificationCodeWithToken(
         userToken: userToken,
       );
-      
+
       Logger.debug('📧 ProfileView: Email verification response received');
       Logger.debug('📧 ProfileView: Response is null: ${response == null}');
       if (response != null) {
-        Logger.debug('📧 ProfileView: Response keys: ${response.keys.toList()}');
-        Logger.debug('📧 ProfileView: Response contains codeToken: ${response.containsKey('codeToken')}');
+        Logger.debug(
+          '📧 ProfileView: Response keys: ${response.keys.toList()}',
+        );
+        Logger.debug(
+          '📧 ProfileView: Response contains codeToken: ${response.containsKey('codeToken')}',
+        );
       }
 
       // Loading dialog'u kapat
@@ -1791,11 +1898,25 @@ class _ProfileViewState extends State<ProfileView>
           );
         }
 
-        // API'den gelen codeToken'ı al veya geçici değer kullan
-        String codeToken = 'temp_code_token';
-        if (response.containsKey('codeToken') && response['codeToken'] != null) {
-          codeToken = response['codeToken'].toString();
+        // API'den gelen codeToken zorunlu
+        if (!response.containsKey('codeToken') ||
+            response['codeToken'] == null ||
+            response['codeToken'].toString().isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Doğrulama kodu alınamadı. Lütfen tekrar deneyin.',
+                ),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
         }
+
+        final String codeToken = response['codeToken'].toString();
 
         // E-posta doğrulama sayfasına yönlendir
         if (mounted) {
@@ -1810,18 +1931,20 @@ class _ProfileViewState extends State<ProfileView>
         }
       } else {
         // Token hatası varsa login sayfasına yönlendir
-        if (authViewModel.errorMessage?.contains('oturum') == true || 
+        if (authViewModel.errorMessage?.contains('oturum') == true ||
             authViewModel.errorMessage?.contains('token') == true ||
             authViewModel.errorMessage?.contains('giriş') == true) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.'),
+                content: Text(
+                  'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.',
+                ),
                 backgroundColor: Colors.red,
                 behavior: SnackBarBehavior.floating,
               ),
             );
-            
+
             // Login sayfasına yönlendir
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -1830,24 +1953,16 @@ class _ProfileViewState extends State<ProfileView>
             );
           }
         } else {
-          // Diğer hatalar için e-posta doğrulama sayfasına yönlendir
+          // Diğer hatalar için uyarı göster ve yönlendirme yapma
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(authViewModel.errorMessage ?? 'E-posta gönderilemedi'),
+                content: Text(
+                  authViewModel.errorMessage ?? 'E-posta gönderilemedi',
+                ),
                 backgroundColor: Colors.orange,
                 behavior: SnackBarBehavior.floating,
               ),
-            );
-            
-            // E-posta doğrulama sayfasına yönlendir (hata olsa bile)
-            Navigator.pushNamed(
-              context,
-              '/email-verification',
-              arguments: {
-                'email': authViewModel.currentUser?.email ?? '',
-                'codeToken': 'temp_code_token',
-              },
             );
           }
         }
@@ -1856,7 +1971,7 @@ class _ProfileViewState extends State<ProfileView>
       // Loading dialog'u kapat
       if (mounted) Navigator.pop(context);
 
-      // Hata mesajı göster ve e-posta doğrulama sayfasına yönlendir
+      // Hata mesajı göster ve yönlendirme yapma
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1865,21 +1980,9 @@ class _ProfileViewState extends State<ProfileView>
             behavior: SnackBarBehavior.floating,
           ),
         );
-        
-        // E-posta doğrulama sayfasına yönlendir
-        Navigator.pushNamed(
-          context,
-          '/email-verification',
-          arguments: {
-            'email': Provider.of<AuthViewModel>(context, listen: false).currentUser?.email ?? '',
-            'codeToken': 'temp_code_token',
-          },
-        );
       }
     }
   }
-
-
 }
 
 class _NoStretchScrollBehavior extends ScrollBehavior {
@@ -1891,7 +1994,11 @@ class _NoStretchScrollBehavior extends ScrollBehavior {
   }
 
   @override
-  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
     return NotificationListener<OverscrollIndicatorNotification>(
       onNotification: (notification) {
         notification.disallowIndicator();

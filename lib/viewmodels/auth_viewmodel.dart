@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
@@ -263,6 +264,7 @@ class AuthViewModel extends ChangeNotifier {
         idToken: googleIdToken,
         deviceID: deviceID,
         fcmToken: fcmToken,
+        devicePlatform: await _getDevicePlatform(),
       );
 
       if (response.isSuccess && response.data != null) {
@@ -317,6 +319,7 @@ class AuthViewModel extends ChangeNotifier {
         idToken: appleIdToken,
         deviceID: deviceID,
         fcmToken: fcmToken,
+        devicePlatform: await _getDevicePlatform(),
       );
 
       if (response.isSuccess && response.data != null) {
@@ -721,6 +724,16 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  /// SharedPreferences'ta saklanan kullanıcı token'ını döner
+  Future<String?> getStoredUserToken() async {
+    try {
+      return await _authService.getCurrentUserToken();
+    } catch (e) {
+      Logger.error('❌ AuthViewModel.getStoredUserToken error: $e');
+      return null;
+    }
+  }
+
   Future<bool> updatePassword({
     required String passToken,
     required String password,
@@ -1010,6 +1023,21 @@ class AuthViewModel extends ChangeNotifier {
 
   bool _isValidEmail(String email) {
     return RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
+  }
+
+  // Cihaz platformunu tespit et
+  Future<String> _getDevicePlatform() async {
+    try {
+      if (Platform.isIOS) {
+        return 'ios';
+      } else if (Platform.isAndroid) {
+        return 'android';
+      } else {
+        return 'web';
+      }
+    } catch (e) {
+      return 'unknown';
+    }
   }
 
   void _setLoading(bool loading) {

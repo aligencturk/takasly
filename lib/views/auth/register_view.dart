@@ -40,54 +40,54 @@ class RegisterView extends StatelessWidget {
           behavior: HitTestBehavior.translucent,
           onTap: () => FocusScope.of(context).unfocus(),
           child: Column(
-          children: [
-            // İçerik bölümü (arka plan görseli üzerinden)
-            Expanded(
-              child: Container(
-                color: Colors.transparent,
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  isKeyboardOpen ? 8 : 24,
-                  24,
-                  isKeyboardOpen ? 8 : 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Kayıt Formu
-                    const Expanded(
-                      child: SingleChildScrollView(child: _RegisterForm()),
-                    ),
+            children: [
+              // İçerik bölümü (arka plan görseli üzerinden)
+              Expanded(
+                child: Container(
+                  color: Colors.transparent,
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    isKeyboardOpen ? 8 : 24,
+                    24,
+                    isKeyboardOpen ? 8 : 24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Kayıt Formu
+                      const Expanded(
+                        child: SingleChildScrollView(child: _RegisterForm()),
+                      ),
 
-                    // Giriş Yap Butonu
-                    Visibility(
-                      visible: !isKeyboardOpen,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Zaten hesabın var mı?",
-                            style: textTheme.bodyMedium,
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text(
-                              'Giriş Yap',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold,
+                      // Giriş Yap Butonu
+                      Visibility(
+                        visible: !isKeyboardOpen,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Zaten hesabın var mı?",
+                              style: textTheme.bodyMedium,
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text(
+                                'Giriş Yap',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -173,75 +173,66 @@ class _RegisterFormState extends State<_RegisterForm> {
 
     if (mounted) {
       if (success) {
-        // Kayıt başarılıysa önce doğrulama kodu gönder ve codeToken al
+        // Kayıt başarılı -> codeToken mutlaka alınmalı, aksi halde yönlendirme yapılmaz
         Logger.debug(
-          '✅ Kayıt başarılı, doğrulama kodu gönderiliyor...',
+          '✅ Kayıt başarılı, doğrulama kodu gönderilecek ve codeToken alınacak...',
           tag: 'RegisterView',
         );
 
-        // Önce email ile deneyelim
-        var resendResponse = await authViewModel.resendEmailVerificationCode(
-          email: _emailController.text.trim(),
-        );
+        Map<String, dynamic>? resendResponse;
 
-        Logger.debug(
-          '📧 Email ile resend response: $resendResponse',
-          tag: 'RegisterView',
-        );
+        // Her zaman userToken ile resend yap (email ile değil)
+        String? tokenForResend = authViewModel.currentUser?.token;
+        if (tokenForResend == null || tokenForResend.isEmpty) {
+          // ViewModel üzerinden depodaki token'ı al
+          tokenForResend = await authViewModel.getStoredUserToken();
+        }
 
-        // Eğer başarısız olursa, token ile deneyelim
-        if (resendResponse == null) {
-          Logger.debug(
-            '⚠️ Email ile resend başarısız, token ile deneyelim...',
+        if (tokenForResend == null || tokenForResend.isEmpty) {
+          Logger.error(
+            '❌ userToken bulunamadı, codeToken alınamadı',
             tag: 'RegisterView',
           );
-
-          final user = authViewModel.currentUser;
-          Logger.debug('👤 Current user: ${user?.name}', tag: 'RegisterView');
-          Logger.debug(
-            '🔑 User token: ${user?.token?.substring(0, 10)}...',
-            tag: 'RegisterView',
+          _showErrorSnackBar(
+            'Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.',
           );
-
-          if (user != null && user.token != null && user.token!.isNotEmpty) {
-            resendResponse = await authViewModel
-                .resendEmailVerificationCodeWithToken(userToken: user.token!);
-            Logger.debug(
-              '🔑 Token ile resend response: $resendResponse',
-              tag: 'RegisterView',
-            );
-          } else {
-            Logger.warning('⚠️ User token bulunamadı', tag: 'RegisterView');
-          }
+          return;
         }
 
         Logger.debug(
-          '📊 Final resend response: $resendResponse',
+          '🔑 Token ile resend denemesi yapılıyor...',
           tag: 'RegisterView',
         );
+        resendResponse = await authViewModel
+            .resendEmailVerificationCodeWithToken(userToken: tokenForResend);
         Logger.debug(
-          '❌ AuthViewModel error: ${authViewModel.errorMessage}',
+          '🔑 Token ile resend response: $resendResponse',
           tag: 'RegisterView',
         );
 
-        String codeToken = 'temp_code_token';
+        // 3) codeToken doğrula
+        final String? codeToken =
+            resendResponse != null &&
+                resendResponse['codeToken'] != null &&
+                resendResponse['codeToken'].toString().isNotEmpty
+            ? resendResponse['codeToken'].toString()
+            : null;
 
-        if (resendResponse != null && resendResponse.containsKey('codeToken')) {
-          codeToken = resendResponse['codeToken'].toString();
-          Logger.debug(
-            '✅ Gerçek codeToken alındı: ${codeToken.substring(0, 10)}...',
+        if (codeToken == null) {
+          Logger.error(
+            '❌ codeToken alınamadı, yönlendirme iptal edildi',
             tag: 'RegisterView',
           );
-        } else {
-          Logger.warning(
-            '⚠️ codeToken alınamadı, geçici değer kullanılıyor',
-            tag: 'RegisterView',
+          _showErrorSnackBar(
+            'Doğrulama kodu gönderilemedi. Lütfen tekrar deneyin.',
           );
-          Logger.debug(
-            '📋 ResendResponse keys: ${resendResponse?.keys.toList()}',
-            tag: 'RegisterView',
-          );
+          return;
         }
+
+        Logger.debug(
+          '✅ codeToken hazır: ${codeToken.substring(0, 10)}...',
+          tag: 'RegisterView',
+        );
 
         Navigator.of(context).pushReplacementNamed(
           '/email-verification',

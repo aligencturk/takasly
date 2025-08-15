@@ -141,6 +141,7 @@ class AuthService {
     String? idToken, // google ve apple için
     required String deviceID,
     String? fcmToken,
+    String? devicePlatform, // 'ios', 'android', 'web'
   }) async {
     try {
       // Eski kullanıcı verilerini temizle
@@ -151,6 +152,15 @@ class AuthService {
         'deviceID': deviceID,
         'version': '1.0.0',
       };
+
+      // devicePlatform parametresini ekle
+      if (devicePlatform != null && devicePlatform.isNotEmpty) {
+        body['devicePlatform'] = devicePlatform;
+      } else {
+        // Eğer devicePlatform verilmemişse otomatik olarak tespit et
+        final autoPlatform = await _getPlatform();
+        body['devicePlatform'] = autoPlatform;
+      }
 
       if (fcmToken != null && fcmToken.isNotEmpty) {
         body['fcmToken'] = fcmToken;
@@ -714,12 +724,46 @@ class AuthService {
             if (json.containsKey('codeToken') && json['codeToken'] != null) {
               codeToken = json['codeToken'].toString();
               Logger.debug('🔑 CodeToken found in response root: $codeToken');
+            } else if (json.containsKey('code_token') &&
+                json['code_token'] != null) {
+              codeToken = json['code_token'].toString();
+              Logger.debug(
+                '🔑 CodeToken found in response root (snake): $codeToken',
+              );
             } else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
               if (data.containsKey('codeToken') && data['codeToken'] != null) {
                 codeToken = data['codeToken'].toString();
                 Logger.debug('🔑 CodeToken found in data object: $codeToken');
+              } else if (data.containsKey('code_token') &&
+                  data['code_token'] != null) {
+                codeToken = data['code_token'].toString();
+                Logger.debug(
+                  '🔑 CodeToken found in data object (snake): $codeToken',
+                );
+              } else if (data.containsKey('mail') &&
+                  data['mail'] is Map<String, dynamic>) {
+                final mail = data['mail'] as Map<String, dynamic>;
+                if (mail['codeToken'] != null) {
+                  codeToken = mail['codeToken'].toString();
+                  Logger.debug('🔑 CodeToken found in data.mail: $codeToken');
+                } else if (mail['code_token'] != null) {
+                  codeToken = mail['code_token'].toString();
+                  Logger.debug(
+                    '🔑 CodeToken found in data.mail (snake): $codeToken',
+                  );
+                }
+              }
+            } else if (json.containsKey('mail') &&
+                json['mail'] is Map<String, dynamic>) {
+              final mail = json['mail'] as Map<String, dynamic>;
+              if (mail['codeToken'] != null) {
+                codeToken = mail['codeToken'].toString();
+                Logger.debug('🔑 CodeToken found in mail: $codeToken');
+              } else if (mail['code_token'] != null) {
+                codeToken = mail['code_token'].toString();
+                Logger.debug('🔑 CodeToken found in mail (snake): $codeToken');
               }
             }
 
@@ -801,12 +845,46 @@ class AuthService {
             if (json.containsKey('codeToken') && json['codeToken'] != null) {
               codeToken = json['codeToken'].toString();
               Logger.debug('🔑 CodeToken found in response root: $codeToken');
+            } else if (json.containsKey('code_token') &&
+                json['code_token'] != null) {
+              codeToken = json['code_token'].toString();
+              Logger.debug(
+                '🔑 CodeToken found in response root (snake): $codeToken',
+              );
             } else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
               final data = json['data'] as Map<String, dynamic>;
               if (data.containsKey('codeToken') && data['codeToken'] != null) {
                 codeToken = data['codeToken'].toString();
                 Logger.debug('🔑 CodeToken found in data object: $codeToken');
+              } else if (data.containsKey('code_token') &&
+                  data['code_token'] != null) {
+                codeToken = data['code_token'].toString();
+                Logger.debug(
+                  '🔑 CodeToken found in data object (snake): $codeToken',
+                );
+              } else if (data.containsKey('mail') &&
+                  data['mail'] is Map<String, dynamic>) {
+                final mail = data['mail'] as Map<String, dynamic>;
+                if (mail['codeToken'] != null) {
+                  codeToken = mail['codeToken'].toString();
+                  Logger.debug('🔑 CodeToken found in data.mail: $codeToken');
+                } else if (mail['code_token'] != null) {
+                  codeToken = mail['code_token'].toString();
+                  Logger.debug(
+                    '🔑 CodeToken found in data.mail (snake): $codeToken',
+                  );
+                }
+              }
+            } else if (json.containsKey('mail') &&
+                json['mail'] is Map<String, dynamic>) {
+              final mail = json['mail'] as Map<String, dynamic>;
+              if (mail['codeToken'] != null) {
+                codeToken = mail['codeToken'].toString();
+                Logger.debug('🔑 CodeToken found in mail: $codeToken');
+              } else if (mail['code_token'] != null) {
+                codeToken = mail['code_token'].toString();
+                Logger.debug('🔑 CodeToken found in mail (snake): $codeToken');
               }
             }
 
