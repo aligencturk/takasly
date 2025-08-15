@@ -15,14 +15,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "422264804561-5vusvdlo298es4p8dsg1dvhar7lih11u.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.rivorya.takaslyapp",
-            "certificate_hash": "5edb8e013c89a17bcd6ce2793bb576dcb6782be9"
-          }
-        },
-        {
           "client_id": "422264804561-lk8btjq6gsqepm3as0s383crgmotiaeq.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -40,10 +32,10 @@
               "client_type": 3
             },
             {
-              "client_id": "422264804561-lgv323ms44c16f323qf8s97k1e23houk.apps.googleusercontent.com",
+              "client_id": "422264804561-llio284tijfqkh873at3ci09fna2epl0.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.takasly.takasly"
+                "bundle_id": "com.rivorya.takaslyapp"
               }
             }
           ]
