@@ -148,7 +148,7 @@ class _ChatListViewState extends State<ChatListView> {
                 ];
 
                 // Her 6 sohbetten sonra 1 reklam satırı eklemek için toplam öğe sayısını hesapla
-                const int adInterval = 6; // 6 satırda bir reklam
+                const int adInterval = 5; // 5 satırda bir reklam
                 final int adCount = sortedChats.isEmpty
                     ? 0
                     : (sortedChats.length / adInterval).floor();
