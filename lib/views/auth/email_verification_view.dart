@@ -28,12 +28,7 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
     super.initState();
     _currentCodeToken = widget.codeToken;
 
-    // Eğer codeToken yoksa, otomatik olarak kod gönder
-    if (_currentCodeToken.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _resendVerificationCode();
-      });
-    }
+    // Otomatik resend kaldırıldı; kullanıcı manuel tetikleyecek
   }
 
   @override

@@ -438,7 +438,7 @@ class AuthService {
 
               // Kullanıcı verilerini SharedPreferences'a kaydet
               await _saveUserData(completeUser, token);
-              
+
               return ApiResponse.success({
                 'user': completeUser,
                 'token': token,
@@ -461,7 +461,7 @@ class AuthService {
 
         // Kullanıcı verilerini SharedPreferences'a kaydet
         await _saveUserData(user, token);
-        
+
         return ApiResponse.success({
           'user': user,
           'token': token,
