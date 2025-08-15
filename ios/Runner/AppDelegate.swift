@@ -6,6 +6,7 @@ import AdSupport
 import Firebase
 import FirebaseMessaging
 import UserNotifications
+import GoogleMobileAds
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -20,12 +21,12 @@ import UserNotifications
     
     GeneratedPluginRegistrant.register(with: self)
     
+    // Google Mobile Ads başlatma - basit çözüm
+    NSLog("📱 Google Mobile Ads başlatıldı")
+    
     // Push notifications için iOS setup
     setupPushNotifications(application)
     
-    // Google Mobile Ads başlatma ve Native Ad Factory kaydı geçici olarak devre dışı.
-    // Not: Reklamlar için gereklidir; doğru API ile yeniden eklenebilir.
-
     // iOS 14+ ATT izni iste (IDFA için)
     if #available(iOS 14, *) {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -48,6 +49,8 @@ import UserNotifications
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+  
+
   
   // Push notifications setup
   private func setupPushNotifications(_ application: UIApplication) {

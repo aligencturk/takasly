@@ -58,7 +58,6 @@ class _NativeAdDetailFooterState extends State<NativeAdDetailFooter>
 
       final ad = NativeAd(
         adUnitId: _adMobService.nativeAdUnitId,
-        factoryId: 'listTile',
         request: const AdRequest(),
         listener: NativeAdListener(
           onAdLoaded: (ad) {

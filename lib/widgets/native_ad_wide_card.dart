@@ -57,7 +57,6 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
 
       final ad = NativeAd(
         adUnitId: _adMobService.nativeAdUnitId,
-        factoryId: 'listTile',
         request: const AdRequest(),
         listener: NativeAdListener(
           onAdLoaded: (ad) {

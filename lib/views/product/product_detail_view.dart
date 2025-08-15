@@ -204,29 +204,274 @@ Takasly uygulamasından paylaşıldı.
 
 ''';
 
-    // Sistem paylaşma menüsünü kullan
-    Share.share(shareText, subject: 'Takasly - ${product.title}').then((_) {
-      // Paylaşma işlemi sonrasında kullanıcıya bildirim göster
+    // WhatsApp ve diğer platformlar için özel paylaşım seçenekleri
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12, bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  // WhatsApp Paylaşım
+                  ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      child: Image.asset(
+                        'assets/icons/image.png',
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          Logger.error('Asset yüklenemedi: $error');
+                          return const Icon(
+                            Icons.image,
+                            color: Colors.white,
+                            size: 24,
+                          );
+                        },
+                      ),
+                    ),
+                    title: const Text(
+                      'WhatsApp ile Paylaş',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'WhatsApp üzerinden arkadaşlarınızla paylaşın',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _shareToWhatsApp(product, shareText);
+                    },
+                  ),
+                  const Divider(height: 1),
+                  // Genel Paylaşım
+                  ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.share,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    title: const Text(
+                      'Diğer Uygulamalarla Paylaş',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Tüm paylaşım seçeneklerini görün',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _shareToOtherApps(shareText, product.title);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// WhatsApp'a özel paylaşım
+  Future<void> _shareToWhatsApp(Product product, String shareText) async {
+    try {
+      final productUrl = product.shareLink ?? 'https://takasly.com/product/${product.id}';
+      
+      // WhatsApp için özel format - daha kısa ve etkili
+      final whatsappText = '''
+${product.title}
+
+${product.description != null && product.description!.isNotEmpty ? '${product.description!.substring(0, product.description!.length > 100 ? 100 : product.description!.length)}...' : ''}
+
+$productUrl
+
+Takasly uygulamasından paylaşıldı.
+''';
+
+      // WhatsApp URL scheme - daha güvenilir yöntem
+      final whatsappUrl = 'whatsapp://send?text=${Uri.encodeComponent(whatsappText.trim())}';
+      
+      // WhatsApp yüklü mü kontrol et
+      final canLaunchWhatsApp = await canLaunchUrl(Uri.parse(whatsappUrl));
+      
+      if (canLaunchWhatsApp) {
+        try {
+          final result = await launchUrl(
+            Uri.parse(whatsappUrl),
+            mode: LaunchMode.externalApplication,
+          );
+          
+          if (result && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    ImageIcon(
+                      const AssetImage('assets/icons/image.png'),
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    SizedBox(width: 8),
+                    Text('WhatsApp ile paylaşıldı'),
+                  ],
+                ),
+                backgroundColor: const Color(0xFF25D366),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } catch (e) {
+          Logger.error('WhatsApp URL açma hatası: $e');
+          // Hata durumunda alternatif yöntem dene
+          try {
+            await launchUrl(
+              Uri.parse(whatsappUrl),
+              mode: LaunchMode.platformDefault,
+            );
+          } catch (e2) {
+            Logger.error('WhatsApp alternatif açma hatası: $e2');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('WhatsApp açılamadı: $e2'),
+                  backgroundColor: AppTheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          }
+        }
+      } else {
+        // WhatsApp yüklü değilse Play Store'a yönlendir
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('WhatsApp Bulunamadı'),
+              content: const Text(
+                'WhatsApp uygulaması yüklü değil. Yüklemek ister misiniz?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('İptal'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    // Play Store'a yönlendir
+                    final playStoreUrl = Platform.isIOS 
+                        ? 'https://apps.apple.com/app/whatsapp-messenger/id310633997'
+                        : 'https://play.google.com/store/apps/details?id=com.whatsapp';
+                    await launchUrl(Uri.parse(playStoreUrl));
+                  },
+                  child: Text('Yükle'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      Logger.error('WhatsApp paylaşım hatası: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.share, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('İlan paylaşıldı'),
-              ],
-            ),
-            backgroundColor: AppTheme.primary,
+            content: Text('WhatsApp paylaşımında hata: $e'),
+            backgroundColor: AppTheme.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: Duration(seconds: 2),
           ),
         );
       }
-    });
+    }
+  }
+
+
+
+
+
+  /// Diğer uygulamalarla paylaşım
+  Future<void> _shareToOtherApps(String shareText, String title) async {
+    try {
+      await Share.share(
+        shareText, 
+        subject: 'Takasly - $title',
+        sharePositionOrigin: Rect.fromLTWH(0, 0, 100, 100),
+      ).then((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.share, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Text('İlan paylaşıldı'),
+                ],
+              ),
+              backgroundColor: AppTheme.primary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      Logger.error('Genel paylaşım hatası: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Paylaşım hatası: $e'),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override

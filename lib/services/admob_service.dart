@@ -27,20 +27,20 @@ class AdMobService {
   static const String _androidNativeAdUnitIdProd =
       'ca-app-pub-3600325889588673/5822213790'; // Gerçek Android prod ID
   static const String _iosNativeAdUnitIdProd =
-      'ca-app-pub-3600325889588673/3365147820';
+      'ca-app-pub-3600325889588673/1202018911';
 
   // Banner Ad Unit IDs
   // Debug/Test (Google Resmi Test ID'leri)
   static const String _androidBannerAdUnitIdTest =
       'ca-app-pub-3940256099942544/6300978111';
   static const String _iosBannerAdUnitIdTest =
-      'ca-app-pub-3940256099942544/2934735716';
+      'ca-app-pub-3600325889588673/3365147820';
 
   // Production (kendi birimleriniz)
   static const String _androidBannerAdUnitIdProd =
       'ca-app-pub-3600325889588673/7805712447';
   static const String _iosBannerAdUnitIdProd =
-      'ca-app-pub-3600325889588673/0000000000'; // Placeholder, bilinmiyor
+      'ca-app-pub-3600325889588673/3365147820'; // Placeholder, bilinmiyor
 
   bool _isInitialized = false;
   NativeAd? _nativeAd;

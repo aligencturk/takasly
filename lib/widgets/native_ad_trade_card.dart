@@ -57,8 +57,6 @@ class _NativeAdTradeCardState extends State<NativeAdTradeCard>
 
       final ad = NativeAd(
         adUnitId: _adMobService.nativeAdUnitId,
-        // Aynı fabrika ID'si kullanılıyor; görünümü dış kapsayıcı ile TradeCard'a benzetiyoruz
-        factoryId: 'listTile',
         request: const AdRequest(),
         listener: NativeAdListener(
           onAdLoaded: (ad) {
