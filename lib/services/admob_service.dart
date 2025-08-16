@@ -108,45 +108,29 @@ class AdMobService {
     return _androidAppId; // Default
   }
 
-  /// Native Ad Unit ID'sini al (Production ID'leri kullan)
+  /// Native Ad Unit ID'sini al (Production)
   String get nativeAdUnitId {
     if (Platform.isAndroid) {
       final id = _androidNativeAdUnitIdProd;
-      Logger.info(
-        '📡 AdMobService - Android NativeAdUnitId: $id (production)',
-      );
-      Logger.info(
-        '✅ AdMobService - GERÇEK REKLAMLAR GÖSTERİLİYOR!',
-      );
+      Logger.info('📡 AdMobService - Android NativeAdUnitId: $id');
       return id;
     } else if (Platform.isIOS) {
       final id = _iosNativeAdUnitIdProd;
-      Logger.info('📡 AdMobService - iOS NativeAdUnitId: $id (production)');
-      Logger.info(
-        '✅ AdMobService - GERÇEK REKLAMLAR GÖSTERİLİYOR!',
-      );
+      Logger.info('📡 AdMobService - iOS NativeAdUnitId: $id');
       return id;
     }
     return _androidNativeAdUnitIdProd; // Default
   }
 
-  /// Banner Ad Unit ID'sini al (Production ID'leri kullan)
+  /// Banner Ad Unit ID'sini al (Production)
   String get bannerAdUnitId {
     if (Platform.isAndroid) {
       final id = _androidBannerAdUnitIdProd;
-      Logger.info(
-        '📡 AdMobService - Android BannerAdUnitId: $id (production)',
-      );
-      Logger.info(
-        '✅ AdMobService - GERÇEK REKLAMLAR GÖSTERİLİYOR!',
-      );
+      Logger.info('📡 AdMobService - Android BannerAdUnitId: $id');
       return id;
     } else if (Platform.isIOS) {
       final id = _iosBannerAdUnitIdProd;
-      Logger.info('📡 AdMobService - iOS BannerAdUnitId: $id (production)');
-      Logger.info(
-        '✅ AdMobService - GERÇEK REKLAMLAR GÖSTERİLİYOR!',
-      );
+      Logger.info('📡 AdMobService - iOS BannerAdUnitId: $id');
       return id;
     }
     return _androidBannerAdUnitIdProd; // Default
