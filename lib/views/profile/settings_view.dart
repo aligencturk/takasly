@@ -14,8 +14,6 @@ class SettingsView extends StatefulWidget {
 }
 
 class _SettingsViewState extends State<SettingsView> {
-  
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,10 +69,7 @@ class _SettingsViewState extends State<SettingsView> {
               ),
             ),
           ),
-          Container(
-            height: 1,
-            color: Colors.grey[200],
-          ),
+          Container(height: 1, color: Colors.grey[200]),
           _buildSettingItem(
             icon: Icons.person_outline,
             title: 'Profili Düzenle',
@@ -124,10 +119,7 @@ class _SettingsViewState extends State<SettingsView> {
               ),
             ),
           ),
-          Container(
-            height: 1,
-            color: Colors.grey[200],
-          ),
+          Container(height: 1, color: Colors.grey[200]),
           _buildSettingItem(
             icon: Icons.notifications_outlined,
             title: 'Bildirimler',
@@ -148,9 +140,7 @@ class _SettingsViewState extends State<SettingsView> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const PrivacyView(),
-                ),
+                MaterialPageRoute(builder: (context) => const PrivacyView()),
               );
             },
           ),
@@ -190,10 +180,7 @@ class _SettingsViewState extends State<SettingsView> {
               ),
             ),
           ),
-          Container(
-            height: 1,
-            color: Colors.grey[200],
-          ),
+          Container(height: 1, color: Colors.grey[200]),
           _buildSettingItem(
             icon: Icons.logout,
             title: 'Çıkış Yap',
@@ -222,11 +209,7 @@ class _SettingsViewState extends State<SettingsView> {
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              Icon(
-                icon,
-                color: textColor ?? Colors.grey[700],
-                size: 24,
-              ),
+              Icon(icon, color: textColor ?? Colors.grey[700], size: 24),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -278,9 +261,7 @@ class _SettingsViewState extends State<SettingsView> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             Container(
@@ -376,4 +357,4 @@ class _SettingsViewState extends State<SettingsView> {
       ),
     );
   }
-} 
+}
