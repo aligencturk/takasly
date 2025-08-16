@@ -83,6 +83,41 @@ class GeneralViewModel extends ChangeNotifier {
 
   /// App Icon URL'ini alır (favicon field'ından)
   String? get appIconUrl => getLogoUrl('favicon');
+  
+  /// App Icon'u günceller
+  Future<void> updateAppIcon() async {
+    try {
+      Logger.info('🎨 GeneralViewModel - App icon güncelleniyor...', tag: 'GeneralViewModel');
+      
+      final appIconUrl = this.appIconUrl;
+      if (appIconUrl == null || appIconUrl.isEmpty) {
+        Logger.warning('⚠️ GeneralViewModel - App icon URL bulunamadı', tag: 'GeneralViewModel');
+        return;
+      }
+      
+      // App icon güncelleme işlemi burada yapılacak
+      await _updateAppIconFromUrl(appIconUrl);
+      
+      Logger.info('✅ GeneralViewModel - App icon başarıyla güncellendi', tag: 'GeneralViewModel');
+    } catch (e) {
+      Logger.error('❌ GeneralViewModel - App icon güncellenirken hata: $e', tag: 'GeneralViewModel');
+    }
+  }
+  
+  /// URL'den app icon'u günceller
+  Future<void> _updateAppIconFromUrl(String iconUrl) async {
+    try {
+      // Bu fonksiyon daha sonra implement edilecek
+      Logger.debug('🔍 GeneralViewModel - Icon URL: $iconUrl', tag: 'GeneralViewModel');
+      
+      // TODO: Adaptive Icon ve Shortcut Icon güncelleme
+      // await _updateAdaptiveIcon(iconUrl);
+      // await _updateShortcutIcon(iconUrl);
+      
+    } catch (e) {
+      Logger.error('❌ GeneralViewModel - Icon güncellenirken hata: $e', tag: 'GeneralViewModel');
+    }
+  }
 
   // Private helper methods
   void _setLoading(bool loading) {
