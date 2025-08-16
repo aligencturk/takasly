@@ -415,10 +415,61 @@ class _TradeViewState extends State<TradeView>
                         : (trades.length / adInterval).floor();
                     final int totalItemCount = trades.length + adCount;
 
-                    return ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: totalItemCount,
-                      itemBuilder: (context, displayIndex) {
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        final userId = await _authService.getCurrentUserId();
+                        if (userId != null && _tradeViewModel != null) {
+                          try {
+                            Logger.info('🔄 Pull to refresh ile takaslar yenileniyor...', tag: 'TradeView');
+                            await _tradeViewModel!.loadUserTrades(int.parse(userId));
+                            
+                            if (mounted && _scaffoldMessenger != null) {
+                              _scaffoldMessenger!.showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(Icons.check_circle, color: Colors.white, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Takaslar yenilendi'),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            Logger.error('Pull to refresh hatası: $e', tag: 'TradeView');
+                            if (mounted && _scaffoldMessenger != null) {
+                              _scaffoldMessenger!.showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(Icons.error, color: Colors.white, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Yenileme sırasında hata oluştu'),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                      child: ListView.builder(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: totalItemCount,
+                        itemBuilder: (context, displayIndex) {
                         // Reklam yerleşimi: 5 takas + 1 reklam = 6'lı bloklar
                         if (displayIndex != 0 &&
                             (displayIndex + 1) % (adInterval + 1) == 0) {
@@ -853,8 +904,9 @@ class _TradeViewState extends State<TradeView>
                           ),
                         );
                       },
-                    );
-                  },
+                    ),
+                  );
+                },
                 ),
               ),
             ],
@@ -2775,11 +2827,15 @@ class _TradeViewState extends State<TradeView>
             _scaffoldMessenger!.showSnackBar(
               SnackBar(
                 content: Row(
-                  children: [
+                    children: [
                     Icon(Icons.check_circle, color: Colors.white),
                     SizedBox(width: 8),
-                    Text(
-                      'Takasınız tamamlandı! Karşı tarafın takası tamamlamasını bekliyorsunuz.',
+                    Flexible(
+                      child: Text(
+                      'Takasınız tamamlandı!\nKarşı tarafın takası tamamlamasını bekliyorsunuz.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),

@@ -84,10 +84,18 @@ class TradeCard extends StatelessWidget {
     final currentUserStatusID = _getCurrentUserStatusID();
     Logger.debug('🔍 Trade #${trade.offerID} - Review button check (Yeni Mantık):', tag: 'TradeCard');
     Logger.debug('  • currentUserStatusID: $currentUserStatusID', tag: 'TradeCard');
+    Logger.debug('  • senderStatusID: ${trade.senderStatusID}', tag: 'TradeCard');
+    Logger.debug('  • receiverStatusID: ${trade.receiverStatusID}', tag: 'TradeCard');
     Logger.debug('  • canGiveReview: ${trade.canGiveReview}', tag: 'TradeCard');
     Logger.debug('  • hasReview: ${trade.hasReview}', tag: 'TradeCard');
     Logger.debug('  • isSenderReview: ${trade.isSenderReview}', tag: 'TradeCard');
     Logger.debug('  • isReceiverReview: ${trade.isReceiverReview}', tag: 'TradeCard');
+
+    // ÖNEMLİ: Her iki tarafın da takası tamamlaması gerekli (statusID >= 4)
+    if (trade.senderStatusID < 4 || trade.receiverStatusID < 4) {
+      Logger.debug('🔍 Trade #${trade.offerID} - Her iki taraf henüz takası tamamlamamış (sender:${trade.senderStatusID}, receiver:${trade.receiverStatusID}), buton gösterilmeyecek', tag: 'TradeCard');
+      return false;
+    }
 
     // 1) Yeni alanlar mevcutsa (isSenderReview/isReceiverReview) doğrudan bunlara göre karar ver
     final int currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
@@ -108,7 +116,7 @@ class TradeCard extends StatelessWidget {
         return false;
       }
 
-      Logger.debug('✅ Trade #${trade.offerID} - Yeni alanlara göre kullanıcı değerlendirme yapmamış, buton gösterilecek', tag: 'TradeCard');
+      Logger.debug('✅ Trade #${trade.offerID} - Her iki taraf da tamamlamış ve kullanıcı değerlendirme yapmamış, buton gösterilecek', tag: 'TradeCard');
       return true;
     }
 
@@ -123,7 +131,7 @@ class TradeCard extends StatelessWidget {
     }
 
     if (trade.canGiveReview == true) {
-      Logger.debug('✅ Trade #${trade.offerID} - (Eski mantık) canGiveReview=true, buton gösterilecek', tag: 'TradeCard');
+      Logger.debug('✅ Trade #${trade.offerID} - (Eski mantık) Her iki taraf da tamamlamış ve canGiveReview=true, buton gösterilecek', tag: 'TradeCard');
       return true;
     }
 
