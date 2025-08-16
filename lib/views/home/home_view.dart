@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/notification_viewmodel.dart';
+import '../../viewmodels/general_viewmodel.dart';
 
 import '../../widgets/announcement_dialog.dart';
 import '../../widgets/product_card.dart';
@@ -84,6 +85,15 @@ class _HomeViewState extends State<HomeView> {
       if (productViewModel.categories.isEmpty) {
         productViewModel.loadCategories();
       }
+
+      // Logo bilgilerini yükle
+      final generalViewModel = Provider.of<GeneralViewModel>(
+        context,
+        listen: false,
+      );
+      Future.microtask(() {
+        generalViewModel.loadLogos();
+      });
 
       // Bildirimleri arka planda yükle
       final notificationViewModel = Provider.of<NotificationViewModel>(
@@ -624,10 +634,56 @@ class HomeAppBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Sol taraf - Logo
-          Image.asset(
-            'assets/icons/icontext.png',
-            width: screenWidth < 360 ? 100 : 120,
-            height: screenWidth < 360 ? 100 : 120,
+          Consumer<GeneralViewModel>(
+            builder: (context, generalViewModel, child) {
+              final logoUrl = generalViewModel.mainLogoUrl;
+
+              if (logoUrl != null && logoUrl.isNotEmpty) {
+                return Image.network(
+                  logoUrl,
+                  width: screenWidth < 360 ? 100 : 120,
+                  height: screenWidth < 360 ? 100 : 120,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    Logger.warning(
+                      '⚠️ HomeView - Logo yüklenemedi, fallback kullanılıyor: $error',
+                      tag: 'HomeView',
+                    );
+                    return Image.asset(
+                      'assets/icons/icontext.png',
+                      width: screenWidth < 360 ? 100 : 120,
+                      height: screenWidth < 360 ? 100 : 120,
+                    );
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      width: screenWidth < 360 ? 100 : 120,
+                      height: screenWidth < 360 ? 100 : 120,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.grey,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              } else {
+                // Logo henüz yüklenmediyse fallback kullan
+                return Image.asset(
+                  'assets/icons/icontext.png',
+                  width: screenWidth < 360 ? 100 : 120,
+                  height: screenWidth < 360 ? 100 : 120,
+                );
+              }
+            },
           ),
 
           // Sağ taraf - Bildirimler ve Favoriler ikonları
