@@ -10,6 +10,7 @@ import '../../models/product.dart';
 import '../../models/user.dart';
 import '../../widgets/report_dialog.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/fixed_bottom_banner_ad.dart';
 import '../../views/product/product_detail_view.dart';
 import '../../utils/logger.dart';
 
@@ -174,75 +175,46 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                   )
                 : !viewModel.hasData
                 ? const Center(child: Text('Profil bilgisi bulunamadı'))
-                : ScrollConfiguration(
-                    behavior: const _NoStretchScrollBehavior(),
-                    child: NestedScrollView(
-                      headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                        SliverToBoxAdapter(
-                          child: SafeArea(
-                            bottom: false,
-                            child: _buildProfileHeader(
-                              viewModel.profileDetail!,
-                            ),
-                          ),
-                        ),
-                        SliverAppBar(
-                          backgroundColor: Colors.white,
-                          pinned: true,
-                          primary: false,
-                          automaticallyImplyLeading: false,
-                          toolbarHeight: 0,
-                          bottom: PreferredSize(
-                            preferredSize: const Size.fromHeight(74),
-                            child: Container(
-                              color: Colors.white,
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 20,
+                : Stack(
+                    children: [
+                      ScrollConfiguration(
+                        behavior: const _NoStretchScrollBehavior(),
+                        child: NestedScrollView(
+                          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                            SliverToBoxAdapter(
+                              child: SafeArea(
+                                bottom: false,
+                                child: _buildProfileHeader(
+                                  viewModel.profileDetail!,
+                                ),
                               ),
-                              child: _tabController != null
-                                  ? TabBar(
-                                      controller: _tabController!,
-                                      isScrollable: true,
-                                      tabAlignment: TabAlignment.center,
-                                      labelColor: AppTheme.primary,
-                                      unselectedLabelColor: Colors.grey[600],
-                                      indicatorColor: AppTheme.primary,
-                                      indicatorWeight: 2,
-                                      labelPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                      ),
-                                      tabs: const [
-                                        Tab(
-                                          icon: Icon(
-                                            Icons.inventory_2_outlined,
-                                            size: 20,
-                                          ),
-                                          text: 'İlanlar',
-                                        ),
-                                        Tab(
-                                          icon: Icon(
-                                            Icons.rate_review_outlined,
-                                            size: 20,
-                                          ),
-                                          text: 'Yorumlar',
-                                        ),
-                                      ],
-                                    )
-                                  : const SizedBox.shrink(),
                             ),
-                          ),
+                            SliverToBoxAdapter(
+                              child: _buildModernTabBar(),
+                            ),
+                          ],
+                          body: _tabController != null
+                              ? Padding(
+                                  padding: const EdgeInsets.only(bottom: 60), // banner ad yüksekliği kadar padding
+                                  child: TabBarView(
+                                    controller: _tabController!,
+                                    children: [
+                                      _buildProductsTab(viewModel.profileDetail!),
+                                      _buildReviewsTab(viewModel.profileDetail!),
+                                    ],
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
                         ),
-                      ],
-                      body: _tabController != null
-                          ? TabBarView(
-                              controller: _tabController!,
-                              children: [
-                                _buildProductsTab(viewModel.profileDetail!),
-                                _buildReviewsTab(viewModel.profileDetail!),
-                              ],
-                            )
-                          : const SizedBox.shrink(),
-                    ),
+                      ),
+                      // Sabit alt banner reklam
+                      const Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: FixedBottomBannerAd(),
+                      ),
+                    ],
                   ),
           );
         },
@@ -881,6 +853,78 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
             color: Colors.grey[700],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildModernTabBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TabBar(
+        controller: _tabController!,
+        indicator: BoxDecoration(
+          borderRadius: BorderRadius.circular(7),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelColor: AppTheme.primary,
+        unselectedLabelColor: Colors.grey[600],
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        dividerColor: Colors.transparent,
+        overlayColor: MaterialStateProperty.all(Colors.transparent),
+        tabs: [
+          _buildCompactTab(
+            icon: Icons.store_outlined,
+            label: 'İlanlar',
+          ),
+          _buildCompactTab(
+            icon: Icons.rate_review_outlined,
+            label: 'Yorumlar',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactTab({
+    required IconData icon,
+    required String label,
+  }) {
+    return Tab(
+      height: 40,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
       ),
     );
   }

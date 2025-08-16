@@ -1,5 +1,8 @@
 class ProductFilter {
   final String? categoryId;
+  final String? subCategoryId;
+  final String? subSubCategoryId;
+  final String? subSubSubCategoryId;
   final List<String> conditionIds;
   final String? cityId;
   final String? districtId;
@@ -8,6 +11,9 @@ class ProductFilter {
 
   const ProductFilter({
     this.categoryId,
+    this.subCategoryId,
+    this.subSubCategoryId,
+    this.subSubSubCategoryId,
     this.conditionIds = const [],
     this.cityId,
     this.districtId,
@@ -17,6 +23,9 @@ class ProductFilter {
 
   ProductFilter copyWith({
     String? categoryId,
+    String? subCategoryId,
+    String? subSubCategoryId,
+    String? subSubSubCategoryId,
     List<String>? conditionIds,
     String? cityId,
     String? districtId,
@@ -25,6 +34,9 @@ class ProductFilter {
   }) {
     return ProductFilter(
       categoryId: categoryId,
+      subCategoryId: subCategoryId,
+      subSubCategoryId: subSubCategoryId,
+      subSubSubCategoryId: subSubSubCategoryId,
       conditionIds: conditionIds ?? this.conditionIds,
       cityId: cityId,
       districtId: districtId,
@@ -35,6 +47,9 @@ class ProductFilter {
 
   bool get hasActiveFilters {
     return categoryId != null ||
+        subCategoryId != null ||
+        subSubCategoryId != null ||
+        subSubSubCategoryId != null ||
         conditionIds.isNotEmpty ||
         cityId != null ||
         districtId != null ||
@@ -48,9 +63,12 @@ class ProductFilter {
     String? userLat,
     String? userLong,
   }) {
+    // En spesifik kategori ID'sini kullan
+    String? finalCategoryId = subSubSubCategoryId ?? subSubCategoryId ?? subCategoryId ?? categoryId;
+    
     return {
       'userToken': userToken,
-      'categoryID': categoryId != null ? int.tryParse(categoryId!) ?? 0 : 0,
+      'categoryID': finalCategoryId != null ? int.tryParse(finalCategoryId) ?? 0 : 0,
       'conditionIDs': conditionIds.map((id) => int.tryParse(id) ?? 0).toList(),
       'cityID': cityId != null ? int.tryParse(cityId!) ?? 0 : 0,
       'districtID': districtId != null ? int.tryParse(districtId!) ?? 0 : 0,
@@ -64,7 +82,7 @@ class ProductFilter {
 
   @override
   String toString() {
-    return 'ProductFilter(categoryId: $categoryId, conditionIds: $conditionIds, cityId: $cityId, districtId: $districtId, sortType: $sortType, searchText: $searchText)';
+    return 'ProductFilter(categoryId: $categoryId, subCategoryId: $subCategoryId, subSubCategoryId: $subSubCategoryId, subSubSubCategoryId: $subSubSubCategoryId, conditionIds: $conditionIds, cityId: $cityId, districtId: $districtId, sortType: $sortType, searchText: $searchText)';
   }
 }
 

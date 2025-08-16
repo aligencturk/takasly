@@ -1451,20 +1451,50 @@ class _TradeViewState extends State<TradeView>
             },
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 20).copyWith(top: 20),
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                  childAspectRatio: 0.7,
-                ),
-                itemCount: productViewModel.favoriteProducts.length,
-                itemBuilder: (context, index) {
-                  final product = productViewModel.favoriteProducts[index];
-                  return ProductCard(
-                    product: product,
-                    heroTag: 'favorite_${product.id}_$index',
-                    hideFavoriteIcon: false,
+              child: Builder(
+                builder: (context) {
+                  // Her 2 ürünten sonra 1 reklam kartı ekle
+                  const int adInterval = 2;
+                  final int adCount = productViewModel.favoriteProducts.isEmpty
+                      ? 0
+                      : (productViewModel.favoriteProducts.length / adInterval).floor();
+                  final int totalItemCount = productViewModel.favoriteProducts.length + adCount;
+
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10.0,
+                      mainAxisSpacing: 10.0,
+                      childAspectRatio: 0.7,
+                    ),
+                    itemCount: totalItemCount,
+                    itemBuilder: (context, displayIndex) {
+                      // Reklam yerleşimi: Her 3 ürünten sonra (2 ürün + 1 reklam)
+                      if (displayIndex != 0 &&
+                          (displayIndex + 1) % (adInterval + 1) == 0) {
+                        return Container(
+                          margin: EdgeInsets.only(bottom: 10),
+                          child: const NativeAdWideCard(),
+                        );
+                      }
+
+                      // Görünen index'i veri index'ine dönüştür
+                      final int numAdsBefore =
+                          (displayIndex / (adInterval + 1)).floor();
+                      final int dataIndex = displayIndex - numAdsBefore;
+                      
+                      // Index sınırlarını kontrol et
+                      if (dataIndex >= productViewModel.favoriteProducts.length) {
+                        return Container(); // Boş container döndür
+                      }
+                      
+                      final product = productViewModel.favoriteProducts[dataIndex];
+                      return ProductCard(
+                        product: product,
+                        heroTag: 'favorite_${product.id}_$dataIndex',
+                        hideFavoriteIcon: false,
+                      );
+                    },
                   );
                 },
               ),

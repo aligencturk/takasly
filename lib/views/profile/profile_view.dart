@@ -284,76 +284,8 @@ class _ProfileViewState extends State<ProfileView>
                         ),
                       ),
                     ),
-                    SliverAppBar(
-                      backgroundColor: Colors.white,
-                      pinned: true,
-                      primary: false,
-                      automaticallyImplyLeading: false,
-                      toolbarHeight: 0,
-                      bottom: PreferredSize(
-                        preferredSize: const Size.fromHeight(74),
-                        child: Container(
-                          color: Colors.white,
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          child: TabBar(
-                            controller: _tabController,
-                            isScrollable: true,
-                            tabAlignment: TabAlignment.center,
-                            labelColor: AppTheme.primary,
-                            unselectedLabelColor: Colors.grey[600],
-                            indicatorColor: AppTheme.primary,
-                            indicatorWeight: 2,
-                            labelPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
-                            tabs: [
-                              const Tab(
-                                icon: Icon(Icons.inventory_2_outlined, size: 20),
-                                text: 'İlanlarım',
-                              ),
-                              const Tab(
-                                icon: Icon(Icons.rate_review_outlined, size: 20),
-                                text: 'Yorumlar',
-                              ),
-                              Tab(
-                                icon: const Icon(Icons.rate_review, size: 20),
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 2),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text(
-                                        'Yorumlarım',
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      // Rozeti her zaman göster, 0 ise "0" yazsın
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[200],
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          myReviewsCount.toString(),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.grey[800],
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    SliverToBoxAdapter(
+                      child: _buildModernTabBar(myReviewsCount),
                     ),
                   ],
                   body: Padding(
@@ -378,6 +310,103 @@ class _ProfileViewState extends State<ProfileView>
             bottom: 0,
             child: FixedBottomBannerAd(),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernTabBar(int myReviewsCount) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          borderRadius: BorderRadius.circular(7),
+          color: Colors.white,
+         
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelColor: AppTheme.primary,
+        unselectedLabelColor: Colors.grey[600],
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
+        dividerColor: Colors.transparent,
+        overlayColor: MaterialStateProperty.all(Colors.transparent),
+        tabs: [
+          _buildCompactTab(
+            icon: Icons.store_outlined,
+            label: 'İlanlar',
+          ),
+          _buildCompactTab(
+            icon: Icons.rate_review_outlined,
+            label: 'Yorumlar',
+          ),
+          _buildCompactTabWithBadge(
+            icon: Icons.star_outline,
+            label: 'Yorumlarım',
+            count: myReviewsCount,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactTab({
+    required IconData icon,
+    required String label,
+  }) {
+    return Tab(
+      height: 40,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactTabWithBadge({
+    required IconData icon,
+    required String label,
+    required int count,
+  }) {
+    return Tab(
+      height: 40,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+         
         ],
       ),
     );
