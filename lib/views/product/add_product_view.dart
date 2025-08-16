@@ -115,6 +115,85 @@ class _AddProductViewState extends State<AddProductView> {
     return canGo;
   }
 
+  Future<bool> _showExitConfirmationDialog() async {
+    // Eğer hiç veri girilmemişse direkt çık
+    if (_selectedImages.isEmpty &&
+        _titleController.text.trim().isEmpty &&
+        _descriptionController.text.trim().isEmpty &&
+        _selectedCategoryId == null &&
+        _selectedCityId == null &&
+        _tradeForController.text.trim().isEmpty) {
+      return true;
+    }
+
+    // Veri girilmişse kullanıcıya sor
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange[700],
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Çıkış Onayı',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Girilen bilgiler kaydedilmeyecek. Çıkmak istediğinizden emin misiniz?',
+            style: TextStyle(fontSize: 16, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'İptal',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Çık',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
   void _showValidationError() {
     String errorMessage = '';
 
@@ -358,21 +437,40 @@ class _AddProductViewState extends State<AddProductView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('İlan Ekle'), centerTitle: true),
-      body: Column(
-        children: [
-          // Step Progress Header
-          _buildStepProgressHeader(),
-
-          // Main Content
-          Expanded(
-            child: Form(key: _formKey, child: _buildCurrentStep()),
+    return WillPopScope(
+      onWillPop: () async {
+        // Kullanıcı geri butonuna bastığında popup göster
+        return await _showExitConfirmationDialog();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('İlan Ekle'),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () async {
+              // AppBar'daki geri butonuna basıldığında da popup göster
+              final shouldExit = await _showExitConfirmationDialog();
+              if (shouldExit && mounted) {
+                Navigator.of(context).pop();
+              }
+            },
           ),
+        ),
+        body: Column(
+          children: [
+            // Step Progress Header
+            _buildStepProgressHeader(),
 
-          // Navigation Buttons
-          _buildNavigationButtons(),
-        ],
+            // Main Content
+            Expanded(
+              child: Form(key: _formKey, child: _buildCurrentStep()),
+            ),
+
+            // Navigation Buttons
+            _buildNavigationButtons(),
+          ],
+        ),
       ),
     );
   }
