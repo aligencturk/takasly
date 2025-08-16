@@ -9,6 +9,7 @@ import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/viewmodels/user_profile_detail_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:takasly/widgets/product_card.dart';
+import 'package:takasly/widgets/fixed_bottom_banner_ad.dart';
 import 'package:takasly/utils/logger.dart';
 import 'package:takasly/services/user_service.dart';
 import 'package:takasly/utils/phone_formatter.dart';
@@ -234,136 +235,150 @@ class _ProfileViewState extends State<ProfileView>
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(),
-      body: Consumer3<UserViewModel, ProductViewModel, UserProfileDetailViewModel>(
-        builder: (context, userVm, productVm, profileDetailVm, child) {
-          if (userVm.isLoading || userVm.currentUser == null) {
-            return const LoadingWidget();
-          }
+      body: Stack(
+        children: [
+          Consumer3<UserViewModel, ProductViewModel, UserProfileDetailViewModel>(
+            builder: (context, userVm, productVm, profileDetailVm, child) {
+              if (userVm.isLoading || userVm.currentUser == null) {
+                return const LoadingWidget();
+              }
 
-          final user = userVm.currentUser!;
-          // API çağrıları yerine getUser datasından gelen toplamlar kullanılacak
-          final productCount = user.totalProducts;
-          final favoriteCount = user.totalFavorites;
-          String score = '0';
-          if (profileDetailVm.hasData &&
-              profileDetailVm.profileDetail != null) {
-            score = profileDetailVm.profileDetail!.averageRating
-                .toStringAsFixed(1);
-          }
-          int myReviewsCount = 0;
-          // Öncelik: User modelindeki myReviews (daha erken yüklenebilir)
-          if (user.myReviews.isNotEmpty) {
-            myReviewsCount = user.myReviews.length;
-          } else if (profileDetailVm.hasData &&
-              profileDetailVm.profileDetail != null) {
-            myReviewsCount = profileDetailVm.profileDetail!.myReviews.length;
-          }
+              final user = userVm.currentUser!;
+              // API çağrıları yerine getUser datasından gelen toplamlar kullanılacak
+              final productCount = user.totalProducts;
+              final favoriteCount = user.totalFavorites;
+              String score = '0';
+              if (profileDetailVm.hasData &&
+                  profileDetailVm.profileDetail != null) {
+                score = profileDetailVm.profileDetail!.averageRating
+                    .toStringAsFixed(1);
+              }
+              int myReviewsCount = 0;
+              // Öncelik: User modelindeki myReviews (daha erken yüklenebilir)
+              if (user.myReviews.isNotEmpty) {
+                myReviewsCount = user.myReviews.length;
+              } else if (profileDetailVm.hasData &&
+                  profileDetailVm.profileDetail != null) {
+                myReviewsCount = profileDetailVm.profileDetail!.myReviews.length;
+              }
 
-          Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
-          Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
-          Logger.debug(
-            '👤 ProfileView - Product count: $productCount, Favorite count: $favoriteCount, Score: $score',
-          );
+              Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
+              Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
+              Logger.debug(
+                '👤 ProfileView - Product count: $productCount, Favorite count: $favoriteCount, Score: $score',
+              );
 
-          return ScrollConfiguration(
-            behavior: const _NoStretchScrollBehavior(),
-            child: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverToBoxAdapter(
-                  child: SafeArea(
-                    bottom: false,
-                    child: _buildProfileHeader(
-                      context,
-                      user,
-                      productCount,
-                      favoriteCount,
-                      score,
-                    ),
-                  ),
-                ),
-                SliverAppBar(
-                  backgroundColor: Colors.white,
-                  pinned: true,
-                  primary: false,
-                  automaticallyImplyLeading: false,
-                  toolbarHeight: 0,
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(74),
-                    child: Container(
-                      color: Colors.white,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TabBar(
-                        controller: _tabController,
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.center,
-                        labelColor: AppTheme.primary,
-                        unselectedLabelColor: Colors.grey[600],
-                        indicatorColor: AppTheme.primary,
-                        indicatorWeight: 2,
-                        labelPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
+              return ScrollConfiguration(
+                behavior: const _NoStretchScrollBehavior(),
+                child: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    SliverToBoxAdapter(
+                      child: SafeArea(
+                        bottom: false,
+                        child: _buildProfileHeader(
+                          context,
+                          user,
+                          productCount,
+                          favoriteCount,
+                          score,
                         ),
-                        tabs: [
-                          const Tab(
-                            icon: Icon(Icons.inventory_2_outlined, size: 20),
-                            text: 'İlanlarım',
-                          ),
-                          const Tab(
-                            icon: Icon(Icons.rate_review_outlined, size: 20),
-                            text: 'Yorumlar',
-                          ),
-                          Tab(
-                            icon: const Icon(Icons.rate_review, size: 20),
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 2),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Yorumlarım',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  // Rozeti her zaman göster, 0 ise "0" yazsın
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      myReviewsCount.toString(),
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey[800],
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
+                    SliverAppBar(
+                      backgroundColor: Colors.white,
+                      pinned: true,
+                      primary: false,
+                      automaticallyImplyLeading: false,
+                      toolbarHeight: 0,
+                      bottom: PreferredSize(
+                        preferredSize: const Size.fromHeight(74),
+                        child: Container(
+                          color: Colors.white,
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          child: TabBar(
+                            controller: _tabController,
+                            isScrollable: true,
+                            tabAlignment: TabAlignment.center,
+                            labelColor: AppTheme.primary,
+                            unselectedLabelColor: Colors.grey[600],
+                            indicatorColor: AppTheme.primary,
+                            indicatorWeight: 2,
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                            ),
+                            tabs: [
+                              const Tab(
+                                icon: Icon(Icons.inventory_2_outlined, size: 20),
+                                text: 'İlanlarım',
+                              ),
+                              const Tab(
+                                icon: Icon(Icons.rate_review_outlined, size: 20),
+                                text: 'Yorumlar',
+                              ),
+                              Tab(
+                                icon: const Icon(Icons.rate_review, size: 20),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 2),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        'Yorumlarım',
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      // Rozeti her zaman göster, 0 ise "0" yazsın
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          myReviewsCount.toString(),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[800],
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  body: Padding(
+                    padding: const EdgeInsets.only(bottom: 60), // banner ad yüksekliği kadar padding
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildProductsTab(user),
+                        _buildReviewsTab(),
+                        _buildMyReviewsTab(),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-              body: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildProductsTab(user),
-                  _buildReviewsTab(),
-                  _buildMyReviewsTab(),
-                ],
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+          // Sabit alt banner reklam
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: FixedBottomBannerAd(),
+          ),
+        ],
       ),
     );
   }

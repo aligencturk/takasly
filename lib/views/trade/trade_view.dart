@@ -17,7 +17,7 @@ import '../../widgets/skeletons/favorite_grid_skeleton.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 import 'trade_detail_view.dart';
-import '../../widgets/native_ad_trade_card.dart';
+import '../../widgets/native_ad_wide_card.dart';
 
 class TradeView extends StatefulWidget {
   final int initialTabIndex;
@@ -422,7 +422,10 @@ class _TradeViewState extends State<TradeView>
                         // Reklam yerleşimi: 5 takas + 1 reklam = 6'lı bloklar
                         if (displayIndex != 0 &&
                             (displayIndex + 1) % (adInterval + 1) == 0) {
-                          return const NativeAdTradeCard();
+                          return Container(
+                            margin: EdgeInsets.only(bottom: 12),
+                            child: const NativeAdWideCard(),
+                          );
                         }
 
                         // Görünen index'i veri index'ine dönüştür

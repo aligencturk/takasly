@@ -4,39 +4,55 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/admob_service.dart';
 import '../utils/logger.dart';
 
-/// İlan gridinde 2 sütunu kaplayan geniş native reklam kartı
+/// İlan gridinde 2 sütunu kaplayan geniş banner reklam kartı
 class NativeAdWideCard extends StatefulWidget {
   const NativeAdWideCard({super.key});
+
 
   @override
   State<NativeAdWideCard> createState() => _NativeAdWideCardState();
 }
 
+
 class _NativeAdWideCardState extends State<NativeAdWideCard>
     with AutomaticKeepAliveClientMixin {
   final AdMobService _adMobService = AdMobService();
-  NativeAd? _nativeAd;
-  Widget? _adWidget;
-  Key? _adKey;
+  BannerAd? _bannerAd;
   bool _isLoaded = false;
   bool _isDisposed = false;
   bool _isLoading = false;
   bool _hasError = false;
   int _retryCount = 0;
   static const int _maxRetries = 2;
+  
+  // Benzersiz widget ID'si oluştur
+  late final String _widgetId = 'native_ad_wide_${DateTime.now().millisecondsSinceEpoch}_${hashCode}';
 
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    Logger.info('🚀 NativeAdWideCard - Initializing: $_widgetId');
+    // Biraz gecikme ile load et, platform view conflict'larını önlemek için
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isDisposed) {
+        _loadAd();
+      }
+    });
   }
 
   @override
   void dispose() {
+    Logger.info('🧹 NativeAdWideCard - Disposing widget: $_widgetId');
     _isDisposed = true;
+    
+    // BannerAd'i güvenli şekilde temizle
     try {
-      _nativeAd?.dispose();
-    } catch (_) {}
+      _bannerAd?.dispose();
+      _bannerAd = null;
+    } catch (e) {
+      Logger.error('❌ NativeAdWideCard - Dispose hatası: $e');
+    }
+    
     super.dispose();
   }
 
@@ -46,31 +62,41 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
     try {
       await _adMobService.initialize();
 
+      // Önceki reklamı temizle
       try {
-        _nativeAd?.dispose();
-      } catch (_) {}
-      _nativeAd = null;
-      _adWidget = null;
-      _adKey = null;
+        _bannerAd?.dispose();
+        _bannerAd = null;
+      } catch (e) {
+        Logger.error('❌ NativeAdWideCard - Önceki reklam temizleme hatası: $e');
+      }
+      
       _isLoaded = false;
       _hasError = false;
 
-      final ad = NativeAd(
-        adUnitId: _adMobService.nativeAdUnitId,
+      Logger.info('🔄 NativeAdWideCard - Yeni reklam yükleniyor: $_widgetId');
+      
+      final ad = BannerAd(
+        adUnitId: _adMobService.bannerAdUnitId,
+        size: AdSize.mediumRectangle,
         request: const AdRequest(),
-        listener: NativeAdListener(
+        listener: BannerAdListener(
           onAdLoaded: (ad) {
             if (_isDisposed) {
               ad.dispose();
               return;
             }
-            _nativeAd = ad as NativeAd;
-            _adWidget = AdWidget(ad: _nativeAd!);
-            _adKey = ValueKey(_nativeAd);
-            _isLoaded = true;
-            _hasError = false;
-            if (mounted) setState(() {});
-            Logger.info('✅ NativeAdWideCard - Reklam yüklendi');
+            try {
+              _bannerAd = ad as BannerAd;
+              _isLoaded = true;
+              _hasError = false;
+              if (mounted) setState(() {});
+              Logger.info('✅ NativeAdWideCard - Banner reklam yüklendi: $_widgetId');
+            } catch (e) {
+              Logger.error('❌ NativeAdWideCard - Ad loading hatası: $e');
+              ad.dispose();
+              _hasError = true;
+              if (mounted) setState(() {});
+            }
           },
           onAdFailedToLoad: (ad, error) {
             Logger.error(
@@ -79,7 +105,7 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
             try {
               ad.dispose();
             } catch (_) {}
-            _nativeAd = null;
+            _bannerAd = null;
             _isLoaded = false;
             _hasError = true;
             if (mounted) setState(() {});
@@ -122,14 +148,10 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth == double.infinity
-            ? screenWidth
-            : constraints.maxWidth;
-        // Responsive yükseklik: küçük ekranlarda daha yüksek oran
-        final double base = width * (width < 360 ? 0.9 : 0.8);
-        final double height = base.clamp(260.0, 480.0);
+        // Banner ad için büyük kare yükseklik (AdSize.mediumRectangle 300x250)
+        const double height = 250.0;
 
-        if (!_isLoaded || _nativeAd == null) {
+        if (!_isLoaded || _bannerAd == null) {
           return Container(
             height: height,
             decoration: decoration,
@@ -158,10 +180,27 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
         return Container(
           height: height,
           decoration: decoration,
-          child: _adWidget == null
-              ? Container(color: Colors.grey[200])
-              : SizedBox.expand(
-                  child: KeyedSubtree(key: _adKey, child: _adWidget!),
+          child: _isDisposed || _bannerAd == null
+              ? Container(
+                  color: Colors.grey[200],
+                  child: Center(
+                    child: Text(
+                      'Reklam Alanı',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                )
+              : ClipRRect(
+                  borderRadius: borderRadius,
+                  child: SizedBox.expand(
+                    child: AdWidget(
+                      key: ValueKey('${_widgetId}_${_bannerAd.hashCode}'),
+                      ad: _bannerAd!,
+                    ),
+                  ),
                 ),
         );
       },

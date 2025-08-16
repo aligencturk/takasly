@@ -9,7 +9,7 @@ class AdViewModel extends ChangeNotifier {
   bool _isAdLoaded = false;
   bool _isLoadingAd = false;
   int _productCount = 0;
-  int _adFrequency = 4; // Her 4 üründen sonra 1 reklam
+  int _adFrequency = 6; // Her 6 üründen sonra 1 reklam
   int _lastAdIndex = -1;
   bool _isInitialized = false;
 

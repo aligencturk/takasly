@@ -361,10 +361,10 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
-        // Ürünleri 6'lık parçalara böl, her parçadan sonra geniş reklam yerleştir
+        // Ürünleri 4'lük parçalara böl, her parçadan sonra geniş reklam yerleştir
         final List<Widget> sections = [];
-        for (int start = 0; start < productCount; start += 6) {
-          final end = math.min(start + 6, productCount);
+        for (int start = 0; start < productCount; start += 4) {
+          final end = math.min(start + 4, productCount);
           final chunk = validProducts.sublist(
             start,
             end,
