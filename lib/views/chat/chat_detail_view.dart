@@ -1446,15 +1446,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 '🔍 Chat Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...',
               );
 
-              // Basit test - sadece snackbar göster
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Tıklandı! ID: ${otherParticipant?.id}'),
-                  backgroundColor: AppTheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+              // Test snackbar kaldırıldı
 
               if (otherParticipant != null &&
                   authViewModel.currentUser != null &&
