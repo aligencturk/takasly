@@ -4,6 +4,7 @@ import '../../viewmodels/user_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import 'change_password_view.dart';
 import 'edit_profile_view.dart';
+import '../settings/privacy_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -142,13 +143,13 @@ class _SettingsViewState extends State<SettingsView> {
           ),
           _buildSettingItem(
             icon: Icons.privacy_tip_outlined,
-            title: 'Gizlilik',
-            subtitle: 'Gizlilik ayarlarınızı yönetin',
+            title: 'Gizlilik Politikası',
+            subtitle: 'Rivorya Yazılım gizlilik politikası',
             onTap: () {
-              // TODO: Gizlilik ayarları sayfasına yönlendir
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Gizlilik ayarları yakında eklenecek'),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PrivacyView(),
                 ),
               );
             },

@@ -93,6 +93,9 @@ dependencies:
   # Social Login
   google_sign_in: ^6.2.1
   sign_in_with_apple: ^6.1.0
+  
+  # WebView
+  webview_flutter: ^4.7.0
 
 dev_dependencies:
   flutter_test:

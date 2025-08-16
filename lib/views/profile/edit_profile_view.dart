@@ -25,7 +25,6 @@ class _EditProfileViewState extends State<EditProfileView> {
   final _phoneController = TextEditingController();
   final _birthdayController = TextEditingController();
 
-  String? _selectedGender;
   File? _selectedImage;
   bool _isLoading = false;
   // Telefon numarası görünürlüğü ayarı kaldırıldı
@@ -81,11 +80,7 @@ class _EditProfileViewState extends State<EditProfileView> {
       Logger.debug('firstName: ${user.firstName}', tag: 'EditProfile');
       Logger.debug('lastName: ${user.lastName}', tag: 'EditProfile');
       Logger.debug('email: ${user.email}', tag: 'EditProfile');
-      Logger.debug('gender (raw): ${user.gender}', tag: 'EditProfile');
-      Logger.debug(
-        'gender type: ${user.gender.runtimeType}',
-        tag: 'EditProfile',
-      );
+      // gender alanı uygulamadan kaldırıldı
 
       setState(() {
         _firstNameController.text = user.firstName ?? '';
@@ -95,37 +90,6 @@ class _EditProfileViewState extends State<EditProfileView> {
             ? PhoneFormatter.formatPhoneNumber(user.phone!)
             : '';
         _birthdayController.text = user.birthday ?? '';
-
-        // Gender değerini API'ye uygun şekilde set et
-        final genderValue = user.gender?.toString();
-        Logger.debug('genderValue: $genderValue', tag: 'EditProfile');
-
-        // String gender değerlerini int'e map et
-        if (genderValue == 'Erkek' || genderValue == '1') {
-          _selectedGender = '1';
-          Logger.debug(
-            '_selectedGender set to: $_selectedGender (Erkek)',
-            tag: 'EditProfile',
-          );
-        } else if (genderValue == 'Kadın' || genderValue == '2') {
-          _selectedGender = '2';
-          Logger.debug(
-            '_selectedGender set to: $_selectedGender (Kadın)',
-            tag: 'EditProfile',
-          );
-        } else if (genderValue == 'Belirtilmemiş' || genderValue == '3') {
-          _selectedGender = '3';
-          Logger.debug(
-            '_selectedGender set to: $_selectedGender (Belirtilmemiş)',
-            tag: 'EditProfile',
-          );
-        } else {
-          _selectedGender = '3'; // default: Belirtilmemiş
-          Logger.debug(
-            '_selectedGender set to default: $_selectedGender (Belirtilmemiş)',
-            tag: 'EditProfile',
-          );
-        }
 
         // Telefon numarası görünürlük ayarı kaldırıldığı için yüklenmiyor
       });
@@ -295,9 +259,6 @@ class _EditProfileViewState extends State<EditProfileView> {
         userEmail: _emailController.text,
         userPhone: PhoneFormatter.prepareForApi(_phoneController.text),
         userBirthday: _birthdayController.text,
-        userGender: _selectedGender != null
-            ? int.tryParse(_selectedGender!)
-            : null,
         profilePhoto: profilePhotoBase64,
         // Telefon numarası görünürlüğü kaldırıldığı için gönderilmiyor
       );
@@ -372,9 +333,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: [
             Container(
@@ -383,7 +342,11 @@ class _EditProfileViewState extends State<EditProfileView> {
                 color: Colors.red[50],
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.delete_forever, color: Colors.red[700], size: 20),
+              child: Icon(
+                Icons.delete_forever,
+                color: Colors.red[700],
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             const Text('Hesabı Sil'),
@@ -436,10 +399,9 @@ class _EditProfileViewState extends State<EditProfileView> {
         Logger.debug('Hesap başarıyla silindi', tag: 'EditProfile');
 
         if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/login',
-            (route) => false,
-          );
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -450,7 +412,9 @@ class _EditProfileViewState extends State<EditProfileView> {
           );
         }
       } else {
-        throw Exception(userViewModel.errorMessage ?? 'Hesap silme işlemi başarısız');
+        throw Exception(
+          userViewModel.errorMessage ?? 'Hesap silme işlemi başarısız',
+        );
       }
     } catch (e) {
       Logger.error('Hesap silme hatası: $e', tag: 'EditProfile');
@@ -554,8 +518,6 @@ class _EditProfileViewState extends State<EditProfileView> {
                         ),
                         const SizedBox(height: 16),
                         _buildDateField(),
-                        const SizedBox(height: 16),
-                        _buildGenderDropdown(),
                         const SizedBox(height: 16),
                         const SizedBox(height: 8),
                         Align(
@@ -687,36 +649,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     );
   }
 
-  Widget _buildGenderDropdown() {
-    // Geçerli değerleri kontrol et
-    final validValues = ['1', '2', '3'];
-    final validValue = validValues.contains(_selectedGender)
-        ? _selectedGender
-        : null;
-
-    return DropdownButtonFormField<String>(
-      value: validValue,
-      onChanged: (String? newValue) {
-        setState(() {
-          _selectedGender = newValue;
-        });
-      },
-      decoration: InputDecoration(
-        labelText: 'Cinsiyet',
-        prefixIcon: const Icon(Icons.person_pin),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.primary, width: 2),
-        ),
-      ),
-      items: const [
-        DropdownMenuItem(value: '1', child: Text('Erkek')),
-        DropdownMenuItem(value: '2', child: Text('Kadın')),
-        DropdownMenuItem(value: '3', child: Text('Belirtilmemiş')),
-      ],
-    );
-  }
+  // Cinsiyet seçimi uygulamadan kaldırıldı
 
   // Telefon numarası görünürlüğü bölümü kaldırıldı
 
