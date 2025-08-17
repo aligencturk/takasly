@@ -66,7 +66,9 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
 
   Future<void> _checkAuthAndNavigate() async {
     try {
-      Logger.info('🔍 SplashView - Checking authentication status...');
+      Logger.info(
+        '🔍 SplashView - Navigating directly to home (no auth check required)...',
+      );
 
       // Widget'ın hala aktif olup olmadığını kontrol et
       if (!mounted) {
@@ -76,113 +78,12 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         return;
       }
 
-      // AuthViewModel'i al
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      // Direkt ana sayfaya yönlendir (artık auth kontrolü yapılmıyor)
+      Logger.info('🏠 SplashView - Navigating to home page directly');
 
-      // Hot restart durumunu kontrol et (kullanıcı zaten giriş yapmış olabilir)
-      final isHotRestart = await _checkIfHotRestart();
-
-      if (isHotRestart) {
-        Logger.info(
-          '🔄 SplashView - Hot restart detected, enabling auto-login...',
-        );
-        await authViewModel.enableHotRestartAutoLogin();
-
-        // Hot restart durumunda otomatik giriş kontrolü yap
-        final isLoggedIn = await authViewModel.isLoggedInAsync;
-
-        if (isLoggedIn &&
-            authViewModel.currentUser != null &&
-            authViewModel.currentUser!.id.isNotEmpty) {
-          Logger.info(
-            '✅ SplashView - Hot restart: User is logged in, navigating to home',
-          );
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const HomeView()),
-          );
-          return;
-        }
-      }
-
-      // Normal başlangıç durumunda da otomatik giriş kontrolü yap
-      Logger.info('🔍 SplashView - Checking for existing login session...');
-
-      // SharedPreferences'dan token ve user ID kontrolü yap
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(AppConstants.userTokenKey);
-      final userId = prefs.getString(AppConstants.userIdKey);
-      final userData = prefs.getString(AppConstants.userDataKey);
-
-      Logger.info(
-        '🔍 SplashView - Token: ${token?.substring(0, token.length > 10 ? 10 : token.length)}..., UserID: $userId, UserData: ${userData?.length ?? 0} chars',
-      );
-
-      // Eğer geçerli token ve user data varsa otomatik giriş yap
-      if (token != null &&
-          token.isNotEmpty &&
-          userId != null &&
-          userId.isNotEmpty &&
-          userId != '0' &&
-          userData != null &&
-          userData.isNotEmpty) {
-        Logger.info(
-          '✅ SplashView - Valid session found, attempting auto-login...',
-        );
-
-        try {
-          // AuthViewModel'i güncelle
-          await authViewModel.enableHotRestartAutoLogin();
-
-          // Kullanıcı bilgilerini yükle
-          final isLoggedIn = await authViewModel.isLoggedInAsync;
-
-          if (isLoggedIn &&
-              authViewModel.currentUser != null &&
-              authViewModel.currentUser!.id.isNotEmpty) {
-            Logger.info(
-              '✅ SplashView - Auto-login successful, navigating to home',
-            );
-
-            if (!mounted) {
-              Logger.warning(
-                '⚠️ SplashView - Widget is no longer mounted after auto-login',
-              );
-              return;
-            }
-
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const HomeView()),
-            );
-            return;
-          } else {
-            Logger.warning(
-              '⚠️ SplashView - Auto-login failed, user data invalid',
-            );
-          }
-        } catch (e) {
-          Logger.error('❌ SplashView - Auto-login error: $e', error: e);
-        }
-      } else {
-        Logger.info('❌ SplashView - No valid session found');
-      }
-
-      // Otomatik giriş başarısızsa veya geçerli session yoksa login'e yönlendir
-      Logger.info(
-        '🔒 SplashView - Navigating to login (no valid session or auto-login failed)',
-      );
-
-      // Widget'ın hala aktif olup olmadığını kontrol et
-      if (!mounted) {
-        Logger.warning(
-          '⚠️ SplashView - Widget is no longer mounted before navigation, aborting',
-        );
-        return;
-      }
-
-      // Login sayfasına yönlendir
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginView()));
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
     } catch (e) {
       Logger.error('❌ SplashView - Error during navigation: $e', error: e);
 
@@ -194,10 +95,10 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         return;
       }
 
-      // Hata durumunda da login sayfasına yönlendir
+      // Hata durumunda da ana sayfaya yönlendir
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginView()));
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
     }
   }
 
