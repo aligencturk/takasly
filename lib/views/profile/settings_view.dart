@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/contact_viewmodel.dart';
 import 'change_password_view.dart';
 import 'edit_profile_view.dart';
 import '../settings/privacy_view.dart';
+import '../contact/contact_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -120,6 +122,22 @@ class _SettingsViewState extends State<SettingsView> {
             ),
           ),
           Container(height: 1, color: Colors.grey[200]),
+          _buildSettingItem(
+            icon: Icons.support_agent_outlined,
+            title: 'İletişim',
+            subtitle: 'Bizimle iletişime geçin',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider(
+                    create: (context) => ContactViewModel(),
+                    child: const ContactView(),
+                  ),
+                ),
+              );
+            },
+          ),
           _buildSettingItem(
             icon: Icons.notifications_outlined,
             title: 'Bildirimler',
