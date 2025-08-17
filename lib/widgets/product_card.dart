@@ -214,12 +214,32 @@ class _ProductCardState extends State<ProductCard> {
           },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: widget.product.isSponsor == true
+              ? Colors
+                    .amber
+                    .shade50 // Sponsor ürünler için altın rengi background
+              : Colors.white,
           borderRadius: BorderRadius.circular(screenWidth < 360 ? 6 : 8),
           border: Border.all(
-            color: const Color.fromARGB(255, 209, 209, 209),
-            width: 1,
+            color: widget.product.isSponsor == true
+                ? Colors
+                      .amber
+                      .shade300 // Sponsor ürünler için altın rengi border
+                : const Color.fromARGB(255, 209, 209, 209),
+            width: widget.product.isSponsor == true
+                ? 2
+                : 1, // Sponsor ürünler için kalın border
           ),
+          boxShadow: widget.product.isSponsor == true
+              ? [
+                  BoxShadow(
+                    color: Colors.amber.shade200.withOpacity(0.5),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null, // Sponsor ürünler için gölge efekti
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,6 +294,37 @@ class _ProductCardState extends State<ProductCard> {
                       );
                     },
                   ),
+                  // Sponsor badge'i - sadece sponsor ürünlerde göster
+                  if (widget.product.isSponsor == true)
+                    Positioned(
+                      top: screenWidth < 360 ? 4 : 6,
+                      left: screenWidth < 360 ? 4 : 6,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth < 360 ? 4 : 6,
+                          vertical: screenWidth < 360 ? 2 : 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade600,
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          'Vitrin',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: screenWidth < 360 ? 7 : 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   // Favori kalp ikonu - sadece hideFavoriteIcon false ise göster
                   if (!widget.hideFavoriteIcon)
                     Consumer<ProductViewModel>(

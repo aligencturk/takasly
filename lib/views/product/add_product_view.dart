@@ -6,6 +6,8 @@ import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/services/location_service.dart';
 import 'package:takasly/services/image_optimization_service.dart';
+import 'package:takasly/services/admob_service.dart';
+import 'package:takasly/services/auth_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:takasly/utils/logger.dart';
 
@@ -39,6 +41,12 @@ class _AddProductViewState extends State<AddProductView> {
   Position? _currentPosition;
   bool _isGettingLocation = false;
 
+  // Sponsor ile ilgili değişkenler
+  final AdMobService _adMobService = AdMobService();
+  bool _sponsorProduct = false; // Kullanıcının sponsor seçimi
+  bool _isProcessingSponsor = false; // Sponsor işlemi devam ediyor mu
+  String? _addedProductId; // Eklenen ürünün ID'si (sponsor için)
+
   // Step management
   int _currentStep = 0;
   final int _totalSteps = 6;
@@ -66,14 +74,97 @@ class _AddProductViewState extends State<AddProductView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final vm = Provider.of<ProductViewModel>(context, listen: false);
-      vm.loadCities();
-      vm.loadConditions();
-      if (vm.categories.isEmpty) {
-        vm.loadCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Önce token geçerliliğini kontrol et
+      await _checkTokenValidity();
+
+      if (mounted) {
+        final vm = Provider.of<ProductViewModel>(context, listen: false);
+        vm.loadCities();
+        vm.loadConditions();
+        if (vm.categories.isEmpty) {
+          vm.loadCategories();
+        }
+
+        // AdMob'u başlat ve ödüllü reklamı yükle
+        _initializeAdMob();
       }
     });
+  }
+
+  /// Token geçerliliğini kontrol et
+  Future<void> _checkTokenValidity() async {
+    try {
+      Logger.info('🔍 AddProductView - Token geçerliliği kontrol ediliyor...');
+      final authService = AuthService();
+      final isValid = await authService.isTokenValid();
+
+      if (!isValid) {
+        Logger.warning(
+          '⚠️ AddProductView - Token geçersiz, login sayfasına yönlendiriliyor',
+        );
+
+        if (mounted) {
+          // Kullanıcıya bilgi ver ve login sayfasına yönlendir
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Oturum süreniz dolmuş. Giriş sayfasına yönlendiriliyorsunuz.',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // 1 saniye sonra login sayfasına yönlendir
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/login', (route) => false);
+            }
+          });
+        }
+      } else {
+        Logger.info(
+          '✅ AddProductView - Token geçerli, sayfa yüklemeye devam ediliyor',
+        );
+      }
+    } catch (e) {
+      Logger.error('❌ AddProductView - Token kontrolü hatası: $e');
+      // Hata durumunda da devam et, ürün ekleme sırasında yakalanır
+    }
+  }
+
+  /// AdMob'u başlat ve ödüllü reklamı yükle
+  Future<void> _initializeAdMob() async {
+    try {
+      await _adMobService.initialize();
+      await _adMobService.loadRewardedAd();
+      Logger.info(
+        '✅ AddProductView - AdMob başlatıldı ve ödüllü reklam yüklendi',
+      );
+    } catch (e) {
+      Logger.error('❌ AddProductView - AdMob başlatma hatası: $e');
+    }
   }
 
   @override
@@ -376,10 +467,194 @@ class _AddProductViewState extends State<AddProductView> {
 
     if (mounted) {
       if (success) {
-        // Ana sayfaya dön ve başarı durumunu bildir
-        Navigator.of(context).pop(true);
+        // Ürün başarıyla eklendi, şimdi sponsor işlemini kontrol et
+        if (_sponsorProduct) {
+          // Sponsor seçeneği seçilmişse reklam göster
+          await _handleSponsorProcess();
+        } else {
+          // Sponsor seçilmemişse direkt geri dön
+          _finishAddProduct(true);
+        }
+      } else {
+        final error = Provider.of<ProductViewModel>(
+          context,
+          listen: false,
+        ).errorMessage;
 
-        // Başarı mesajını göster
+        // Token/oturum hatası kontrolü
+        if (error != null &&
+            (error.contains('token') ||
+                error.contains('giriş') ||
+                error.contains('doğrulama') ||
+                error.contains('Geçersiz kullanıcı'))) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+
+          // 2 saniye sonra login sayfasına yönlendir
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/login', (route) => false);
+            }
+          });
+        } else {
+          // Diğer hatalar için normal error snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Hata: ${error ?? 'Bilinmeyen bir hata oluştu'}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// Sponsor işlemini yönet
+  Future<void> _handleSponsorProcess() async {
+    try {
+      setState(() {
+        _isProcessingSponsor = true;
+      });
+
+      Logger.info('🎁 AddProductView - Sponsor işlemi başlatılıyor...');
+
+      // Eklenen ürünün ID'sini al (vm'den son eklenen ürün ID'si)
+      final vm = Provider.of<ProductViewModel>(context, listen: false);
+      final lastAddedProductId = vm.lastAddedProductId;
+
+      if (lastAddedProductId == null || lastAddedProductId.isEmpty) {
+        Logger.error(
+          '❌ AddProductView - Ürün ID bulunamadı, sponsor işlemi iptal ediliyor',
+        );
+        _finishAddProduct(true);
+        return;
+      }
+
+      _addedProductId = lastAddedProductId;
+      Logger.info('🎁 AddProductView - Ürün ID: $_addedProductId');
+
+      // Token kontrolü
+      final authService = AuthService();
+      final userToken = await authService.getToken();
+      Logger.info(
+        '🔑 AddProductView - User token alındı: ${userToken?.substring(0, 20) ?? 'NULL'}...',
+      );
+
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('❌ AddProductView - User token null veya boş!');
+        _showSponsorErrorMessage();
+        return;
+      }
+
+      // Ödüllü reklamı göster
+      final rewardEarned = await _adMobService.showRewardedAd();
+
+      if (rewardEarned) {
+        Logger.info(
+          '🎉 AddProductView - Ödül kazanıldı, ürün sponsor ediliyor...',
+        );
+
+        // Ürünü sponsor et
+        Logger.info('🎯 AddProductView - vm.sponsorProduct çağrılıyor...');
+        Logger.info('🎯 AddProductView - Product ID: $_addedProductId');
+        Logger.info(
+          '🎯 AddProductView - User token: ${userToken.substring(0, 20)}...',
+        );
+
+        final sponsorSuccess = await vm.sponsorProduct(_addedProductId!);
+
+        if (sponsorSuccess) {
+          Logger.info('✅ AddProductView - Ürün başarıyla sponsor edildi');
+          _showSponsorSuccessMessage();
+        } else {
+          Logger.error('❌ AddProductView - Sponsor işlemi başarısız');
+
+          // Spesifik hata mesajını kontrol et
+          final vm = Provider.of<ProductViewModel>(context, listen: false);
+          final errorMessage = vm.errorMessage ?? '';
+
+          if (errorMessage.contains('Zaten aktif öne çıkarılmış') ||
+              errorMessage.contains('Bir saat içinde sadece bir ürün')) {
+            _showSponsorLimitErrorMessage(errorMessage);
+          } else {
+            _showSponsorErrorMessage();
+          }
+        }
+      } else {
+        Logger.warning(
+          '⚠️ AddProductView - Ödül kazanılmadı, sponsor işlemi iptal edildi',
+        );
+        _showSponsorCancelledMessage();
+      }
+    } catch (e) {
+      Logger.error('❌ AddProductView - Sponsor işlemi hatası: $e');
+      _showSponsorErrorMessage();
+    } finally {
+      setState(() {
+        _isProcessingSponsor = false;
+      });
+
+      // Her durumda ana sayfaya dön
+      _finishAddProduct(true);
+    }
+  }
+
+  /// Ürün ekleme işlemini bitir ve ana sayfaya dön
+  void _finishAddProduct(bool success) {
+    if (mounted) {
+      // Ana sayfaya dön ve başarı durumunu bildir
+      Navigator.of(context).pop(true);
+
+      // Başarı mesajını göster
+      if (success && !_sponsorProduct) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -403,35 +678,144 @@ class _AddProductViewState extends State<AddProductView> {
             duration: const Duration(seconds: 3),
           ),
         );
-      } else {
-        final error = Provider.of<ProductViewModel>(
-          context,
-          listen: false,
-        ).errorMessage;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Hata: ${error ?? 'Bilinmeyen bir hata oluştu'}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppTheme.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 4),
-          ),
-        );
       }
+    }
+  }
+
+  /// Sponsor başarı mesajı
+  void _showSponsorSuccessMessage() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.star, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Ürününüz başarıyla öne çıkarıldı! 1 saat boyunca en üstte görünecek.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.amber.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  /// Sponsor hata mesajı
+  void _showSponsorErrorMessage() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Öne çıkarma işlemi başarısız oldu. Ürününüz normal şekilde yayında.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  /// Sponsor iptal mesajı
+  void _showSponsorCancelledMessage() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Öne çıkarma işlemi iptal edildi. Ürününüz normal şekilde yayında.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  /// Sponsor limit hatası mesajı (zaten aktif ürün var)
+  void _showSponsorLimitErrorMessage(String errorMessage) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.schedule, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Öne Çıkarma Limiti',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Zaten aktif öne çıkarılmış ürününüz var. Bir saat içinde sadece bir ürün öne çıkarılabilir.',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Tamam',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
     }
   }
 
@@ -2164,6 +2548,97 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           ),
 
+          const SizedBox(height: 32),
+
+          // Sponsor seçeneği
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.amber.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.star, color: Colors.amber.shade700, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'İlanımı Öne Çıkar',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.amber.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Switch
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ödüllü reklam izleyerek 1 saat öne çıkar',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'İlanınız anasayfada en üstte altın renkli çerçeve ile gösterilir',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _sponsorProduct,
+                      onChanged: (value) {
+                        setState(() {
+                          _sponsorProduct = value;
+                        });
+                      },
+                      activeColor: Colors.amber.shade700,
+                    ),
+                  ],
+                ),
+
+                if (_sponsorProduct) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.amber.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'İlan başarıyla eklendikten sonra reklam izleme ekranı açılacak.',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Colors.amber.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+
           const SizedBox(height: 24),
 
           Row(
@@ -2172,7 +2647,7 @@ class _AddProductViewState extends State<AddProductView> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Bu ayarı daha sonra ilan detay sayfasından değiştirebilirsiniz.',
+                  'Bu ayarları daha sonra ilan detay sayfasından değiştirebilirsiniz.',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: Colors.blue.shade700),

@@ -561,36 +561,6 @@ class HttpClient {
         return ApiResponse<T>.error(errorMessage);
       }
 
-      // Özel durum: 410 ama response'da success:true varsa başarılı say
-      if (response.statusCode == ApiConstants.gone) {
-        try {
-          final Map<String, dynamic> jsonData = json.decode(response.body);
-          if (jsonData['success'] == true) {
-            print('✅ 410 Status - Treating as success');
-            print('✅ 410 - Response body: "${response.body}"');
-            print('✅ 410 - Parsed data: $jsonData');
-
-            // 410 olsa bile success:true varsa başarılı say
-            try {
-              if (fromJson != null) {
-                final T data = fromJson(jsonData);
-                print('✅ 410 - Successfully parsed data: $data');
-                return ApiResponse.success(data);
-              } else {
-                print('✅ 410 - No fromJson function, returning raw data');
-                return ApiResponse<T>.success(jsonData as T?);
-              }
-            } catch (e) {
-              print('! 410 - Failed to parse JSON: $e');
-              print('! 410 - Raw response body: "${response.body}"');
-              return ApiResponse<T>.error('Data parsing error: $e');
-            }
-          }
-        } catch (e) {
-          print('! 410 - Failed to handle as success: $e');
-        }
-      }
-
       // Başarılı durumlar (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
         print('✅ Success status: ${response.statusCode}');

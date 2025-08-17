@@ -40,6 +40,7 @@ class ProductViewModel extends ChangeNotifier {
   bool _hasMore = true;
   String? _errorMessage;
   String? _favoriteErrorMessage;
+  String? _lastAddedProductId; // Son eklenen ürünün ID'si
 
   int _currentPage = 1;
   String? _currentCategoryId;
@@ -79,6 +80,7 @@ class ProductViewModel extends ChangeNotifier {
   bool get hasError => _errorMessage != null;
   bool get hasErrorFavorites => _favoriteErrorMessage != null;
   String? get favoriteErrorMessage => _favoriteErrorMessage;
+  String? get lastAddedProductId => _lastAddedProductId;
 
   int get currentPage => _currentPage;
   String? get currentCategoryId => _currentFilter.categoryId;
@@ -2087,6 +2089,12 @@ class ProductViewModel extends ChangeNotifier {
         print('🆔 Product ID: $productId');
         print('💬 Message: $message');
 
+        // Son eklenen ürün ID'sini sakla (sponsor için)
+        _lastAddedProductId = productId;
+        Logger.info(
+          '🎯 ProductViewModel - Last added product ID set: $productId',
+        );
+
         // Başarılı olduktan sonra ürün listesini yenile
         print('🔄 Refreshing products...');
         await refreshProducts();
@@ -2338,6 +2346,150 @@ class ProductViewModel extends ChangeNotifier {
       _setLoading(false);
       return null;
     }
+  }
+
+  /// Ürünü sponsor yapar (ödüllü reklam sonrası)
+  Future<bool> sponsorProduct(String productId) async {
+    Logger.info(
+      '🎯 ProductViewModel.sponsorProduct - Starting sponsor product',
+    );
+    Logger.info('🎯 ProductViewModel.sponsorProduct - productId: $productId');
+
+    try {
+      // User token'ı al
+      final userToken = await _authService.getToken();
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error(
+          '❌ ProductViewModel.sponsorProduct - User token is null or empty',
+        );
+        _setError('Kullanıcı oturumu bulunamadı');
+        return false;
+      }
+
+      Logger.info(
+        '🎯 ProductViewModel.sponsorProduct - userToken: ${userToken.substring(0, 20)}...',
+      );
+
+      // Product ID'yi integer'a çevir
+      final int? productIdInt = int.tryParse(productId);
+      if (productIdInt == null) {
+        Logger.error(
+          '❌ ProductViewModel.sponsorProduct - Invalid product ID: $productId',
+        );
+        _setError('Geçersiz ürün ID\'si');
+        return false;
+      }
+
+      Logger.info(
+        '📡 ProductViewModel.sponsorProduct - Making API call to sponsor product',
+      );
+      final response = await _productService.sponsorProduct(
+        userToken: userToken,
+        productId: productIdInt,
+      );
+
+      Logger.info('📡 ProductViewModel.sponsorProduct - Response received');
+      Logger.info('📊 Response isSuccess: ${response.isSuccess}');
+      Logger.info('📊 Response error: ${response.error}');
+      Logger.info('📊 Response data: ${response.data}');
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info(
+          '✅ ProductViewModel.sponsorProduct - Product sponsored successfully',
+        );
+
+        // Response'dan sponsor bilgilerini al
+        final responseData = response.data!;
+        final sponsorUntil = responseData['sponsorUntil']?.toString();
+        final message =
+            responseData['message']?.toString() ??
+            'Ürününüz başarıyla öne çıkarıldı.';
+
+        Logger.info(
+          '✅ ProductViewModel.sponsorProduct - sponsorUntil: $sponsorUntil',
+        );
+        Logger.info('✅ ProductViewModel.sponsorProduct - message: $message');
+
+        // Local listelerdeki ürünü güncelle
+        await _updateProductSponsorStatus(productId, sponsorUntil);
+
+        // Success message'ı göster (UI katmanında kullanılabilir)
+        return true;
+      } else {
+        Logger.error(
+          '❌ ProductViewModel.sponsorProduct - API error: ${response.error}',
+        );
+        _setError(response.error ?? 'Ürün öne çıkarılamadı');
+        return false;
+      }
+    } catch (e) {
+      Logger.error('💥 ProductViewModel.sponsorProduct - Exception: $e');
+      _setError('Ürün öne çıkarılırken hata oluştu: $e');
+      return false;
+    }
+  }
+
+  /// Local listelerdeki ürünün sponsor durumunu günceller
+  Future<void> _updateProductSponsorStatus(
+    String productId,
+    String? sponsorUntil,
+  ) async {
+    Logger.info(
+      '🔄 ProductViewModel._updateProductSponsorStatus - Updating product $productId',
+    );
+    Logger.info(
+      '🔄 ProductViewModel._updateProductSponsorStatus - sponsorUntil: $sponsorUntil',
+    );
+
+    // Ana ürün listesinde güncelle
+    final productIndex = _products.indexWhere((p) => p.id == productId);
+    if (productIndex != -1) {
+      _products[productIndex] = _products[productIndex].copyWith(
+        isSponsor: true,
+        sponsorUntil: sponsorUntil,
+      );
+      Logger.info(
+        '✅ Updated product in main products list at index $productIndex',
+      );
+    }
+
+    // Kullanıcının ürünleri listesinde güncelle
+    final myProductIndex = _myProducts.indexWhere((p) => p.id == productId);
+    if (myProductIndex != -1) {
+      _myProducts[myProductIndex] = _myProducts[myProductIndex].copyWith(
+        isSponsor: true,
+        sponsorUntil: sponsorUntil,
+      );
+      Logger.info(
+        '✅ Updated product in my products list at index $myProductIndex',
+      );
+    }
+
+    // Favori ürünler listesinde güncelle
+    final favoriteIndex = _favoriteProducts.indexWhere(
+      (p) => p.id == productId,
+    );
+    if (favoriteIndex != -1) {
+      _favoriteProducts[favoriteIndex] = _favoriteProducts[favoriteIndex]
+          .copyWith(isSponsor: true, sponsorUntil: sponsorUntil);
+      Logger.info(
+        '✅ Updated product in favorite products list at index $favoriteIndex',
+      );
+    }
+
+    // Seçili ürünü güncelle
+    if (_selectedProduct?.id == productId) {
+      _selectedProduct = _selectedProduct!.copyWith(
+        isSponsor: true,
+        sponsorUntil: sponsorUntil,
+      );
+      Logger.info('✅ Updated selected product');
+    }
+
+    notifyListeners();
+    Logger.info(
+      '🔄 ProductViewModel._updateProductSponsorStatus - Update completed',
+    );
   }
 
   @override

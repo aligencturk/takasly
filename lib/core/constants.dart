@@ -90,6 +90,9 @@ class ApiConstants {
   // Report Service Endpoints
   static const String reportUser = '/service/user/product/reportUser';
 
+  // Sponsor Service Endpoints  
+  static const String sponsorEdit = '/service/user/product/sponsorEdit';
+
   // Headers
   static const String contentType = 'Content-Type';
   static const String applicationJson = 'application/json';

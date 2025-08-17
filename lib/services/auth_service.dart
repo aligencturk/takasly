@@ -1493,4 +1493,48 @@ class AuthService {
       Logger.error('❌ Error clearing codeToken: $e', error: e);
     }
   }
+
+  /// Token'ın geçerli olup olmadığını kontrol eder
+  Future<bool> isTokenValid() async {
+    try {
+      Logger.info('🔍 AuthService.isTokenValid - Checking token validity');
+
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        Logger.warning('⚠️ AuthService.isTokenValid - No token found');
+        return false;
+      }
+
+      // UserService ile profile çekmeye çalışarak token'ı test et
+      final userService = UserService();
+      final response = await userService.getUserProfile(userToken: token);
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info('✅ AuthService.isTokenValid - Token is valid');
+        return true;
+      } else {
+        Logger.warning(
+          '⚠️ AuthService.isTokenValid - Token is invalid: ${response.error}',
+        );
+
+        // Token geçersizse kullanıcı verilerini temizle
+        if (response.error != null &&
+            (response.error!.contains('token') ||
+                response.error!.contains('401') ||
+                response.error!.contains('403') ||
+                response.error!.contains('Geçersiz') ||
+                response.error!.contains('doğrulama'))) {
+          Logger.info(
+            '🧹 AuthService.isTokenValid - Clearing invalid token data',
+          );
+          await _clearUserData();
+        }
+
+        return false;
+      }
+    } catch (e) {
+      Logger.error('❌ AuthService.isTokenValid - Exception: $e', error: e);
+      return false;
+    }
+  }
 }

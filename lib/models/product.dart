@@ -40,7 +40,7 @@ class Product {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? expiresAt;
-  
+
   // Yeni API alanları
   final String? productImage;
   final List<String>? productGallery;
@@ -56,6 +56,7 @@ class Product {
   final bool? isShowContact;
   final bool? isFavorite;
   final bool? isSponsor;
+  final String? sponsorUntil;
   final bool? isTrade;
   final String? productLat;
   final String? productLong;
@@ -114,6 +115,7 @@ class Product {
     this.isShowContact,
     this.isFavorite,
     this.isSponsor,
+    this.sponsorUntil,
     this.isTrade,
     this.productLat,
     this.productLong,
@@ -201,37 +203,75 @@ class Product {
     final productId = safeString(json['productID'] ?? json['id']);
     final productTitle = safeString(json['productTitle'] ?? json['title']);
     final productDesc = safeString(json['productDesc'] ?? json['description']);
-    final productImage = json['productImage'] != null ? safeString(json['productImage']) : null;
-    final productGallery = json['productGallery'] != null ? safeStringList(json['productGallery']) : null;
-    final productCondition = json['productCondition'] != null ? safeString(json['productCondition']) : null;
-    final tradeFor = json['tradeFor'] != null ? safeString(json['tradeFor']) : null;
-    final categoryList = json['categoryList'] != null ? safeCategoryList(json['categoryList']) : null;
+    final productImage = json['productImage'] != null
+        ? safeString(json['productImage'])
+        : null;
+    final productGallery = json['productGallery'] != null
+        ? safeStringList(json['productGallery'])
+        : null;
+    final productCondition = json['productCondition'] != null
+        ? safeString(json['productCondition'])
+        : null;
+    final tradeFor = json['tradeFor'] != null
+        ? safeString(json['tradeFor'])
+        : null;
+    final categoryList = json['categoryList'] != null
+        ? safeCategoryList(json['categoryList'])
+        : null;
     final userId = safeString(json['userID'] ?? json['ownerId']);
     final categoryId = safeString(json['categoryID'] ?? json['categoryId']);
     final cityId = safeString(json['cityID'] ?? json['cityId']);
     final districtId = safeString(json['districtID'] ?? json['districtId']);
     final cityTitle = safeString(json['cityTitle']);
     final districtTitle = safeString(json['districtTitle']);
-    final productLat = json['productLat'] != null ? safeString(json['productLat']) : null;
-    final productLong = json['productLong'] != null ? safeString(json['productLong']) : null;
-    final userFullname = json['userFullname'] != null ? safeString(json['userFullname']) : null;
-    final userFirstname = json['userFirstname'] != null ? safeString(json['userFirstname']) : null;
-    final userLastname = json['userLastname'] != null ? safeString(json['userLastname']) : null;
-    final userPhone = json['userPhone'] != null ? safeString(json['userPhone']) : null;
-    final userImage = json['userImage'] != null ? safeString(json['userImage']) : 
-                     json['userAvatar'] != null ? safeString(json['userAvatar']) :
-                     json['profileImage'] != null ? safeString(json['profileImage']) :
-                     json['avatar'] != null ? safeString(json['avatar']) : null;
+    final productLat = json['productLat'] != null
+        ? safeString(json['productLat'])
+        : null;
+    final productLong = json['productLong'] != null
+        ? safeString(json['productLong'])
+        : null;
+    final userFullname = json['userFullname'] != null
+        ? safeString(json['userFullname'])
+        : null;
+    final userFirstname = json['userFirstname'] != null
+        ? safeString(json['userFirstname'])
+        : null;
+    final userLastname = json['userLastname'] != null
+        ? safeString(json['userLastname'])
+        : null;
+    final userPhone = json['userPhone'] != null
+        ? safeString(json['userPhone'])
+        : null;
+    final userImage = json['userImage'] != null
+        ? safeString(json['userImage'])
+        : json['userAvatar'] != null
+        ? safeString(json['userAvatar'])
+        : json['profileImage'] != null
+        ? safeString(json['profileImage'])
+        : json['avatar'] != null
+        ? safeString(json['avatar'])
+        : null;
     final createdAt = parseDateTime(json['createdAt']);
-    final proView = json['proView'] != null ? safeString(json['proView']) : null;
+    final proView = json['proView'] != null
+        ? safeString(json['proView'])
+        : null;
     final isShowContact = json['isShowContact'] as bool?;
     final isFavorite = json['isFavorite'] as bool?;
     final isSponsor = json['isSponsor'] as bool?;
+    final sponsorUntil = json['sponsorUntil'] != null
+        ? safeString(json['sponsorUntil'])
+        : null;
     final isTrade = json['isTrade'] as bool?;
-    final productCode = json['productCode'] != null ? safeString(json['productCode']) : null;
+    final productCode = json['productCode'] != null
+        ? safeString(json['productCode'])
+        : null;
     final favoriteCount = json['favoriteCount'] as int?;
-    final profilePhoto = json['profilePhoto'] != null ? safeString(json['profilePhoto']) : null;
-    final shareLink = json['shareLink'] != null ? safeString(json['shareLink']) : null;
+    final profilePhoto = json['profilePhoto'] != null
+        ? safeString(json['profilePhoto'])
+        : null;
+    final shareLink = json['shareLink'] != null
+        ? safeString(json['shareLink'])
+        : null;
 
     // Ana resim ve galeri resimlerini birleştir
     final allImages = <String>[];
@@ -287,25 +327,51 @@ class Product {
       categoryId: categoryId,
       catname: category.name,
       category: category,
-      parentCategoryId: json['parentCategoryId'] != null ? safeString(json['parentCategoryId']) : null,
-      parentCategoryName: json['parentCategoryName'] != null ? safeString(json['parentCategoryName']) : null,
-      grandParentCategoryId: json['grandParentCategoryId'] != null ? safeString(json['grandParentCategoryId']) : null,
-      grandParentCategoryName: json['grandParentCategoryName'] != null ? safeString(json['grandParentCategoryName']) : null,
-      mainCategoryId: json['mainCategoryId'] != null ? safeString(json['mainCategoryId']) : null,
-      mainCategoryName: json['mainCategoryName'] != null ? safeString(json['mainCategoryName']) : null,
-      subCategoryId: json['subCategoryId'] != null ? safeString(json['subCategoryId']) : null,
-      subCategoryName: json['subCategoryName'] != null ? safeString(json['subCategoryName']) : null,
-      subSubCategoryId: json['subSubCategoryId'] != null ? safeString(json['subSubCategoryId']) : null,
-      subSubCategoryName: json['subSubCategoryName'] != null ? safeString(json['subSubCategoryName']) : null,
-      subSubSubCategoryId: json['subSubSubCategoryId'] != null ? safeString(json['subSubSubCategoryId']) : null,
-      subSubSubCategoryName: json['subSubSubCategoryName'] != null ? safeString(json['subSubSubCategoryName']) : null,
+      parentCategoryId: json['parentCategoryId'] != null
+          ? safeString(json['parentCategoryId'])
+          : null,
+      parentCategoryName: json['parentCategoryName'] != null
+          ? safeString(json['parentCategoryName'])
+          : null,
+      grandParentCategoryId: json['grandParentCategoryId'] != null
+          ? safeString(json['grandParentCategoryId'])
+          : null,
+      grandParentCategoryName: json['grandParentCategoryName'] != null
+          ? safeString(json['grandParentCategoryName'])
+          : null,
+      mainCategoryId: json['mainCategoryId'] != null
+          ? safeString(json['mainCategoryId'])
+          : null,
+      mainCategoryName: json['mainCategoryName'] != null
+          ? safeString(json['mainCategoryName'])
+          : null,
+      subCategoryId: json['subCategoryId'] != null
+          ? safeString(json['subCategoryId'])
+          : null,
+      subCategoryName: json['subCategoryName'] != null
+          ? safeString(json['subCategoryName'])
+          : null,
+      subSubCategoryId: json['subSubCategoryId'] != null
+          ? safeString(json['subSubCategoryId'])
+          : null,
+      subSubCategoryName: json['subSubCategoryName'] != null
+          ? safeString(json['subSubCategoryName'])
+          : null,
+      subSubSubCategoryId: json['subSubSubCategoryId'] != null
+          ? safeString(json['subSubSubCategoryId'])
+          : null,
+      subSubSubCategoryName: json['subSubSubCategoryName'] != null
+          ? safeString(json['subSubSubCategoryName'])
+          : null,
       condition: productCondition ?? safeString(json['condition']),
       brand: json['brand'] != null ? safeString(json['brand']) : null,
       model: json['model'] != null ? safeString(json['model']) : null,
       estimatedValue: (json['estimatedValue'] as num?)?.toDouble(),
       ownerId: userId,
       owner: owner,
-      tradePreferences: tradeFor != null ? [tradeFor] : safeStringList(json['tradePreferences']),
+      tradePreferences: tradeFor != null
+          ? [tradeFor]
+          : safeStringList(json['tradePreferences']),
       status: ProductStatus.values.firstWhere(
         (e) => e.name == safeString(json['status']),
         orElse: () => ProductStatus.active,
@@ -316,7 +382,9 @@ class Product {
       districtTitle: districtTitle,
       createdAt: createdAt,
       updatedAt: parseDateTime(json['updatedAt']),
-      expiresAt: json['expiresAt'] != null ? parseDateTime(json['expiresAt']) : null,
+      expiresAt: json['expiresAt'] != null
+          ? parseDateTime(json['expiresAt'])
+          : null,
       // Yeni API alanları
       productImage: productImage,
       productGallery: productGallery,
@@ -332,6 +400,7 @@ class Product {
       isShowContact: isShowContact,
       isFavorite: isFavorite,
       isSponsor: isSponsor,
+      sponsorUntil: sponsorUntil,
       isTrade: isTrade,
       productLat: productLat,
       productLong: productLong,
@@ -399,6 +468,7 @@ class Product {
     bool? isShowContact,
     bool? isFavorite,
     bool? isSponsor,
+    String? sponsorUntil,
     bool? isTrade,
     String? productLat,
     String? productLong,
@@ -417,8 +487,10 @@ class Product {
       category: category ?? this.category,
       parentCategoryId: parentCategoryId ?? this.parentCategoryId,
       parentCategoryName: parentCategoryName ?? this.parentCategoryName,
-      grandParentCategoryId: grandParentCategoryId ?? this.grandParentCategoryId,
-      grandParentCategoryName: grandParentCategoryName ?? this.grandParentCategoryName,
+      grandParentCategoryId:
+          grandParentCategoryId ?? this.grandParentCategoryId,
+      grandParentCategoryName:
+          grandParentCategoryName ?? this.grandParentCategoryName,
       mainCategoryId: mainCategoryId ?? this.mainCategoryId,
       mainCategoryName: mainCategoryName ?? this.mainCategoryName,
       subCategoryId: subCategoryId ?? this.subCategoryId,
@@ -426,7 +498,8 @@ class Product {
       subSubCategoryId: subSubCategoryId ?? this.subSubCategoryId,
       subSubCategoryName: subSubCategoryName ?? this.subSubCategoryName,
       subSubSubCategoryId: subSubSubCategoryId ?? this.subSubSubCategoryId,
-      subSubSubCategoryName: subSubSubCategoryName ?? this.subSubSubCategoryName,
+      subSubSubCategoryName:
+          subSubSubCategoryName ?? this.subSubSubCategoryName,
       condition: condition ?? this.condition,
       brand: brand ?? this.brand,
       model: model ?? this.model,
@@ -457,6 +530,7 @@ class Product {
       isShowContact: isShowContact ?? this.isShowContact,
       isFavorite: isFavorite ?? this.isFavorite,
       isSponsor: isSponsor ?? this.isSponsor,
+      sponsorUntil: sponsorUntil ?? this.sponsorUntil,
       isTrade: isTrade ?? this.isTrade,
       productLat: productLat ?? this.productLat,
       productLong: productLong ?? this.productLong,
@@ -507,9 +581,11 @@ class PaginatedProducts {
     } else {
       productsList = [];
     }
-    
-    final products = productsList.map((item) => Product.fromJson(item)).toList();
-    
+
+    final products = productsList
+        .map((item) => Product.fromJson(item))
+        .toList();
+
     // Sayfalama bilgileri data içinde olabilir
     Map<String, dynamic> data = json['data'] ?? json;
     final currentPage = data['page'] as int? ?? 1;
@@ -590,7 +666,9 @@ class Category {
     // Güvenli liste dönüşümü
     List<Category>? safeCategoryList(dynamic value) {
       if (value is List) {
-        return value.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
+        return value
+            .map((e) => Category.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
       return null;
     }
@@ -600,20 +678,34 @@ class Category {
       name: safeString(json['catName'] ?? json['name']),
       icon: safeString(json['icon']),
       parentId: json['parentId'] != null ? safeString(json['parentId']) : null,
-      parentName: json['parentName'] != null ? safeString(json['parentName']) : null,
-      grandParentId: json['grandParentId'] != null ? safeString(json['grandParentId']) : null,
-      grandParentName: json['grandParentName'] != null ? safeString(json['grandParentName']) : null,
-      mainCategoryId: json['mainCategoryId'] != null ? safeString(json['mainCategoryId']) : null,
-      mainCategoryName: json['mainCategoryName'] != null ? safeString(json['mainCategoryName']) : null,
-      subCategoryId: json['subCategoryId'] != null ? safeString(json['subCategoryId']) : null,
-      subCategoryName: json['subCategoryName'] != null ? safeString(json['subCategoryName']) : null,
+      parentName: json['parentName'] != null
+          ? safeString(json['parentName'])
+          : null,
+      grandParentId: json['grandParentId'] != null
+          ? safeString(json['grandParentId'])
+          : null,
+      grandParentName: json['grandParentName'] != null
+          ? safeString(json['grandParentName'])
+          : null,
+      mainCategoryId: json['mainCategoryId'] != null
+          ? safeString(json['mainCategoryId'])
+          : null,
+      mainCategoryName: json['mainCategoryName'] != null
+          ? safeString(json['mainCategoryName'])
+          : null,
+      subCategoryId: json['subCategoryId'] != null
+          ? safeString(json['subCategoryId'])
+          : null,
+      subCategoryName: json['subCategoryName'] != null
+          ? safeString(json['subCategoryName'])
+          : null,
       children: safeCategoryList(json['children']),
       isActive: safeBool(json['isActive']),
       order: safeInt(json['order']),
       level: safeInt(json['level'], defaultValue: 1),
     );
   }
-  
+
   // Firebase uyumlu toJson metodu
   Map<String, dynamic> toJson() {
     final json = _$CategoryToJson(this);
@@ -675,18 +767,6 @@ class Category {
   }
 }
 
-enum ProductStatus {
-  active,
-  inactive,
-  traded,
-  expired,
-  deleted,
-}
+enum ProductStatus { active, inactive, traded, expired, deleted }
 
-enum ProductCondition {
-  new_,
-  likeNew,
-  good,
-  fair,
-  poor,
-}
+enum ProductCondition { new_, likeNew, good, fair, poor }

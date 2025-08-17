@@ -101,7 +101,7 @@ class ProductService {
                   'page': page,
                   'totalPages': 1,
                   'totalItems': products.length,
-                }
+                },
               });
             }
 
@@ -118,7 +118,7 @@ class ProductService {
                   'page': page,
                   'totalPages': 1,
                   'totalItems': products.length,
-                }
+                },
               });
             }
 
@@ -128,7 +128,7 @@ class ProductService {
                 'page': page,
                 'totalPages': 1,
                 'totalItems': 0,
-              }
+              },
             });
           }
 
@@ -141,7 +141,7 @@ class ProductService {
                 'page': page,
                 'totalPages': 1,
                 'totalItems': 0,
-              }
+              },
             });
           }
 
@@ -151,10 +151,13 @@ class ProductService {
           // Sayfalama bilgilerini al
           final currentPage = json['data']['page'] as int? ?? page;
           final totalPages = json['data']['totalPages'] as int? ?? 1;
-          final totalItems = json['data']['totalItems'] as int? ?? productsList.length;
+          final totalItems =
+              json['data']['totalItems'] as int? ?? productsList.length;
           final hasMore = currentPage < totalPages;
 
-          print('📦 Pagination info: page=$currentPage, totalPages=$totalPages, totalItems=$totalItems, hasMore=$hasMore');
+          print(
+            '📦 Pagination info: page=$currentPage, totalPages=$totalPages, totalItems=$totalItems, hasMore=$hasMore',
+          );
 
           // İlk birkaç ürünü logla
           if (productsList.isNotEmpty) {
@@ -289,7 +292,6 @@ class ProductService {
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
 
-            
               print(
                 '📦 Parsed ${products.length} filtered products successfully',
               );
@@ -320,7 +322,7 @@ class ProductService {
                   'page': page,
                   'totalPages': 1,
                   'totalItems': products.length,
-                }
+                },
               });
             }
             return PaginatedProducts.fromJson({
@@ -329,7 +331,7 @@ class ProductService {
                 'page': page,
                 'totalPages': 1,
                 'totalItems': 0,
-              }
+              },
             });
           }
 
@@ -344,7 +346,7 @@ class ProductService {
                 'page': page,
                 'totalPages': 1,
                 'totalItems': 0,
-              }
+              },
             });
           }
 
@@ -356,7 +358,7 @@ class ProductService {
               'page': page,
               'totalPages': 1,
               'totalItems': 0,
-            }
+            },
           });
         },
       );
@@ -485,11 +487,13 @@ class ProductService {
       // POST ile ürün detayını al (API POST istiyor)
       final response = await _httpClient.postWithBasicAuth(
         '${ApiConstants.getProductById}/$productId',
-        body: {'productID': int.tryParse(productId) ?? productId}, // Product ID'yi body'de gönder
+        body: {
+          'productID': int.tryParse(productId) ?? productId,
+        }, // Product ID'yi body'de gönder
         useBasicAuth: true,
         fromJson: (json) {
           print('🔍 getProductById - Raw response: $json');
-          
+
           // API response formatını kontrol et
           if (json is Map<String, dynamic>) {
             // Eğer data field'ı varsa ve içinde product varsa
@@ -526,25 +530,35 @@ class ProductService {
   }) async {
     try {
       final endpoint = '${ApiConstants.productDetail}/$productId/productDetail';
-      
+
       // userToken'ı query parameter olarak değil, Authorization header'ında gönder
       // Basic auth kullanıyoruz, bu yüzden query parameter'a gerek yok
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
         fromJson: (json) {
           print('🔍 Product Detail API Response: $json');
-          
+
           // 410: Gone -> başarı
           if (json is Map<String, dynamic> &&
               (json['410'] == 'Gone' || json['success'] == true)) {
             final productJson = json['data']?['product'];
             if (productJson != null) {
               print('🔍 Product Detail - productJson: $productJson');
-              print('🔍 Product Detail - productJson keys: ${productJson.keys.toList()}');
-              print('🔍 Product Detail - userImage field: ${productJson['userImage']}');
-              print('🔍 Product Detail - userAvatar field: ${productJson['userAvatar']}');
-              print('🔍 Product Detail - profileImage field: ${productJson['profileImage']}');
-              print('🔍 Product Detail - avatar field: ${productJson['avatar']}');
+              print(
+                '🔍 Product Detail - productJson keys: ${productJson.keys.toList()}',
+              );
+              print(
+                '🔍 Product Detail - userImage field: ${productJson['userImage']}',
+              );
+              print(
+                '🔍 Product Detail - userAvatar field: ${productJson['userAvatar']}',
+              );
+              print(
+                '🔍 Product Detail - profileImage field: ${productJson['profileImage']}',
+              );
+              print(
+                '🔍 Product Detail - avatar field: ${productJson['avatar']}',
+              );
               // Yeni API yanıtını Product modeline dönüştür
               return Product.fromJson(productJson);
             }
@@ -552,7 +566,9 @@ class ProductService {
           }
           // 417: Hata
           if (json is Map<String, dynamic> && json['417'] != null) {
-            throw Exception(json['error_message'] ?? json['message'] ?? 'Beklenmeyen hata');
+            throw Exception(
+              json['error_message'] ?? json['message'] ?? 'Beklenmeyen hata',
+            );
           }
           // Diğer durumlar
           throw Exception('Ürün detayı alınamadı');
@@ -600,18 +616,28 @@ class ProductService {
             print(
               '🔍 ProductService - Successfully parsed ${products.length} products',
             );
-            
+
             // API'den gelen ham verileri kontrol et
             print('🔍 ProductService - Raw API data for first product:');
             if (list.isNotEmpty) {
               final firstProduct = list.first;
-              print('🔍 ProductService - First product keys: ${firstProduct.keys.toList()}');
-              print('🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}');
-              print('🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}');
-              print('🔍 ProductService - First product cityID: ${firstProduct['cityID']}');
-              print('🔍 ProductService - First product districtID: ${firstProduct['districtID']}');
+              print(
+                '🔍 ProductService - First product keys: ${firstProduct.keys.toList()}',
+              );
+              print(
+                '🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}',
+              );
+              print(
+                '🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}',
+              );
+              print(
+                '🔍 ProductService - First product cityID: ${firstProduct['cityID']}',
+              );
+              print(
+                '🔍 ProductService - First product districtID: ${firstProduct['districtID']}',
+              );
             }
-            
+
             return products;
           }
           // Fallback: Diğer olası formatlar
@@ -627,18 +653,30 @@ class ProductService {
             print(
               '🔍 ProductService - Successfully parsed ${products.length} products',
             );
-            
+
             // API'den gelen ham verileri kontrol et
-            print('🔍 ProductService - Raw API data for first product (userProductList):');
+            print(
+              '🔍 ProductService - Raw API data for first product (userProductList):',
+            );
             if (list.isNotEmpty) {
               final firstProduct = list.first;
-              print('🔍 ProductService - First product keys: ${firstProduct.keys.toList()}');
-              print('🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}');
-              print('🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}');
-              print('🔍 ProductService - First product cityID: ${firstProduct['cityID']}');
-              print('🔍 ProductService - First product districtID: ${firstProduct['districtID']}');
+              print(
+                '🔍 ProductService - First product keys: ${firstProduct.keys.toList()}',
+              );
+              print(
+                '🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}',
+              );
+              print(
+                '🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}',
+              );
+              print(
+                '🔍 ProductService - First product cityID: ${firstProduct['cityID']}',
+              );
+              print(
+                '🔍 ProductService - First product districtID: ${firstProduct['districtID']}',
+              );
             }
-            
+
             return products;
           }
           if (json case {'products': final List<dynamic> list}) {
@@ -649,18 +687,28 @@ class ProductService {
             print(
               '🔍 ProductService - Successfully parsed ${products.length} products',
             );
-            
+
             // API'den gelen ham verileri kontrol et
             print('🔍 ProductService - Raw API data for first product (root):');
             if (list.isNotEmpty) {
               final firstProduct = list.first;
-              print('🔍 ProductService - First product keys: ${firstProduct.keys.toList()}');
-              print('🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}');
-              print('🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}');
-              print('🔍 ProductService - First product cityID: ${firstProduct['cityID']}');
-              print('🔍 ProductService - First product districtID: ${firstProduct['districtID']}');
+              print(
+                '🔍 ProductService - First product keys: ${firstProduct.keys.toList()}',
+              );
+              print(
+                '🔍 ProductService - First product cityTitle: ${firstProduct['cityTitle']}',
+              );
+              print(
+                '🔍 ProductService - First product districtTitle: ${firstProduct['districtTitle']}',
+              );
+              print(
+                '🔍 ProductService - First product cityID: ${firstProduct['cityID']}',
+              );
+              print(
+                '🔍 ProductService - First product districtID: ${firstProduct['districtID']}',
+              );
             }
-            
+
             return products;
           }
           print('❌ ProductService - No products found in response');
@@ -685,15 +733,20 @@ class ProductService {
     print('🏷️ Category debug for product ${apiProduct['productID']}:');
     print('🏷️ categoryID: ${apiProduct['categoryID']}');
     print('🏷️ categoryTitle: ${apiProduct['categoryTitle']}');
-    print('🏷️ categoryTitle type: ${apiProduct['categoryTitle']?.runtimeType}');
-    print('🏷️ categoryTitle isEmpty: ${apiProduct['categoryTitle']?.toString().isEmpty ?? true}');
+    print(
+      '🏷️ categoryTitle type: ${apiProduct['categoryTitle']?.runtimeType}',
+    );
+    print(
+      '🏷️ categoryTitle isEmpty: ${apiProduct['categoryTitle']?.toString().isEmpty ?? true}',
+    );
     print('🏷️ All category-related fields:');
     apiProduct.forEach((key, value) {
-      if (key.toString().toLowerCase().contains('categor') || key.toString().toLowerCase().contains('cat')) {
+      if (key.toString().toLowerCase().contains('categor') ||
+          key.toString().toLowerCase().contains('cat')) {
         print('🏷️ $key: $value');
       }
     });
-    
+
     // 3 katmanlı kategori sistemi için tüm alanları kontrol et
     print('🏷️ 3-Layer Category System Check:');
     print('🏷️ categoryID: ${apiProduct['categoryID']}');
@@ -701,17 +754,19 @@ class ProductService {
     print('🏷️ parentCategoryID: ${apiProduct['parentCategoryID']}');
     print('🏷️ parentCategoryTitle: ${apiProduct['parentCategoryTitle']}');
     print('🏷️ grandParentCategoryID: ${apiProduct['grandParentCategoryID']}');
-    print('🏷️ grandParentCategoryTitle: ${apiProduct['grandParentCategoryTitle']}');
+    print(
+      '🏷️ grandParentCategoryTitle: ${apiProduct['grandParentCategoryTitle']}',
+    );
     print('🏷️ mainCategoryID: ${apiProduct['mainCategoryID']}');
     print('🏷️ mainCategoryTitle: ${apiProduct['mainCategoryTitle']}');
     print('🏷️ subCategoryID: ${apiProduct['subCategoryID']}');
     print('🏷️ subCategoryTitle: ${apiProduct['subCategoryTitle']}');
-    
+
     // categoryList alanını kontrol et
     print('🏷️ categoryList check:');
     print('🏷️ Raw categoryList: ${apiProduct['categoryList']}');
     print('🏷️ categoryList type: ${apiProduct['categoryList']?.runtimeType}');
-    
+
     if (apiProduct['categoryList'] != null) {
       final categoryList = apiProduct['categoryList'] as List;
       print('🏷️ categoryList length: ${categoryList.length}');
@@ -721,7 +776,9 @@ class ProductService {
         print('🏷️ categoryList[$i] type: ${category.runtimeType}');
         if (category is Map) {
           print('🏷️ categoryList[$i] keys: ${category.keys}');
-          print('🏷️ categoryList[$i]: catID=${category['catID']}, catName=${category['catName']}');
+          print(
+            '🏷️ categoryList[$i]: catID=${category['catID']}, catName=${category['catName']}',
+          );
         }
       }
     } else {
@@ -736,39 +793,51 @@ class ProductService {
 
     // Görsel URL'lerini tam URL'e dönüştür
     final images = <String>[];
-    print('🖼️ [NEW API] Processing images for product: ${apiProduct['productTitle']}');
+    print(
+      '🖼️ [NEW API] Processing images for product: ${apiProduct['productTitle']}',
+    );
     print('🖼️ [NEW API] Raw productImage: ${apiProduct['productImage']}');
     print('🖼️ [NEW API] Raw extraImages: ${apiProduct['extraImages']}');
-    
+
     // Ana resim işleme
     final productImage = apiProduct['productImage']?.toString();
     if (productImage != null &&
         productImage.isNotEmpty &&
         productImage != 'null' &&
         productImage != 'undefined' &&
-        !productImage.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
-        Uri.tryParse(productImage) != null) { // URL formatını kontrol et
+        !productImage.contains(
+          'product_68852b20b6cac.png',
+        ) && // Hatalı URL'yi filtrele
+        Uri.tryParse(productImage) != null) {
+      // URL formatını kontrol et
       // Eğer URL zaten tam URL ise olduğu gibi kullan, değilse base URL ile birleştir
-      final fullImageUrl = productImage.startsWith('http') ? productImage : '${ApiConstants.baseUrl}$productImage';
+      final fullImageUrl = productImage.startsWith('http')
+          ? productImage
+          : '${ApiConstants.baseUrl}$productImage';
       images.add(fullImageUrl);
       print('🖼️ [NEW API] Added productImage: $fullImageUrl');
     } else {
       print('⚠️ [NEW API] Skipping invalid productImage: $productImage');
     }
-    
+
     // extraImages varsa onları da ekle
     if (apiProduct['extraImages'] != null) {
       final extraImages = apiProduct['extraImages'] as List;
       print('🖼️ [NEW API] Processing ${extraImages.length} extra images');
       for (final extraImage in extraImages) {
         final extraImageStr = extraImage?.toString();
-        if (extraImageStr != null && 
+        if (extraImageStr != null &&
             extraImageStr.isNotEmpty &&
             extraImageStr != 'null' &&
             extraImageStr != 'undefined' &&
-            !extraImageStr.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
-            Uri.tryParse(extraImageStr) != null) { // URL formatını kontrol et
-          final fullImageUrl = extraImageStr.startsWith('http') ? extraImageStr : '${ApiConstants.baseUrl}$extraImageStr';
+            !extraImageStr.contains(
+              'product_68852b20b6cac.png',
+            ) && // Hatalı URL'yi filtrele
+            Uri.tryParse(extraImageStr) != null) {
+          // URL formatını kontrol et
+          final fullImageUrl = extraImageStr.startsWith('http')
+              ? extraImageStr
+              : '${ApiConstants.baseUrl}$extraImageStr';
           images.add(fullImageUrl);
           print('🖼️ [NEW API] Added extraImage: $fullImageUrl');
         } else {
@@ -776,8 +845,10 @@ class ProductService {
         }
       }
     }
-    
-    print('🖼️ [NEW API] Final images array for ${apiProduct['productTitle']}: $images');
+
+    print(
+      '🖼️ [NEW API] Final images array for ${apiProduct['productTitle']}: $images',
+    );
     print('🖼️ [NEW API] Total images count: ${images.length}');
 
     print('🖼️ Final images array: $images');
@@ -789,11 +860,11 @@ class ProductService {
     String? mainCategoryId;
     String? parentCategoryId;
     String? subCategoryId;
-    
+
     if (apiProduct['categoryList'] != null) {
       final categoryList = apiProduct['categoryList'] as List;
       print('🏷️ Parsing categoryList with ${categoryList.length} items');
-      
+
       if (categoryList.length >= 1) {
         // İlk kategori ana kategori olarak kabul edilir
         final mainCat = categoryList[0];
@@ -804,7 +875,7 @@ class ProductService {
           print('🏷️ Main category: $mainCategoryName (ID: $mainCategoryId)');
         }
       }
-      
+
       if (categoryList.length >= 2) {
         // İkinci kategori üst kategori olarak kabul edilir
         final parentCat = categoryList[1];
@@ -812,10 +883,12 @@ class ProductService {
         if (parentCat is Map) {
           parentCategoryId = parentCat['catID']?.toString();
           parentCategoryName = parentCat['catName']?.toString();
-          print('🏷️ Parent category: $parentCategoryName (ID: $parentCategoryId)');
+          print(
+            '🏷️ Parent category: $parentCategoryName (ID: $parentCategoryId)',
+          );
         }
       }
-      
+
       if (categoryList.length >= 3) {
         // Üçüncü kategori alt kategori olarak kabul edilir
         final subCat = categoryList[2];
@@ -826,7 +899,7 @@ class ProductService {
           print('🏷️ Sub category: $subCategoryName (ID: $subCategoryId)');
         }
       }
-      
+
       // categoryId'yi categoryList'teki son kategorinin ID'si olarak ayarla
       // Bu, en spesifik kategoriyi temsil eder
       if (categoryList.isNotEmpty) {
@@ -834,7 +907,9 @@ class ProductService {
         if (lastCategory is Map) {
           final lastCategoryId = lastCategory['catID']?.toString();
           final lastCategoryName = lastCategory['catName']?.toString();
-          print('🏷️ Setting categoryId to last category: $lastCategoryName (ID: $lastCategoryId)');
+          print(
+            '🏷️ Setting categoryId to last category: $lastCategoryName (ID: $lastCategoryId)',
+          );
           // categoryId'yi güncelle (Product modelinde bu alan var)
           apiProduct['categoryID'] = lastCategoryId;
           // categoryTitle'ı da güncelle
@@ -842,23 +917,23 @@ class ProductService {
         }
       }
     }
-    
+
     // Eğer categoryList'ten kategori bilgileri alınamadıysa, diğer alanları kontrol et
     if (mainCategoryName == null || mainCategoryName == 'null') {
       mainCategoryName = apiProduct['mainCategoryTitle']?.toString();
       mainCategoryId = apiProduct['mainCategoryID']?.toString();
     }
-    
+
     if (parentCategoryName == null || parentCategoryName == 'null') {
       parentCategoryName = apiProduct['parentCategoryTitle']?.toString();
       parentCategoryId = apiProduct['parentCategoryID']?.toString();
     }
-    
+
     if (subCategoryName == null || subCategoryName == 'null') {
       subCategoryName = apiProduct['subCategoryTitle']?.toString();
       subCategoryId = apiProduct['subCategoryID']?.toString();
     }
-    
+
     print('🏷️ Final parsed categories:');
     print('🏷️ Main: $mainCategoryName (ID: $mainCategoryId)');
     print('🏷️ Parent: $parentCategoryName (ID: $parentCategoryId)');
@@ -866,8 +941,6 @@ class ProductService {
     print('🏷️ Final categoryId: ${apiProduct['categoryID']}');
     print('🏷️ Final categoryTitle: ${apiProduct['categoryTitle']}');
 
-
-    
     final product = Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle']?.toString() ?? '',
@@ -878,17 +951,21 @@ class ProductService {
       parentCategoryId: parentCategoryId,
       parentCategoryName: parentCategoryName,
       grandParentCategoryId: apiProduct['grandParentCategoryID']?.toString(),
-      grandParentCategoryName: apiProduct['grandParentCategoryTitle']?.toString(),
+      grandParentCategoryName: apiProduct['grandParentCategoryTitle']
+          ?.toString(),
       mainCategoryId: mainCategoryId,
       mainCategoryName: mainCategoryName,
       subCategoryId: subCategoryId,
       subCategoryName: subCategoryName,
       category: Category(
         id: apiProduct['categoryID']?.toString() ?? '',
-        name: mainCategoryName ?? parentCategoryName ?? subCategoryName ?? 
-              (apiProduct['categoryTitle']?.toString().isNotEmpty == true 
-                  ? apiProduct['categoryTitle']?.toString() ?? 'Kategori'
-                  : 'Kategori Yok'),
+        name:
+            mainCategoryName ??
+            parentCategoryName ??
+            subCategoryName ??
+            (apiProduct['categoryTitle']?.toString().isNotEmpty == true
+                ? apiProduct['categoryTitle']?.toString() ?? 'Kategori'
+                : 'Kategori Yok'),
         icon: '',
         parentId: parentCategoryId,
         parentName: parentCategoryName,
@@ -925,14 +1002,20 @@ class ProductService {
       createdAt: _parseDate(apiProduct['createdAt']?.toString()),
       updatedAt: DateTime.now(),
     );
-    
+
     // Adres bilgilerini debug et
-    print('📍 [NEW API] Location debug for product ${apiProduct['productTitle']}:');
-    print('📍 [NEW API] cityTitle: "${apiProduct['cityTitle']?.toString() ?? ''}"');
-    print('📍 [NEW API] districtTitle: "${apiProduct['districtTitle']?.toString() ?? ''}"');
+    print(
+      '📍 [NEW API] Location debug for product ${apiProduct['productTitle']}:',
+    );
+    print(
+      '📍 [NEW API] cityTitle: "${apiProduct['cityTitle']?.toString() ?? ''}"',
+    );
+    print(
+      '📍 [NEW API] districtTitle: "${apiProduct['districtTitle']?.toString() ?? ''}"',
+    );
     print('📍 [NEW API] cityID: ${apiProduct['cityID']}');
     print('📍 [NEW API] districtID: ${apiProduct['districtID']}');
-    
+
     return product;
   }
 
@@ -969,38 +1052,50 @@ class ProductService {
 
     // Görsel URL'lerini tam URL'e dönüştür
     final images = <String>[];
-    print('🖼️ [OLD API] Processing images for product: ${apiProduct['productTitle'] ?? 'Unknown'}');
+    print(
+      '🖼️ [OLD API] Processing images for product: ${apiProduct['productTitle'] ?? 'Unknown'}',
+    );
     print('🖼️ [OLD API] Raw productImage: ${apiProduct['productImage']}');
     print('🖼️ [OLD API] Raw extraImages: ${apiProduct['extraImages']}');
-    
+
     // Ana resim işleme
     final productImage = apiProduct['productImage']?.toString();
     if (productImage != null &&
         productImage.isNotEmpty &&
         productImage != 'null' &&
         productImage != 'undefined' &&
-        !productImage.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
-        Uri.tryParse(productImage) != null) { // URL formatını kontrol et
-      final fullImageUrl = productImage.startsWith('http') ? productImage : '${ApiConstants.baseUrl}$productImage';
+        !productImage.contains(
+          'product_68852b20b6cac.png',
+        ) && // Hatalı URL'yi filtrele
+        Uri.tryParse(productImage) != null) {
+      // URL formatını kontrol et
+      final fullImageUrl = productImage.startsWith('http')
+          ? productImage
+          : '${ApiConstants.baseUrl}$productImage';
       images.add(fullImageUrl);
       print('🖼️ [OLD API] Added productImage: $fullImageUrl');
     } else {
       print('⚠️ [OLD API] Skipping invalid productImage: $productImage');
     }
-    
+
     // extraImages varsa onları da ekle
     if (apiProduct['extraImages'] != null) {
       final extraImages = apiProduct['extraImages'] as List;
       print('🖼️ [OLD API] Processing ${extraImages.length} extra images');
       for (final extraImage in extraImages) {
         final extraImageStr = extraImage?.toString();
-        if (extraImageStr != null && 
+        if (extraImageStr != null &&
             extraImageStr.isNotEmpty &&
             extraImageStr != 'null' &&
             extraImageStr != 'undefined' &&
-            !extraImageStr.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
-            Uri.tryParse(extraImageStr) != null) { // URL formatını kontrol et
-          final fullImageUrl = extraImageStr.startsWith('http') ? extraImageStr : '${ApiConstants.baseUrl}$extraImageStr';
+            !extraImageStr.contains(
+              'product_68852b20b6cac.png',
+            ) && // Hatalı URL'yi filtrele
+            Uri.tryParse(extraImageStr) != null) {
+          // URL formatını kontrol et
+          final fullImageUrl = extraImageStr.startsWith('http')
+              ? extraImageStr
+              : '${ApiConstants.baseUrl}$extraImageStr';
           images.add(fullImageUrl);
           print('🖼️ [OLD API] Added extraImage: $fullImageUrl');
         } else {
@@ -1008,19 +1103,21 @@ class ProductService {
         }
       }
     }
-    
+
     print('🖼️ [OLD API] Final images array: $images');
     print('🖼️ [OLD API] Total images count: ${images.length}');
 
     // Adres bilgilerini debug et
     final cityTitle = apiProduct['cityTitle'] ?? '';
     final districtTitle = apiProduct['districtTitle'] ?? '';
-    print('📍 [OLD API] Location debug for product ${apiProduct['productTitle']}:');
+    print(
+      '📍 [OLD API] Location debug for product ${apiProduct['productTitle']}:',
+    );
     print('📍 [OLD API] cityTitle: "$cityTitle"');
     print('📍 [OLD API] districtTitle: "$districtTitle"');
     print('📍 [OLD API] cityID: ${apiProduct['cityID']}');
     print('📍 [OLD API] districtID: ${apiProduct['districtID']}');
-    
+
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
       title: apiProduct['productTitle'] ?? '',
@@ -1028,7 +1125,7 @@ class ProductService {
       images: images,
       categoryId: categoryId,
       catname: categoryName,
-        category: Category(
+      category: Category(
         id: categoryId,
         name: categoryName,
         icon: '',
@@ -1110,7 +1207,11 @@ class ProductService {
       final response = await http.get(Uri.parse(imageUrl));
       if (response.statusCode == 200) {
         final tempDir = Directory.systemTemp;
-        final fileName = imageUrl.split('/').last.split('?').first; // Query parametrelerini temizle
+        final fileName = imageUrl
+            .split('/')
+            .last
+            .split('?')
+            .first; // Query parametrelerini temizle
         final file = File('${tempDir.path}/temp_$fileName');
         await file.writeAsBytes(response.bodyBytes);
         print('📥 Downloaded image: ${file.path.split('/').last}');
@@ -1183,7 +1284,7 @@ class ProductService {
 
     // Files'ı dışarda declare et (cleanup için)
     final files = <String, File>{};
-    
+
     try {
       // SharedPreferences'dan userId'yi al
       final prefs = await SharedPreferences.getInstance();
@@ -1283,13 +1384,15 @@ class ProductService {
       print('🌐 Update Body: $body');
       print('📋 Form Fields: $fields');
       print('📎 Files: ${files.keys.toList()}');
-      
+
       // Sadece yeni dosyalar için file işleme (images artık sadece dosya yolları içeriyor)
       if (images != null && images.isNotEmpty) {
         for (int i = 0; i < images.length; i++) {
           final imagePath = images[i];
           // Dosya yolu kontrolü (URL değil, dosya yolu olmalı)
-          if (imagePath.startsWith('/') || imagePath.contains('\\') || imagePath.contains('/')) {
+          if (imagePath.startsWith('/') ||
+              imagePath.contains('\\') ||
+              imagePath.contains('/')) {
             final file = File(imagePath);
             if (await file.exists()) {
               newImageFiles.add(file);
@@ -1298,7 +1401,9 @@ class ProductService {
               print('⚠️ File not found: $imagePath');
             }
           } else {
-            print('⚠️ Unexpected image format (should be file path): $imagePath');
+            print(
+              '⚠️ Unexpected image format (should be file path): $imagePath',
+            );
           }
         }
       }
@@ -1308,40 +1413,54 @@ class ProductService {
       if (existingImageUrls != null) {
         urlsToKeep.addAll(existingImageUrls.where((e) => e.trim().isNotEmpty));
       }
-      
+
       // STRATEJİ 3: Mevcut URL'leri download edip file olarak gönder (keepImages[] çalışmadı!)
       int totalFileIndex = 0;
-      
+
       print('🔄 Starting Strategy 3: Download existing images as files');
-      
+
       // Önce mevcut resimleri download et ve file olarak ekle
       if (urlsToKeep.isNotEmpty) {
         for (final url in urlsToKeep) {
-          print('📥 Downloading existing image: ${url.substring(url.length - 30)}');
+          print(
+            '📥 Downloading existing image: ${url.substring(url.length - 30)}',
+          );
           final downloadedFile = await _downloadImageAsFile(url);
           if (downloadedFile != null) {
             files['productImages[$totalFileIndex]'] = downloadedFile;
-            print('📸 ✅ Downloaded and added existing image at index $totalFileIndex: ${downloadedFile.path.split('/').last}');
+            print(
+              '📸 ✅ Downloaded and added existing image at index $totalFileIndex: ${downloadedFile.path.split('/').last}',
+            );
             totalFileIndex++;
           } else {
-            print('❌ Failed to download existing image at index $totalFileIndex');
+            print(
+              '❌ Failed to download existing image at index $totalFileIndex',
+            );
           }
         }
-        print('📸 Successfully processed ${urlsToKeep.length} existing images as downloaded files');
+        print(
+          '📸 Successfully processed ${urlsToKeep.length} existing images as downloaded files',
+        );
       }
-      
+
       // Sonra yeni dosyaları ekle
       if (newImageFiles.isNotEmpty) {
         for (final file in newImageFiles) {
           files['productImages[$totalFileIndex]'] = file;
-          print('📸 Added new file at index $totalFileIndex: ${file.path.split('/').last}');
+          print(
+            '📸 Added new file at index $totalFileIndex: ${file.path.split('/').last}',
+          );
           totalFileIndex++;
         }
-        print('📸 Added ${newImageFiles.length} new image files starting from index ${totalFileIndex - newImageFiles.length}');
+        print(
+          '📸 Added ${newImageFiles.length} new image files starting from index ${totalFileIndex - newImageFiles.length}',
+        );
       }
-      
-      print('📸 Total images prepared: $totalFileIndex (${urlsToKeep.length} downloaded + ${newImageFiles.length} new)');
-      
+
+      print(
+        '📸 Total images prepared: $totalFileIndex (${urlsToKeep.length} downloaded + ${newImageFiles.length} new)',
+      );
+
       // Final debug - artık sadece files var (field'larda resim yok)
       print('📋 Final fields (no images in fields anymore):');
       fields.forEach((key, value) {
@@ -1349,7 +1468,7 @@ class ProductService {
           print('  📝 $key: $value');
         }
       });
-      
+
       print('📎 Final files (all images as files):');
       files.forEach((key, file) {
         final isDownloaded = file.path.contains('temp_');
@@ -1366,20 +1485,28 @@ class ProductService {
         multipleFiles: null, // artık kullanmıyoruz
         fromJson: (json) {
           print('📥 ProductService.updateProduct - Raw response: $json');
-          print('📥 ProductService.updateProduct - Response type: ${json.runtimeType}');
+          print(
+            '📥 ProductService.updateProduct - Response type: ${json.runtimeType}',
+          );
 
           // API response'unu detaylı analiz et
-          print('📥 ProductService.updateProduct - Response keys: ${json.keys.toList()}');
+          print(
+            '📥 ProductService.updateProduct - Response keys: ${json.keys.toList()}',
+          );
 
           // Özel format: {"error": false, "200": "OK"} - Bu başarılı güncelleme anlamına gelir
           if (json.containsKey('error') && json.containsKey('200')) {
             final errorValue = json['error'];
             final statusValue = json['200'];
             print('📥 ProductService.updateProduct - Special format detected');
-            print('📥 ProductService.updateProduct - Error: $errorValue, Status: $statusValue');
-              
+            print(
+              '📥 ProductService.updateProduct - Error: $errorValue, Status: $statusValue',
+            );
+
             if (errorValue == false && statusValue == 'OK') {
-              print('✅ Success - Product updated successfully with special format');
+              print(
+                '✅ Success - Product updated successfully with special format',
+              );
               return null;
             }
           }
@@ -1387,13 +1514,17 @@ class ProductService {
           // success field'ını kontrol et
           if (json.containsKey('success')) {
             final successValue = json['success'];
-            print('📥 ProductService.updateProduct - Success field: $successValue');
+            print(
+              '📥 ProductService.updateProduct - Success field: $successValue',
+            );
           }
 
           // message field'ını kontrol et
           if (json.containsKey('message')) {
             final messageValue = json['message'];
-            print('📥 ProductService.updateProduct - Message field: $messageValue');
+            print(
+              '📥 ProductService.updateProduct - Message field: $messageValue',
+            );
           }
 
           // data field'ını kontrol et
@@ -1428,10 +1559,10 @@ class ProductService {
       return response;
     } catch (e) {
       print('❌ ProductService.updateProduct - Exception: $e');
-      
+
       // Exception durumunda da cleanup yap
       _cleanupTemporaryFiles(files);
-      
+
       return ApiResponse.error('Ürün güncellenirken hata oluştu: $e');
     }
   }
@@ -1469,7 +1600,7 @@ class ProductService {
     try {
       // Token'ı request body'de göndereceğiz
       final prefs = await SharedPreferences.getInstance();
-      
+
       final currentUserId = prefs.getString(AppConstants.userIdKey);
       print('🔍 Current user ID: $currentUserId');
 
@@ -1480,11 +1611,10 @@ class ProductService {
       print('  - Expected token length: ~100+ characters');
 
       // Doğru endpoint formatını kullan - userId kullanılmalı
-      final endpoint = '${ApiConstants.deleteProduct}/$currentUserId/deleteProduct';
+      final endpoint =
+          '${ApiConstants.deleteProduct}/$currentUserId/deleteProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
       print('🌐 Full URL: $fullUrl');
-      
-
 
       // API'nin beklediği format: {"userToken": "...", "productID": 1}
       final body = {
@@ -1501,16 +1631,13 @@ class ProductService {
       print('🌐 DELETE Body Alt1 (string productID): $bodyAlt1');
 
       // Alternatif format 2: productId yerine id
-      final bodyAlt2 = {
-        'userToken': userToken,
-        'id': int.parse(productId),
-      };
+      final bodyAlt2 = {'userToken': userToken, 'id': int.parse(productId)};
       print('🌐 DELETE Body Alt2 (id field): $bodyAlt2');
 
       // DELETE HTTP metodunu basic auth ile kullan
       print('🔄 Using DELETE method with basic auth...');
       print('📤 DELETE Body: {"userToken": "...", "productID": $productId}');
-      
+
       // Önce orijinal formatı dene
       var response = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
         endpoint,
@@ -1595,58 +1722,62 @@ class ProductService {
       print('📊 Response data: ${response.data}');
 
       // 403 hatası alındıysa alternatif formatları dene
-      if (!response.isSuccess && response.error != null && 
-          (response.error!.contains('403') || 
-           response.error!.contains('Forbidden') ||
-           response.error!.contains('Invalid user token') ||
-           response.error!.contains('Üye doğrulama bilgileri hatalı'))) {
-        
+      if (!response.isSuccess &&
+          response.error != null &&
+          (response.error!.contains('403') ||
+              response.error!.contains('Forbidden') ||
+              response.error!.contains('Invalid user token') ||
+              response.error!.contains('Üye doğrulama bilgileri hatalı'))) {
         print('⚠️ 403 error detected, trying alternative formats...');
-        
+
         // Format 1: productID as string
         print('🔄 Trying format 1: productID as string');
-        var altResponse1 = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
-          endpoint,
-          body: bodyAlt1,
-          fromJson: (json) {
-            print('📥 Alt1 Response: $json');
-            if (json is Map<String, dynamic>) {
-              return json;
-            } else {
-              return <String, dynamic>{'rawResponse': json};
-            }
-          },
-        );
-        
+        var altResponse1 = await _httpClient
+            .deleteWithBasicAuth<Map<String, dynamic>>(
+              endpoint,
+              body: bodyAlt1,
+              fromJson: (json) {
+                print('📥 Alt1 Response: $json');
+                if (json is Map<String, dynamic>) {
+                  return json;
+                } else {
+                  return <String, dynamic>{'rawResponse': json};
+                }
+              },
+            );
+
         if (altResponse1.isSuccess) {
           print('✅ Alternative format 1 worked!');
           return altResponse1;
         }
-        
+
         // Format 2: id instead of productID
         print('🔄 Trying format 2: id field instead of productID');
-        var altResponse2 = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
-          endpoint,
-          body: bodyAlt2,
-          fromJson: (json) {
-            print('📥 Alt2 Response: $json');
-            if (json is Map<String, dynamic>) {
-              return json;
-            } else {
-              return <String, dynamic>{'rawResponse': json};
-            }
-          },
-        );
-        
+        var altResponse2 = await _httpClient
+            .deleteWithBasicAuth<Map<String, dynamic>>(
+              endpoint,
+              body: bodyAlt2,
+              fromJson: (json) {
+                print('📥 Alt2 Response: $json');
+                if (json is Map<String, dynamic>) {
+                  return json;
+                } else {
+                  return <String, dynamic>{'rawResponse': json};
+                }
+              },
+            );
+
         if (altResponse2.isSuccess) {
           print('✅ Alternative format 2 worked!');
           return altResponse2;
         }
-        
-        print('❌ All alternative formats failed, trying different endpoints...');
-         
-         print('❌ All alternative formats failed');
-       }
+
+        print(
+          '❌ All alternative formats failed, trying different endpoints...',
+        );
+
+        print('❌ All alternative formats failed');
+      }
 
       // KRITIK: API response'unu detaylı analiz et
       if (response.isSuccess) {
@@ -1675,8 +1806,6 @@ class ProductService {
       } else {
         print('❌ API reports deletion failed');
       }
-      
-
 
       return response;
     } catch (e, stackTrace) {
@@ -1695,23 +1824,27 @@ class ProductService {
         ApiConstants.categoriesList,
         fromJson: (json) {
           print('🔍 Raw Categories API Response: $json');
-          
+
           if (json['data'] == null || json['data']['categories'] == null) {
             print('❌ Categories API response has no data or categories field');
             return <Category>[];
           }
-          
+
           final categoriesList = json['data']['categories'] as List;
-          print('🏷️ Categories API returned ${categoriesList.length} categories');
-          
+          print(
+            '🏷️ Categories API returned ${categoriesList.length} categories',
+          );
+
           // Kategori verilerini detaylı logla
           print('🏷️ Raw category data from API:');
           for (int i = 0; i < categoriesList.length; i++) {
             final category = categoriesList[i];
             print('🏷️ Category $i raw data: $category');
-            print('🏷️ Category $i: catID="${category['catID']}" (type: ${category['catID'].runtimeType}), catName="${category['catName']}", catImage="${category['catImage']}"');
+            print(
+              '🏷️ Category $i: catID="${category['catID']}" (type: ${category['catID'].runtimeType}), catName="${category['catName']}", catImage="${category['catImage']}"',
+            );
           }
-          
+
           final parsedCategories = categoriesList
               .map(
                 (item) => Category(
@@ -1725,13 +1858,15 @@ class ProductService {
                 ),
               )
               .toList();
-          
+
           print('🏷️ Parsed categories:');
           for (int i = 0; i < parsedCategories.length; i++) {
             final category = parsedCategories[i];
-            print('🏷️ Parsed Category $i: ID="${category.id}" -> Name="${category.name}"');
+            print(
+              '🏷️ Parsed Category $i: ID="${category.id}" -> Name="${category.name}"',
+            );
           }
-          
+
           return parsedCategories;
         },
       );
@@ -1743,7 +1878,9 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<List<Category>>> getSubCategories(String parentCategoryId) async {
+  Future<ApiResponse<List<Category>>> getSubCategories(
+    String parentCategoryId,
+  ) async {
     print(
       '🏷️ ProductService: Getting sub-categories for parent $parentCategoryId from service/general/general/categories/$parentCategoryId',
     );
@@ -1771,7 +1908,9 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<List<Category>>> getSubSubCategories(String parentSubCategoryId) async {
+  Future<ApiResponse<List<Category>>> getSubSubCategories(
+    String parentSubCategoryId,
+  ) async {
     print(
       '🏷️ ProductService: Getting sub-sub-categories for parent $parentSubCategoryId from service/general/general/categories/$parentSubCategoryId',
     );
@@ -1780,43 +1919,55 @@ class ProductService {
         '${ApiConstants.subSubCategories}/$parentSubCategoryId',
         fromJson: (json) {
           print('🏷️ ProductService: Raw sub-sub-categories response: $json');
-          
+
           if (json == null) {
             print('❌ Sub-sub-categories API response is null');
             return <Category>[];
           }
-          
+
           if (json['data'] == null) {
             print('❌ Sub-sub-categories API response has no data field');
             return <Category>[];
           }
-          
+
           if (json['data']['categories'] == null) {
-            print('❌ Sub-sub-categories API response has no categories field in data');
+            print(
+              '❌ Sub-sub-categories API response has no categories field in data',
+            );
             return <Category>[];
           }
-          
+
           final categoriesList = json['data']['categories'] as List;
-          print('🏷️ Sub-sub-categories API returned ${categoriesList.length} categories');
-          
-          final categories = categoriesList.map((item) => Category(
-            id: item['catID'].toString(),
-            name: item['catName'],
-            icon: item['catImage'] ?? '',
-            parentId: parentSubCategoryId,
-            children: null,
-            isActive: true,
-            order: 0,
-          )).toList();
-          
-          print('🏷️ Parsed ${categories.length} sub-sub-categories successfully');
+          print(
+            '🏷️ Sub-sub-categories API returned ${categoriesList.length} categories',
+          );
+
+          final categories = categoriesList
+              .map(
+                (item) => Category(
+                  id: item['catID'].toString(),
+                  name: item['catName'],
+                  icon: item['catImage'] ?? '',
+                  parentId: parentSubCategoryId,
+                  children: null,
+                  isActive: true,
+                  order: 0,
+                ),
+              )
+              .toList();
+
+          print(
+            '🏷️ Parsed ${categories.length} sub-sub-categories successfully',
+          );
           categories.forEach((cat) => print('  - ${cat.name} (${cat.id})'));
-          
+
           return categories;
         },
       );
 
-      print('🏷️ ProductService: Sub-sub-categories API response: success=${response.isSuccess}, error=${response.error}');
+      print(
+        '🏷️ ProductService: Sub-sub-categories API response: success=${response.isSuccess}, error=${response.error}',
+      );
       return response;
     } catch (e) {
       print('❌ ProductService: Error getting sub-sub-categories: $e');
@@ -1824,7 +1975,9 @@ class ProductService {
     }
   }
 
-  Future<ApiResponse<List<Category>>> getSubSubSubCategories(String parentSubSubCategoryId) async {
+  Future<ApiResponse<List<Category>>> getSubSubSubCategories(
+    String parentSubSubCategoryId,
+  ) async {
     try {
       final response = await _httpClient.getWithBasicAuth(
         '${ApiConstants.subSubSubCategories}/$parentSubSubCategoryId',
@@ -1832,27 +1985,31 @@ class ProductService {
           if (json == null) {
             return <Category>[];
           }
-          
+
           if (json['data'] == null) {
             return <Category>[];
           }
-          
+
           if (json['data']['categories'] == null) {
             return <Category>[];
           }
-          
+
           final categoriesList = json['data']['categories'] as List;
-          
-          final categories = categoriesList.map((item) => Category(
-            id: item['catID'].toString(),
-            name: item['catName'],
-            icon: item['catImage'] ?? '',
-            parentId: parentSubSubCategoryId,
-            children: null,
-            isActive: true,
-            order: 0,
-          )).toList();
-          
+
+          final categories = categoriesList
+              .map(
+                (item) => Category(
+                  id: item['catID'].toString(),
+                  name: item['catName'],
+                  icon: item['catImage'] ?? '',
+                  parentId: parentSubSubCategoryId,
+                  children: null,
+                  isActive: true,
+                  order: 0,
+                ),
+              )
+              .toList();
+
           return categories;
         },
       );
@@ -1981,8 +2138,11 @@ class ProductService {
   }
 
   Future<ApiResponse<List<Condition>>> getConditions() async {
-    print('ProductService: Getting conditions from /service/general/general/productConditions');
-    final fullUrl = '${ApiConstants.fullUrl}/service/general/general/productConditions';
+    print(
+      'ProductService: Getting conditions from /service/general/general/productConditions',
+    );
+    final fullUrl =
+        '${ApiConstants.fullUrl}/service/general/general/productConditions';
     print('Full URL: $fullUrl');
 
     try {
@@ -2017,7 +2177,9 @@ class ProductService {
             print('All conditions in API response:');
             for (int i = 0; i < conditionsList.length; i++) {
               final condition = conditionsList[i];
-              print('  ${i + 1}. ${condition['conditionName']} (ID: ${condition['conditionID']})');
+              print(
+                '  ${i + 1}. ${condition['conditionName']} (ID: ${condition['conditionID']})',
+              );
             }
           }
 
@@ -2046,7 +2208,9 @@ class ProductService {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
         userId = prefs.getString(AppConstants.userIdKey) ?? '';
-        print('🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}');
+        print(
+          '🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}',
+        );
         print('🔑 User ID retrieved: $userId');
       } catch (e) {
         print('⚠️ Error getting user data: $e');
@@ -2058,23 +2222,25 @@ class ProductService {
           userToken: userToken,
           productId: productId,
         );
-        if (productDetailResponse.isSuccess && productDetailResponse.data != null) {
+        if (productDetailResponse.isSuccess &&
+            productDetailResponse.data != null) {
           final product = productDetailResponse.data!;
           if (product.ownerId == userId) {
-            print('❌ ProductService.addToFavorites - User cannot favorite their own product: $productId');
+            print(
+              '❌ ProductService.addToFavorites - User cannot favorite their own product: $productId',
+            );
             return ApiResponse.error('Kendi ürününüzü favoriye ekleyemezsiniz');
           }
         }
       } catch (e) {
-        print('⚠️ ProductService.addToFavorites - Error checking product ownership: $e');
+        print(
+          '⚠️ ProductService.addToFavorites - Error checking product ownership: $e',
+        );
         // Ürün sahipliği kontrolü başarısız olsa bile devam et
       }
 
       // API body'sini hazırla
-      final body = {
-        'userToken': userToken,
-        'productID': productId,
-      };
+      final body = {'userToken': userToken, 'productID': productId};
       print('🌐 Add to favorites body: $body');
 
       final response = await _httpClient.postWithBasicAuth(
@@ -2095,7 +2261,9 @@ class ProductService {
   }
 
   Future<ApiResponse<void>> removeFromFavorites(String productId) async {
-    print('🔄 ProductService.removeFromFavorites - Starting for product ID: $productId');
+    print(
+      '🔄 ProductService.removeFromFavorites - Starting for product ID: $productId',
+    );
     try {
       // User token ve userId'yi al
       String userToken = '';
@@ -2104,21 +2272,24 @@ class ProductService {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
         userId = prefs.getString(AppConstants.userIdKey) ?? '';
-        print('🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}');
+        print(
+          '🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}',
+        );
         print('🔑 User ID retrieved: $userId');
       } catch (e) {
         print('⚠️ Error getting user data: $e');
       }
 
       // API body'sini hazırla
-      final body = {
-        'userToken': userToken,
-        'productID': productId,
-      };
+      final body = {'userToken': userToken, 'productID': productId};
       print('🌐 Remove from favorites body: $body');
 
-      print('🌐 Calling removeFromFavorites API with endpoint: ${ApiConstants.removeFavorite}');
-      print('🌐 Full URL: ${ApiConstants.fullUrl}${ApiConstants.removeFavorite}');
+      print(
+        '🌐 Calling removeFromFavorites API with endpoint: ${ApiConstants.removeFavorite}',
+      );
+      print(
+        '🌐 Full URL: ${ApiConstants.fullUrl}${ApiConstants.removeFavorite}',
+      );
       print('🌐 Request body: $body');
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.removeFavorite,
@@ -2127,33 +2298,39 @@ class ProductService {
         fromJson: (json) {
           print('📥 Remove from favorites response: $json');
           print('📊 Remove from favorites response type: ${json.runtimeType}');
-          print('📊 Remove from favorites response keys: ${json is Map ? json.keys.toList() : 'Not a map'}');
+          print(
+            '📊 Remove from favorites response keys: ${json is Map ? json.keys.toList() : 'Not a map'}',
+          );
           if (json is Map) {
             print('📊 Remove from favorites success: ${json['success']}');
             print('📊 Remove from favorites error: ${json['error']}');
             print('📊 Remove from favorites message: ${json['message']}');
-            
+
             // API response'unu detaylı analiz et
             if (json.containsKey('error') && json.containsKey('200')) {
               final errorValue = json['error'];
               final statusValue = json['200'];
               print('📊 Remove from favorites - Special format detected');
-              print('📊 Remove from favorites - Error: $errorValue, Status: $statusValue');
-              
+              print(
+                '📊 Remove from favorites - Error: $errorValue, Status: $statusValue',
+              );
+
               if (errorValue == false && statusValue == 'OK') {
                 print('✅ Remove from favorites - Success with special format');
                 return null;
               }
             }
-            
+
             // Normal success response
             if (json.containsKey('success') && json['success'] == true) {
               print('✅ Remove from favorites - Success with normal format');
               return null;
             }
-            
+
             // 410 status code için özel handling
-            if (json.containsKey('error') && json['error'] == false && json.containsKey('410')) {
+            if (json.containsKey('error') &&
+                json['error'] == false &&
+                json.containsKey('410')) {
               print('✅ Remove from favorites - Success with 410 format');
               return null;
             }
@@ -2161,11 +2338,11 @@ class ProductService {
           return null;
         },
       );
-      
+
       print('📡 Remove from favorites API call completed');
       print('📡 Response isSuccess: ${response.isSuccess}');
       print('📡 Response error: ${response.error}');
-      
+
       // API response'unu detaylı analiz et
       if (response.isSuccess) {
         print('✅ Remove from favorites - API call was successful');
@@ -2189,7 +2366,9 @@ class ProductService {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
         userId = prefs.getString(AppConstants.userIdKey) ?? '';
-        print('🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}');
+        print(
+          '🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}',
+        );
         print('🔑 User ID retrieved: $userId');
       } catch (e) {
         print('⚠️ Error getting user token: $e');
@@ -2199,8 +2378,12 @@ class ProductService {
       final queryParams = {'userToken': userToken};
       print('🌐 Get favorites query params: $queryParams');
 
-      print('🌐 Calling getFavoriteProducts API with endpoint: ${ApiConstants.favoriteList}/$userId/favoriteList');
-      print('🌐 Full URL: ${ApiConstants.fullUrl}${ApiConstants.favoriteList}/$userId/favoriteList');
+      print(
+        '🌐 Calling getFavoriteProducts API with endpoint: ${ApiConstants.favoriteList}/$userId/favoriteList',
+      );
+      print(
+        '🌐 Full URL: ${ApiConstants.fullUrl}${ApiConstants.favoriteList}/$userId/favoriteList',
+      );
       print('🌐 Query params: $queryParams');
       final response = await _httpClient.getWithBasicAuth(
         '${ApiConstants.favoriteList}/$userId/favoriteList',
@@ -2213,7 +2396,7 @@ class ProductService {
             print('📊 Get favorites success: ${json['success']}');
             print('📊 Get favorites error: ${json['error']}');
           }
-          
+
           // API response formatını kontrol et
           if (json == null) {
             print('❌ Get favorites response is null');
@@ -2225,18 +2408,24 @@ class ProductService {
             print('🔍 Get favorites - 410 Gone response (success)');
             if (json['data'] != null && json['data']['products'] != null) {
               final productsList = json['data']['products'] as List;
-              print('📦 410 response returned ${productsList.length} favorite products');
-              
+              print(
+                '📦 410 response returned ${productsList.length} favorite products',
+              );
+
               // Ürün detaylarını logla
               for (int i = 0; i < productsList.length; i++) {
                 final product = productsList[i];
-                print('📦 Favorite product $i: ${product['productTitle']} (ID: ${product['productID']})');
+                print(
+                  '📦 Favorite product $i: ${product['productTitle']} (ID: ${product['productID']})',
+                );
               }
-              
+
               final products = productsList
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
-              print('📦 Parsed ${products.length} favorite products successfully from 410');
+              print(
+                '📦 Parsed ${products.length} favorite products successfully from 410',
+              );
               return products;
             }
             return <Product>[];
@@ -2247,11 +2436,15 @@ class ProductService {
             print('🔍 Get favorites - Normal success response');
             if (json['data'] != null && json['data']['products'] != null) {
               final productsList = json['data']['products'] as List;
-              print('📦 Success response returned ${productsList.length} favorite products');
+              print(
+                '📦 Success response returned ${productsList.length} favorite products',
+              );
               final products = productsList
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
-              print('📦 Parsed ${products.length} favorite products successfully');
+              print(
+                '📦 Parsed ${products.length} favorite products successfully',
+              );
               return products;
             }
             return <Product>[];
@@ -2267,11 +2460,15 @@ class ProductService {
           if (json['data'] != null) {
             if (json['data']['products'] != null) {
               final productsList = json['data']['products'] as List;
-              print('📦 Get favorites returned ${productsList.length} products');
+              print(
+                '📦 Get favorites returned ${productsList.length} products',
+              );
               final products = productsList
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
-              print('📦 Parsed ${products.length} favorite products successfully');
+              print(
+                '📦 Parsed ${products.length} favorite products successfully',
+              );
               return products;
             }
           }
@@ -2366,7 +2563,7 @@ class ProductService {
       // Konum bilgilerini kullan (sadece kullanıcı tarafından sağlanmışsa)
       double? latitude = userProvidedLatitude;
       double? longitude = userProvidedLongitude;
-      
+
       if (latitude != null && longitude != null) {
         print('📍 Using user provided location: $latitude, $longitude');
       } else {
@@ -2487,38 +2684,50 @@ class ProductService {
 
             // Görsel URL'lerini tam URL'e dönüştür
             final images = <String>[];
-            print('🖼️ Processing images for product: ${apiProduct['productTitle']}');
+            print(
+              '🖼️ Processing images for product: ${apiProduct['productTitle']}',
+            );
             print('🖼️ Raw productImage: ${apiProduct['productImage']}');
             print('🖼️ Raw extraImages: ${apiProduct['extraImages']}');
-            
+
             // Ana resim işleme
             final productImage = apiProduct['productImage']?.toString();
             if (productImage != null &&
                 productImage.isNotEmpty &&
                 productImage != 'null' &&
                 productImage != 'undefined' &&
-                !productImage.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
-                Uri.tryParse(productImage) != null) { // URL formatını kontrol et
-              final fullImageUrl = productImage.startsWith('http') ? productImage : '${ApiConstants.baseUrl}$productImage';
+                !productImage.contains(
+                  'product_68852b20b6cac.png',
+                ) && // Hatalı URL'yi filtrele
+                Uri.tryParse(productImage) != null) {
+              // URL formatını kontrol et
+              final fullImageUrl = productImage.startsWith('http')
+                  ? productImage
+                  : '${ApiConstants.baseUrl}$productImage';
               images.add(fullImageUrl);
               print('🖼️ Added productImage: $fullImageUrl');
             } else {
               print('⚠️ Skipping invalid productImage: $productImage');
             }
-            
+
             // extraImages varsa onları da ekle
             if (apiProduct['extraImages'] != null) {
               final extraImages = apiProduct['extraImages'] as List;
               print('🖼️ Processing ${extraImages.length} extra images');
               for (final extraImage in extraImages) {
                 final extraImageStr = extraImage?.toString();
-                if (extraImageStr != null && 
+                if (extraImageStr != null &&
                     extraImageStr.isNotEmpty &&
                     extraImageStr != 'null' &&
                     extraImageStr != 'undefined' &&
-                    !extraImageStr.contains('product_68852b20b6cac.png') && // Hatalı URL'yi filtrele
-                    Uri.tryParse(extraImageStr) != null) { // URL formatını kontrol et
-                  final fullImageUrl = extraImageStr.startsWith('http') ? extraImageStr : '${ApiConstants.baseUrl}$extraImageStr';
+                    !extraImageStr.contains(
+                      'product_68852b20b6cac.png',
+                    ) && // Hatalı URL'yi filtrele
+                    Uri.tryParse(extraImageStr) != null) {
+                  // URL formatını kontrol et
+                  final fullImageUrl = extraImageStr.startsWith('http')
+                      ? extraImageStr
+                      : '${ApiConstants.baseUrl}$extraImageStr';
                   images.add(fullImageUrl);
                   print('🖼️ Added extraImage: $fullImageUrl');
                 } else {
@@ -2526,8 +2735,10 @@ class ProductService {
                 }
               }
             }
-            
-            print('🖼️ Final images array for ${apiProduct['productTitle']}: $images');
+
+            print(
+              '🖼️ Final images array for ${apiProduct['productTitle']}: $images',
+            );
             print('🖼️ Total images count: ${images.length}');
 
             // API field'larından Product model'i için gerekli field'ları oluştur
@@ -2595,32 +2806,78 @@ class ProductService {
         return 1; // Ana kategori
       }
     }
-    
+
     // Ana kategori varsa (mainCategoryID ve mainCategoryTitle)
-    if (apiProduct['mainCategoryID'] != null && 
+    if (apiProduct['mainCategoryID'] != null &&
         apiProduct['mainCategoryID'].toString().isNotEmpty &&
-        apiProduct['mainCategoryTitle'] != null && 
+        apiProduct['mainCategoryTitle'] != null &&
         apiProduct['mainCategoryTitle'].toString().isNotEmpty) {
       return 1; // Ana kategori
     }
-    
+
     // Alt kategori varsa (parentCategoryID ve parentCategoryTitle)
-    if (apiProduct['parentCategoryID'] != null && 
+    if (apiProduct['parentCategoryID'] != null &&
         apiProduct['parentCategoryID'].toString().isNotEmpty &&
-        apiProduct['parentCategoryTitle'] != null && 
+        apiProduct['parentCategoryTitle'] != null &&
         apiProduct['parentCategoryTitle'].toString().isNotEmpty) {
       return 2; // Alt kategori
     }
-    
+
     // Alt-alt kategori varsa (grandParentCategoryID ve grandParentCategoryTitle)
-    if (apiProduct['grandParentCategoryID'] != null && 
+    if (apiProduct['grandParentCategoryID'] != null &&
         apiProduct['grandParentCategoryID'].toString().isNotEmpty &&
-        apiProduct['grandParentCategoryTitle'] != null && 
+        apiProduct['grandParentCategoryTitle'] != null &&
         apiProduct['grandParentCategoryTitle'].toString().isNotEmpty) {
       return 3; // Alt-alt kategori
     }
-    
+
     // Varsayılan olarak 1. seviye
     return 1;
+  }
+
+  /// Ürünü sponsor yapar (ödüllü reklam sonrası)
+  Future<ApiResponse<Map<String, dynamic>>> sponsorProduct({
+    required String userToken,
+    required int productId,
+  }) async {
+    Logger.info('🎯 ProductService.sponsorProduct - Starting sponsor product');
+    Logger.info('🎯 ProductService.sponsorProduct - productId: $productId');
+    Logger.info(
+      '🎯 ProductService.sponsorProduct - userToken: ${userToken.substring(0, 20)}...',
+    );
+
+    try {
+      final body = {'userToken': userToken, 'productID': productId};
+
+      Logger.info('🎯 ProductService.sponsorProduct - Request body: $body');
+
+      final response = await _httpClient
+          .postWithBasicAuth<Map<String, dynamic>>(
+            ApiConstants.sponsorEdit,
+            body: body,
+            fromJson: (json) => json as Map<String, dynamic>,
+            useBasicAuth: true,
+          );
+
+      Logger.info('📡 ProductService.sponsorProduct - Response received');
+      Logger.info('📊 Response isSuccess: ${response.isSuccess}');
+      Logger.info('📊 Response error: ${response.error}');
+      Logger.info('📊 Response data: ${response.data}');
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info(
+          '✅ ProductService.sponsorProduct - Product sponsored successfully',
+        );
+        return response;
+      } else {
+        Logger.error(
+          '❌ ProductService.sponsorProduct - API error: ${response.error}',
+        );
+        return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
+      }
+    } catch (e) {
+      Logger.error('💥 ProductService.sponsorProduct - Exception: $e');
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
   }
 }

@@ -313,10 +313,12 @@ Takasly uygulamasından paylaşıldı.
   /// WhatsApp'a özel paylaşım
   Future<void> _shareToWhatsApp(Product product, String shareText) async {
     try {
-      final productUrl = product.shareLink ?? 'https://takasly.com/product/${product.id}';
-      
+      final productUrl =
+          product.shareLink ?? 'https://takasly.com/product/${product.id}';
+
       // WhatsApp için özel format - daha kısa ve etkili
-      final whatsappText = '''
+      final whatsappText =
+          '''
 ${product.title}
 
 ${product.description != null && product.description!.isNotEmpty ? '${product.description!.substring(0, product.description!.length > 100 ? 100 : product.description!.length)}...' : ''}
@@ -327,18 +329,19 @@ Takasly uygulamasından paylaşıldı.
 ''';
 
       // WhatsApp URL scheme - daha güvenilir yöntem
-      final whatsappUrl = 'whatsapp://send?text=${Uri.encodeComponent(whatsappText.trim())}';
-      
+      final whatsappUrl =
+          'whatsapp://send?text=${Uri.encodeComponent(whatsappText.trim())}';
+
       // WhatsApp yüklü mü kontrol et
       final canLaunchWhatsApp = await canLaunchUrl(Uri.parse(whatsappUrl));
-      
+
       if (canLaunchWhatsApp) {
         try {
           final result = await launchUrl(
             Uri.parse(whatsappUrl),
             mode: LaunchMode.externalApplication,
           );
-          
+
           if (result && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -402,7 +405,7 @@ Takasly uygulamasından paylaşıldı.
                   onPressed: () async {
                     Navigator.pop(context);
                     // Play Store'a yönlendir
-                    final playStoreUrl = Platform.isIOS 
+                    final playStoreUrl = Platform.isIOS
                         ? 'https://apps.apple.com/app/whatsapp-messenger/id310633997'
                         : 'https://play.google.com/store/apps/details?id=com.whatsapp';
                     await launchUrl(Uri.parse(playStoreUrl));
@@ -428,15 +431,11 @@ Takasly uygulamasından paylaşıldı.
     }
   }
 
-
-
-
-
   /// Diğer uygulamalarla paylaşım
   Future<void> _shareToOtherApps(String shareText, String title) async {
     try {
       await Share.share(
-        shareText, 
+        shareText,
         subject: 'Takasly - $title',
         sharePositionOrigin: Rect.fromLTWH(0, 0, 100, 100),
       ).then((_) {
@@ -822,6 +821,56 @@ class _ProductInfoState extends State<_ProductInfo> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Sponsor badge'i - isSponsor true ise göster
+              if (widget.product.isSponsor == true) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFD700).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star, color: Colors.white, size: 16),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Vitrin İlanı',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Text(
                 widget.product.title,
                 style: const TextStyle(

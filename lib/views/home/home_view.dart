@@ -353,8 +353,21 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
+        // Sponsor ürünleri en üste çıkar
+        final sponsorProducts = validProducts
+            .where((product) => product.isSponsor == true)
+            .toList();
+        final regularProducts = validProducts
+            .where((product) => product.isSponsor != true)
+            .toList();
+        final sortedProducts = [...sponsorProducts, ...regularProducts];
+
+        Logger.info(
+          '🎯 HomeView - Sponsor products: ${sponsorProducts.length}, Regular products: ${regularProducts.length}',
+        );
+
         final int productCount =
-            validProducts.length; // Geçerli ürün sayısını kullan
+            sortedProducts.length; // Sıralanmış ürün sayısını kullan
         Logger.info(
           '📊 HomeView - Toplam ürün: $productCount, hasMore: ${vm.hasMore}, isLoadingMore: ${vm.isLoadingMore}',
         );
@@ -375,10 +388,10 @@ class _HomeViewState extends State<HomeView> {
         final List<Widget> sections = [];
         for (int start = 0; start < productCount; start += 4) {
           final end = math.min(start + 4, productCount);
-          final chunk = validProducts.sublist(
+          final chunk = sortedProducts.sublist(
             start,
             end,
-          ); // Geçerli ürünlerden chunk oluştur
+          ); // Sıralanmış ürünlerden chunk oluştur
 
           // Chunk null safety kontrolü
           if (chunk.isEmpty) {
