@@ -92,6 +92,15 @@
 	<string>Takasly, size yakın ürünleri gösterebilmek ve konum bazlı özellikler sunabilmek için konumunuza ihtiyaç duyar.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Takasly, size yakın ürünleri gösterebilmek ve konum bazlı özellikler sunabilmek için konumunuza ihtiyaç duyar.</string>
+	
+	<!-- Kamera ve Fotoğraf Galerisi İzinleri -->
+	<key>NSCameraUsageDescription</key>
+	<string>Takasly, ürün fotoğrafları çekebilmek için kamera erişimine ihtiyaç duyar.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Takasly, ürün fotoğraflarını seçebilmek için fotoğraf galerisine erişim izni gerektirir.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Takasly, çekilen fotoğrafları galeriye kaydetmek için izin gerektirir.</string>
+	
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

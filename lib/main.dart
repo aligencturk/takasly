@@ -70,6 +70,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+
   // Performans optimizasyonları
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
