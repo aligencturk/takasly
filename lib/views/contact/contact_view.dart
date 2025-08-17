@@ -56,41 +56,47 @@ class _ContactViewState extends State<ContactView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
         title: const Text(
           'İletişim',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 18,
-            color: Colors.black87,
+            color: Colors.white,
           ),
         ),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.white),
         ),
+        centerTitle: true,
       ),
       body: Consumer<ContactViewModel>(
         builder: (context, contactViewModel, child) {
           if (contactViewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+              ),
+            );
           }
 
-          return SingleChildScrollView(
+          return SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  _buildContactForm(contactViewModel),
-                  const SizedBox(height: 32),
-                ],
+              padding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 16),
+                    _buildContactForm(contactViewModel),
+                  ],
+                ),
               ),
             ),
           );
@@ -101,15 +107,15 @@ class _ContactViewState extends State<ContactView> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppTheme.borderRadius,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppTheme.primary.withOpacity(0.1),
             spreadRadius: 1,
-            blurRadius: 6,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -119,22 +125,26 @@ class _ContactViewState extends State<ContactView> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: AppTheme.primary.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.support_agent, color: AppTheme.primary, size: 28),
+            child: Icon(
+              Icons.support_agent_outlined,
+              color: AppTheme.primary,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Bizimle İletişime Geçin',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -142,7 +152,7 @@ class _ContactViewState extends State<ContactView> {
                   'Sorularınızı ve önerilerinizi bize iletebilirsiniz',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppTheme.textSecondary,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -156,15 +166,15 @@ class _ContactViewState extends State<ContactView> {
 
   Widget _buildContactForm(ContactViewModel contactViewModel) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppTheme.borderRadius,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppTheme.primary.withOpacity(0.1),
             spreadRadius: 1,
-            blurRadius: 6,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -174,35 +184,37 @@ class _ContactViewState extends State<ContactView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'İletişim Formu',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppTheme.textPrimary,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Konu Seçimi
             _buildSubjectDropdown(contactViewModel),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Ad Soyad
             _buildNameField(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // E-posta
             _buildEmailField(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Mesaj
             _buildMessageField(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             // Hata/Başarı Mesajları
             if (contactViewModel.hasError || contactViewModel.hasSuccess)
               _buildMessageAlert(contactViewModel),
+
+            const SizedBox(height: 8),
 
             // Gönder Butonu
             _buildSendButton(contactViewModel),
@@ -216,15 +228,15 @@ class _ContactViewState extends State<ContactView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Konu',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: AppTheme.textPrimary,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         DropdownButtonFormField<ContactSubject>(
           value: _selectedSubject,
           decoration: InputDecoration(
@@ -244,7 +256,7 @@ class _ContactViewState extends State<ContactView> {
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
-              vertical: 14,
+              vertical: 12,
             ),
           ),
           items: contactViewModel.subjects.map((subject) {
@@ -284,7 +296,7 @@ class _ContactViewState extends State<ContactView> {
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
           controller: _nameController,
           decoration: InputDecoration(
@@ -304,7 +316,7 @@ class _ContactViewState extends State<ContactView> {
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
-              vertical: 14,
+              vertical: 12,
             ),
           ),
           validator: (value) {
@@ -330,7 +342,7 @@ class _ContactViewState extends State<ContactView> {
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -351,7 +363,7 @@ class _ContactViewState extends State<ContactView> {
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
-              vertical: 14,
+              vertical: 12,
             ),
           ),
           validator: (value) {
@@ -382,7 +394,7 @@ class _ContactViewState extends State<ContactView> {
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
           controller: _messageController,
           maxLines: 5,
@@ -404,7 +416,7 @@ class _ContactViewState extends State<ContactView> {
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
-              vertical: 14,
+              vertical: 12,
             ),
           ),
           validator: (value) {
