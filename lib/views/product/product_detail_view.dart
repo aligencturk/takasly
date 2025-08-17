@@ -831,16 +831,21 @@ class _ProductInfoState extends State<_ProductInfo> {
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                      colors: [Color(0xFFDAA520), Color(0xFFB8860B)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFFD700).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        color: const Color(0xFFDAA520).withOpacity(0.2),
+                        blurRadius: 16,
+                        offset: const Offset(0, 3),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFFB8860B).withOpacity(0.12),
+                        blurRadius: 24,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
@@ -1062,7 +1067,12 @@ class _ProductInfoState extends State<_ProductInfo> {
 
         const SizedBox(height: 8),
 
-        // 6. Konum Detayı (En altta - harita ve detaylar)
+        // 6. Banner Reklam (Konum bilgileri üstünde)
+        const BannerAdDetailFooter(),
+
+        const SizedBox(height: 8),
+
+        // 7. Konum Detayı (En altta - harita ve detaylar)
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -1093,7 +1103,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               // Harita
               if (widget.product.productLat != null &&
                   widget.product.productLong != null &&
@@ -1107,9 +1117,6 @@ class _ProductInfoState extends State<_ProductInfo> {
                   widget.product.productLat!.isNotEmpty &&
                   widget.product.productLong!.isNotEmpty)
                 _buildMapButtons(widget.product),
-              const SizedBox(height: 12),
-              // Harita butonlarının altına banner reklam
-              const BannerAdDetailFooter(),
             ],
           ),
         ),

@@ -38,6 +38,8 @@ target 'Runner' do
   # Flutter plugin'leri kendi bağımlılıklarını yönetsin - iOS 14.0+ optimize edilmiş
   # Google Sign-In ve Firebase versiyonları flutter plugin'leri tarafından otomatik belirlenir
   
+  # AdMob için gerekli ayarlar - Flutter plugin otomatik yönetir
+  
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -52,6 +54,18 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
       
       # Flutter plugin'leri için standart iOS 14.0+ ayarları
+      
+      # AdMob için gerekli ayarlar
+      if target.name == 'Google-Mobile-Ads-SDK'
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GAD_REQUEST_AGENT=FLUTTER'
+      end
+      
+      # Bitcode'u kapat (iOS 14+ için gerekli)
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      
+      # ARM64 simulator desteği
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
     end
   end
 

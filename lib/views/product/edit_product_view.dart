@@ -48,12 +48,12 @@ class _EditProductViewState extends State<EditProductView> {
   bool _isProcessingSponsor = false;
 
   // ExpansionTile durumları
-  bool _isBasicInfoExpanded = true; // Temel bilgiler açık
+  bool _isBasicInfoExpanded = false; // Temel bilgiler kapalı
   bool _isCategoryExpanded = false; // Kategorizasyon kapalı
   bool _isLocationExpanded = false; // Konum kapalı
   bool _isImagesExpanded = false; // Resimler kapalı
   bool _isContactExpanded = false; // İletişim ayarları kapalı
-  bool _isSponsorExpanded = false; // Sponsor bölümü kapalı
+  bool _isSponsorExpanded = true; // Sponsor bölümü açık
 
   @override
   void initState() {
@@ -337,6 +337,8 @@ class _EditProductViewState extends State<EditProductView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _buildSponsorSection(),
+                      const SizedBox(height: 16),
                       _buildBasicInfoSection(),
                       const SizedBox(height: 16),
                       _buildCategorySection(),
@@ -346,8 +348,6 @@ class _EditProductViewState extends State<EditProductView> {
                       _buildImagesSection(),
                       const SizedBox(height: 16),
                       _buildContactSection(),
-                      const SizedBox(height: 16),
-                      _buildSponsorSection(),
                       const SizedBox(height: 32),
                       _buildUpdateButton(),
                     ],
@@ -389,14 +389,18 @@ class _EditProductViewState extends State<EditProductView> {
           _isBasicInfoExpanded = expanded;
         });
       },
-      leading: Icon(Icons.info_outline, color: AppTheme.primary),
+      leading: Icon(Icons.info_outline, color: AppTheme.primary, size: 20),
       title: Text(
         'Temel Bilgiler',
-        style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+        style: TextStyle(
+          fontWeight: FontWeight.w600, 
+          color: AppTheme.primary,
+          fontSize: 15,
+        ),
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Column(
             children: [
               TextFormField(
@@ -405,25 +409,39 @@ class _EditProductViewState extends State<EditProductView> {
                 decoration: const InputDecoration(
                   labelText: 'İlan Başlığı',
                   counterText: '',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  ),
                 ),
                 maxLength: 40,
                 validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _descriptionController,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Açıklama'),
-                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Açıklama',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  ),
+                ),
+                maxLines: 3,
                 validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _tradePreferencesController,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   labelText: 'Takas Tercihleri (virgülle ayırın)',
                   hintText: 'Örn: telefon, laptop, kitap',
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  ),
                 ),
                 maxLines: 2,
               ),
@@ -442,25 +460,29 @@ class _EditProductViewState extends State<EditProductView> {
           _isCategoryExpanded = expanded;
         });
       },
-      leading: Icon(Icons.category, color: AppTheme.primary),
+      leading: Icon(Icons.category, color: AppTheme.primary, size: 20),
       title: Text(
         'Kategorizasyon',
-        style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+        style: TextStyle(
+          fontWeight: FontWeight.w600, 
+          color: AppTheme.primary,
+          fontSize: 15,
+        ),
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Column(
             children: [
               _buildCategoryDropdown(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Consumer<ProductViewModel>(
                 builder: (context, vm, child) {
                   if (vm.subCategories.isNotEmpty) {
                     return Column(
                       children: [
                         _buildSubCategoryDropdown(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                       ],
                     );
                   }
@@ -473,7 +495,7 @@ class _EditProductViewState extends State<EditProductView> {
                     return Column(
                       children: [
                         _buildSubSubCategoryDropdown(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                       ],
                     );
                   }
@@ -486,7 +508,7 @@ class _EditProductViewState extends State<EditProductView> {
                     return Column(
                       children: [
                         _buildSubSubSubCategoryDropdown(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                       ],
                     );
                   }
@@ -509,18 +531,22 @@ class _EditProductViewState extends State<EditProductView> {
           _isLocationExpanded = expanded;
         });
       },
-      leading: Icon(Icons.location_on, color: AppTheme.primary),
+      leading: Icon(Icons.location_on, color: AppTheme.primary, size: 20),
       title: Text(
         'Konum',
-        style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+        style: TextStyle(
+          fontWeight: FontWeight.w600, 
+          color: AppTheme.primary,
+          fontSize: 15,
+        ),
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Column(
             children: [
               _buildCityDropdown(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildDistrictDropdown(),
             ],
           ),
@@ -537,14 +563,18 @@ class _EditProductViewState extends State<EditProductView> {
           _isImagesExpanded = expanded;
         });
       },
-      leading: Icon(Icons.photo_library, color: AppTheme.primary),
+      leading: Icon(Icons.photo_library, color: AppTheme.primary, size: 20),
       title: Text(
         'Resimler',
-        style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+        style: TextStyle(
+          fontWeight: FontWeight.w600, 
+          color: AppTheme.primary,
+          fontSize: 15,
+        ),
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: _buildImageSection(),
         ),
       ],
@@ -559,14 +589,18 @@ class _EditProductViewState extends State<EditProductView> {
           _isContactExpanded = expanded;
         });
       },
-      leading: Icon(Icons.contact_phone, color: AppTheme.primary),
+      leading: Icon(Icons.contact_phone, color: AppTheme.primary, size: 20),
       title: Text(
         'İletişim Ayarları',
-        style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+        style: TextStyle(
+          fontWeight: FontWeight.w600, 
+          color: AppTheme.primary,
+          fontSize: 15,
+        ),
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: _buildContactSettingsSection(),
         ),
       ],
@@ -581,116 +615,103 @@ class _EditProductViewState extends State<EditProductView> {
           _isSponsorExpanded = expanded;
         });
       },
-      leading: Icon(Icons.star, color: Colors.amber.shade700),
+      leading: Icon(Icons.star, color: Colors.blue.shade600, size: 20),
       title: Text(
         'İlanı Öne Çıkar',
         style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.amber.shade700,
+          fontWeight: FontWeight.w600,
+          color: Colors.blue.shade600,
+          fontSize: 15,
         ),
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.amber.withOpacity(0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.star, color: Colors.amber.shade700, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Ödüllü Reklam ile Öne Çıkar',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.amber.shade700,
-                        ),
-                      ),
-                    ),
-                  ],
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'ÜCRETSİZ Premium Görünürlük',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue.shade600,
+                  fontSize: 14,
                 ),
-
-                const SizedBox(height: 16),
-
-                Text(
-                  'İlanınızı ödüllü reklam izleyerek 1 saat boyunca öne çıkarabilirsiniz. İlanınız anasayfada en üstte altın renkli çerçeve ile gösterilir.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade700,
-                    height: 1.4,
-                  ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              Text(
+                'İlanınızı ödüllü reklam izleyerek 1 saat boyunca öne çıkarabilirsiniz.',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 13,
                 ),
-
-                const SizedBox(height: 20),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isProcessingSponsor
-                        ? null
-                        : () => _handleSponsorProcess(),
-                    icon: _isProcessingSponsor
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _isProcessingSponsor
+                      ? null
+                      : () => _handleSponsorProcess(),
+                  icon: _isProcessingSponsor
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
                             ),
-                          )
-                        : Icon(Icons.star, size: 20),
-                    label: Text(
-                      _isProcessingSponsor
-                          ? 'İşleniyor...'
-                          : 'Reklam İzle ve Öne Çıkar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          ),
+                        )
+                      : Icon(Icons.play_arrow, size: 18),
+                  label: Text(
+                    _isProcessingSponsor
+                        ? 'İşleniyor...'
+                        : 'Reklam İzle ve Öne Çıkar',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber.shade700,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.amber.shade700,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Reklam izledikten sonra ilanınız otomatik olarak öne çıkar.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.amber.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
+              ),
+              
+              const SizedBox(height: 12),
+              
+              Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: Colors.green.shade600,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'ÜCRETSİZ - Reklam izledikten sonra otomatik olarak öne çıkarılır',
+                      style: TextStyle(
+                        color: Colors.green.shade600,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ],
@@ -713,7 +734,10 @@ class _EditProductViewState extends State<EditProductView> {
             value: validValue,
             decoration: const InputDecoration(
               labelText: 'Ana Kategori',
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: vm.categories
                 .map(
@@ -738,7 +762,10 @@ class _EditProductViewState extends State<EditProductView> {
           return DropdownButtonFormField<String>(
             decoration: const InputDecoration(
               labelText: 'Ana Kategori',
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: const [],
             onChanged: (value) {},
@@ -767,7 +794,10 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Alt Kategori',
               enabled: _selectedCategoryId != null,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: vm.subCategories
                 .map(
@@ -797,7 +827,10 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Alt Kategori',
               enabled: _selectedCategoryId != null,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: const [],
             onChanged: (value) {},
@@ -828,7 +861,10 @@ class _EditProductViewState extends State<EditProductView> {
               enabled:
                   _selectedSubCategoryId != null &&
                   vm.subSubCategories.isNotEmpty,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: vm.subSubCategories
                 .map(
@@ -859,7 +895,10 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Alt Alt Kategori',
               enabled: _selectedSubCategoryId != null,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: const [],
             onChanged: (value) {},
@@ -890,7 +929,10 @@ class _EditProductViewState extends State<EditProductView> {
               enabled:
                   _selectedSubSubCategoryId != null &&
                   vm.subSubSubCategories.isNotEmpty,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: vm.subSubSubCategories
                 .map(
@@ -914,7 +956,10 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'Ürün Kategorisi',
               enabled: _selectedSubSubCategoryId != null,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: const [],
             onChanged: (value) {},
@@ -938,9 +983,12 @@ class _EditProductViewState extends State<EditProductView> {
 
           return DropdownButtonFormField<String>(
             value: validValue,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Ürün Durumu',
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: vm.conditions
                 .map(
@@ -954,9 +1002,12 @@ class _EditProductViewState extends State<EditProductView> {
         } catch (e) {
           Logger.error('Error building condition dropdown: $e');
           return DropdownButtonFormField<String>(
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Ürün Durumu',
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: const [],
             onChanged: (value) {},
@@ -980,9 +1031,12 @@ class _EditProductViewState extends State<EditProductView> {
 
           return DropdownButtonFormField<String>(
             value: validValue,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'İl',
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: vm.cities
                 .map(
@@ -1004,9 +1058,12 @@ class _EditProductViewState extends State<EditProductView> {
         } catch (e) {
           Logger.error('Error building city dropdown: $e');
           return DropdownButtonFormField<String>(
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'İl',
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: const [],
             onChanged: (value) {},
@@ -1033,7 +1090,10 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'İlçe',
               enabled: _selectedCityId != null,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: vm.districts
                 .map(
@@ -1052,7 +1112,10 @@ class _EditProductViewState extends State<EditProductView> {
             decoration: InputDecoration(
               labelText: 'İlçe',
               enabled: _selectedCityId != null,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             items: const [],
             onChanged: (value) {},
@@ -1069,22 +1132,31 @@ class _EditProductViewState extends State<EditProductView> {
         Row(
           children: [
             Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _pickImages,
-                icon: const Icon(Icons.add_photo_alternate),
-                label: const Text('Yeni Resim Ekle'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[200],
-                  foregroundColor: Colors.black87,
+              child: SizedBox(
+                height: 40,
+                child: ElevatedButton.icon(
+                  onPressed: _pickImages,
+                  icon: const Icon(Icons.add_photo_alternate, size: 18),
+                  label: const Text(
+                    'Yeni Resim Ekle',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[200],
+                    foregroundColor: Colors.black87,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         if (_existingImages.isNotEmpty || _newImages.isNotEmpty)
           SizedBox(
-            height: 120,
+            height: 100,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
@@ -1097,16 +1169,16 @@ class _EditProductViewState extends State<EditProductView> {
           ),
         if (_existingImages.isEmpty && _newImages.isEmpty)
           Container(
-            height: 120,
+            height: 100,
             width: double.infinity,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: Colors.grey.shade300),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Center(
               child: Text(
                 'Henüz resim eklenmedi',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: Colors.grey, fontSize: 13),
               ),
             ),
           ),
@@ -1116,42 +1188,42 @@ class _EditProductViewState extends State<EditProductView> {
 
   Widget _buildExistingImageItem(String imageUrl) {
     return Container(
-      width: 120,
+      width: 100,
       margin: const EdgeInsets.only(right: 8),
       child: Stack(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             child: Builder(
               builder: (context) {
                 if (imageUrl.isEmpty ||
                     imageUrl == 'null' ||
                     imageUrl == 'undefined') {
                   return Container(
-                    width: 120,
-                    height: 120,
+                    width: 100,
+                    height: 100,
                     color: Colors.grey[300],
-                    child: const Icon(Icons.image_not_supported),
+                    child: const Icon(Icons.image_not_supported, size: 20),
                   );
                 }
 
                 return CachedNetworkImage(
                   imageUrl: imageUrl,
-                  width: 120,
-                  height: 120,
+                  width: 100,
+                  height: 100,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
-                    width: 120,
-                    height: 120,
+                    width: 100,
+                    height: 100,
                     color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator()),
+                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
                   errorWidget: (context, url, error) {
                     return Container(
-                      width: 120,
-                      height: 120,
+                      width: 100,
+                      height: 100,
                       color: Colors.grey[300],
-                      child: const Icon(Icons.error),
+                      child: const Icon(Icons.error, size: 20),
                     );
                   },
                 );
@@ -1159,17 +1231,17 @@ class _EditProductViewState extends State<EditProductView> {
             ),
           ),
           Positioned(
-            top: 4,
-            right: 4,
+            top: 2,
+            right: 2,
             child: GestureDetector(
               onTap: () => _removeExistingImage(imageUrl),
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(3),
                 decoration: const BoxDecoration(
                   color: Colors.red,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 16),
+                child: const Icon(Icons.close, color: Colors.white, size: 12),
               ),
             ),
           ),
@@ -1180,31 +1252,31 @@ class _EditProductViewState extends State<EditProductView> {
 
   Widget _buildNewImageItem(File imageFile) {
     return Container(
-      width: 120,
+      width: 100,
       margin: const EdgeInsets.only(right: 8),
       child: Stack(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             child: Image.file(
               imageFile,
-              width: 120,
-              height: 120,
+              width: 100,
+              height: 100,
               fit: BoxFit.cover,
             ),
           ),
           Positioned(
-            top: 4,
-            right: 4,
+            top: 2,
+            right: 2,
             child: GestureDetector(
               onTap: () => _removeNewImage(imageFile),
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(3),
                 decoration: const BoxDecoration(
                   color: Colors.red,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 16),
+                child: const Icon(Icons.close, color: Colors.white, size: 12),
               ),
             ),
           ),
@@ -1305,10 +1377,10 @@ class _EditProductViewState extends State<EditProductView> {
 
   Widget _buildContactSettingsSection() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
@@ -1316,20 +1388,20 @@ class _EditProductViewState extends State<EditProductView> {
         children: [
           Row(
             children: [
-              Icon(Icons.contact_phone, color: AppTheme.primary, size: 24),
-              const SizedBox(width: 12),
+              Icon(Icons.contact_phone, color: AppTheme.primary, size: 20),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'İletişim Bilgileri',
                   style: Theme.of(
                     context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           Row(
             children: [
@@ -1339,15 +1411,16 @@ class _EditProductViewState extends State<EditProductView> {
                   children: [
                     Text(
                       'Telefon numaramı göster',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       'Açıksa, diğer kullanıcılar size arayabilir',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey.shade600,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -1360,49 +1433,53 @@ class _EditProductViewState extends State<EditProductView> {
                     _isShowContact = value;
                   });
                 },
-                activeColor: AppTheme.primary,
+                                  activeColor: AppTheme.primary,
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           Row(
             children: [
               Icon(
                 _isShowContact ? Icons.check_circle : Icons.info_outline,
                 color: _isShowContact ? Colors.green : Colors.orange,
-                size: 20,
+                size: 16,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   _isShowContact
                       ? 'Telefon numaranız görünür olacak. Kullanıcılar size arayabilecek.'
                       : 'Telefon numaranız gizli olacak. Sadece mesajlaşma ile iletişim kurulabilir.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: _isShowContact
                         ? Colors.green.shade700
                         : Colors.orange.shade700,
                     fontWeight: FontWeight.w500,
+                    fontSize: 12,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           Row(
             children: [
-              Icon(Icons.security, color: Colors.blue, size: 20),
-              const SizedBox(width: 12),
+              Icon(Icons.security, color: Colors.blue, size: 16),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Bu ayarı daha sonra ilan detay sayfasından değiştirebilirsiniz.',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.blue.shade700),
+                  ).textTheme.bodySmall?.copyWith(
+                    color: Colors.blue.shade700,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -1422,12 +1499,12 @@ class _EditProductViewState extends State<EditProductView> {
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
         child: const Text(
           'Ürünü Güncelle',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -1641,28 +1718,25 @@ class _EditProductViewState extends State<EditProductView> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           title: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.star, color: Colors.amber.shade700, size: 24),
-              ),
-              const SizedBox(width: 12),
-              const Text(
+              Icon(Icons.star, color: Colors.blue.shade600, size: 20),
+              const SizedBox(width: 10),
+              Text(
                 'İlanı Öne Çıkar',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 16, 
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue.shade600,
+                ),
               ),
             ],
           ),
-          content: const Text(
-            'Ödüllü reklam izleyerek ilanınızı 1 saat boyunca öne çıkarmak istiyor musunuz?\n\nİlanınız anasayfada en üstte altın renkli çerçeve ile gösterilecek.',
-            style: TextStyle(fontSize: 16, height: 1.4),
+          content: Text(
+            'Ödüllü reklam izleyerek ilanınızı 1 saat boyunca öne çıkarmak istiyor musunuz?\n\nİlanınız anasayfada en üstte mavi çerçeve ile gösterilecek.',
+            style: TextStyle(fontSize: 14, height: 1.4),
           ),
           actions: [
             TextButton(
@@ -1671,7 +1745,7 @@ class _EditProductViewState extends State<EditProductView> {
                 'İptal',
                 style: TextStyle(
                   color: Colors.grey[600],
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1679,15 +1753,16 @@ class _EditProductViewState extends State<EditProductView> {
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber.shade700,
+                backgroundColor: Colors.blue.shade600,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               child: const Text(
                 'Reklam İzle',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -1716,7 +1791,7 @@ class _EditProductViewState extends State<EditProductView> {
               ),
             ],
           ),
-          backgroundColor: Colors.amber.shade600,
+          backgroundColor: Colors.blue.shade600,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

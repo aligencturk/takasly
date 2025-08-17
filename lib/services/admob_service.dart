@@ -61,7 +61,7 @@ class AdMobService {
   static const String _androidRewardedAdUnitIdProd =
       'ca-app-pub-3600325889588673/4220640906'; // Gerçek Android prod rewarded ID
   static const String _iosRewardedAdUnitIdProd =
-      'ca-app-pub-3600325889588673/1234567890'; // iOS production rewarded ID (güncellenecek)
+      'ca-app-pub-3600325889588673/1633441360'; // iOS production rewarded ID
 
   // Debug/Test modu kontrolü
   static const bool _useTestAds = false; // PRODUCTION: Gerçek reklamları kullan
@@ -75,8 +75,8 @@ class AdMobService {
   bool _isLoading = false;
   Timer? _retryTimer;
   int _retryCount = 0;
-  static const int _maxRetries = 3;
-  static const Duration _retryDelay = Duration(seconds: 5);
+  static const int _maxRetries = 5; // iOS için daha fazla deneme
+  static const Duration _retryDelay = Duration(seconds: 10); // iOS için daha uzun bekleme
 
   // Rewarded Ad değişkenleri
   RewardedAd? _rewardedAd;
@@ -112,6 +112,8 @@ class AdMobService {
 
     try {
       Logger.info('🚀 AdMobService - AdMob başlatılıyor...');
+      Logger.info('📱 AdMobService - Platform: ${Platform.isIOS ? "iOS" : "Android"}');
+      Logger.info('🔧 AdMobService - Test Modu: ${_useTestAds ? "Aktif" : "Pasif"}');
 
       // WidgetsFlutterBinding'in hazır olduğundan emin ol
       if (!WidgetsBinding.instance.isRootWidgetAttached) {
@@ -153,6 +155,15 @@ class AdMobService {
       _isInitialized = true;
       _initCompleter.complete();
       Logger.info('✅ AdMobService - AdMob başarıyla başlatıldı');
+      
+      // Platform bilgilerini logla
+      if (Platform.isIOS) {
+        Logger.info('🍎 AdMobService - iOS için optimize edilmiş konfigürasyon aktif');
+        Logger.info('📱 AdMobService - iOS App ID: $_iosAppId');
+      } else if (Platform.isAndroid) {
+        Logger.info('🤖 AdMobService - Android için optimize edilmiş konfigürasyon aktif');
+        Logger.info('📱 AdMobService - Android App ID: $_androidAppId');
+      }
     } catch (e) {
       Logger.error('❌ AdMobService - AdMob başlatılırken hata: $e');
       _isInitialized = false;
@@ -379,6 +390,15 @@ class AdMobService {
               '❌ AdMobService - Native reklam yuklenemedi: ${error.message}',
             );
             Logger.error('❌ AdMobService - Error code: ${error.code}');
+            Logger.error('❌ AdMobService - Error domain: ${error.domain}');
+            
+            // iOS için özel hata yönetimi
+            if (Platform.isIOS) {
+              Logger.error('🍎 AdMobService - iOS özel hata detayları:');
+              Logger.error('🍎 AdMobService - Error description: ${error.message}');
+              Logger.error('🍎 AdMobService - Error code: ${error.code}');
+            }
+            
             _handleLoadError();
             _safeDisposeAd(ad as NativeAd);
           },
@@ -399,7 +419,7 @@ class AdMobService {
 
       // Reklam yükleme işlemini UI thread'i bloklamayacak şekilde yap
       await _nativeAd!.load().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15), // iOS için daha uzun timeout
         onTimeout: () {
           throw TimeoutException('Reklam yukleme zaman asimi');
         },
@@ -555,6 +575,16 @@ class AdMobService {
               '❌ AdMobService - Ödüllü reklam yüklenemedi: ${error.message}',
             );
             Logger.error('❌ AdMobService - Error code: ${error.code}');
+            Logger.error('❌ AdMobService - Error domain: ${error.domain}');
+            
+            // iOS için özel hata yönetimi
+            if (Platform.isIOS) {
+              Logger.error('🍎 AdMobService - iOS ödüllü reklam hata detayları:');
+              Logger.error('🍎 AdMobService - Error description: ${error.message}');
+              Logger.error('🍎 AdMobService - Error code: ${error.code}');
+              Logger.error('🍎 AdMobService - Ad Unit ID: $rewardedAdUnitId');
+            }
+            
             _rewardedAdFailed = true;
             _isRewardedAdLoaded = false;
             _isRewardedAdLoading = false;
@@ -676,6 +706,8 @@ class AdMobService {
     _retryTimer?.cancel();
     _hasFailed = false;
     _retryCount = 0;
+    _rewardedAdFailed = false;
+    _rewardedAdRetryCount = 0;
   }
 
   /// Yükleme durumunu kontrol et

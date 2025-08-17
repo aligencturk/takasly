@@ -215,31 +215,33 @@ class _ProductCardState extends State<ProductCard> {
       child: Container(
         decoration: BoxDecoration(
           color: widget.product.isSponsor == true
-              ? Colors
-                    .amber
-                    .shade50 // Sponsor ürünler için altın rengi background
+              ? const Color(0xFFFEFEFC) // Sponsor ürünler için ultra premium white background
               : Colors.white,
           borderRadius: BorderRadius.circular(screenWidth < 360 ? 6 : 8),
           border: Border.all(
             color: widget.product.isSponsor == true
-                ? Colors
-                      .amber
-                      .shade300 // Sponsor ürünler için altın rengi border
+                ? const Color(0xFFB8860B) // Sponsor ürünler için premium dark gold border
                 : const Color.fromARGB(255, 209, 209, 209),
             width: widget.product.isSponsor == true
                 ? 2
-                : 1, // Sponsor ürünler için kalın border
+                : 1, // Sponsor ürünler için premium kalın border
           ),
           boxShadow: widget.product.isSponsor == true
               ? [
                   BoxShadow(
-                    color: Colors.amber.shade200.withOpacity(0.5),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    color: const Color(0xFFB8860B).withOpacity(0.12),
+                    spreadRadius: 0,
+                    blurRadius: 16,
+                    offset: const Offset(0, 3),
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFFDAA520).withOpacity(0.08),
+                    spreadRadius: 0,
+                    blurRadius: 24,
+                    offset: const Offset(0, 6),
                   ),
                 ]
-              : null, // Sponsor ürünler için gölge efekti
+              : null, // Sponsor ürünler için premium çift gölge efekti
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,13 +307,25 @@ class _ProductCardState extends State<ProductCard> {
                           vertical: screenWidth < 360 ? 2 : 3,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.amber.shade600,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFDAA520), // Premium goldenrod
+                              Color(0xFFB8860B), // Premium dark goldenrod
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(4),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 2,
-                              offset: const Offset(0, 1),
+                              color: const Color(0xFFDAA520).withOpacity(0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                            BoxShadow(
+                              color: const Color(0xFFB8860B).withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
