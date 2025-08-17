@@ -92,16 +92,16 @@ class _AddProductViewState extends State<AddProductView> {
     });
   }
 
-  /// Token geçerliliğini kontrol et
+  /// Login durumunu kontrol et ve gerekirse yönlendir
   Future<void> _checkTokenValidity() async {
     try {
-      Logger.info('🔍 AddProductView - Token geçerliliği kontrol ediliyor...');
+      Logger.info('🔍 AddProductView - Login durumu kontrol ediliyor...');
       final authService = AuthService();
-      final isValid = await authService.isTokenValid();
+      final isLoggedIn = await authService.isLoggedIn();
 
-      if (!isValid) {
+      if (!isLoggedIn) {
         Logger.warning(
-          '⚠️ AddProductView - Token geçersiz, login sayfasına yönlendiriliyor',
+          '⚠️ AddProductView - Kullanıcı giriş yapmamış, login sayfasına yönlendiriliyor',
         );
 
         if (mounted) {
@@ -110,21 +110,17 @@ class _AddProductViewState extends State<AddProductView> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  const Icon(Icons.login, color: Colors.white, size: 20),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
-                      'Oturum süreniz dolmuş. Giriş sayfasına yönlendiriliyorsunuz.',
+                      'İlan eklemek için giriş yapmanız gerekiyor.',
                       style: TextStyle(fontSize: 16),
                     ),
                   ),
                 ],
               ),
-              backgroundColor: Colors.orange.shade600,
+              backgroundColor: AppTheme.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -145,12 +141,17 @@ class _AddProductViewState extends State<AddProductView> {
         }
       } else {
         Logger.info(
-          '✅ AddProductView - Token geçerli, sayfa yüklemeye devam ediliyor',
+          '✅ AddProductView - Kullanıcı giriş yapmış, sayfa yüklemeye devam ediliyor',
         );
       }
     } catch (e) {
-      Logger.error('❌ AddProductView - Token kontrolü hatası: $e');
-      // Hata durumunda da devam et, ürün ekleme sırasında yakalanır
+      Logger.error('❌ AddProductView - Login kontrol hatası: $e');
+      // Hata durumunda login sayfasına yönlendir
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
     }
   }
 

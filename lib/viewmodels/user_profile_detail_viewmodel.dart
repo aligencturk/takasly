@@ -22,12 +22,14 @@ class UserProfileDetailViewModel extends ChangeNotifier {
   bool get hasData => _profileDetail != null;
 
   /// Profil detaylarını yükler
+  /// userToken artık opsiyonel - backend'de token zorunluluğu kaldırıldı
   Future<void> loadProfileDetail({
-    required String userToken,
+    String? userToken,
     required int userId,
   }) async {
     try {
       Logger.debug('🔄 Loading profile detail for user ID: $userId', tag: _tag);
+      Logger.debug('🔑 User token: ${userToken != null ? "${userToken.substring(0, 20)}..." : "null"}', tag: _tag);
       
       _setLoading(true);
       _clearError();
@@ -58,7 +60,7 @@ class UserProfileDetailViewModel extends ChangeNotifier {
 
   /// Profil detaylarını yeniler
   Future<void> refreshProfileDetail({
-    required String userToken,
+    String? userToken,
     required int userId,
   }) async {
     Logger.debug('🔄 Refreshing profile detail', tag: _tag);

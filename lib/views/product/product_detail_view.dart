@@ -1538,56 +1538,42 @@ class _ProductInfoState extends State<_ProductInfo> {
             tag: 'ProductDetail',
           );
 
-          // Token'ı SharedPreferences'dan al
+          // Token'ı SharedPreferences'dan al (opsiyonel)
           final prefs = await SharedPreferences.getInstance();
           final userToken = prefs.getString(AppConstants.userTokenKey);
           Logger.debug(
-            'Product Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...',
+            'Product Detail - userToken from SharedPreferences: ${userToken != null ? "${userToken.substring(0, 20)}..." : "null"}',
             tag: 'ProductDetail',
           );
 
-          if (userToken != null && userToken.isNotEmpty) {
-            try {
-              // Yeni API'den gelen userID'yi kullan
-              final userId = int.parse(product.ownerId);
-              Logger.debug(
-                'Product Detail - userId parsed: $userId',
-                tag: 'ProductDetail',
-              );
-              Logger.debug(
-                'Product Detail - Navigating to UserProfileDetailView...',
-                tag: 'ProductDetail',
-              );
+          try {
+            // Yeni API'den gelen userID'yi kullan
+            final userId = int.parse(product.ownerId);
+            Logger.debug(
+              'Product Detail - userId parsed: $userId',
+              tag: 'ProductDetail',
+            );
+            Logger.debug(
+              'Product Detail - Navigating to UserProfileDetailView with token: ${userToken != null ? "available" : "null"}...',
+              tag: 'ProductDetail',
+            );
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserProfileDetailView(
-                    userId: userId,
-                    userToken: userToken,
-                  ),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserProfileDetailView(
+                  userId: userId,
+                  userToken: userToken, // null olabilir - artık problem değil
                 ),
-              );
-              Logger.debug(
-                'Product Detail - Navigation completed',
-                tag: 'ProductDetail',
-              );
-            } catch (e) {
-              Logger.error(
-                'Product Detail - ID parse error: $e',
-                tag: 'ProductDetail',
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Kullanıcı profili açılamadı'),
-                  backgroundColor: AppTheme.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          } else {
+              ),
+            );
+            Logger.debug(
+              'Product Detail - Navigation completed',
+              tag: 'ProductDetail',
+            );
+          } catch (e) {
             Logger.error(
-              'Product Detail - Token not available',
+              'Product Detail - ID parse error: $e',
               tag: 'ProductDetail',
             );
             ScaffoldMessenger.of(context).showSnackBar(

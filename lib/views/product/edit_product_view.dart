@@ -10,6 +10,7 @@ import 'package:takasly/models/product.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/services/image_optimization_service.dart';
 import 'package:takasly/services/admob_service.dart';
+import 'package:takasly/services/auth_service.dart';
 import 'package:takasly/utils/logger.dart';
 
 class EditProductView extends StatefulWidget {
@@ -393,7 +394,7 @@ class _EditProductViewState extends State<EditProductView> {
       title: Text(
         'Temel Bilgiler',
         style: TextStyle(
-          fontWeight: FontWeight.w600, 
+          fontWeight: FontWeight.w600,
           color: AppTheme.primary,
           fontSize: 15,
         ),
@@ -409,7 +410,10 @@ class _EditProductViewState extends State<EditProductView> {
                 decoration: const InputDecoration(
                   labelText: 'İlan Başlığı',
                   counterText: '',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
                   ),
@@ -423,7 +427,10 @@ class _EditProductViewState extends State<EditProductView> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   labelText: 'Açıklama',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
                   ),
@@ -438,7 +445,10 @@ class _EditProductViewState extends State<EditProductView> {
                 decoration: const InputDecoration(
                   labelText: 'Takas Tercihleri (virgülle ayırın)',
                   hintText: 'Örn: telefon, laptop, kitap',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
                   ),
@@ -464,7 +474,7 @@ class _EditProductViewState extends State<EditProductView> {
       title: Text(
         'Kategorizasyon',
         style: TextStyle(
-          fontWeight: FontWeight.w600, 
+          fontWeight: FontWeight.w600,
           color: AppTheme.primary,
           fontSize: 15,
         ),
@@ -535,7 +545,7 @@ class _EditProductViewState extends State<EditProductView> {
       title: Text(
         'Konum',
         style: TextStyle(
-          fontWeight: FontWeight.w600, 
+          fontWeight: FontWeight.w600,
           color: AppTheme.primary,
           fontSize: 15,
         ),
@@ -567,7 +577,7 @@ class _EditProductViewState extends State<EditProductView> {
       title: Text(
         'Resimler',
         style: TextStyle(
-          fontWeight: FontWeight.w600, 
+          fontWeight: FontWeight.w600,
           color: AppTheme.primary,
           fontSize: 15,
         ),
@@ -593,7 +603,7 @@ class _EditProductViewState extends State<EditProductView> {
       title: Text(
         'İletişim Ayarları',
         style: TextStyle(
-          fontWeight: FontWeight.w600, 
+          fontWeight: FontWeight.w600,
           color: AppTheme.primary,
           fontSize: 15,
         ),
@@ -638,19 +648,16 @@ class _EditProductViewState extends State<EditProductView> {
                   fontSize: 14,
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Text(
                 'İlanınızı ödüllü reklam izleyerek 1 saat boyunca öne çıkarabilirsiniz.',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -674,10 +681,7 @@ class _EditProductViewState extends State<EditProductView> {
                     _isProcessingSponsor
                         ? 'İşleniyor...'
                         : 'Reklam İzle ve Öne Çıkar',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade600,
@@ -688,9 +692,9 @@ class _EditProductViewState extends State<EditProductView> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               Row(
                 children: [
                   Icon(
@@ -737,7 +741,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: vm.categories
                 .map(
@@ -765,7 +772,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: const [],
             onChanged: (value) {},
@@ -797,7 +807,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: vm.subCategories
                 .map(
@@ -830,7 +843,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: const [],
             onChanged: (value) {},
@@ -864,7 +880,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: vm.subSubCategories
                 .map(
@@ -898,7 +917,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: const [],
             onChanged: (value) {},
@@ -932,7 +954,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: vm.subSubSubCategories
                 .map(
@@ -959,7 +984,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: const [],
             onChanged: (value) {},
@@ -988,7 +1016,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: vm.conditions
                 .map(
@@ -1007,7 +1038,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: const [],
             onChanged: (value) {},
@@ -1036,7 +1070,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: vm.cities
                 .map(
@@ -1063,7 +1100,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: const [],
             onChanged: (value) {},
@@ -1093,7 +1133,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: vm.districts
                 .map(
@@ -1115,7 +1158,10 @@ class _EditProductViewState extends State<EditProductView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
             items: const [],
             onChanged: (value) {},
@@ -1216,7 +1262,9 @@ class _EditProductViewState extends State<EditProductView> {
                     width: 100,
                     height: 100,
                     color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   ),
                   errorWidget: (context, url, error) {
                     return Container(
@@ -1393,9 +1441,9 @@ class _EditProductViewState extends State<EditProductView> {
               Expanded(
                 child: Text(
                   'İletişim Bilgileri',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -1433,7 +1481,7 @@ class _EditProductViewState extends State<EditProductView> {
                     _isShowContact = value;
                   });
                 },
-                                  activeColor: AppTheme.primary,
+                activeColor: AppTheme.primary,
               ),
             ],
           ),
@@ -1474,9 +1522,7 @@ class _EditProductViewState extends State<EditProductView> {
               Expanded(
                 child: Text(
                   'Bu ayarı daha sonra ilan detay sayfasından değiştirebilirsiniz.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.blue.shade700,
                     fontSize: 12,
                   ),
@@ -1498,9 +1544,7 @@ class _EditProductViewState extends State<EditProductView> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: const Text(
           'Ürünü Güncelle',
@@ -1519,6 +1563,60 @@ class _EditProductViewState extends State<EditProductView> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen tüm zorunlu alanları doldurun')),
       );
+      return;
+    }
+
+    // Login kontrolü - ürün güncellemek için giriş gerekli
+    try {
+      final authService = AuthService();
+      final userToken = await authService.getToken();
+
+      if (userToken == null || userToken.isEmpty) {
+        Logger.warning(
+          '⚠️ EditProductView - Kullanıcı giriş yapmamış, login sayfasına yönlendiriliyor',
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.login, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Ürün güncellemek için giriş yapmanız gerekiyor.'),
+                ],
+              ),
+              backgroundColor: AppTheme.primary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // 2 saniye sonra login sayfasına yönlendir
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/login', (route) => false);
+            }
+          });
+        }
+        return;
+      }
+    } catch (e) {
+      Logger.error('❌ EditProductView - Login kontrol hatası: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Bir hata oluştu. Lütfen tekrar deneyin.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
@@ -1727,7 +1825,7 @@ class _EditProductViewState extends State<EditProductView> {
               Text(
                 'İlanı Öne Çıkar',
                 style: TextStyle(
-                  fontSize: 16, 
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.blue.shade600,
                 ),
@@ -1758,7 +1856,10 @@ class _EditProductViewState extends State<EditProductView> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
               ),
               child: const Text(
                 'Reklam İzle',

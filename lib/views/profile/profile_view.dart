@@ -33,10 +33,79 @@ class _ProfileViewState extends State<ProfileView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    // Widget build edildikten sonra veri yükleme işlemini yap
+    // Widget build edildikten sonra auth kontrol ve veri yükleme işlemini yap
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadProfileData();
+      _checkAuthAndLoadData();
     });
+  }
+
+  /// Auth kontrolü yap ve gerekirse login sayfasına yönlendir
+  Future<void> _checkAuthAndLoadData() async {
+    try {
+      Logger.info('🔍 ProfileView - Login durumu kontrol ediliyor...');
+
+      // Auth service ile login kontrolü yap
+      final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+
+      // Önce UserViewModel'den kullanıcıyı kontrol et
+      if (userViewModel.currentUser == null) {
+        // UserViewModel'de user yoksa UserService'den token kontrol et
+        final userService = UserService();
+        final userToken = await userService.getUserToken();
+
+        if (userToken == null || userToken.isEmpty) {
+          Logger.warning(
+            '⚠️ ProfileView - Kullanıcı giriş yapmamış, login sayfasına yönlendiriliyor',
+          );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.login, color: Colors.white),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Profili görüntülemek için giriş yapmanız gerekiyor.',
+                    ),
+                  ],
+                ),
+                backgroundColor: AppTheme.primary,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+
+            // 2 saniye sonra login sayfasına yönlendir
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/login', (route) => false);
+              }
+            });
+          }
+          return;
+        }
+      }
+
+      Logger.info(
+        '✅ ProfileView - Kullanıcı giriş yapmış, profil verilerini yüklemeye başlanıyor',
+      );
+
+      // Login kontrolü başarılıysa veri yükleme işlemini başlat
+      await _loadProfileData();
+    } catch (e) {
+      Logger.error('❌ ProfileView - Auth kontrol hatası: $e');
+
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    }
   }
 
   Future<void> _loadProfileData() async {
@@ -237,7 +306,11 @@ class _ProfileViewState extends State<ProfileView>
       appBar: _buildAppBar(),
       body: Stack(
         children: [
-          Consumer3<UserViewModel, ProductViewModel, UserProfileDetailViewModel>(
+          Consumer3<
+            UserViewModel,
+            ProductViewModel,
+            UserProfileDetailViewModel
+          >(
             builder: (context, userVm, productVm, profileDetailVm, child) {
               if (userVm.isLoading || userVm.currentUser == null) {
                 return const LoadingWidget();
@@ -259,11 +332,16 @@ class _ProfileViewState extends State<ProfileView>
                 myReviewsCount = user.myReviews.length;
               } else if (profileDetailVm.hasData &&
                   profileDetailVm.profileDetail != null) {
-                myReviewsCount = profileDetailVm.profileDetail!.myReviews.length;
+                myReviewsCount =
+                    profileDetailVm.profileDetail!.myReviews.length;
               }
 
-              Logger.debug('👤 ProfileView - User: ${user.name} (ID: ${user.id})');
-              Logger.debug('👤 ProfileView - User isVerified: ${user.isVerified}');
+              Logger.debug(
+                '👤 ProfileView - User: ${user.name} (ID: ${user.id})',
+              );
+              Logger.debug(
+                '👤 ProfileView - User isVerified: ${user.isVerified}',
+              );
               Logger.debug(
                 '👤 ProfileView - Product count: $productCount, Favorite count: $favoriteCount, Score: $score',
               );
@@ -289,7 +367,9 @@ class _ProfileViewState extends State<ProfileView>
                     ),
                   ],
                   body: Padding(
-                    padding: const EdgeInsets.only(bottom: 60), // banner ad yüksekliği kadar padding
+                    padding: const EdgeInsets.only(
+                      bottom: 60,
+                    ), // banner ad yüksekliği kadar padding
                     child: TabBarView(
                       controller: _tabController,
                       children: [
@@ -328,15 +408,11 @@ class _ProfileViewState extends State<ProfileView>
         indicator: BoxDecoration(
           borderRadius: BorderRadius.circular(7),
           color: Colors.white,
-         
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         labelColor: AppTheme.primary,
         unselectedLabelColor: Colors.grey[600],
-        labelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w500,
@@ -344,14 +420,8 @@ class _ProfileViewState extends State<ProfileView>
         dividerColor: Colors.transparent,
         overlayColor: MaterialStateProperty.all(Colors.transparent),
         tabs: [
-          _buildCompactTab(
-            icon: Icons.store_outlined,
-            label: 'İlanlar',
-          ),
-          _buildCompactTab(
-            icon: Icons.rate_review_outlined,
-            label: 'Yorumlar',
-          ),
+          _buildCompactTab(icon: Icons.store_outlined, label: 'İlanlar'),
+          _buildCompactTab(icon: Icons.rate_review_outlined, label: 'Yorumlar'),
           _buildCompactTabWithBadge(
             icon: Icons.star_outline,
             label: 'Yorumlarım',
@@ -362,10 +432,7 @@ class _ProfileViewState extends State<ProfileView>
     );
   }
 
-  Widget _buildCompactTab({
-    required IconData icon,
-    required String label,
-  }) {
+  Widget _buildCompactTab({required IconData icon, required String label}) {
     return Tab(
       height: 40,
       child: Row(
@@ -375,11 +442,7 @@ class _ProfileViewState extends State<ProfileView>
           Icon(icon, size: 16),
           const SizedBox(width: 4),
           Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
+            child: Text(label, overflow: TextOverflow.ellipsis, maxLines: 1),
           ),
         ],
       ),
@@ -400,13 +463,8 @@ class _ProfileViewState extends State<ProfileView>
           Icon(icon, size: 16),
           const SizedBox(width: 4),
           Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
+            child: Text(label, overflow: TextOverflow.ellipsis, maxLines: 1),
           ),
-         
         ],
       ),
     );

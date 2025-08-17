@@ -524,15 +524,16 @@ class ProductService {
   }
 
   /// Ürün detayını getirir (410: başarı, 417: hata)
+  /// userToken artık opsiyonel - backend'de token zorunluluğu kaldırıldı
   Future<ApiResponse<Product>> getProductDetail({
-    required String userToken,
+    String? userToken,
     required String productId,
   }) async {
     try {
       final endpoint = '${ApiConstants.productDetail}/$productId/productDetail';
 
-      // userToken'ı query parameter olarak değil, Authorization header'ında gönder
-      // Basic auth kullanıyoruz, bu yüzden query parameter'a gerek yok
+      // userToken varsa Authorization header'ında gönder, yoksa Basic auth kullan
+      // Backend'de token zorunluluğu kaldırıldı
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
         fromJson: (json) {

@@ -41,12 +41,12 @@ class _NoStretchScrollBehavior extends ScrollBehavior {
 
 class UserProfileDetailView extends StatefulWidget {
   final int userId;
-  final String userToken;
+  final String? userToken;
 
   const UserProfileDetailView({
     Key? key,
     required this.userId,
-    required this.userToken,
+    this.userToken,
   }) : super(key: key);
 
   @override
@@ -65,9 +65,15 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
       'UserProfileDetailView initialized for userId: ${widget.userId}',
       tag: 'UserProfileDetailView',
     );
+    Logger.info(
+      'UserProfileDetailView userToken: ${widget.userToken != null ? "${widget.userToken!.substring(0, 20)}..." : "null"}',
+      tag: 'UserProfileDetailView',
+    );
     _viewModel = UserProfileDetailViewModel();
     _tabController = TabController(length: 2, vsync: this);
-    _viewModel.setUserToken(widget.userToken);
+    if (widget.userToken != null) {
+      _viewModel.setUserToken(widget.userToken!);
+    }
     _loadProfileDetail();
   }
 
@@ -670,14 +676,14 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                 onTap: () {
                   final reviewerId = review.reviewerUserID ?? 0;
                   final token =
-                      context.read<AuthViewModel>().currentUser?.token ?? '';
-                  if (reviewerId > 0 && token.isNotEmpty) {
+                      context.read<AuthViewModel>().currentUser?.token;
+                  if (reviewerId > 0) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => UserProfileDetailView(
                           userId: reviewerId,
-                          userToken: token,
+                          userToken: token, // null olabilir - artık problem değil
                         ),
                       ),
                     );
@@ -739,15 +745,14 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                       onTap: () {
                         final reviewerId = review.reviewerUserID ?? 0;
                         final token =
-                            context.read<AuthViewModel>().currentUser?.token ??
-                            '';
-                        if (reviewerId > 0 && token.isNotEmpty) {
+                            context.read<AuthViewModel>().currentUser?.token;
+                        if (reviewerId > 0) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => UserProfileDetailView(
                                 userId: reviewerId,
-                                userToken: token,
+                                userToken: token, // null olabilir - artık problem değil
                               ),
                             ),
                           );

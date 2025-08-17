@@ -2292,25 +2292,25 @@ class ProductViewModel extends ChangeNotifier {
     _setLoading(true);
     _clearError();
     try {
-      print('🔑 ProductViewModel.getProductDetail - Getting user token');
+      print(
+        '🔑 ProductViewModel.getProductDetail - Getting user token (optional)',
+      );
       final userToken = await _authService.getToken();
       if (userToken == null || userToken.isEmpty) {
         print(
-          '❌ ProductViewModel.getProductDetail - User token is null or empty',
+          '💡 ProductViewModel.getProductDetail - No user token found, proceeding without authentication',
         );
-        _setError('Kullanıcı oturumu bulunamadı');
-        _setLoading(false);
-        return null;
+      } else {
+        print(
+          '✅ ProductViewModel.getProductDetail - User token obtained: ${userToken.substring(0, 20)}...',
+        );
       }
-      print(
-        '✅ ProductViewModel.getProductDetail - User token obtained: ${userToken.substring(0, 20)}...',
-      );
 
       print(
         '📡 ProductViewModel.getProductDetail - Making API call for product detail',
       );
       final response = await _productService.getProductDetail(
-        userToken: userToken,
+        userToken: userToken, // Token yoksa null gönderilecek
         productId: productId,
       );
 

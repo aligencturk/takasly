@@ -811,16 +811,22 @@ class UserService {
 
   /// Kullanıcı profil detaylarını alır
   /// GET /service/user/account/{userId}/profileDetail
+  /// userToken artık opsiyonel - backend'de token zorunluluğu kaldırıldı
   Future<ApiResponse<UserProfileDetail>> getUserProfileDetail({
-    required String userToken,
+    String? userToken,
     required int userId,
   }) async {
     try {
       print('🔍 GET USER PROFILE DETAIL');
-      print('📤 User ID: $userId, User Token: ${userToken.substring(0, 20)}...');
+      print('📤 User ID: $userId, User Token: ${userToken != null ? "${userToken.substring(0, 20)}..." : "null"}');
 
+      // Token varsa query parameter olarak ekle, yoksa sadece Basic Auth kullan
+      final endpoint = userToken != null && userToken.isNotEmpty
+          ? '${ApiConstants.userProfileDetail}/$userId/profileDetail?userToken=$userToken'
+          : '${ApiConstants.userProfileDetail}/$userId/profileDetail';
+      
       final response = await _httpClient.getWithBasicAuth(
-        '${ApiConstants.userProfileDetail}/$userId/profileDetail?userToken=$userToken',
+        endpoint,
         fromJson: (json) {
           print('🔍 Get Profile Detail fromJson - Raw data: $json');
 

@@ -7,6 +7,7 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
+import '../../services/auth_service.dart';
 import 'chat_detail_view.dart';
 import '../../widgets/native_ad_list_tile.dart';
 
@@ -21,10 +22,80 @@ class _ChatListViewState extends State<ChatListView> {
   @override
   void initState() {
     super.initState();
-    // Sayfa açıldığında hemen loading başlat
+    // Sayfa açıldığında auth kontrol ve loading başlat
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadChats();
+      _checkAuthAndLoadData();
     });
+  }
+
+  /// Auth kontrolü yap ve gerekirse login sayfasına yönlendir
+  Future<void> _checkAuthAndLoadData() async {
+    try {
+      Logger.info('🔍 ChatListView - Login durumu kontrol ediliyor...');
+
+      // AuthViewModel'den kullanıcıyı kontrol et
+      final authViewModel = context.read<AuthViewModel>();
+
+      // Önce AuthViewModel'den kullanıcıyı kontrol et
+      if (authViewModel.currentUser == null) {
+        // AuthViewModel'de user yoksa UserService'den token kontrol et
+        final authService = AuthService();
+        final userToken = await authService.getToken();
+
+        if (userToken == null || userToken.isEmpty) {
+          Logger.warning(
+            '⚠️ ChatListView - Kullanıcı giriş yapmamış, login sayfasına yönlendiriliyor',
+          );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.login, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'Mesajları görüntülemek için giriş yapmanız gerekiyor.',
+                    ),
+                  ],
+                ),
+                backgroundColor: AppTheme.primary,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            // 2 saniye sonra login sayfasına yönlendir
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/login', (route) => false);
+              }
+            });
+          }
+          return;
+        }
+      }
+
+      Logger.info(
+        '✅ ChatListView - Kullanıcı giriş yapmış, chat verilerini yüklemeye başlanıyor',
+      );
+
+      // Login kontrolü başarılıysa veri yükleme işlemini başlat
+      _loadChats();
+    } catch (e) {
+      Logger.error('❌ ChatListView - Auth kontrol hatası: $e');
+
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    }
   }
 
   void _loadChats() {
