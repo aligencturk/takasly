@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import 'dart:async';
 import '../../viewmodels/auth_viewmodel.dart';
@@ -9,7 +8,6 @@ import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/skeletons/product_grid_skeleton.dart';
-import '../../models/product.dart';
 
 class SearchView extends StatefulWidget {
   const SearchView({super.key});
@@ -23,8 +21,6 @@ class _SearchViewState extends State<SearchView> {
   final FocusNode _searchFocusNode = FocusNode();
   bool _hasSearched = false;
   String _currentQuery = '';
-  bool _isLoadingSponsoredProducts = false;
-  List<Product> _sponsoredProducts = [];
   Timer? _debounce;
 
   @override
@@ -33,49 +29,7 @@ class _SearchViewState extends State<SearchView> {
     // Sayfa açıldığında arama çubuğuna odaklan
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchFocusNode.requestFocus();
-      _loadSponsoredProducts();
     });
-  }
-
-  Future<void> _loadSponsoredProducts() async {
-    setState(() {
-      _isLoadingSponsoredProducts = true;
-    });
-
-    try {
-      final productViewModel = context.read<ProductViewModel>();
-
-      // Mevcut products listesinden sponsor olanları filtrele
-      final allProducts = productViewModel.products;
-      final sponsored = allProducts
-          .where((product) => product.isSponsor == true)
-          .take(4)
-          .toList();
-
-      // Eğer mevcut listede sponsor ürün yoksa, tüm ürünleri yükle
-      if (sponsored.isEmpty && allProducts.isEmpty) {
-        await productViewModel.loadProducts();
-        final refreshedProducts = productViewModel.products;
-        final refreshedSponsored = refreshedProducts
-            .where((product) => product.isSponsor == true)
-            .take(4)
-            .toList();
-
-        setState(() {
-          _sponsoredProducts = refreshedSponsored;
-          _isLoadingSponsoredProducts = false;
-        });
-      } else {
-        setState(() {
-          _sponsoredProducts = sponsored;
-          _isLoadingSponsoredProducts = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _isLoadingSponsoredProducts = false;
-      });
-    }
   }
 
   @override
@@ -213,8 +167,8 @@ class _SearchViewState extends State<SearchView> {
             Expanded(
               child: Column(
                 children: [
-                  // Bilgilendirme mesajı
-                  if (!_hasSearched)
+                  // Bilgilendirme mesajı: yalnızca arama alanı boşsa ve henüz arama yapılmadıysa göster
+                  if (!_hasSearched && _searchController.text.isEmpty)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
@@ -380,6 +334,65 @@ class _SearchViewState extends State<SearchView> {
                         },
                       ),
                     ),
+
+                  // Canlı arama: Yazarken üst boşluğu kapat
+                  if (!_hasSearched && _searchController.text.isNotEmpty)
+                    Expanded(
+                      child: Consumer<ProductViewModel>(
+                        builder: (context, vm, child) {
+                          final results = vm.liveResults;
+                          if (results.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return ListView.separated(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 0,
+                              vertical: 8,
+                            ),
+                            itemCount: results.length,
+                            separatorBuilder: (_, __) =>
+                                Divider(height: 1, color: Colors.grey[200]),
+                            itemBuilder: (context, index) {
+                              final item = results[index];
+                              return ListTile(
+                                leading: const Icon(
+                                  Icons.shopping_bag,
+                                  color: Colors.grey,
+                                  size: 20,
+                                ),
+                                title: Text(
+                                  item.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  item.subtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/product-detail',
+                                    arguments: {
+                                      'productId': item.id.toString(),
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -388,6 +401,10 @@ class _SearchViewState extends State<SearchView> {
             Consumer<ProductViewModel>(
               builder: (context, vm, child) {
                 final results = vm.liveResults;
+                // Üstte gösteriliyorsa alttaki çubuğu gizle
+                if (!_hasSearched && _searchController.text.isNotEmpty) {
+                  return const SizedBox.shrink();
+                }
                 if (_searchController.text.isEmpty || results.isEmpty) {
                   return const SizedBox.shrink();
                 }
@@ -450,271 +467,7 @@ class _SearchViewState extends State<SearchView> {
               },
             ),
 
-            // Sponsor İlanlar Bölümü - En Alt (Klavye açıldığında da görünür)
-            _buildSponsoredSection(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSponsoredSection() {
-    if (_sponsoredProducts.isEmpty && !_isLoadingSponsoredProducts) {
-      return const SizedBox.shrink(); // Sponsor ürün yoksa gösterme
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Başlık
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star, color: Colors.white, size: 14),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Vitrin İlanları',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                if (_sponsoredProducts.isNotEmpty)
-                  Text(
-                    '${_sponsoredProducts.length} ilan',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Sponsor ürünler horizontal liste
-          Container(
-            height: 160,
-            child: _isLoadingSponsoredProducts
-                ? Center(
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _sponsoredProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = _sponsoredProducts[index];
-                      return Container(
-                        width: 120,
-                        margin: EdgeInsets.only(
-                          right: index < _sponsoredProducts.length - 1 ? 12 : 0,
-                          bottom: 12,
-                        ),
-                        child: _buildSponsoredProductCard(product, index),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSponsoredProductCard(Product product, int index) {
-    return GestureDetector(
-      onTap: () {
-        if (product.id != null && product.id.isNotEmpty) {
-          Navigator.pushNamed(
-            context,
-            '/product-detail',
-            arguments: {'productId': product.id},
-          );
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFFBF0), Color(0xFFFFF8E1)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFFFD700).withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFFD700).withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Ürün Resmi
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Resim
-                      Container(
-                        width: double.infinity,
-                        height: double.infinity,
-                        color: Colors.grey[100],
-                        child: product.images.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: product.images[0],
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: Colors.grey[100],
-                                  child: const Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey,
-                                    size: 24,
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: Colors.grey[100],
-                                  child: const Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey,
-                                    size: 24,
-                                  ),
-                                ),
-                              )
-                            : const Icon(
-                                Icons.image_not_supported,
-                                color: Colors.grey,
-                                size: 24,
-                              ),
-                      ),
-                      // Sponsor badge
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFD700),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.star,
-                            color: Colors.white,
-                            size: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Ürün Bilgileri
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      product.title ?? '',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 8,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            '${product.cityTitle ?? ''}'.trim(),
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Vitrin alanı kaldırıldı
           ],
         ),
       ),

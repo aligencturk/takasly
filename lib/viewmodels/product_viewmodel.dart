@@ -606,7 +606,23 @@ class ProductViewModel extends ChangeNotifier {
       );
       if (response.isSuccess && response.data != null) {
         final resp = response.data!; // LiveSearchResponse
-        _liveResults = resp.data.results;
+        // Yinelenenleri temizle ve ürünleri üstte sırala
+        final List<LiveSearchItem> raw = resp.data.results;
+        final Set<String> seen = <String>{};
+        final List<LiveSearchItem> unique = [];
+        for (final item in raw) {
+          final String key = item.type == 'product'
+              ? 'product:${item.id}'
+              : '${item.type}:${item.title.trim().toLowerCase()}';
+          if (seen.contains(key)) continue;
+          seen.add(key);
+          unique.add(item);
+        }
+        unique.sort((a, b) {
+          if (a.type == b.type) return 0;
+          return a.type == 'product' ? -1 : 1;
+        });
+        _liveResults = unique;
       } else {
         _liveResults = [];
       }
