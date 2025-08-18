@@ -51,6 +51,7 @@ class ApiConstants {
   static const String productView =
       '/service/user/product'; // {productId}/view eklenecek
   static const String getProductById = '/products'; // {productId} eklenecek
+  static const String liveSearch = '/service/user/product/liveSearch';
 
   // Category Service Endpoints
   static const String subCategories =

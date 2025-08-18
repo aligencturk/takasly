@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/product_viewmodel.dart';
+import 'dart:async';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
@@ -24,6 +25,7 @@ class _SearchViewState extends State<SearchView> {
   String _currentQuery = '';
   bool _isLoadingSponsoredProducts = false;
   List<Product> _sponsoredProducts = [];
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -78,6 +80,7 @@ class _SearchViewState extends State<SearchView> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -177,13 +180,23 @@ class _SearchViewState extends State<SearchView> {
               onSubmitted: _performSearch,
               onChanged: (value) {
                 setState(() {});
+                // Debounce ile canlı arama
+                _debounce?.cancel();
+                _debounce = Timer(const Duration(milliseconds: 300), () {
+                  final vm = context.read<ProductViewModel>();
+                  vm.liveSearch(value);
+                });
               },
             ),
           ),
           actions: [
             if (_searchController.text.isNotEmpty)
               TextButton(
-                onPressed: () => _performSearch(_searchController.text),
+                onPressed: () {
+                  final text = _searchController.text;
+                  context.read<ProductViewModel>().liveSearch(text);
+                  _performSearch(text);
+                },
                 child: const Text(
                   'Ara',
                   style: TextStyle(
@@ -285,6 +298,11 @@ class _SearchViewState extends State<SearchView> {
 
                           return Column(
                             children: [
+                              // Canlı arama önerileri (üstte)
+                              if (!_searchFocusNode.hasFocus &&
+                                  vm.liveResults.isNotEmpty)
+                                const SizedBox.shrink(),
+
                               // Sonuç sayısı
                               Container(
                                 width: double.infinity,
@@ -364,6 +382,72 @@ class _SearchViewState extends State<SearchView> {
                     ),
                 ],
               ),
+            ),
+
+            // Canlı arama önerileri (klavye açıkken de görünür)
+            Consumer<ProductViewModel>(
+              builder: (context, vm, child) {
+                final results = vm.liveResults;
+                if (_searchController.text.isEmpty || results.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  constraints: const BoxConstraints(maxHeight: 260),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: results.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(height: 1, color: Colors.grey[200]),
+                    itemBuilder: (context, index) {
+                      final item = results[index];
+                      return ListTile(
+                        leading: const Icon(
+                          Icons.shopping_bag,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                        title: Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          item.subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        onTap: () {
+                          // Ürün detayına git
+                          Navigator.pushNamed(
+                            context,
+                            '/product-detail',
+                            arguments: {'productId': item.id.toString()},
+                          );
+                        },
+                      );
+                    },
+                  ),
+                );
+              },
             ),
 
             // Sponsor İlanlar Bölümü - En Alt (Klavye açıldığında da görünür)

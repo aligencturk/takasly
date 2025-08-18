@@ -11,10 +11,43 @@ import '../models/district.dart';
 import '../models/condition.dart';
 import '../services/location_service.dart';
 import '../utils/logger.dart';
+import '../models/live_search.dart';
 
 class ProductService {
   final HttpClient _httpClient = HttpClient();
   static const String _tag = 'ProductService';
+
+  /// Canlı arama (öneriler) servisi
+  Future<ApiResponse<LiveSearchResponse>> liveSearch({
+    required String searchText,
+  }) async {
+    try {
+      Logger.info('🔎 ProductService.liveSearch - query: "$searchText"', tag: _tag);
+
+      final body = {
+        'searchText': searchText,
+      };
+
+      final response = await _httpClient.postWithBasicAuth<LiveSearchResponse>(
+        ApiConstants.liveSearch,
+        body: body,
+        useBasicAuth: true,
+        fromJson: (json) {
+          try {
+            return LiveSearchResponse.fromJson(json);
+          } catch (e) {
+            Logger.error('❌ ProductService.liveSearch parse error: $e', tag: _tag);
+            return LiveSearchResponse.empty(searchText);
+          }
+        },
+      );
+
+      return response;
+    } catch (e) {
+      Logger.error('💥 ProductService.liveSearch exception: $e', tag: _tag);
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
 
   Future<ApiResponse<PaginatedProducts>> getAllProducts({
     int page = 1,

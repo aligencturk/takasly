@@ -6,6 +6,7 @@ import '../models/district.dart';
 import '../models/condition.dart';
 import '../models/product_filter.dart';
 import '../services/product_service.dart';
+import '../models/live_search.dart';
 import '../services/auth_service.dart';
 import '../services/cache_service.dart';
 import '../core/constants.dart';
@@ -18,6 +19,10 @@ import '../services/error_handler_service.dart';
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
   final AuthService _authService = AuthService();
+  // Canlı arama state'i
+  List<LiveSearchItem> _liveResults = [];
+  bool _isLiveSearching = false;
+  String _liveQuery = '';
 
   List<product_model.Product> _products = [];
   List<product_model.Product> _favoriteProducts = [];
@@ -57,6 +62,9 @@ class ProductViewModel extends ChangeNotifier {
 
   // Getters
   List<product_model.Product> get products => _products;
+  List<LiveSearchItem> get liveResults => _liveResults;
+  bool get isLiveSearching => _isLiveSearching;
+  String get liveQuery => _liveQuery;
   List<product_model.Product> get favoriteProducts => _favoriteProducts;
   List<product_model.Product> get myProducts => _myProducts;
   List<product_model.Product> get userProducts => _myProducts;
@@ -576,6 +584,39 @@ class ProductViewModel extends ChangeNotifier {
     Logger.info(
       '✅ ProductViewModel.searchProducts - Search completed, total products: ${_products.length}',
     );
+  }
+
+  // Canlı arama
+  Future<void> liveSearch(String query) async {
+    Logger.info('🔎 ProductViewModel.liveSearch - query: "$query"');
+    _liveQuery = query;
+    if (query.trim().length < 2) {
+      _liveResults = [];
+      _isLiveSearching = false;
+      notifyListeners();
+      return;
+    }
+
+    _isLiveSearching = true;
+    notifyListeners();
+
+    try {
+      final response = await _productService.liveSearch(
+        searchText: query.trim(),
+      );
+      if (response.isSuccess && response.data != null) {
+        final resp = response.data!; // LiveSearchResponse
+        _liveResults = resp.data.results;
+      } else {
+        _liveResults = [];
+      }
+    } catch (e) {
+      Logger.error('❌ liveSearch error: $e');
+      _liveResults = [];
+    } finally {
+      _isLiveSearching = false;
+      notifyListeners();
+    }
   }
 
   Future<void> filterByCategory(String? categoryId) async {
