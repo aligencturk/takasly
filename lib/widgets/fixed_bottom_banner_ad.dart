@@ -26,7 +26,12 @@ class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    // Platform view/surface hazır olmadan yükleme yapmamak için ilk frame sonra başlat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isDisposed) {
+        _loadAd();
+      }
+    });
   }
 
   @override

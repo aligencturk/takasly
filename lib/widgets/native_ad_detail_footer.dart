@@ -29,7 +29,11 @@ class _NativeAdDetailFooterState extends State<NativeAdDetailFooter>
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isDisposed) {
+        _loadAd();
+      }
+    });
   }
 
   @override

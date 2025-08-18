@@ -129,6 +129,15 @@ class AdMobService {
       // AdMob'u doğrudan başlat
       await MobileAds.instance.initialize();
 
+      // ExoPlayer/AudioTrack loglarını ve arka plan sesini azaltmak için uygulama seviyesinde reklam sesini kapat
+      try {
+        await MobileAds.instance.setAppMuted(true);
+        await MobileAds.instance.setAppVolume(0.0);
+        Logger.info('🔇 AdMobService - Reklam sesi kapatıldı (muted)');
+      } catch (e) {
+        Logger.warning('⚠️ AdMobService - Reklam sesi kapatılamadı: $e');
+      }
+
       // Production modda daha detaylı request configuration
       RequestConfiguration requestConfig;
 

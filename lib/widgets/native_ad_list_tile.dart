@@ -24,7 +24,12 @@ class _BannerAdListTileState extends State<BannerAdListTile>
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    // Platform view hazır olunca yükle
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isDisposed) {
+        _loadAd();
+      }
+    });
   }
 
   @override
