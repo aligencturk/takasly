@@ -8,6 +8,7 @@ import '../models/product_filter.dart';
 import '../services/product_service.dart';
 import '../models/live_search.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
 import '../services/cache_service.dart';
 import '../core/constants.dart';
 import '../core/sort_options.dart';
@@ -15,14 +16,20 @@ import '../core/http_client.dart'; // ApiResponse için
 import '../views/home/widgets/category_list.dart'; // CategoryIconCache için
 import '../utils/logger.dart';
 import '../services/error_handler_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
   final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
   // Canlı arama state'i
   List<LiveSearchItem> _liveResults = [];
   bool _isLiveSearching = false;
   String _liveQuery = '';
+  List<SearchHistoryItem> _searchHistory = [];
+  // Local cache, backend boş dönerse kullanmak için
+  static const int _maxLocalHistory = 10;
 
   List<product_model.Product> _products = [];
   List<product_model.Product> _favoriteProducts = [];
@@ -65,6 +72,7 @@ class ProductViewModel extends ChangeNotifier {
   List<LiveSearchItem> get liveResults => _liveResults;
   bool get isLiveSearching => _isLiveSearching;
   String get liveQuery => _liveQuery;
+  List<SearchHistoryItem> get searchHistory => _searchHistory;
   List<product_model.Product> get favoriteProducts => _favoriteProducts;
   List<product_model.Product> get myProducts => _myProducts;
   List<product_model.Product> get userProducts => _myProducts;
@@ -633,6 +641,77 @@ class ProductViewModel extends ChangeNotifier {
       _isLiveSearching = false;
       notifyListeners();
     }
+  }
+
+  // Arama geçmişini getir
+  Future<void> loadSearchHistory() async {
+    try {
+      final currentUser = await _authService.getCurrentUser();
+      if (currentUser == null || currentUser.id.isEmpty) {
+        await _loadLocalHistoryFallback();
+        notifyListeners();
+        return;
+      }
+      final userId = int.tryParse(currentUser.id);
+      if (userId == null) {
+        await _loadLocalHistoryFallback();
+        notifyListeners();
+        return;
+      }
+      final resp = await _userService.getSearchHistory(userId: userId);
+      if (resp.isSuccess && resp.data != null && resp.data!.items.isNotEmpty) {
+        _searchHistory = resp.data!.items;
+        // Local cache'e yaz
+        await _saveLocalHistory(_searchHistory);
+      } else {
+        // Backend boş ise local fallback göster
+        await _loadLocalHistoryFallback();
+      }
+    } catch (e) {
+      Logger.error('❌ loadSearchHistory error: $e');
+      await _loadLocalHistoryFallback();
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadLocalHistoryFallback() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(AppConstants.localSearchHistoryKey);
+      if (raw != null && raw.isNotEmpty) {
+        final List<dynamic> list = jsonDecode(raw);
+        _searchHistory = list
+            .where((e) => e is Map<String, dynamic>)
+            .map((e) => SearchHistoryItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        _searchHistory = [];
+      }
+    } catch (_) {
+      _searchHistory = [];
+    }
+  }
+
+  Future<void> _saveLocalHistory(List<SearchHistoryItem> items) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final trimmed = items.take(_maxLocalHistory).toList();
+      final jsonList = trimmed
+          .map(
+            (e) => {
+              'search': e.search,
+              'searchCount': e.searchCount,
+              'lastSearched': e.lastSearched,
+              'formattedDate': e.formattedDate,
+            },
+          )
+          .toList();
+      await prefs.setString(
+        AppConstants.localSearchHistoryKey,
+        jsonEncode(jsonList),
+      );
+    } catch (_) {}
   }
 
   Future<void> filterByCategory(String? categoryId) async {

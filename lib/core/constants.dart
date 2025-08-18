@@ -87,11 +87,13 @@ class ApiConstants {
   static const String userTrades =
       '/service/user/product'; // {userId}/tradeList eklenecek
   static const String deliveryTypes = '/service/general/general/deliveryTypes';
+  static const String searchHistoryBase =
+      '/service/user/account'; // {userId}/searchHistory
 
   // Report Service Endpoints
   static const String reportUser = '/service/user/product/reportUser';
 
-  // Sponsor Service Endpoints  
+  // Sponsor Service Endpoints
   static const String sponsorEdit = '/service/user/product/sponsorEdit';
 
   // Headers
@@ -147,6 +149,9 @@ class AppConstants {
   // Pagination
   static const int defaultPageSize = 10;
   static const int maxPageSize = 100;
+
+  // Local Storage Keys
+  static const String localSearchHistoryKey = 'local_search_history';
 }
 
 class ErrorMessages {

@@ -28,13 +28,7 @@ class LiveSearchItem {
       );
     } catch (e) {
       Logger.error('❌ LiveSearchItem.fromJson error: $e');
-      return LiveSearchItem(
-        type: '',
-        id: 0,
-        title: '',
-        subtitle: '',
-        icon: '',
-      );
+      return LiveSearchItem(type: '', id: 0, title: '', subtitle: '', icon: '');
     }
   }
 }
@@ -65,7 +59,11 @@ class LiveSearchData {
       );
     } catch (e) {
       Logger.error('❌ LiveSearchData.fromJson error: $e');
-      return LiveSearchData(searchText: '', results: const [], hasResults: false);
+      return LiveSearchData(
+        searchText: '',
+        results: const [],
+        hasResults: false,
+      );
     }
   }
 }
@@ -87,20 +85,30 @@ class LiveSearchResponse {
         return LiveSearchResponse(
           error: json['error'] == true,
           success: json['success'] == true,
-          data: LiveSearchData.fromJson((json['data'] as Map<String, dynamic>?) ?? {}),
+          data: LiveSearchData.fromJson(
+            (json['data'] as Map<String, dynamic>?) ?? {},
+          ),
         );
       }
       return LiveSearchResponse(
         error: false,
         success: true,
-        data: LiveSearchData(searchText: '', results: const [], hasResults: false),
+        data: LiveSearchData(
+          searchText: '',
+          results: const [],
+          hasResults: false,
+        ),
       );
     } catch (e) {
       Logger.error('❌ LiveSearchResponse.fromJson error: $e');
       return LiveSearchResponse(
         error: true,
         success: false,
-        data: LiveSearchData(searchText: '', results: const [], hasResults: false),
+        data: LiveSearchData(
+          searchText: '',
+          results: const [],
+          hasResults: false,
+        ),
       );
     }
   }
@@ -109,9 +117,57 @@ class LiveSearchResponse {
     return LiveSearchResponse(
       error: false,
       success: true,
-      data: LiveSearchData(searchText: searchText, results: const [], hasResults: false),
+      data: LiveSearchData(
+        searchText: searchText,
+        results: const [],
+        hasResults: false,
+      ),
     );
   }
 }
 
+class SearchHistoryItem {
+  final String search;
+  final int searchCount;
+  final String lastSearched;
+  final String formattedDate;
 
+  SearchHistoryItem({
+    required this.search,
+    required this.searchCount,
+    required this.lastSearched,
+    required this.formattedDate,
+  });
+
+  factory SearchHistoryItem.fromJson(Map<String, dynamic> json) {
+    return SearchHistoryItem(
+      search: (json['search'] ?? '').toString(),
+      searchCount: int.tryParse(json['searchCount']?.toString() ?? '0') ?? 0,
+      lastSearched: (json['lastSearched'] ?? '').toString(),
+      formattedDate: (json['formattedDate'] ?? '').toString(),
+    );
+  }
+}
+
+class SearchHistoryResponse {
+  final List<SearchHistoryItem> items;
+  final int totalItems;
+
+  SearchHistoryResponse({required this.items, required this.totalItems});
+
+  factory SearchHistoryResponse.fromJson(dynamic json) {
+    try {
+      final data = (json is Map<String, dynamic>) ? (json['data'] ?? {}) : {};
+      final List<dynamic> raw = (data['searchHistory'] as List?) ?? [];
+      final items = raw
+          .where((e) => e != null)
+          .map((e) => SearchHistoryItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+      final total = int.tryParse(data['totalItems']?.toString() ?? '0') ?? 0;
+      return SearchHistoryResponse(items: items, totalItems: total);
+    } catch (e) {
+      Logger.error('❌ SearchHistoryResponse.fromJson error: $e');
+      return SearchHistoryResponse(items: const [], totalItems: 0);
+    }
+  }
+}

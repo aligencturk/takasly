@@ -29,6 +29,14 @@ class _SearchViewState extends State<SearchView> {
     // Sayfa açıldığında arama çubuğuna odaklan
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchFocusNode.requestFocus();
+      // Arama geçmişini yükle
+      context.read<ProductViewModel>().loadSearchHistory();
+    });
+    // Odaklanınca geçmişi tazele
+    _searchFocusNode.addListener(() {
+      if (_searchFocusNode.hasFocus) {
+        context.read<ProductViewModel>().loadSearchHistory();
+      }
     });
   }
 
@@ -167,35 +175,88 @@ class _SearchViewState extends State<SearchView> {
             Expanded(
               child: Column(
                 children: [
-                  // Bilgilendirme mesajı: yalnızca arama alanı boşsa ve henüz arama yapılmadıysa göster
+                  // Arama alanı boşsa: geçmişi göster (varsa), aksi halde bilgilendirme
                   if (!_hasSearched && _searchController.text.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          Icon(Icons.search, size: 64, color: Colors.grey[400]),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Ürün Arama',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
+                    Consumer<ProductViewModel>(
+                      builder: (context, vm, _) {
+                        if (vm.searchHistory.isNotEmpty) {
+                          return Expanded(
+                            child: ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 8,
+                              ),
+                              itemCount: vm.searchHistory.length,
+                              separatorBuilder: (_, __) =>
+                                  Divider(height: 1, color: Colors.grey[200]),
+                              itemBuilder: (context, index) {
+                                final item = vm.searchHistory[index];
+                                return ListTile(
+                                  leading: const Icon(
+                                    Icons.history,
+                                    color: Colors.grey,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    item.search,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text(
+                                    'Arandı: ${item.searchCount} • ${item.formattedDate}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    _searchController.text = item.search;
+                                    setState(() {});
+                                    context.read<ProductViewModel>().liveSearch(
+                                      item.search,
+                                    );
+                                    _performSearch(item.search);
+                                  },
+                                );
+                              },
                             ),
+                          );
+                        }
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.search,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Ürün Arama',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'En az 3 karakter yazarak\nürün aramaya başlayın',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'En az 3 karakter yazarak\nürün aramaya başlayın',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                              height: 1.4,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
 
                   // Arama sonuçları
@@ -355,8 +416,11 @@ class _SearchViewState extends State<SearchView> {
                             itemBuilder: (context, index) {
                               final item = results[index];
                               return ListTile(
-                                leading: const Icon(
-                                  Icons.shopping_bag,
+                                leading: Icon(
+                                  (item.type == 'product' ||
+                                          item.icon == 'product')
+                                      ? Icons.shopping_bag
+                                      : Icons.category,
                                   color: Colors.grey,
                                   size: 20,
                                 ),
@@ -379,13 +443,27 @@ class _SearchViewState extends State<SearchView> {
                                   ),
                                 ),
                                 onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/product-detail',
-                                    arguments: {
-                                      'productId': item.id.toString(),
-                                    },
-                                  );
+                                  if (item.type == 'product' ||
+                                      item.icon == 'product') {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/product-detail',
+                                      arguments: {
+                                        'productId': item.id.toString(),
+                                      },
+                                    );
+                                  } else {
+                                    final vm = context.read<ProductViewModel>();
+                                    final filter = vm.currentFilter.copyWith(
+                                      categoryId: item.id.toString(),
+                                      searchText: null,
+                                    );
+                                    vm.applyFilter(filter);
+                                    setState(() {
+                                      _hasSearched = true;
+                                      _currentQuery = '';
+                                    });
+                                  }
                                 },
                               );
                             },
@@ -397,10 +475,66 @@ class _SearchViewState extends State<SearchView> {
               ),
             ),
 
-            // Canlı arama önerileri (klavye açıkken de görünür)
+            // Canlı arama önerileri / Geçmiş (klavye açıkken de görünür)
             Consumer<ProductViewModel>(
               builder: (context, vm, child) {
                 final results = vm.liveResults;
+                // Arama metni boşsa, geçmişi göster
+                if (_searchController.text.isEmpty &&
+                    vm.searchHistory.isNotEmpty &&
+                    !_hasSearched) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    constraints: const BoxConstraints(maxHeight: 260),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: vm.searchHistory.length,
+                      separatorBuilder: (_, __) =>
+                          Divider(height: 1, color: Colors.grey[200]),
+                      itemBuilder: (context, index) {
+                        final item = vm.searchHistory[index];
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.history,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                          title: Text(
+                            item.search,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            'Arandı: ${item.searchCount} • ${item.formattedDate}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                          onTap: () {
+                            _searchController.text = item.search;
+                            setState(() {});
+                            context.read<ProductViewModel>().liveSearch(
+                              item.search,
+                            );
+                            _performSearch(item.search);
+                          },
+                        );
+                      },
+                    ),
+                  );
+                }
                 // Üstte gösteriliyorsa alttaki çubuğu gizle
                 if (!_hasSearched && _searchController.text.isNotEmpty) {
                   return const SizedBox.shrink();
@@ -429,8 +563,10 @@ class _SearchViewState extends State<SearchView> {
                     itemBuilder: (context, index) {
                       final item = results[index];
                       return ListTile(
-                        leading: const Icon(
-                          Icons.shopping_bag,
+                        leading: Icon(
+                          (item.type == 'product' || item.icon == 'product')
+                              ? Icons.shopping_bag
+                              : Icons.category,
                           color: Colors.grey,
                           size: 20,
                         ),
@@ -453,12 +589,25 @@ class _SearchViewState extends State<SearchView> {
                           ),
                         ),
                         onTap: () {
-                          // Ürün detayına git
-                          Navigator.pushNamed(
-                            context,
-                            '/product-detail',
-                            arguments: {'productId': item.id.toString()},
-                          );
+                          if (item.type == 'product' ||
+                              item.icon == 'product') {
+                            Navigator.pushNamed(
+                              context,
+                              '/product-detail',
+                              arguments: {'productId': item.id.toString()},
+                            );
+                          } else {
+                            final vm = context.read<ProductViewModel>();
+                            final filter = vm.currentFilter.copyWith(
+                              categoryId: item.id.toString(),
+                              searchText: null,
+                            );
+                            vm.applyFilter(filter);
+                            setState(() {
+                              _hasSearched = true;
+                              _currentQuery = '';
+                            });
+                          }
                         },
                       );
                     },
