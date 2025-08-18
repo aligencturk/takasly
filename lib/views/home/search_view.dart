@@ -460,6 +460,8 @@ class _SearchViewState extends State<SearchView> {
                                     );
                                     vm.applyFilter(filter);
                                     setState(() {
+                                      _searchController.clear();
+                                      FocusScope.of(context).unfocus();
                                       _hasSearched = true;
                                       _currentQuery = '';
                                     });
@@ -604,6 +606,8 @@ class _SearchViewState extends State<SearchView> {
                             );
                             vm.applyFilter(filter);
                             setState(() {
+                              _searchController.clear();
+                              FocusScope.of(context).unfocus();
                               _hasSearched = true;
                               _currentQuery = '';
                             });
