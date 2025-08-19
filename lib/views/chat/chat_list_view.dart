@@ -56,9 +56,7 @@ class _ChatListViewState extends State<ChatListView> {
                   children: [
                     Icon(Icons.login, color: Colors.white),
                     SizedBox(width: 8),
-                    Text(
-                      'Mesajları görüntülemek için giriş yapmanız gerekiyor.',
-                    ),
+                    Text('Lütfen giriş yapınız.'),
                   ],
                 ),
                 backgroundColor: AppTheme.primary,

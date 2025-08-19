@@ -115,7 +115,7 @@ class _AddProductViewState extends State<AddProductView> {
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
-                      'İlan eklemek için giriş yapmanız gerekiyor.',
+                      'Lütfen giriş yapınız.',
                       style: TextStyle(fontSize: 16),
                     ),
                   ),
