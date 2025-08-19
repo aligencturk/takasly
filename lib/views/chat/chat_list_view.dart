@@ -35,6 +35,8 @@ class _ChatListViewState extends State<ChatListView> {
 
       // AuthViewModel'den kullanıcıyı kontrol et
       final authViewModel = context.read<AuthViewModel>();
+      // Depodan kullanıcıyı ViewModel'e yükle (hot restart senaryosu)
+      await authViewModel.ensureCurrentUserLoaded();
 
       // Önce AuthViewModel'den kullanıcıyı kontrol et
       if (authViewModel.currentUser == null) {

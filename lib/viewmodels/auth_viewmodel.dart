@@ -62,6 +62,32 @@ class AuthViewModel extends ChangeNotifier {
     _isInitialized = false;
   }
 
+  /// SharedPreferences'tan mevcut kullanıcıyı ViewModel'e yükler (gerekirse)
+  Future<void> ensureCurrentUserLoaded() async {
+    try {
+      if (_currentUser != null &&
+          _currentUser!.id.isNotEmpty &&
+          _currentUser!.id != '0') {
+        return;
+      }
+      final user = await _authService.getCurrentUser();
+      if (user != null && user.id.isNotEmpty && user.id != '0') {
+        Logger.info(
+          '✅ AuthViewModel.ensureCurrentUserLoaded - User loaded: ${user.id}',
+        );
+        _currentUser = user;
+        _isLoggedIn = true;
+        notifyListeners();
+      } else {
+        Logger.warning(
+          '⚠️ AuthViewModel.ensureCurrentUserLoaded - No valid user in storage',
+        );
+      }
+    } catch (e) {
+      Logger.warning('⚠️ AuthViewModel.ensureCurrentUserLoaded error: $e');
+    }
+  }
+
   Future<void> _initializeAuth() async {
     if (_isInitialized) {
       Logger.info('🔄 AuthViewModel already initialized, skipping...');
@@ -475,7 +501,10 @@ class AuthViewModel extends ChangeNotifier {
           return true;
         } else {
           // Eğer response.data direkt User objesi ise
-          Logger.warning('⚠️ Unexpected response format, data is not Map', tag: 'AuthViewModel');
+          Logger.warning(
+            '⚠️ Unexpected response format, data is not Map',
+            tag: 'AuthViewModel',
+          );
           _setError('Beklenmeyen response formatı');
           _setLoading(false);
           notifyListeners(); // UI'ı güncelle
