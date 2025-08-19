@@ -140,11 +140,43 @@ class SearchHistoryItem {
   });
 
   factory SearchHistoryItem.fromJson(Map<String, dynamic> json) {
+    // Alternatif alan adları için esnek parse
+    final String searchText =
+        (json['search'] ??
+                json['searchText'] ??
+                json['query'] ??
+                json['text'] ??
+                '')
+            .toString();
+
+    final int count =
+        int.tryParse(
+          (json['searchCount'] ?? json['count'] ?? json['times'])?.toString() ??
+              '0',
+        ) ??
+        0;
+
+    final String last =
+        (json['lastSearched'] ??
+                json['lastSearch'] ??
+                json['lastSearchedAt'] ??
+                json['date'] ??
+                json['createdAt'] ??
+                '')
+            .toString();
+
+    final String formatted =
+        (json['formattedDate'] ??
+                json['formatted'] ??
+                json['lastSearchedHumanized'] ??
+                '')
+            .toString();
+
     return SearchHistoryItem(
-      search: (json['search'] ?? '').toString(),
-      searchCount: int.tryParse(json['searchCount']?.toString() ?? '0') ?? 0,
-      lastSearched: (json['lastSearched'] ?? '').toString(),
-      formattedDate: (json['formattedDate'] ?? '').toString(),
+      search: searchText,
+      searchCount: count,
+      lastSearched: last,
+      formattedDate: formatted,
     );
   }
 }
@@ -157,13 +189,45 @@ class SearchHistoryResponse {
 
   factory SearchHistoryResponse.fromJson(dynamic json) {
     try {
-      final data = (json is Map<String, dynamic>) ? (json['data'] ?? {}) : {};
-      final List<dynamic> raw = (data['searchHistory'] as List?) ?? [];
+      Map<String, dynamic> root = {};
+      if (json is Map<String, dynamic>) root = json;
+
+      // data alanını yakala (yoksa root'u kullan)
+      final dynamic dataDyn = root['data'] ?? root;
+      final Map<String, dynamic> data = dataDyn is Map<String, dynamic>
+          ? dataDyn
+          : <String, dynamic>{};
+
+      // Liste farklı anahtarlar altında gelebilir
+      List<dynamic> raw = [];
+      if (data['searchHistory'] is List) {
+        raw = data['searchHistory'] as List<dynamic>;
+      } else if (data['history'] is List) {
+        raw = data['history'] as List<dynamic>;
+      } else if (data['items'] is List) {
+        raw = data['items'] as List<dynamic>;
+      } else if (root['searchHistory'] is List) {
+        raw = root['searchHistory'] as List<dynamic>;
+      } else if (root['data'] is List) {
+        raw = root['data'] as List<dynamic>;
+      }
+
       final items = raw
           .where((e) => e != null)
-          .map((e) => SearchHistoryItem.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) => SearchHistoryItem.fromJson(
+              (e is Map<String, dynamic>) ? e : <String, dynamic>{},
+            ),
+          )
+          .where((e) => e.search.isNotEmpty)
           .toList();
-      final total = int.tryParse(data['totalItems']?.toString() ?? '0') ?? 0;
+
+      final int total =
+          int.tryParse(
+            (data['totalItems'] ?? data['total'] ?? items.length).toString(),
+          ) ??
+          items.length;
+
       return SearchHistoryResponse(items: items, totalItems: total);
     } catch (e) {
       Logger.error('❌ SearchHistoryResponse.fromJson error: $e');

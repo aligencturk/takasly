@@ -719,6 +719,53 @@ class ProductViewModel extends ChangeNotifier {
     }
   }
 
+  // Local arama geçmişine kayıt ekle (login olmasa da çalışır)
+  Future<void> addSearchHistoryEntry(String query) async {
+    try {
+      final normalized = query.trim();
+      if (normalized.isEmpty) return;
+
+      // Var mı kontrol et
+      final existingIndex = _searchHistory.indexWhere(
+        (e) => e.search.toLowerCase() == normalized.toLowerCase(),
+      );
+
+      if (existingIndex != -1) {
+        final current = _searchHistory[existingIndex];
+        final updated = SearchHistoryItem(
+          search: current.search,
+          searchCount: (current.searchCount) + 1,
+          lastSearched: DateTime.now().toIso8601String(),
+          formattedDate: 'az önce',
+        );
+        _searchHistory[existingIndex] = updated;
+        // En üste taşı
+        final item = _searchHistory.removeAt(existingIndex);
+        _searchHistory.insert(0, item);
+      } else {
+        _searchHistory.insert(
+          0,
+          SearchHistoryItem(
+            search: normalized,
+            searchCount: 1,
+            lastSearched: DateTime.now().toIso8601String(),
+            formattedDate: 'az önce',
+          ),
+        );
+      }
+
+      // Maksimum boyutu koru ve kaydet
+      if (_searchHistory.length > _maxLocalHistory) {
+        _searchHistory = _searchHistory.take(_maxLocalHistory).toList();
+      }
+      await _saveLocalHistory(_searchHistory);
+    } catch (e) {
+      Logger.error('❌ addSearchHistoryEntry error: $e');
+    } finally {
+      notifyListeners();
+    }
+  }
+
   Future<void> _loadLocalHistoryFallback() async {
     try {
       final prefs = await SharedPreferences.getInstance();
