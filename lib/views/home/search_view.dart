@@ -49,7 +49,7 @@ class _SearchViewState extends State<SearchView> {
   }
 
   void _performSearch(String query) {
-    if (query.trim().length >= 3) {
+    if (query.trim().length >= 2) {
       setState(() {
         _hasSearched = true;
         _currentQuery = query.trim();
@@ -290,7 +290,7 @@ class _SearchViewState extends State<SearchView> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'En az 3 karakter yazarak\nürün aramaya başlayın',
+                                'En az 2 karakter yazarak\nürün aramaya başlayın',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey[600],
