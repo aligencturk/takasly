@@ -65,9 +65,7 @@ class _ProfileViewState extends State<ProfileView>
                   children: [
                     const Icon(Icons.login, color: Colors.white),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Profili görüntülemek için giriş yapmanız gerekiyor.',
-                    ),
+                    const Text('Lütfen giriş yapınız.'),
                   ],
                 ),
                 backgroundColor: AppTheme.primary,
