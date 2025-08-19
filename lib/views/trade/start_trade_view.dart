@@ -8,6 +8,7 @@ import '../../core/app_theme.dart';
 import '../../core/constants.dart';
 import '../../utils/logger.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/profanity_check_text_field.dart';
 
 class StartTradeView extends StatefulWidget {
   final Product receiverProduct;
@@ -849,26 +850,13 @@ class _StartTradeViewState extends State<StartTradeView> {
           ),
           SizedBox(height: 16),
 
-          TextField(
+          ProfanityCheckTextField(
             controller: _messageController,
+            labelText: 'Takas Mesajı',
+            hintText: 'Takas teklifinizle ilgili bir mesaj yazabilirsiniz...',
             maxLines: 3,
             textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              hintText: 'Takas teklifinizle ilgili bir mesaj yazabilirsiniz...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppTheme.primary),
-              ),
-              contentPadding: EdgeInsets.all(16),
-            ),
+            sensitivity: 'medium',
           ),
         ],
       ),

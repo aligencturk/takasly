@@ -22,11 +22,12 @@ class ProductService {
     required String searchText,
   }) async {
     try {
-      Logger.info('🔎 ProductService.liveSearch - query: "$searchText"', tag: _tag);
+      Logger.info(
+        '🔎 ProductService.liveSearch - query: "$searchText"',
+        tag: _tag,
+      );
 
-      final body = {
-        'searchText': searchText,
-      };
+      final body = {'searchText': searchText};
 
       final response = await _httpClient.postWithBasicAuth<LiveSearchResponse>(
         ApiConstants.liveSearch,
@@ -36,7 +37,10 @@ class ProductService {
           try {
             return LiveSearchResponse.fromJson(json);
           } catch (e) {
-            Logger.error('❌ ProductService.liveSearch parse error: $e', tag: _tag);
+            Logger.error(
+              '❌ ProductService.liveSearch parse error: $e',
+              tag: _tag,
+            );
             return LiveSearchResponse.empty(searchText);
           }
         },
@@ -626,7 +630,7 @@ class ProductService {
       print('🌐 ProductService - Base URL: ${ApiConstants.baseUrl}');
       print('🌐 ProductService - Full URL: ${ApiConstants.fullUrl}$endpoint');
       print(
-        '🌐 ProductService - Expected Postman URL: https://api.rivorya.com/takasly/service/user/product/$userId/productList',
+        '🌐 ProductService - Expected Postman URL: https://api.takasly.tr/service/user/product/$userId/productList',
       );
 
       // Çalışan categories endpoint ile karşılaştırma için

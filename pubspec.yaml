@@ -138,6 +138,7 @@ flutter:
     - assets/auth/
     - assets/splash/
     - assets/splash/powered_by_rivorya_yazilim.mp4
+    - assets/turkish_profanity_extended.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

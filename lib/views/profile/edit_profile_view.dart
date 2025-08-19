@@ -9,6 +9,7 @@ import 'package:takasly/utils/phone_formatter.dart';
 import 'package:takasly/utils/logger.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'package:takasly/widgets/profanity_check_text_field.dart';
 
 class EditProfileView extends StatefulWidget {
   const EditProfileView({Key? key}) : super(key: key);
@@ -598,35 +599,61 @@ class _EditProfileViewState extends State<EditProfileView> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textCapitalization: label == 'E-posta'
-          ? TextCapitalization.none
-          : TextCapitalization.sentences,
-      inputFormatters: label == 'Telefon' ? const [] : null,
-      validator:
-          validator ??
-          (label == 'Telefon'
-              ? (value) {
-                  if (value != null &&
-                      value.isNotEmpty &&
-                      !PhoneFormatter.isValidPhoneNumber(value)) {
-                    return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
-                  }
-                  return null;
-                }
-              : null),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        hintText: label == 'Telefon' ? '05XXXXXXXXX' : null,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.primary, width: 2),
+    // Telefon alanı için özel widget
+    if (label == 'Telefon') {
+      return TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        textCapitalization: TextCapitalization.none,
+        inputFormatters: const [],
+        validator: validator ?? (value) {
+          if (value != null &&
+              value.isNotEmpty &&
+              !PhoneFormatter.isValidPhoneNumber(value)) {
+            return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
+          }
+          return null;
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          hintText: '05XXXXXXXXX',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppTheme.primary, width: 2),
+          ),
         ),
-      ),
+      );
+    }
+
+    // E-posta alanı için özel widget
+    if (label == 'E-posta') {
+      return TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        textCapitalization: TextCapitalization.none,
+        validator: validator,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppTheme.primary, width: 2),
+          ),
+        ),
+      );
+    }
+
+    // Ad ve soyad alanları için ProfanityCheckTextField
+    return ProfanityCheckTextField(
+      controller: controller,
+      labelText: label,
+      prefixIcon: Icon(icon),
+      textCapitalization: TextCapitalization.words,
+      sensitivity: 'medium',
+      validator: validator,
     );
   }
 

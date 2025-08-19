@@ -5,6 +5,7 @@ import '../../viewmodels/user_viewmodel.dart';
 import '../../models/contact_subject.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
+import '../../widgets/profanity_check_text_field.dart';
 
 class ContactView extends StatefulWidget {
   const ContactView({super.key});
@@ -297,28 +298,12 @@ class _ContactViewState extends State<ContactView> {
           ),
         ),
         const SizedBox(height: 6),
-        TextFormField(
+        ProfanityCheckTextField(
           controller: _nameController,
-          decoration: InputDecoration(
-            hintText: 'Adınızı ve soyadınızı giriniz',
-            hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppTheme.primary),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
+          labelText: 'Ad Soyad',
+          hintText: 'Adınızı ve soyadınızı giriniz',
+          textCapitalization: TextCapitalization.words,
+          sensitivity: 'medium',
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Ad soyad alanı zorunludur';
@@ -395,30 +380,14 @@ class _ContactViewState extends State<ContactView> {
           ),
         ),
         const SizedBox(height: 6),
-        TextFormField(
+        ProfanityCheckTextField(
           controller: _messageController,
+          labelText: 'Mesaj',
+          hintText: 'Mesajınızı buraya yazınız...',
           maxLines: 5,
           maxLength: 1000,
-          decoration: InputDecoration(
-            hintText: 'Mesajınızı buraya yazınız...',
-            hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppTheme.primary),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
+          textCapitalization: TextCapitalization.sentences,
+          sensitivity: 'high',
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Mesaj alanı zorunludur';

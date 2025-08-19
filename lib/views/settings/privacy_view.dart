@@ -39,7 +39,7 @@ class _PrivacyViewState extends State<PrivacyView> {
           },
         ),
       )
-      ..loadRequest(Uri.parse('https://www.rivorya.com/gizlilik-politikasi'));
+      ..loadRequest(Uri.parse('https://www.takasly.tr/gizlilik-politikasi'));
   }
 
   @override

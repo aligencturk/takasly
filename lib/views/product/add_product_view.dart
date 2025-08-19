@@ -10,6 +10,7 @@ import 'package:takasly/services/admob_service.dart';
 import 'package:takasly/services/auth_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:takasly/utils/logger.dart';
+import 'package:takasly/widgets/profanity_check_text_field.dart';
 
 class AddProductView extends StatefulWidget {
   const AddProductView({super.key});
@@ -1176,28 +1177,24 @@ class _AddProductViewState extends State<AddProductView> {
           const SizedBox(height: 32),
 
           // Form fields
-          TextFormField(
+          ProfanityCheckTextField(
             controller: _titleController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Ürün Başlığı',
-              hintText: 'Örn: iPhone 13 Pro Max 256GB',
-              counterText: '',
-            ),
+            labelText: 'Ürün Başlığı',
+            hintText: 'Örn: iPhone 13 Pro Max 256GB',
             maxLength: 40,
+            textCapitalization: TextCapitalization.sentences,
+            sensitivity: 'high',
             validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
             onChanged: (value) => setState(() {}),
           ),
           const SizedBox(height: 24),
-          TextFormField(
+          ProfanityCheckTextField(
             controller: _descriptionController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Açıklama',
-              hintText:
-                  'Ürününüzün detaylarını, özelliklerini ve durumunu açıklayın',
-            ),
+            labelText: 'Açıklama',
+            hintText: 'Ürününüzün detaylarını, özelliklerini ve durumunu açıklayın',
             maxLines: 6,
+            textCapitalization: TextCapitalization.sentences,
+            sensitivity: 'high',
             validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
             onChanged: (value) => setState(() {}),
           ),
@@ -1455,14 +1452,13 @@ class _AddProductViewState extends State<AddProductView> {
           const SizedBox(height: 32),
 
           // Form fields
-          TextFormField(
+          ProfanityCheckTextField(
             controller: _tradeForController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Ne ile takas etmek istersin?',
-              hintText: 'Örn: MacBook Pro, para, başka bir telefon...',
-            ),
+            labelText: 'Ne ile takas etmek istersin?',
+            hintText: 'Örn: MacBook Pro, para, başka bir telefon...',
             maxLines: 4,
+            textCapitalization: TextCapitalization.sentences,
+            sensitivity: 'medium',
             validator: (v) => v!.isEmpty ? 'Takas tercihi zorunludur' : null,
             onChanged: (value) => setState(() {}),
           ),

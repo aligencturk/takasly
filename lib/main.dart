@@ -43,6 +43,7 @@ import 'views/chat/chat_list_view.dart';
 import 'views/chat/chat_detail_view.dart';
 import 'views/notifications/notification_list_view.dart';
 import 'utils/logger.dart';
+import 'services/profanity_service.dart';
 
 /// FCM Background Message Handler
 /// Bu fonksiyon uygulama background veya terminate durumundayken
@@ -68,9 +69,7 @@ Future<void> _createNotificationChannel() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-
+  
   // Performans optimizasyonları
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -180,6 +179,14 @@ void main() async {
           Logger.warning(
             '⚠️ FCM izinleri reddedildi: ${settings.authorizationStatus}',
           );
+        }
+
+        // ProfanityService'i başlat
+        try {
+          await ProfanityService.instance.initialize();
+          Logger.info('✅ ProfanityService başarıyla başlatıldı');
+        } catch (e) {
+          Logger.error('❌ ProfanityService başlatma hatası: $e');
         }
       } catch (e) {
         Logger.error('❌ FCM başlatılırken hata: $e');

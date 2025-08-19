@@ -12,6 +12,7 @@ import 'package:takasly/services/image_optimization_service.dart';
 import 'package:takasly/services/admob_service.dart';
 import 'package:takasly/services/auth_service.dart';
 import 'package:takasly/utils/logger.dart';
+import 'package:takasly/widgets/profanity_check_text_field.dart';
 
 class EditProductView extends StatefulWidget {
   final Product product;
@@ -404,56 +405,31 @@ class _EditProductViewState extends State<EditProductView> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Column(
             children: [
-              TextFormField(
+              ProfanityCheckTextField(
                 controller: _titleController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'İlan Başlığı',
-                  counterText: '',
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                ),
+                labelText: 'İlan Başlığı',
                 maxLength: 40,
+                textCapitalization: TextCapitalization.sentences,
+                sensitivity: 'high',
                 validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
               ),
               const SizedBox(height: 12),
-              TextFormField(
+              ProfanityCheckTextField(
                 controller: _descriptionController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Açıklama',
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                ),
+                labelText: 'Açıklama',
                 maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
+                sensitivity: 'high',
                 validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
               ),
               const SizedBox(height: 12),
-              TextFormField(
+              ProfanityCheckTextField(
                 controller: _tradePreferencesController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Takas Tercihleri (virgülle ayırın)',
-                  hintText: 'Örn: telefon, laptop, kitap',
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                ),
+                labelText: 'Takas Tercihleri (virgülle ayırın)',
+                hintText: 'Örn: telefon, laptop, kitap',
                 maxLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                sensitivity: 'medium',
               ),
             ],
           ),

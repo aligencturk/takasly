@@ -1,0 +1,363 @@
+{
+  "meta": {
+    "language": "tr",
+    "version": "2025-08-18+ext1",
+    "updated_at": "2025-08-18T18:36:39.242311Z",
+    "description": "Türkçe küfür + hakaret + kısaltmalar + regex. Üç seviye: high/medium/low. Uygulamada seviyeye göre bloklayın."
+  },
+  "normalize": {
+    "casefold": true,
+    "strip_diacritics": false,
+    "collapse_whitespace": true
+  },
+  "levels_info": {
+    "high": "Ağır küfür, cinsel/ailesel ağır hakaret, nefret söylemi. Varsayılan: BLOKLA.",
+    "medium": "Net hakaret/argo. Varsayılan: BLOKLA veya UYAR + YENİDEN DENE.",
+    "low": "Potansiyel hakaret veya bağlama duyarlı (false-positive riski var). Varsayılan: UYAR veya YUMUŞAK FİLTRE."
+  },
+  "lists": {
+    "exact": [
+      "orospu",
+      "orospu çocuğu",
+      "orospu evladı",
+      "pezevenk",
+      "gavat",
+      "kaltak",
+      "kahpe",
+      "piç",
+      "yavşak",
+      "şerefsiz",
+      "namussuz",
+      "sürtük",
+      "puşt",
+      "it oğlu it"
+    ],
+    "stems": [
+      "sik",
+      "siktir",
+      "sikeyim",
+      "sikerim",
+      "sikiş",
+      "amcık",
+      "amına",
+      "amina",
+      "yarrak",
+      "yarak",
+      "göt",
+      "götveren",
+      "çük",
+      "ibne"
+    ],
+    "abbreviations": [
+      "amk",
+      "a.m.k",
+      "a m k",
+      "aq",
+      "a.q",
+      "a q",
+      "oç",
+      "o.ç",
+      "s.ktir",
+      "s g",
+      "s.g",
+      "y g",
+      "y.g",
+      "mk"
+    ],
+    "insults_general": [
+      "aptal",
+      "salak",
+      "ahmak",
+      "beyinsiz",
+      "gerizekalı",
+      "geri zekalı",
+      "dangalak",
+      "gerzek",
+      "andavallı",
+      "kafasız",
+      "ezik",
+      "hıyarlık",
+      "hıyar",
+      "şarlatan",
+      "pislik",
+      "utanmaz",
+      "yüzsüz",
+      "arsız",
+      "ödlek"
+    ],
+    "hate_slurs": [
+      "ibne",
+      "top",
+      "dönme",
+      "zenci",
+      "çingene",
+      "kızılbaş",
+      "ermeni dölü",
+      "yunan tohumu"
+    ],
+    "family_attacks": [
+      "ananı avradını",
+      "ananı s.keyim",
+      "bacını",
+      "karını",
+      "sülaleni",
+      "soyunu sopunu"
+    ],
+    "threats": [
+      "öldürürüm",
+      "gebertirim",
+      "keserim",
+      "doğrarım",
+      "tecavüz ederim",
+      "yakıp yıkarım",
+      "seni bulurum",
+      "paramparça ederim"
+    ]
+  },
+  "regex": [
+    {
+      "name": "amk_abbrev",
+      "pattern": "(?i)\\ba\\W*m\\W*k\\b",
+      "level": "high"
+    },
+    {
+      "name": "aq_abbrev",
+      "pattern": "(?i)\\ba\\W*q\\b",
+      "level": "high"
+    },
+    {
+      "name": "oc_abbrev",
+      "pattern": "(?i)\\bo\\W*ç\\b",
+      "level": "high"
+    },
+    {
+      "name": "sktir",
+      "pattern": "(?i)s\\W*k\\W*t\\W*i\\W*r",
+      "level": "high"
+    },
+    {
+      "name": "siktir_git",
+      "pattern": "(?i)s[iı]kt[iı]r\\W*g[iı]t",
+      "level": "high"
+    },
+    {
+      "name": "sik_family",
+      "pattern": "(?i)\\bsik(?!ke)[a-zçğıöşü]{0,6}\\b",
+      "level": "high"
+    },
+    {
+      "name": "amina_koy",
+      "pattern": "(?i)a\\W*m\\W*(?:i|ı|in|ına|ina|n[aiı])\\W*(k\\W*o\\W*y|s\\W*o\\W*k)",
+      "level": "high"
+    },
+    {
+      "name": "amcik",
+      "pattern": "(?i)a\\W*m\\W*c[iı]k",
+      "level": "high"
+    },
+    {
+      "name": "yarrak",
+      "pattern": "(?i)ya?r{1,2}a?k{1,2}",
+      "level": "high"
+    },
+    {
+      "name": "got",
+      "pattern": "(?i)g(?:ö|o|0)t+(?:[a-zçğıöşü]{0,6})?",
+      "level": "high"
+    },
+    {
+      "name": "orospu",
+      "pattern": "(?i)orosp[uü](?:\\s*çocu?ğ[uü]|\\s*evlad[ıi])?",
+      "level": "high"
+    },
+    {
+      "name": "pezevenk",
+      "pattern": "(?i)pezeven[kg]",
+      "level": "high"
+    },
+    {
+      "name": "pust",
+      "pattern": "(?i)puşt",
+      "level": "high"
+    },
+    {
+      "name": "it_oglu_it",
+      "pattern": "(?i)it\\W*oğl[uü]\\W*it",
+      "level": "high"
+    },
+    {
+      "name": "family_anan_avrad",
+      "pattern": "(?i)anan[ıi]\\W*avr?ad[ıi]n[ıi]",
+      "level": "high"
+    },
+    {
+      "name": "family_bacini",
+      "pattern": "(?i)bac[ıi]n[ıi]",
+      "level": "high"
+    },
+    {
+      "name": "family_karini",
+      "pattern": "(?i)kar[ıi]n[ıi]",
+      "level": "high"
+    },
+    {
+      "name": "slur_ibne",
+      "pattern": "(?i)i[b6]ne",
+      "level": "high"
+    },
+    {
+      "name": "seresiz",
+      "pattern": "(?i)şerefsiz",
+      "level": "medium"
+    },
+    {
+      "name": "namussuz",
+      "pattern": "(?i)namussuz",
+      "level": "medium"
+    },
+    {
+      "name": "yavsak",
+      "pattern": "(?i)yavşak",
+      "level": "medium"
+    },
+    {
+      "name": "kaltak",
+      "pattern": "(?i)kaltak",
+      "level": "medium"
+    },
+    {
+      "name": "kahpe",
+      "pattern": "(?i)kahpe",
+      "level": "medium"
+    },
+    {
+      "name": "gavat",
+      "pattern": "(?i)gavat",
+      "level": "medium"
+    },
+    {
+      "name": "aptal",
+      "pattern": "(?i)\\baptal\\b",
+      "level": "medium"
+    },
+    {
+      "name": "salak",
+      "pattern": "(?i)\\bsalak\\b",
+      "level": "medium"
+    },
+    {
+      "name": "beyinsiz",
+      "pattern": "(?i)beyin\\W*siz",
+      "level": "medium"
+    },
+    {
+      "name": "gerizekali",
+      "pattern": "(?i)geri\\W*zekal[ıi]",
+      "level": "medium"
+    },
+    {
+      "name": "dangalak",
+      "pattern": "(?i)\\bdangalak\\b",
+      "level": "medium"
+    },
+    {
+      "name": "gerzek",
+      "pattern": "(?i)\\bgerze?k\\b",
+      "level": "medium"
+    },
+    {
+      "name": "andavalli",
+      "pattern": "(?i)andavall[ıi]",
+      "level": "medium"
+    },
+    {
+      "name": "kafasiz",
+      "pattern": "(?i)kafa\\W*s[ıi]z",
+      "level": "medium"
+    },
+    {
+      "name": "hiyar",
+      "pattern": "(?i)h[iı]yar",
+      "level": "medium"
+    },
+    {
+      "name": "ezik",
+      "pattern": "(?i)\\bezik\\b",
+      "level": "medium"
+    },
+    {
+      "name": "pislik",
+      "pattern": "(?i)\\bpislik\\b",
+      "level": "medium"
+    },
+    {
+      "name": "yuzsuz",
+      "pattern": "(?i)y[üu]zs[üu]z",
+      "level": "medium"
+    },
+    {
+      "name": "arsiz",
+      "pattern": "(?i)ars[ıi]z",
+      "level": "medium"
+    },
+    {
+      "name": "odlek",
+      "pattern": "(?i)[öo]dlek",
+      "level": "medium"
+    },
+    {
+      "name": "mal",
+      "pattern": "(?i)\\bmal\\b",
+      "level": "low",
+      "hint": "malatya/malzeme gibi sözcüklerle karışabilir"
+    },
+    {
+      "name": "top_low",
+      "pattern": "(?i)\\btop\\b",
+      "level": "low",
+      "hint": "spor/top ile karışır"
+    },
+    {
+      "name": "dönme_low",
+      "pattern": "(?i)\\bd[öo]nme\\b",
+      "level": "low",
+      "hint": "fiil anlamı var"
+    },
+    {
+      "name": "threat_kill",
+      "pattern": "(?i)(öldür|gebert)ir?im",
+      "level": "medium"
+    },
+    {
+      "name": "threat_cut",
+      "pattern": "(?i)keserim|doğrarım|paramparça ederim",
+      "level": "medium"
+    },
+    {
+      "name": "threat_find",
+      "pattern": "(?i)seni\\W*bulurum",
+      "level": "medium"
+    },
+    {
+      "name": "threat_sexual",
+      "pattern": "(?i)tecav[üu]z",
+      "level": "high"
+    }
+  ],
+  "whitelist_substrings": [
+    "malatya",
+    "malzeme",
+    "malt",
+    "malikane",
+    "maltese",
+    "topoloji",
+    "toplama",
+    "topuk"
+  ],
+  "notes": [
+    "Bu liste tam değildir; sahadaki yeni varyasyonları sürekli ekleyin.",
+    "Her regex için 'level' verildi. Uygulamada light/medium/high eşiğine göre bloklama/uyarı uygulayın.",
+    "Düşük seviyedeki ('low') kalıplar false-positive üretebilir; bağlam ve whitelist kontrolü önerilir.",
+    "Nefret söylemi listesi, meşru kullanımları da etkileyebilir (haber/karşı-argüman). Bağlamsal mod eklemeniz önerilir (ör. raporlama modu)."
+  ]
+}

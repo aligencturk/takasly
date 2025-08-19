@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://api.rivorya.com/takasly';
+  static const String baseUrl = 'https://api.takasly.tr';
   static const String apiVersion = '';
   static const String fullUrl = baseUrl;
 

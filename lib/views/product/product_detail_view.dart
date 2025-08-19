@@ -192,7 +192,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   void _shareProduct(BuildContext context, Product product) {
     // API'den gelen shareLink'i kullan, yoksa varsayılan link oluştur
     final productUrl =
-        product.shareLink ?? 'https://takasly.com/product/${product.id}';
+        product.shareLink ?? 'https://takasly.tr/product/${product.id}';
 
     final shareText =
         '''
@@ -314,7 +314,7 @@ Takasly uygulamasından paylaşıldı.
   Future<void> _shareToWhatsApp(Product product, String shareText) async {
     try {
       final productUrl =
-          product.shareLink ?? 'https://takasly.com/product/${product.id}';
+          product.shareLink ?? 'https://takasly.tr/product/${product.id}';
 
       // WhatsApp için özel format - daha kısa ve etkili
       final whatsappText =

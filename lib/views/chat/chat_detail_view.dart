@@ -12,6 +12,10 @@ import '../../views/product/product_detail_view.dart';
 import '../../views/trade/start_trade_view.dart';
 import '../../views/profile/user_profile_detail_view.dart';
 import '../../widgets/report_dialog.dart';
+import '../../widgets/profanity_check_chat_input.dart';
+import '../../services/profanity_service.dart';
+import '../../models/profanity_check_result.dart';
+import '../../utils/logger.dart';
 
 class ChatDetailView extends StatefulWidget {
   final Chat chat;
@@ -74,7 +78,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       } catch (e) {
         // Context artık geçerli değilse veya Provider erişim hatası varsa
         // Bu durumda hiçbir şey yapma, sadece logla
-        print(
+        Logger.error(
           'ChatDetailView: _cleanupEmptyChat hatası (widget dispose edilmiş olabilir): $e',
         );
       }
@@ -93,7 +97,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         }
       } catch (e) {
         // Context artık geçerli değilse hata yakala
-        print(
+        Logger.error(
           'ChatDetailView: _onScroll hatası (widget dispose edilmiş olabilir): $e',
         );
       }
@@ -125,14 +129,14 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               );
             }
           } catch (e) {
-            print(
+            Logger.error(
               'ChatDetailView: markMessagesAsRead hatası (widget dispose edilmiş olabilir): $e',
             );
           }
         });
       }
     } catch (e) {
-      print('ChatDetailView: _loadMessages hatası: $e');
+      Logger.error('ChatDetailView: _loadMessages hatası: $e');
     }
   }
 
@@ -176,7 +180,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         }
       }
     } catch (e) {
-      print('ChatDetailView: _loadChatProduct hatası: $e');
+      Logger.error('ChatDetailView: _loadChatProduct hatası: $e');
     }
   }
 
@@ -201,7 +205,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         if (!_isDisposed) setState(() {});
       }
     } catch (e) {
-      print('ChatDetailView: _updateChatProductFromMessages hatası: $e');
+      Logger.error('ChatDetailView: _updateChatProductFromMessages hatası: $e');
     }
   }
 
@@ -210,6 +214,44 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
+
+    Logger.info(
+      '🔍 ChatDetailView - Mesaj gönderilmeye çalışılıyor: "${message.substring(0, message.length > 50 ? 50 : message.length)}..."',
+    );
+
+    // Küfür kontrolü yap
+    if (ProfanityService.instance.isInitialized) {
+      Logger.info(
+        '🔍 ChatDetailView - ProfanityService başlatılmış, küfür kontrolü yapılıyor...',
+      );
+
+      final result = ProfanityService.instance.checkText(
+        message,
+        sensitivity: 'medium',
+      );
+
+      Logger.info('🔍 ChatDetailView - Küfür kontrol sonucu: $result');
+
+      if (result.hasProfanity) {
+        // Küfür tespit edildi, uyarı göster
+        Logger.warning(
+          '🚫 ChatDetailView - Küfür tespit edildi: ${result.detectedWord}',
+        );
+        _showProfanityWarning(result);
+        return;
+      }
+    } else {
+      Logger.warning(
+        '⚠️ ChatDetailView - ProfanityService henüz başlatılmamış',
+      );
+      // ProfanityService başlatılmamışsa uyarı göster
+      _showServiceNotInitializedWarning();
+      return;
+    }
+
+    Logger.info(
+      '✅ ChatDetailView - Küfür kontrolü geçildi, mesaj gönderiliyor...',
+    );
 
     try {
       final authViewModel = context.read<AuthViewModel>();
@@ -239,12 +281,104 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               );
             }
           } catch (e) {
-            print('ChatDetailView: _sendMessage markMessagesAsRead hatası: $e');
+            Logger.error(
+              'ChatDetailView: _sendMessage markMessagesAsRead hatası: $e',
+            );
           }
         });
       }
     } catch (e) {
-      print('ChatDetailView: _sendMessage hatası: $e');
+      Logger.error('ChatDetailView: _sendMessage hatası: $e');
+    }
+  }
+
+  // ProfanityService başlatılmamış uyarısı
+  void _showServiceNotInitializedWarning() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text(
+          'Küfür kontrol servisi henüz başlatılmamış. Lütfen tekrar deneyin.',
+        ),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Küfür uyarısı gösterme metodu
+  void _showProfanityWarning(ProfanityCheckResult result) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              _getWarningIcon(result.level),
+              color: _getWarningColor(result.level),
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            const Text('Uygunsuz İçerik'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(result.message ?? 'Uygunsuz içerik tespit edildi'),
+            if (result.detectedWord != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Tespit edilen: "${result.detectedWord}"',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              'Lütfen mesajınızı düzenleyip tekrar deneyin.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Tamam'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Uyarı rengi belirleme
+  Color _getWarningColor(String level) {
+    switch (level) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      case 'low':
+        return Colors.amber;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Uyarı ikonu belirleme
+  IconData _getWarningIcon(String level) {
+    switch (level) {
+      case 'high':
+        return Icons.block;
+      case 'medium':
+        return Icons.warning_amber_rounded;
+      case 'low':
+        return Icons.info_outline;
+      default:
+        return Icons.info_outline;
     }
   }
 
@@ -563,7 +697,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         ),
       );
     } catch (e) {
-      print('ChatDetailView: _showProductSelection hatası: $e');
+      Logger.error('ChatDetailView: _showProductSelection hatası: $e');
     }
   }
 
@@ -989,7 +1123,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         ),
       );
     } catch (e) {
-      print('ChatDetailView: _showReportDialog hatası: $e');
+      Logger.error('ChatDetailView: _showReportDialog hatası: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Şikayet dialog açılamadı'),
@@ -1431,18 +1565,18 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () async {
-              print('🔍 Chat Detail - Kullanıcı resmine tıklandı');
-              print(
+              Logger.info('🔍 Chat Detail - Kullanıcı resmine tıklandı');
+              Logger.info(
                 '🔍 Chat Detail - otherParticipant: ${otherParticipant?.id} - ${otherParticipant?.name}',
               );
-              print(
+              Logger.info(
                 '🔍 Chat Detail - currentUser: ${authViewModel.currentUser?.id}',
               );
 
               // Token'ı SharedPreferences'dan al
               final prefs = await SharedPreferences.getInstance();
               final userToken = prefs.getString(AppConstants.userTokenKey);
-              print(
+              Logger.info(
                 '🔍 Chat Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...',
               );
 
@@ -1454,8 +1588,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   userToken.isNotEmpty) {
                 try {
                   final userId = int.parse(otherParticipant.id);
-                  print('🔍 Chat Detail - userId parsed: $userId');
-                  print(
+                  Logger.info('🔍 Chat Detail - userId parsed: $userId');
+                  Logger.info(
                     '🔍 Chat Detail - Navigating to UserProfileDetailView...',
                   );
 
@@ -1468,9 +1602,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                       ),
                     ),
                   );
-                  print('🔍 Chat Detail - Navigation completed');
+                  Logger.info('🔍 Chat Detail - Navigation completed');
                 } catch (e) {
-                  print('❌ Chat Detail - ID parse error: $e');
+                  Logger.error('❌ Chat Detail - ID parse error: $e');
                   // ID parse edilemezse hata göster
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -1481,14 +1615,14 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   );
                 }
               } else {
-                print('❌ Chat Detail - Navigation conditions not met');
-                print(
+                Logger.error('❌ Chat Detail - Navigation conditions not met');
+                Logger.error(
                   '❌ Chat Detail - otherParticipant: ${otherParticipant != null}',
                 );
-                print(
+                Logger.error(
                   '❌ Chat Detail - currentUser: ${authViewModel.currentUser != null}',
                 );
-                print(
+                Logger.error(
                   '❌ Chat Detail - token: ${authViewModel.currentUser?.token != null}',
                 );
               }
@@ -1584,39 +1718,20 @@ class _ChatDetailViewState extends State<ChatDetailView> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: TextField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(
-                    hintText: 'Mesajınızı yazın...',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  maxLines: null,
-                  textCapitalization: TextCapitalization.sentences,
-                  onSubmitted: (_) => _sendMessage(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.send, size: 20),
-                onPressed: _sendMessage,
-                color: Colors.white,
-                padding: const EdgeInsets.all(12),
+              child: ProfanityCheckChatInput(
+                controller: _messageController,
+                hintText: 'Mesajınızı yazın...',
+                maxLines: null,
+                sensitivity: 'medium',
+                onSendPressed: () {
+                  // ProfanityCheckChatInput küfür kontrolü yapıyor
+                  // Bu callback sadece küfür kontrolü geçildiğinde çağrılıyor
+                  _sendMessage();
+                },
+                onSubmitted: (_) {
+                  // Enter tuşuna basıldığında da küfür kontrolü yap
+                  _sendMessage();
+                },
               ),
             ),
           ],
