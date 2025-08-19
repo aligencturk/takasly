@@ -582,32 +582,6 @@ Takasly uygulamasından paylaşıldı.
                 icon: Icon(Icons.share, color: AppTheme.surface),
                 onPressed: () => _shareProduct(context, product),
               ),
-              // Şikayet butonu - sadece kendi ilanı değilse göster
-              if (Provider.of<AuthViewModel>(
-                    context,
-                    listen: false,
-                  ).currentUser?.id !=
-                  product.ownerId)
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: AppTheme.surface),
-                  onSelected: (value) {
-                    if (value == 'report') {
-                      _showReportDialog(context, product);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem<String>(
-                      value: 'report',
-                      child: Row(
-                        children: [
-                          Icon(Icons.report_problem_outlined, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Şikayet Et'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
             ],
           ),
           body: Column(
@@ -808,6 +782,33 @@ class _ProductInfoState extends State<_ProductInfo> {
   void initState() {
     super.initState();
     _loadUserProfile();
+  }
+
+  void _showReportDialog(BuildContext context, Product product) {
+    // Kullanıcı kendini şikayet etmeye çalışıyorsa uyarı göster
+    final authViewModel = context.read<AuthViewModel>();
+    if (authViewModel.currentUser?.id == product.ownerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kendi ilanınızı şikayet edemezsiniz'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Şikayet dialog'unu göster
+    showDialog(
+      context: context,
+      builder: (context) => ReportDialog(
+        reportedUserID: int.parse(product.ownerId),
+        reportedUserName: product.userFullname ?? 
+                         product.owner?.name ?? 
+                         'Bilinmeyen Kullanıcı',
+        productID: int.tryParse(product.id),
+      ),
+    );
   }
 
   Future<void> _loadUserProfile() async {
@@ -1171,6 +1172,57 @@ class _ProductInfoState extends State<_ProductInfo> {
                   widget.product.productLat!.isNotEmpty &&
                   widget.product.productLong!.isNotEmpty)
                 _buildMapButtons(widget.product),
+              
+              // Şikayet butonu - çok gizli, en altta
+              if (Provider.of<AuthViewModel>(
+                    context,
+                    listen: false,
+                  ).currentUser?.id !=
+                  widget.product.ownerId) ...[
+                const SizedBox(height: 16),
+                Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => _showReportDialog(context, widget.product),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.grey[300]!,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.report_problem_outlined,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Bu ilanı şikayet et',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
