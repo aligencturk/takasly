@@ -170,9 +170,7 @@ class _SettingsViewState extends State<SettingsView> {
               try {
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const AboutView(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const AboutView()),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
