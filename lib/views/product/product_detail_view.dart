@@ -23,6 +23,7 @@ import 'edit_product_view.dart';
 import '../../services/user_service.dart';
 import '../../utils/logger.dart';
 import '../../widgets/native_ad_detail_footer.dart';
+import '../../widgets/report_dialog.dart';
 
 // Tam ekran görsel görüntüleme sayfası
 class FullScreenImageView extends StatefulWidget {
@@ -187,6 +188,33 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         _scrollOffset = _scrollController.offset;
       });
     }
+  }
+
+  void _showReportDialog(BuildContext context, Product product) {
+    // Kullanıcı kendini şikayet etmeye çalışıyorsa uyarı göster
+    final authViewModel = context.read<AuthViewModel>();
+    if (authViewModel.currentUser?.id == product.ownerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kendi ilanınızı şikayet edemezsiniz'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Şikayet dialog'unu göster
+    showDialog(
+      context: context,
+      builder: (context) => ReportDialog(
+        reportedUserID: int.parse(product.ownerId),
+        reportedUserName: product.userFullname ?? 
+                         product.owner?.name ?? 
+                         'Bilinmeyen Kullanıcı',
+        productID: int.tryParse(product.id),
+      ),
+    );
   }
 
   void _shareProduct(BuildContext context, Product product) {
@@ -554,6 +582,32 @@ Takasly uygulamasından paylaşıldı.
                 icon: Icon(Icons.share, color: AppTheme.surface),
                 onPressed: () => _shareProduct(context, product),
               ),
+              // Şikayet butonu - sadece kendi ilanı değilse göster
+              if (Provider.of<AuthViewModel>(
+                    context,
+                    listen: false,
+                  ).currentUser?.id !=
+                  product.ownerId)
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, color: AppTheme.surface),
+                  onSelected: (value) {
+                    if (value == 'report') {
+                      _showReportDialog(context, product);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem<String>(
+                      value: 'report',
+                      child: Row(
+                        children: [
+                          Icon(Icons.report_problem_outlined, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Şikayet Et'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
           body: Column(
