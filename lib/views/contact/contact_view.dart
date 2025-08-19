@@ -300,7 +300,6 @@ class _ContactViewState extends State<ContactView> {
         const SizedBox(height: 6),
         ProfanityCheckTextField(
           controller: _nameController,
-          labelText: 'Ad Soyad',
           hintText: 'Adınızı ve soyadınızı giriniz',
           textCapitalization: TextCapitalization.words,
           sensitivity: 'medium',
