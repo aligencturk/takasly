@@ -87,35 +87,21 @@ class _LoginViewState extends State<LoginView> {
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 16,
                       left: 16,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                      child: IconButton(
+                        onPressed: () {
+                          Navigator.of(
+                            context,
+                          ).pushNamedAndRemoveUntil('/home', (route) => false);
+                        },
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.black87,
+                          size: 24,
                         ),
-                        child: IconButton(
-                          onPressed: () {
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                              '/home',
-                              (route) => false,
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.arrow_back_ios,
-                            color: Colors.black87,
-                            size: 20,
-                          ),
-                          padding: const EdgeInsets.all(8),
-                          constraints: const BoxConstraints(
-                            minWidth: 40,
-                            minHeight: 40,
-                          ),
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
                         ),
                       ),
                     ),
