@@ -10,6 +10,7 @@ import '../../utils/logger.dart';
 import '../../services/auth_service.dart';
 import 'chat_detail_view.dart';
 import '../../widgets/native_ad_list_tile.dart';
+import '../auth/login_view.dart';
 
 class ChatListView extends StatefulWidget {
   const ChatListView({super.key});
@@ -68,10 +69,30 @@ class _ChatListViewState extends State<ChatListView> {
               ),
             );
 
-            // Direkt login sayfasına yönlendir
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/login', (route) => false);
+            // Animasyonlu login sayfasına yönlendir
+            Navigator.of(context).pushAndRemoveUntil(
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const LoginView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeInOutCubic,
+                            ),
+                          ),
+                          child: child,
+                        ),
+                      );
+                    },
+                transitionDuration: const Duration(milliseconds: 400),
+              ),
+              (route) => false,
+            );
           }
           return;
         }
@@ -87,9 +108,29 @@ class _ChatListViewState extends State<ChatListView> {
       Logger.error('❌ ChatListView - Auth kontrol hatası: $e');
 
       if (mounted) {
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const LoginView(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOutCubic,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                  );
+                },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+          (route) => false,
+        );
       }
     }
   }

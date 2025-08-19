@@ -13,6 +13,7 @@ import 'package:takasly/services/admob_service.dart';
 import 'package:takasly/services/auth_service.dart';
 import 'package:takasly/utils/logger.dart';
 import 'package:takasly/widgets/profanity_check_text_field.dart';
+import '../auth/login_view.dart';
 
 class EditProductView extends StatefulWidget {
   final Product product;
@@ -1571,10 +1572,30 @@ class _EditProductViewState extends State<EditProductView> {
             ),
           );
 
-          // Direkt login sayfasına yönlendir
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/login', (route) => false);
+          // Animasyonlu login sayfasına yönlendir
+          Navigator.of(context).pushAndRemoveUntil(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const LoginView(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOutCubic,
+                          ),
+                        ),
+                        child: child,
+                      ),
+                    );
+                  },
+              transitionDuration: const Duration(milliseconds: 400),
+            ),
+            (route) => false,
+          );
         }
         return;
       }
@@ -1687,9 +1708,29 @@ class _EditProductViewState extends State<EditProductView> {
             ),
           );
 
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/login', (route) => false);
+          Navigator.of(context).pushAndRemoveUntil(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const LoginView(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOutCubic,
+                          ),
+                        ),
+                        child: child,
+                      ),
+                    );
+                  },
+              transitionDuration: const Duration(milliseconds: 400),
+            ),
+            (route) => false,
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),

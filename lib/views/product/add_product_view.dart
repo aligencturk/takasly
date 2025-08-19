@@ -11,6 +11,7 @@ import 'package:takasly/services/auth_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:takasly/utils/logger.dart';
 import 'package:takasly/widgets/profanity_check_text_field.dart';
+import '../auth/login_view.dart';
 
 class AddProductView extends StatefulWidget {
   const AddProductView({super.key});
@@ -131,10 +132,30 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           );
 
-          // Direkt login sayfasına yönlendir
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/login', (route) => false);
+          // Animasyonlu login sayfasına yönlendir
+          Navigator.of(context).pushAndRemoveUntil(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const LoginView(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOutCubic,
+                          ),
+                        ),
+                        child: child,
+                      ),
+                    );
+                  },
+              transitionDuration: const Duration(milliseconds: 400),
+            ),
+            (route) => false,
+          );
         }
       } else {
         Logger.info(
@@ -145,9 +166,29 @@ class _AddProductViewState extends State<AddProductView> {
       Logger.error('❌ AddProductView - Login kontrol hatası: $e');
       // Hata durumunda login sayfasına yönlendir
       if (mounted) {
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const LoginView(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOutCubic,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                  );
+                },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+          (route) => false,
+        );
       }
     }
   }

@@ -18,6 +18,7 @@ import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 import 'trade_detail_view.dart';
 import '../../widgets/native_ad_wide_card.dart';
+import '../auth/login_view.dart';
 
 class TradeView extends StatefulWidget {
   final int initialTabIndex;
@@ -94,9 +95,29 @@ class _TradeViewState extends State<TradeView>
         );
 
         // Direkt login sayfasına yönlendir
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const LoginView(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOutCubic,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                  );
+                },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+          (route) => false,
+        );
       }
       return;
     }

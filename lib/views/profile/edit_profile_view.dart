@@ -10,6 +10,7 @@ import 'package:takasly/utils/logger.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:takasly/widgets/profanity_check_text_field.dart';
+import '../auth/login_view.dart';
 
 class EditProfileView extends StatefulWidget {
   const EditProfileView({Key? key}) : super(key: key);
@@ -400,9 +401,29 @@ class _EditProfileViewState extends State<EditProfileView> {
         Logger.debug('Hesap başarıyla silindi', tag: 'EditProfile');
 
         if (mounted) {
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/login', (route) => false);
+          Navigator.of(context).pushAndRemoveUntil(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const LoginView(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOutCubic,
+                          ),
+                        ),
+                        child: child,
+                      ),
+                    );
+                  },
+              transitionDuration: const Duration(milliseconds: 400),
+            ),
+            (route) => false,
+          );
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -606,14 +627,16 @@ class _EditProfileViewState extends State<EditProfileView> {
         keyboardType: keyboardType,
         textCapitalization: TextCapitalization.none,
         inputFormatters: const [],
-        validator: validator ?? (value) {
-          if (value != null &&
-              value.isNotEmpty &&
-              !PhoneFormatter.isValidPhoneNumber(value)) {
-            return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
-          }
-          return null;
-        },
+        validator:
+            validator ??
+            (value) {
+              if (value != null &&
+                  value.isNotEmpty &&
+                  !PhoneFormatter.isValidPhoneNumber(value)) {
+                return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
+              }
+              return null;
+            },
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),

@@ -17,6 +17,7 @@ import 'edit_profile_view.dart';
 import 'settings_view.dart';
 import '../product/edit_product_view.dart';
 import '../product/product_detail_view.dart';
+import '../auth/login_view.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -76,10 +77,30 @@ class _ProfileViewState extends State<ProfileView>
               ),
             );
 
-            // Direkt login sayfasına yönlendir
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/login', (route) => false);
+            // Animasyonlu login sayfasına yönlendir
+            Navigator.of(context).pushAndRemoveUntil(
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const LoginView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeInOutCubic,
+                            ),
+                          ),
+                          child: child,
+                        ),
+                      );
+                    },
+                transitionDuration: const Duration(milliseconds: 400),
+              ),
+              (route) => false,
+            );
           }
           return;
         }
@@ -95,9 +116,29 @@ class _ProfileViewState extends State<ProfileView>
       Logger.error('❌ ProfileView - Auth kontrol hatası: $e');
 
       if (mounted) {
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const LoginView(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOutCubic,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                  );
+                },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+          (route) => false,
+        );
       }
     }
   }
