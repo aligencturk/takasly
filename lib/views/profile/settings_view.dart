@@ -8,6 +8,7 @@ import 'change_password_view.dart';
 import 'edit_profile_view.dart';
 import '../settings/privacy_view.dart';
 import '../contact/contact_view.dart';
+import '../settings/about_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -165,13 +166,22 @@ class _SettingsViewState extends State<SettingsView> {
             icon: Icons.info_outline,
             title: 'Hakkında',
             subtitle: 'Uygulama bilgileri ve lisans',
-            onTap: () {
-              // TODO: Hakkında sayfasına yönlendir
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Hakkında sayfası yakında eklenecek'),
-                ),
-              );
+            onTap: () async {
+              try {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AboutView(),
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Hata: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
           ),
         ],
