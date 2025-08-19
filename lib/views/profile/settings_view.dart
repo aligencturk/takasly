@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/contact_viewmodel.dart';
@@ -153,13 +154,11 @@ class _SettingsViewState extends State<SettingsView> {
           ),
           _buildSettingItem(
             icon: Icons.privacy_tip_outlined,
-            title: 'Gizlilik Politikası',
-            subtitle: 'Rivorya Yazılım gizlilik politikası',
+            title: 'Sözleşmeler',
+            subtitle: 'Takasly sözleşmeleri ve koşulları',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PrivacyView()),
-              );
+              // Web sayfasına yönlendir
+              launchUrl(Uri.parse('https://www.takasly.tr/sozlesmeler'));
             },
           ),
           _buildSettingItem(
@@ -340,7 +339,8 @@ class _SettingsViewState extends State<SettingsView> {
 
                 if (mounted) {
                   navigator.pop();
-                  navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+                  // Ana sayfaya yönlendir
+                  navigator.pushNamedAndRemoveUntil('/home', (route) => false);
 
                   scaffoldMessenger.showSnackBar(
                     const SnackBar(

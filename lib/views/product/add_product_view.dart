@@ -823,6 +823,17 @@ class _AddProductViewState extends State<AddProductView> {
 
   @override
   Widget build(BuildContext context) {
+    // Auth kontrolü - sayfa yüklenmeden önce
+    Future.microtask(() async {
+      final authService = AuthService();
+      final isLoggedIn = await authService.isLoggedIn();
+      if (!isLoggedIn && mounted) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    });
+
     return WillPopScope(
       onWillPop: () async {
         // Kullanıcı geri butonuna bastığında popup göster
@@ -1191,7 +1202,8 @@ class _AddProductViewState extends State<AddProductView> {
           ProfanityCheckTextField(
             controller: _descriptionController,
             labelText: 'Açıklama',
-            hintText: 'Ürününüzün detaylarını, özelliklerini ve durumunu açıklayın',
+            hintText:
+                'Ürününüzün detaylarını, özelliklerini ve durumunu açıklayın',
             maxLines: 6,
             textCapitalization: TextCapitalization.sentences,
             sensitivity: 'high',

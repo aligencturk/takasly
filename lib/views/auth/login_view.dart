@@ -25,51 +25,106 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: AppTheme.background,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final screenHeight = constraints.maxHeight;
-          final screenWidth = constraints.maxWidth;
-          
-          // Ekran boyutuna göre responsive değerler
-          final isLargeScreen = screenHeight > 800;
-          final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
-          final isSmallScreen = screenHeight <= 700;
-          
-          // Background görselinin kompozisyonuna göre form alanlarını daha aşağıda konumlandır
-          // Büyük ekranlarda daha fazla üst boşluk, küçük ekranlarda daha az
-          final topSpacing = isLargeScreen ? 0.40 : (isMediumScreen ? 0.35 : 0.30); // Daha fazla üst boşluk
-          final bottomSpacing = isLargeScreen ? 0.01 : (isMediumScreen ? 0.01 : 0.15);
-          
-          return Transform.translate(
-            offset: const Offset(0, 0),
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/auth/1.jpg'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.07, // Ekran genişliğine göre padding
-                  ),
-                  child: Column(
-                    children: [
-                      SizedBox(height: screenHeight * topSpacing),
-                      const _EmailPasswordForm(),
-                      const _BottomButtons(),
-                      SizedBox(height: screenHeight * bottomSpacing),
-                    ],
+    return WillPopScope(
+      onWillPop: () async {
+        // Telefon geri butonuna basıldığında ana sayfaya yönlendir
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/home', (route) => false);
+        return false; // Varsayılan geri davranışını engelle
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: AppTheme.background,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenHeight = constraints.maxHeight;
+            final screenWidth = constraints.maxWidth;
+
+            // Ekran boyutuna göre responsive değerler
+            final isLargeScreen = screenHeight > 800;
+            final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
+            final isSmallScreen = screenHeight <= 700;
+
+            // Background görselinin kompozisyonuna göre form alanlarını daha aşağıda konumlandır
+            // Büyük ekranlarda daha fazla üst boşluk, küçük ekranlarda daha az
+            final topSpacing = isLargeScreen
+                ? 0.40
+                : (isMediumScreen ? 0.35 : 0.30); // Daha fazla üst boşluk
+            final bottomSpacing = isLargeScreen
+                ? 0.01
+                : (isMediumScreen ? 0.01 : 0.15);
+
+            return Transform.translate(
+              offset: const Offset(0, 0),
+              child: Container(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/auth/1.jpg'),
+                    fit: BoxFit.cover,
                   ),
                 ),
+                child: Stack(
+                  children: [
+                    SafeArea(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal:
+                              screenWidth *
+                              0.07, // Ekran genişliğine göre padding
+                        ),
+                        child: Column(
+                          children: [
+                            SizedBox(height: screenHeight * topSpacing),
+                            const _EmailPasswordForm(),
+                            const _BottomButtons(),
+                            SizedBox(height: screenHeight * bottomSpacing),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Geri butonu
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 16,
+                      left: 16,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          onPressed: () {
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/home',
+                              (route) => false,
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.arrow_back_ios,
+                            color: Colors.black87,
+                            size: 20,
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -107,18 +162,24 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       builder: (context, constraints) {
         final screenHeight = constraints.maxHeight;
         final screenWidth = constraints.maxWidth;
-        
+
         // Ekran boyutuna göre responsive değerler
         final isLargeScreen = screenHeight > 800;
         final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
         final isSmallScreen = screenHeight <= 700;
-        
+
         // Input field yüksekliği ekran boyutuna göre ayarlanır
-        final inputHeight = isLargeScreen ? 60.0 : (isMediumScreen ? 56.0 : 52.0);
+        final inputHeight = isLargeScreen
+            ? 60.0
+            : (isMediumScreen ? 56.0 : 52.0);
         final fontSize = isLargeScreen ? 18.0 : (isMediumScreen ? 16.0 : 15.0);
-        final borderRadius = isLargeScreen ? 14.0 : (isMediumScreen ? 12.0 : 10.0);
-        final verticalSpacing = isLargeScreen ? 12.0 : (isMediumScreen ? 8.0 : 6.0); // Spacing artırıldı
-        
+        final borderRadius = isLargeScreen
+            ? 14.0
+            : (isMediumScreen ? 12.0 : 10.0);
+        final verticalSpacing = isLargeScreen
+            ? 12.0
+            : (isMediumScreen ? 8.0 : 6.0); // Spacing artırıldı
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -241,7 +302,9 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
               ],
             ),
 
-            SizedBox(height: verticalSpacing * 2.5), // Giriş butonu öncesi spacing artırıldı
+            SizedBox(
+              height: verticalSpacing * 2.5,
+            ), // Giriş butonu öncesi spacing artırıldı
 
             ElevatedButton(
               onPressed: () => _submitLogin(context),
@@ -353,40 +416,52 @@ class _BottomButtonsState extends State<_BottomButtons> {
       builder: (context, constraints) {
         final screenHeight = constraints.maxHeight;
         final screenWidth = constraints.maxWidth;
-        
+
         // Ekran boyutuna göre responsive değerler
         final isLargeScreen = screenHeight > 800;
         final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
         final isSmallScreen = screenHeight <= 700;
-        
+
         // Responsive değerler
-        final buttonHeight = isLargeScreen ? 58.0 : (isMediumScreen ? 52.0 : 48.0);
+        final buttonHeight = isLargeScreen
+            ? 58.0
+            : (isMediumScreen ? 52.0 : 48.0);
         final fontSize = isLargeScreen ? 14.0 : (isMediumScreen ? 12.0 : 11.0);
-        final borderRadius = isLargeScreen ? 18.0 : (isMediumScreen ? 16.0 : 14.0);
+        final borderRadius = isLargeScreen
+            ? 18.0
+            : (isMediumScreen ? 16.0 : 14.0);
         final iconSize = isLargeScreen ? 24.0 : (isMediumScreen ? 22.0 : 20.0);
         final spacing = isLargeScreen ? 20.0 : (isMediumScreen ? 16.0 : 14.0);
-        final orSpacing = isLargeScreen ? 25.0 : (isMediumScreen ? 20.0 : 18.0); // "veya" öncesi spacing azaltıldı
-        
+        final orSpacing = isLargeScreen
+            ? 25.0
+            : (isMediumScreen ? 20.0 : 18.0); // "veya" öncesi spacing azaltıldı
+
         return Column(
           children: [
             // Veya ayırıcı
             Row(
               children: [
                 Expanded(
-                  child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
+                  child: Container(
+                    height: 1,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: spacing),
                   child: Text(
                     'veya',
                     style: TextStyle(
-                      color: AppTheme.primary, 
+                      color: AppTheme.primary,
                       fontSize: fontSize,
                     ),
                   ),
                 ),
                 Expanded(
-                  child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
+                  child: Container(
+                    height: 1,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
                 ),
               ],
             ),
@@ -429,7 +504,10 @@ class _BottomButtonsState extends State<_BottomButtons> {
                                 height: iconSize,
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return SizedBox(width: iconSize, height: iconSize);
+                                  return SizedBox(
+                                    width: iconSize,
+                                    height: iconSize,
+                                  );
                                 },
                               ),
                               SizedBox(width: spacing * 0.5),

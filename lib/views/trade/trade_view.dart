@@ -82,7 +82,7 @@ class _TradeViewState extends State<TradeView>
               children: [
                 Icon(Icons.login, color: Colors.white),
                 SizedBox(width: 8),
-                Text('Takasları görüntülemek için giriş yapmanız gerekiyor.'),
+                Text('Lütfen giriş yapınız.'),
               ],
             ),
             backgroundColor: AppTheme.primary,
@@ -204,6 +204,17 @@ class _TradeViewState extends State<TradeView>
 
   @override
   Widget build(BuildContext context) {
+    // Auth kontrolü - sayfa yüklenmeden önce
+    final authService = AuthService();
+    Future.microtask(() async {
+      final isLoggedIn = await authService.isLoggedIn();
+      if (!isLoggedIn && mounted) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(

@@ -117,6 +117,21 @@ class _ChatListViewState extends State<ChatListView> {
 
   @override
   Widget build(BuildContext context) {
+    // Auth kontrolü - sayfa yüklenmeden önce
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    if (authViewModel.currentUser == null) {
+      Future.microtask(() async {
+        final authService = AuthService();
+        final isLoggedIn = await authService.isLoggedIn();
+        if (!isLoggedIn && mounted) {
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(

@@ -299,6 +299,18 @@ class _ProfileViewState extends State<ProfileView>
 
   @override
   Widget build(BuildContext context) {
+    // Auth kontrolü - sayfa yüklenmeden önce
+    final userViewModel = Provider.of<UserViewModel>(context, listen: false);
+    if (userViewModel.currentUser == null) {
+      // Direkt login sayfasına yönlendir
+      Future.microtask(() {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(),
