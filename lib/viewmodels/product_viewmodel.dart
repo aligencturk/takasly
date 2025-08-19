@@ -675,6 +675,50 @@ class ProductViewModel extends ChangeNotifier {
     }
   }
 
+  // Arama geçmişini temizle
+  Future<void> clearSearchHistory() async {
+    try {
+      final currentUser = await _authService.getCurrentUser();
+      if (currentUser == null || currentUser.id.isEmpty) {
+        _searchHistory = [];
+        // Local cache'i de temizle
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(AppConstants.localSearchHistoryKey);
+        notifyListeners();
+        return;
+      }
+
+      final userId = int.tryParse(currentUser.id);
+      if (userId == null) {
+        _searchHistory = [];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(AppConstants.localSearchHistoryKey);
+        notifyListeners();
+        return;
+      }
+
+      final resp = await _userService.clearSearchHistory(userId: userId);
+      if (resp.isSuccess) {
+        _searchHistory = [];
+        // Local cache'i temizle
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(AppConstants.localSearchHistoryKey);
+      } else {
+        // Backend başarısız olsa bile UI'da temizliği göster
+        _searchHistory = [];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(AppConstants.localSearchHistoryKey);
+      }
+    } catch (e) {
+      Logger.error('❌ clearSearchHistory error: $e');
+      _searchHistory = [];
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppConstants.localSearchHistoryKey);
+    } finally {
+      notifyListeners();
+    }
+  }
+
   Future<void> _loadLocalHistoryFallback() async {
     try {
       final prefs = await SharedPreferences.getInstance();

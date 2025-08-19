@@ -181,46 +181,83 @@ class _SearchViewState extends State<SearchView> {
                       builder: (context, vm, _) {
                         if (vm.searchHistory.isNotEmpty) {
                           return Expanded(
-                            child: ListView.separated(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 0,
-                                vertical: 8,
-                              ),
-                              itemCount: vm.searchHistory.length,
-                              separatorBuilder: (_, __) =>
-                                  Divider(height: 1, color: Colors.grey[200]),
-                              itemBuilder: (context, index) {
-                                final item = vm.searchHistory[index];
-                                return ListTile(
-                                  leading: const Icon(
-                                    Icons.history,
-                                    color: Colors.grey,
-                                    size: 20,
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  color: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
                                   ),
-                                  title: Text(
-                                    item.search,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Arama Geçmişi',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          context.read<ProductViewModel>().clearSearchHistory();
+                                        },
+                                        icon: const Icon(Icons.delete_sweep, size: 18),
+                                        label: const Text('Geçmişi temizle'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.redAccent,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  subtitle: Text(
-                                    'Arandı: ${item.searchCount} • ${item.formattedDate}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
+                                ),
+                                Expanded(
+                                  child: ListView.separated(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 0,
+                                      vertical: 8,
                                     ),
+                                    itemCount: vm.searchHistory.length,
+                                    separatorBuilder: (_, __) =>
+                                        Divider(height: 1, color: Colors.grey[200]),
+                                    itemBuilder: (context, index) {
+                                      final item = vm.searchHistory[index];
+                                      return ListTile(
+                                        leading: const Icon(
+                                          Icons.history,
+                                          color: Colors.grey,
+                                          size: 20,
+                                        ),
+                                        title: Text(
+                                          item.search,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: Text(
+                                          'Arandı: ${item.searchCount} • ${item.formattedDate}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        onTap: () {
+                                          _searchController.text = item.search;
+                                          setState(() {});
+                                          context.read<ProductViewModel>().liveSearch(
+                                            item.search,
+                                          );
+                                          _performSearch(item.search);
+                                        },
+                                      );
+                                    },
                                   ),
-                                  onTap: () {
-                                    _searchController.text = item.search;
-                                    setState(() {});
-                                    context.read<ProductViewModel>().liveSearch(
-                                      item.search,
-                                    );
-                                    _performSearch(item.search);
-                                  },
-                                );
-                              },
+                                ),
+                              ],
                             ),
                           );
                         }
@@ -496,44 +533,86 @@ class _SearchViewState extends State<SearchView> {
                         ),
                       ],
                     ),
-                    constraints: const BoxConstraints(maxHeight: 260),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: vm.searchHistory.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: Colors.grey[200]),
-                      itemBuilder: (context, index) {
-                        final item = vm.searchHistory[index];
-                        return ListTile(
-                          leading: const Icon(
-                            Icons.history,
-                            color: Colors.grey,
-                            size: 20,
+                    constraints: const BoxConstraints(maxHeight: 300),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
-                          title: Text(
-                            item.search,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Arama Geçmişi',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              TextButton.icon(
+                                onPressed: () {
+                                  context.read<ProductViewModel>().clearSearchHistory();
+                                },
+                                icon: const Icon(Icons.delete_sweep, size: 18),
+                                label: const Text('Temizle'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.redAccent,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  textStyle: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            ],
                           ),
-                          subtitle: Text(
-                            'Arandı: ${item.searchCount} • ${item.formattedDate}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
+                        ),
+                        const Divider(height: 1),
+                        Expanded(
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: vm.searchHistory.length,
+                            separatorBuilder: (_, __) =>
+                                Divider(height: 1, color: Colors.grey[200]),
+                            itemBuilder: (context, index) {
+                              final item = vm.searchHistory[index];
+                              return ListTile(
+                                leading: const Icon(
+                                  Icons.history,
+                                  color: Colors.grey,
+                                  size: 20,
+                                ),
+                                title: Text(
+                                  item.search,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  'Arandı: ${item.searchCount} • ${item.formattedDate}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                onTap: () {
+                                  _searchController.text = item.search;
+                                  setState(() {});
+                                  context.read<ProductViewModel>().liveSearch(
+                                        item.search,
+                                      );
+                                  _performSearch(item.search);
+                                },
+                              );
+                            },
                           ),
-                          onTap: () {
-                            _searchController.text = item.search;
-                            setState(() {});
-                            context.read<ProductViewModel>().liveSearch(
-                              item.search,
-                            );
-                            _performSearch(item.search);
-                          },
-                        );
-                      },
+                        ),
+                      ],
                     ),
                   );
                 }

@@ -1215,6 +1215,37 @@ class UserService {
     }
   }
 
+  /// Arama geçmişini temizler
+  /// DELETE /service/user/account/{userId}/searchHistoryClear
+  Future<ApiResponse<bool>> clearSearchHistory({
+    required int userId,
+  }) async {
+    try {
+      final endpoint =
+          '${ApiConstants.searchHistoryBase}/$userId/searchHistoryClear';
+      Logger.debug('DELETE Search History Clear: $endpoint', tag: 'UserService');
+      final response = await _httpClient.deleteWithBasicAuth<bool>(
+        endpoint,
+        fromJson: (json) {
+          // Esnek başarı kontrolü
+          if (json is Map<String, dynamic>) {
+            if (json['success'] == true || json['cleared'] == true) {
+              return true;
+            }
+          } else if (json is bool) {
+            return json;
+          }
+          // Body boş ya da beklenmedik ise bile başarılı say
+          return true;
+        },
+      );
+      return response;
+    } catch (e) {
+      Logger.error('❌ clearSearchHistory error: $e', tag: 'UserService');
+      return ApiResponse<bool>.error(ErrorMessages.unknownError);
+    }
+  }
+
   /// User service'ini test eder
   Future<bool> testUserService() async {
     try {
