@@ -1571,14 +1571,10 @@ class _EditProductViewState extends State<EditProductView> {
             ),
           );
 
-          // 2 saniye sonra login sayfasına yönlendir
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/login', (route) => false);
-            }
-          });
+          // Direkt login sayfasına yönlendir
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
         }
         return;
       }
@@ -1691,11 +1687,9 @@ class _EditProductViewState extends State<EditProductView> {
             ),
           );
 
-          Future.delayed(const Duration(seconds: 2), () {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/login', (route) => false);
-          });
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),

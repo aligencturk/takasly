@@ -131,14 +131,10 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           );
 
-          // 1 saniye sonra login sayfasına yönlendir
-          Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) {
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/login', (route) => false);
-            }
-          });
+          // Direkt login sayfasına yönlendir
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
         }
       } else {
         Logger.info(
@@ -517,14 +513,10 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           );
 
-          // 2 saniye sonra login sayfasına yönlendir
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/login', (route) => false);
-            }
-          });
+          // Direkt login sayfasına yönlendir
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/login', (route) => false);
         } else {
           // Diğer hatalar için normal error snackbar
           ScaffoldMessenger.of(context).showSnackBar(
@@ -823,17 +815,6 @@ class _AddProductViewState extends State<AddProductView> {
 
   @override
   Widget build(BuildContext context) {
-    // Auth kontrolü - sayfa yüklenmeden önce
-    Future.microtask(() async {
-      final authService = AuthService();
-      final isLoggedIn = await authService.isLoggedIn();
-      if (!isLoggedIn && mounted) {
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
-      }
-    });
-
     return WillPopScope(
       onWillPop: () async {
         // Kullanıcı geri butonuna bastığında popup göster

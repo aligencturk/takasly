@@ -93,14 +93,10 @@ class _TradeViewState extends State<TradeView>
           ),
         );
 
-        // 2 saniye sonra login sayfasına yönlendir
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/login', (route) => false);
-          }
-        });
+        // Direkt login sayfasına yönlendir
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       }
       return;
     }
@@ -204,17 +200,6 @@ class _TradeViewState extends State<TradeView>
 
   @override
   Widget build(BuildContext context) {
-    // Auth kontrolü - sayfa yüklenmeden önce
-    final authService = AuthService();
-    Future.microtask(() async {
-      final isLoggedIn = await authService.isLoggedIn();
-      if (!isLoggedIn && mounted) {
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
-      }
-    });
-
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
