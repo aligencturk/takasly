@@ -24,6 +24,11 @@ class NotificationService {
   late AndroidNotificationChannel _androidChannel;
   bool _isInitialized = false;
 
+  // Navigation guard - aynı navigation'ın çok kısa sürede tekrarlanmasını engeller
+  String? _lastNavigatedProductId;
+  DateTime? _lastNavigationTime;
+  static const Duration _navigationCooldown = Duration(seconds: 2);
+
   // Uygulama içinde yönlendirme için callback (type, id)
   void Function(String type, String id)? onNavigate;
 
@@ -65,9 +70,16 @@ class NotificationService {
       },
     );
 
-    // Foreground: mesaj geldiğinde local notification göster
+    // Foreground: mesaj geldiğinde notification handling
     FirebaseMessaging.onMessage.listen((RemoteMessage m) {
-      _showForegroundNotification(m);
+      // Foreground'da gelen mesajları sadece log'la, 
+      // duplicate notification'ı önlemek için local notification gösterme
+      Logger.debug('Foreground FCM message received: ${m.notification?.title}', tag: _tag);
+      
+      // İsteğe bağlı: Sadece data-only mesajlar için local notification göster
+      if (m.notification == null && m.data.isNotEmpty) {
+        _showForegroundNotification(m);
+      }
     });
 
     // Bildirime tıklayıp uygulama açıldı (arka plandan -> öne)
@@ -231,17 +243,29 @@ class NotificationService {
   /// İlan detayına yönlendir
   void _navigateToProductDetail(String productId) {
     try {
+      // Navigation guard - aynı productId ile çok kısa sürede navigation yapılmasını engeller
+      final now = DateTime.now();
+      if (_lastNavigatedProductId == productId && 
+          _lastNavigationTime != null &&
+          now.difference(_lastNavigationTime!) < _navigationCooldown) {
+        Logger.debug('Navigation blocked - too soon after last navigation: $productId', tag: _tag);
+        return;
+      }
+      
       final context = _getCurrentContext();
       if (context != null) {
+        _lastNavigatedProductId = productId;
+        _lastNavigationTime = now;
+        
         Navigator.pushNamed(
           context,
           '/edit-product',
           arguments: {'productId': productId},
         );
-        Logger.debug('Navigated to product detail: $productId', tag: _tag);
+        Logger.debug('Navigated to edit product: $productId', tag: _tag);
       }
     } catch (e) {
-      Logger.error('Navigation to product detail failed: $e', tag: _tag);
+      Logger.error('Navigation to edit product failed: $e', tag: _tag);
     }
   }
   
