@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'dart:convert';
 import 'firebase_options.dart';
 import 'core/app_theme.dart';
 import 'core/constants.dart';
@@ -43,6 +42,7 @@ import 'views/trade/start_trade_view.dart';
 import 'views/chat/chat_list_view.dart';
 import 'views/chat/chat_detail_view.dart';
 import 'views/notifications/notification_list_view.dart';
+import 'models/product.dart';
 import 'utils/logger.dart';
 import 'services/profanity_service.dart';
 
@@ -56,98 +56,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 /// Bildirim tıklamasını işler
-void _handleNotificationTap(Map<String, dynamic> data) {
-  try {
-    // Bildirim türünü belirle
-    String type = '';
-    String id = '';
-    
-    // keysandvalues içindeki JSON'u kontrol et
-    final raw = data['keysandvalues'];
-    if (raw is String && raw.isNotEmpty && raw != '{}') {
-      try {
-        final parsed = jsonDecode(raw) as Map<String, dynamic>;
-        type = (parsed['type'] ?? '').toString();
-        id = (parsed['id'] ?? '').toString();
-      } catch (e) {
-        Logger.error('keysandvalues parse error: $e');
-      }
-    }
-    
-    // Eğer keysandvalues boşsa, data içindeki type ve id'yi direkt kontrol et
-    if (type.isEmpty) {
-      type = (data['type'] ?? '').toString();
-      id = (data['id'] ?? '').toString();
-    }
-    
-    // Notification title'dan bildirim türünü çıkarmaya çalış
-    if (type.isEmpty) {
-      final title = data['title'] ?? '';
-      if (title is String) {
-        if (title.contains('Yeni Takas Teklifi')) {
-          type = 'new_trade_offer';
-        } else if (title.contains('Takas Onaylandı')) {
-          type = 'trade_offer_approved';
-        } else if (title.contains('Teklif Reddedildi')) {
-          type = 'trade_offer_rejected';
-        } else if (title.contains('Takas Tamamlandı')) {
-          type = 'trade_completed';
-        } else if (title.contains('Süre doldu') || title.contains('Öne Çıkarma')) {
-          type = 'sponsor_expired';
-        }
-      }
-    }
-    
-    Logger.info('Handling notification tap - Type: $type, ID: $id');
-    
-    // Navigator context'i al
-    final context = ErrorHandlerService.navigatorKey.currentContext;
-    if (context == null) {
-      Logger.error('Navigator context is null');
-      return;
-    }
-    
-    // Bildirim türüne göre yönlendirme
-    switch (type.toLowerCase()) {
-      case 'new_trade_offer':
-      case 'trade_offer_approved':
-      case 'trade_offer_rejected':
-      case 'trade_completed':
-        // Teklif detayına git
-        if (id.isNotEmpty) {
-          Navigator.pushNamed(
-            context,
-            '/trade-detail',
-            arguments: {'offerID': int.tryParse(id) ?? 0},
-          );
-        } else {
-          Navigator.pushNamed(context, '/trade');
-        }
-        break;
-        
-      case 'sponsor_expired':
-        // İlan detayına git
-        if (id.isNotEmpty) {
-          Navigator.pushNamed(
-            context,
-            '/edit-product',
-            arguments: {'productId': id},
-          );
-        } else {
-          Navigator.pushNamed(context, '/home');
-        }
-        break;
-        
-      default:
-        // Varsayılan olarak bildirimler sayfasına git
-        Navigator.pushNamed(context, '/notifications');
-        break;
-    }
-  } catch (e) {
-    Logger.error('Notification tap handling error: $e');
-  }
-}
-
 /// Android için notification channel oluşturur
 Future<void> _createNotificationChannel() async {
   try {
@@ -246,58 +154,12 @@ void main() async {
             }
           });
 
-          // Background'dan açılan mesajları dinle
-          FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-            Logger.info(
-              '🔄 Background FCM Message ile uygulama açıldı: ${message.notification?.title}',
-            );
-
-            if (message.notification != null) {
-              Logger.info(
-                '📱 Background Notification: ${message.notification!.title} - ${message.notification!.body}',
-              );
-            }
-
-            if (message.data.isNotEmpty) {
-              Logger.info('📊 Background Data: ${message.data}');
-              
-              // Bildirim tıklamasını NotificationService'e delege et
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                try {
-                  // NotificationService import edip kullanmak gerekebilir
-                  // Şimdilik manuel yönlendirme yapıyoruz
-                  _handleNotificationTap(message.data);
-                } catch (e) {
-                  Logger.error('Notification tap handling error: $e');
-                }
-              });
-            }
-          });
-
           // Android için notification channel oluştur
           if (defaultTargetPlatform == TargetPlatform.android) {
             await _createNotificationChannel();
           }
 
           Logger.info('✅ FCM başarıyla başlatıldı');
-          
-          // Uygulama kapalıyken gelen bildirimleri kontrol et (soğuk başlatma)
-          messaging.getInitialMessage().then((RemoteMessage? message) {
-            if (message != null) {
-              Logger.info('🔄 Cold start FCM Message: ${message.notification?.title}');
-              
-              // Uygulama tamamen yüklendikten sonra yönlendirme yap
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                Future.delayed(const Duration(milliseconds: 1000), () {
-                  try {
-                    _handleNotificationTap(message.data);
-                  } catch (e) {
-                    Logger.error('Cold start notification handling error: $e');
-                  }
-                });
-              });
-            }
-          });
         } else {
           Logger.warning(
             '⚠️ FCM izinleri reddedildi: ${settings.authorizationStatus}',
@@ -438,12 +300,35 @@ class MyApp extends StatelessWidget {
                 builder: (context) => const AddProductView(),
               );
 
+
             case '/edit-product':
               final args = settings.arguments as Map<String, dynamic>?;
-              return MaterialPageRoute(
-                builder: (context) =>
-                    EditProductView(product: args?['product']),
-              );
+              final product = args?['product'] as Product?;
+              final productId = args?['productId'] as String?;
+              
+              if (product != null) {
+                // Doğrudan Product objesi ile
+                return MaterialPageRoute(
+                  builder: (context) => EditProductView(product: product),
+                );
+              } else if (productId != null && productId.isNotEmpty) {
+                // ProductId ile - product detayını yükle ve EditProductView'a geç
+                return MaterialPageRoute(
+                  builder: (context) => _ProductDetailLoader(
+                    productId: productId,
+                    onProductLoaded: (loadedProduct) => EditProductView(product: loadedProduct),
+                  ),
+                );
+              } else {
+                return MaterialPageRoute(
+                  builder: (context) => Scaffold(
+                    appBar: AppBar(title: Text('Hata')),
+                    body: Center(
+                      child: Text('Ürün bilgisi bulunamadı'),
+                    ),
+                  ),
+                );
+              }
 
             case '/product-detail':
               final args = settings.arguments as Map<String, dynamic>?;
@@ -525,6 +410,89 @@ class MyApp extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ProductId ile product detayını yükleyip EditProductView'a yönlendiren widget
+class _ProductDetailLoader extends StatefulWidget {
+  final String productId;
+  final Widget Function(Product) onProductLoaded;
+
+  const _ProductDetailLoader({
+    required this.productId,
+    required this.onProductLoaded,
+  });
+
+  @override
+  State<_ProductDetailLoader> createState() => _ProductDetailLoaderState();
+}
+
+class _ProductDetailLoaderState extends State<_ProductDetailLoader> {
+  @override
+  void initState() {
+    super.initState();
+    // Build tamamlandıktan sonra product'ı yükle
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProduct();
+    });
+  }
+
+  Future<void> _loadProduct() async {
+    try {
+      final productViewModel = context.read<ProductViewModel>();
+      final product = await productViewModel.getProductDetail(widget.productId);
+      
+      if (product != null && mounted) {
+        // Product yüklendi, EditProductView'a yönlendir
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => widget.onProductLoaded(product),
+          ),
+        );
+      } else if (mounted) {
+        // Product bulunamadı, hata sayfası göster
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => Scaffold(
+              appBar: AppBar(title: Text('Hata')),
+              body: Center(
+                child: Text('Ürün bulunamadı'),
+              ),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => Scaffold(
+              appBar: AppBar(title: Text('Hata')),
+              body: Center(
+                child: Text('Ürün yüklenirken hata oluştu: $e'),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Yükleniyor...')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Ürün detayları yükleniyor...'),
+          ],
+        ),
       ),
     );
   }

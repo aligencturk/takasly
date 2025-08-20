@@ -328,38 +328,12 @@ class NotificationViewModel extends ChangeNotifier {
       refreshNotifications();
     });
     
-    // Background'dan açılan mesajları dinle
-    _notificationService.onMessageOpenedApp().listen((RemoteMessage message) {
-      Logger.debug('Background mesajdan uygulama açıldı: ${message.notification?.title}', tag: _tag);
-      
-      // Mesaj detayına git (isteğe bağlı)
-      _handleMessageNavigation(message);
-    });
-    
     // Token yenileme dinle
     _notificationService.onTokenRefresh().listen((String newToken) {
       Logger.debug('FCM Token yenilendi: ${newToken.substring(0, 20)}...', tag: _tag);
       _fcmToken = newToken;
       notifyListeners();
     });
-  }
-  
-  /// Mesaj navigasyonunu işler
-  void _handleMessageNavigation(RemoteMessage message) {
-    try {
-      final data = message.data;
-      if (data.containsKey('type')) {
-        final type = data['type'];
-        final id = data['id'];
-        
-        Logger.debug('Mesaj navigasyon - Type: $type, ID: $id', tag: _tag);
-        
-        // Mesaj tipine göre navigasyon yapılabilir
-        // Bu kısmı UI katmanında handle etmek daha uygun olacaktır
-      }
-    } catch (e) {
-      Logger.error('Mesaj navigasyon hatası: $e', tag: _tag);
-    }
   }
   
   /// Belirli bir topic'e abone ol
