@@ -1200,12 +1200,23 @@ class UserService {
     try {
       final endpoint =
           '${ApiConstants.searchHistoryBase}/$userId/searchHistory';
-      Logger.debug('GET Search History: $endpoint', tag: 'UserService');
+      Logger.info('🔍 UserService.getSearchHistory() - userId: $userId', tag: 'UserService');
+      Logger.info('📡 Endpoint: $endpoint', tag: 'UserService');
+      
       final response = await _httpClient
           .getWithBasicAuth<SearchHistoryResponse>(
             endpoint,
             fromJson: (json) => SearchHistoryResponse.fromJson(json),
           );
+      
+      Logger.info('📥 API Response: success=${response.isSuccess}', tag: 'UserService');
+      
+      if (response.isSuccess && response.data != null) {
+        Logger.info('✅ Arama geçmişi başarıyla alındı: ${response.data!.items.length} item', tag: 'UserService');
+      } else {
+        Logger.warning('⚠️ API response başarısız: ${response.error}', tag: 'UserService');
+      }
+      
       return response;
     } catch (e) {
       Logger.error('❌ getSearchHistory error: $e', tag: 'UserService');

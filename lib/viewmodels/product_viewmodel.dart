@@ -645,25 +645,41 @@ class ProductViewModel extends ChangeNotifier {
 
   // Arama geçmişini getir
   Future<void> loadSearchHistory() async {
+    Logger.info('🔍 ProductViewModel.loadSearchHistory() başlatıldı');
+    
     try {
       final currentUser = await _authService.getCurrentUser();
+      Logger.info('👤 Current user: ${currentUser?.id ?? "null"}');
+      
       if (currentUser == null || currentUser.id.isEmpty) {
+        Logger.warning('⚠️ Kullanıcı bulunamadı, local fallback kullanılıyor');
         await _loadLocalHistoryFallback();
         notifyListeners();
         return;
       }
+      
       final userId = int.tryParse(currentUser.id);
+      Logger.info('🆔 Parsed user ID: $userId');
+      
       if (userId == null) {
+        Logger.warning('⚠️ User ID parse edilemedi, local fallback kullanılıyor');
         await _loadLocalHistoryFallback();
         notifyListeners();
         return;
       }
+      
+      Logger.info('📡 API isteği gönderiliyor: userId=$userId');
       final resp = await _userService.getSearchHistory(userId: userId);
+      Logger.info('📥 API response: success=${resp.isSuccess}, data=${resp.data?.items.length ?? 0} items');
+      
       if (resp.isSuccess && resp.data != null && resp.data!.items.isNotEmpty) {
         _searchHistory = resp.data!.items;
+        Logger.info('✅ Backend\'den ${_searchHistory.length} arama geçmişi yüklendi');
         // Local cache'e yaz
         await _saveLocalHistory(_searchHistory);
+        Logger.info('💾 Local cache güncellendi');
       } else {
+        Logger.warning('⚠️ Backend boş, local fallback kullanılıyor');
         // Backend boş ise local fallback göster
         await _loadLocalHistoryFallback();
       }
@@ -671,6 +687,7 @@ class ProductViewModel extends ChangeNotifier {
       Logger.error('❌ loadSearchHistory error: $e');
       await _loadLocalHistoryFallback();
     } finally {
+      Logger.info('🔄 notifyListeners() çağrılıyor');
       notifyListeners();
     }
   }

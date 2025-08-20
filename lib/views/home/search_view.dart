@@ -75,6 +75,23 @@ class _SearchViewState extends State<SearchView> {
     productViewModel.clearFilters();
   }
 
+  /// Subtitle'dan ürün sayısını çıkarır (örn: "İZMİR > KARŞIYAKA" -> 0, "Kategori" -> 0)
+  int _extractProductCount(String subtitle) {
+    try {
+      // Subtitle'da sayı varsa onu al
+      final regex = RegExp(r'(\d+)');
+      final match = regex.firstMatch(subtitle);
+      if (match != null) {
+        return int.tryParse(match.group(1) ?? '0') ?? 0;
+      }
+      
+      // Sayı yoksa varsayılan olarak 0 döndür
+      return 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -145,8 +162,10 @@ class _SearchViewState extends State<SearchView> {
                 // Debounce ile canlı arama
                 _debounce?.cancel();
                 _debounce = Timer(const Duration(milliseconds: 300), () {
+                  if (value.trim().isNotEmpty) {
                   final vm = context.read<ProductViewModel>();
                   vm.liveSearch(value);
+                  }
                 });
               },
             ),
@@ -175,33 +194,35 @@ class _SearchViewState extends State<SearchView> {
             Expanded(
               child: Column(
                 children: [
-                  // Arama alanı boşsa: geçmişi göster (varsa), aksi halde bilgilendirme
-                  if (!_hasSearched && _searchController.text.isEmpty)
+                  // Ana içerik: Geçmiş ve öneriler (arama yapılmamışsa)
+                  if (!_hasSearched)
                     Consumer<ProductViewModel>(
                       builder: (context, vm, _) {
-                        if (vm.searchHistory.isNotEmpty) {
-                          return Expanded(
-                            child: Column(
+
+                        
+                        // "Geçmişler" başlığı her zaman üstte sabit
+                        return Column(
                               children: [
+                            // Sabit "Geçmişler" başlığı
                                 Container(
                                   width: double.infinity,
                                   color: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
-                                    vertical: 10,
+                                vertical: 12,
                                   ),
                                   child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Arama Geçmişi',
+                                    'Geçmişler',
                                         style: TextStyle(
-                                          fontSize: 14,
+                                      fontSize: 16,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.grey[800],
                                         ),
                                       ),
+                                  if (vm.searchHistory.isNotEmpty)
                                       TextButton.icon(
                                         onPressed: () {
                                           context
@@ -220,12 +241,15 @@ class _SearchViewState extends State<SearchView> {
                                     ],
                                   ),
                                 ),
-                                Expanded(
+                            
+                            // Arama geçmişi listesi
+                            if (vm.searchHistory.isNotEmpty)
+                              Container(
+                                color: Colors.white,
                                   child: ListView.separated(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 0,
-                                      vertical: 8,
-                                    ),
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
                                     itemCount: vm.searchHistory.length,
                                     separatorBuilder: (_, __) => Divider(
                                       height: 1,
@@ -243,15 +267,7 @@ class _SearchViewState extends State<SearchView> {
                                           item.search,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                        ),
-                                        subtitle: Text(
-                                          'Arandı: ${item.searchCount} • ${item.formattedDate}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 12,
-                                          ),
+                                        style: TextStyle(fontSize: 14),
                                         ),
                                         onTap: () {
                                           _searchController.text = item.search;
@@ -264,12 +280,115 @@ class _SearchViewState extends State<SearchView> {
                                       );
                                     },
                                   ),
+                              ),
+                            
+                            // Canlı öneriler (sadece arama çubuğu boşken göster)
+                            if (vm.liveResults.isNotEmpty && _searchController.text.isEmpty)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  border: Border(
+                                    top: BorderSide(
+                                      color: Colors.grey[200]!,
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      child: Text(
+                                        'Arama Önerileri',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                    ),
+                                    Builder(
+                                      builder: (context) {
+                                        // Sadece kategorileri filtrele ve sırala
+                                        final categories = vm.liveResults
+                                            .where((item) => 
+                                                item.type != 'product' && 
+                                                item.icon != 'product')
+                                            .toList();
+                                        
+                                        // En çok ilandan en aza sırala (subtitle'daki sayıya göre)
+                                        categories.sort((a, b) {
+                                          final aCount = _extractProductCount(a.subtitle);
+                                          final bCount = _extractProductCount(b.subtitle);
+                                          return bCount.compareTo(aCount); // Büyükten küçüğe
+                                        });
+                                        
+                                        if (categories.isEmpty) return const SizedBox.shrink();
+                                        
+                                        return ListView.separated(
+                                          shrinkWrap: true,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          itemCount: categories.length,
+                                          separatorBuilder: (_, __) => Divider(
+                                            height: 1,
+                                            color: Colors.grey[200],
+                                          ),
+                                          itemBuilder: (context, index) {
+                                            final item = categories[index];
+                                            return ListTile(
+                                              leading: const Icon(
+                                                Icons.category,
+                                                color: Colors.grey,
+                                                size: 20,
+                                              ),
+                                              title: Text(
+                                                item.title,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(fontSize: 14),
+                                              ),
+                                              subtitle: Text(
+                                                item.subtitle,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                              onTap: () {
+                                                // Kategori önerisine tıklandığında arama geçmişine ekle
+                                                final vm = context.read<ProductViewModel>();
+                                                vm.addSearchHistoryEntry(item.title);
+                                                
+                                                final filter = vm.currentFilter.copyWith(
+                                                  categoryId: item.id.toString(),
+                                                  searchText: null,
+                                                );
+                                                vm.applyFilter(filter);
+                                                setState(() {
+                                                  _searchController.clear();
+                                                  FocusScope.of(context).unfocus();
+                                                  _hasSearched = true;
+                                                  _currentQuery = '';
+                                                });
+                                              },
+                                            );
+                                          },
+                                        );
+                                      },
                                 ),
                               ],
                             ),
-                          );
-                        }
-                        return Container(
+                              ),
+                            
+                            // Eğer hem geçmiş hem de öneriler boşsa bilgilendirme göster
+                            if (vm.searchHistory.isEmpty && (_searchController.text.isEmpty ? vm.liveResults.isEmpty : true))
+                              Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
                           child: Column(
@@ -300,6 +419,8 @@ class _SearchViewState extends State<SearchView> {
                               ),
                             ],
                           ),
+                              ),
+                          ],
                         );
                       },
                     ),
@@ -323,7 +444,11 @@ class _SearchViewState extends State<SearchView> {
                           }
 
                           if (vm.products.isEmpty) {
-                            return Center(
+                            return Column(
+                              children: [
+                                // Sonuç bulunamadı mesajı
+                                Expanded(
+                                  child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -353,6 +478,107 @@ class _SearchViewState extends State<SearchView> {
                                   ),
                                 ],
                               ),
+                                  ),
+                                ),
+                                
+                                // Öneriler (sonuç bulunamadığında)
+                                if (vm.liveResults.isNotEmpty)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border(
+                                        top: BorderSide(
+                                          color: Colors.grey[200]!,
+                                          width: 1,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Text(
+                                            'Öneriler',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey[800],
+                                            ),
+                                          ),
+                                        ),
+                                        ListView.separated(
+                                          shrinkWrap: true,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          itemCount: vm.liveResults.length,
+                                          separatorBuilder: (_, __) => Divider(
+                                            height: 1,
+                                            color: Colors.grey[200],
+                                          ),
+                                          itemBuilder: (context, index) {
+                                            final item = vm.liveResults[index];
+                                            return ListTile(
+                                              leading: Icon(
+                                                (item.type == 'product' ||
+                                                        item.icon == 'product')
+                                                    ? Icons.shopping_bag
+                                                    : Icons.category,
+                                                color: Colors.grey,
+                                                size: 20,
+                                              ),
+                                              title: Text(
+                                                item.title,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              subtitle: Text(
+                                                item.subtitle,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                              onTap: () {
+                                                if (item.type == 'product' ||
+                                                    item.icon == 'product') {
+                                                  Navigator.pushNamed(
+                                                    context,
+                                                    '/product-detail',
+                                                    arguments: {
+                                                      'productId': item.id.toString(),
+                                                    },
+                                                  );
+                                                } else {
+                                                  final vm = context.read<ProductViewModel>();
+                                                  // Kategori önerisine tıklandığında arama geçmişine ekle
+                                                  vm.addSearchHistoryEntry(item.title);
+                                                  
+                                                  final filter = vm.currentFilter.copyWith(
+                                                    categoryId: item.id.toString(),
+                                                    searchText: null,
+                                                  );
+                                                  vm.applyFilter(filter);
+                                                  setState(() {
+                                                    _searchController.clear();
+                                                    FocusScope.of(context).unfocus();
+                                                    _hasSearched = true;
+                                                    _currentQuery = '';
+                                                  });
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
                             );
                           }
 
@@ -499,6 +725,9 @@ class _SearchViewState extends State<SearchView> {
                                     );
                                   } else {
                                     final vm = context.read<ProductViewModel>();
+                                    // Kategori önerisine tıklandığında arama geçmişine ekle
+                                    vm.addSearchHistoryEntry(item.title);
+                                    
                                     final filter = vm.currentFilter.copyWith(
                                       categoryId: item.id.toString(),
                                       searchText: null,
@@ -522,189 +751,7 @@ class _SearchViewState extends State<SearchView> {
               ),
             ),
 
-            // Canlı arama önerileri / Geçmiş (klavye açıkken de görünür)
-            Consumer<ProductViewModel>(
-              builder: (context, vm, child) {
-                final results = vm.liveResults;
-                // Arama metni boşsa, geçmişi göster
-                if (_searchController.text.isEmpty &&
-                    vm.searchHistory.isNotEmpty &&
-                    !_hasSearched) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, -2),
-                        ),
-                      ],
-                    ),
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: vm.searchHistory.length + 1,
-                      separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: Colors.grey[200]),
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Arama Geçmişi',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[800],
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  onPressed: () {
-                                    context
-                                        .read<ProductViewModel>()
-                                        .clearSearchHistory();
-                                  },
-                                  icon: const Icon(
-                                    Icons.delete_sweep,
-                                    size: 18,
-                                  ),
-                                  label: const Text('Temizle'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.redAccent,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 6,
-                                    ),
-                                    textStyle: const TextStyle(fontSize: 12),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        final item = vm.searchHistory[index - 1];
-                        return ListTile(
-                          leading: const Icon(
-                            Icons.history,
-                            color: Colors.grey,
-                            size: 20,
-                          ),
-                          title: Text(
-                            item.search,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            'Arandı: ${item.searchCount} • ${item.formattedDate}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                          onTap: () {
-                            _searchController.text = item.search;
-                            setState(() {});
-                            context.read<ProductViewModel>().liveSearch(
-                              item.search,
-                            );
-                            _performSearch(item.search);
-                          },
-                        );
-                      },
-                    ),
-                  );
-                }
-                // Üstte gösteriliyorsa alttaki çubuğu gizle
-                if (!_hasSearched && _searchController.text.isNotEmpty) {
-                  return const SizedBox.shrink();
-                }
-                if (_searchController.text.isEmpty || results.isEmpty) {
-                  return const SizedBox.shrink();
-                }
 
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  constraints: const BoxConstraints(maxHeight: 260),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: results.length,
-                    separatorBuilder: (_, __) =>
-                        Divider(height: 1, color: Colors.grey[200]),
-                    itemBuilder: (context, index) {
-                      final item = results[index];
-                      return ListTile(
-                        leading: Icon(
-                          (item.type == 'product' || item.icon == 'product')
-                              ? Icons.shopping_bag
-                              : Icons.category,
-                          color: Colors.grey,
-                          size: 20,
-                        ),
-                        title: Text(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Text(
-                          item.subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        onTap: () {
-                          if (item.type == 'product' ||
-                              item.icon == 'product') {
-                            Navigator.pushNamed(
-                              context,
-                              '/product-detail',
-                              arguments: {'productId': item.id.toString()},
-                            );
-                          } else {
-                            final vm = context.read<ProductViewModel>();
-                            final filter = vm.currentFilter.copyWith(
-                              categoryId: item.id.toString(),
-                              searchText: null,
-                            );
-                            vm.applyFilter(filter);
-                            setState(() {
-                              _searchController.clear();
-                              FocusScope.of(context).unfocus();
-                              _hasSearched = true;
-                              _currentQuery = '';
-                            });
-                          }
-                        },
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
 
             // Vitrin alanı kaldırıldı
           ],

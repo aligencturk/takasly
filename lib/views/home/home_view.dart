@@ -505,7 +505,24 @@ class _HomeViewState extends State<HomeView> {
                 // Arama butonu
                 Expanded(
                   child: GestureDetector(
-                    onTap: () {
+                    onTap: () async {
+                      Logger.info('🔍 HomeView - Arama butonuna tıklandı, geçmiş yükleniyor...');
+                      
+                      // Arama geçmişini önceden yükle
+                      final productViewModel = Provider.of<ProductViewModel>(
+                        context,
+                        listen: false,
+                      );
+                      
+                      try {
+                        Logger.info('📡 HomeView - loadSearchHistory() çağrılıyor...');
+                        await productViewModel.loadSearchHistory();
+                        Logger.info('✅ HomeView - Arama geçmişi başarıyla yüklendi');
+                      } catch (e) {
+                        Logger.error('❌ HomeView - Arama geçmişi yüklenirken hata: $e');
+                      }
+                      
+                      Logger.info('🚀 HomeView - SearchView açılıyor...');
                       Navigator.push(
                         context,
                         MaterialPageRoute(

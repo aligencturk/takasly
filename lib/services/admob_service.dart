@@ -1,18 +1,3 @@
-/*
- * AdMob Service - Test ve Production reklamları yönetimi
- * 
- * KULLANIM:
- * 1. Test yaparken: _useTestAds = true
- * 2. Production'a geçerken: _useTestAds = false (ŞU ANDA AKTİF)
- * 
- * ⚠️ PRODUCTION MOD AKTİF:
- * - Gerçek reklamlar gösterilir
- * - Rate limiting aktif (3 saniye minimum interval)
- * - AdMob politikalarına uygun olmalıdır
- * - Test cihazları tanımlanmamış
- * 
- * Test ID'leri her zaman çalışır, production ID'leri onaylanmalıdır.
- */
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/widgets.dart';
@@ -24,22 +9,8 @@ class AdMobService {
   factory AdMobService() => _instance;
   AdMobService._internal();
 
-  // App IDs (bilgi amaçlı)
-  static const String _androidAppId =
-      'ca-app-pub-3600325889588673~2182319863'; // Prod (AndroidManifest.xml'de de tanımlı)
-  static const String _iosAppId =
-      'ca-app-pub-3600325889588673~5340558560'; // Prod (Info.plist'den kullanılıyor)
 
-  // Test Ad Unit IDs (geliştirme ve test için)
-  static const String _androidNativeAdUnitIdTest =
-      'ca-app-pub-3940256099942544/2247696110'; // Google test native ID
-  static const String _iosNativeAdUnitIdTest =
-      'ca-app-pub-3940256099942544/3986624511'; // Google test native ID
 
-  static const String _androidBannerAdUnitIdTest =
-      'ca-app-pub-3940256099942544/6300978111'; // Google test banner ID
-  static const String _iosBannerAdUnitIdTest =
-      'ca-app-pub-3940256099942544/2934735716'; // Google test banner ID
 
   // Production Ad Unit IDs
   static const String _androidNativeAdUnitIdProd =
@@ -52,19 +23,14 @@ class AdMobService {
   static const String _iosBannerAdUnitIdProd =
       'ca-app-pub-3600325889588673/3365147820'; // iOS production banner ID
 
-  // Rewarded Ad Unit IDs (Ödüllü Reklam)
-  static const String _androidRewardedAdUnitIdTest =
-      'ca-app-pub-3940256099942544/5224354917'; // Google test rewarded ID
-  static const String _iosRewardedAdUnitIdTest =
-      'ca-app-pub-3940256099942544/1712485313'; // Google test rewarded ID
+
 
   static const String _androidRewardedAdUnitIdProd =
       'ca-app-pub-3600325889588673/4220640906'; // Gerçek Android prod rewarded ID
   static const String _iosRewardedAdUnitIdProd =
       'ca-app-pub-3600325889588673/1633441360'; // iOS production rewarded ID
 
-  // Debug/Test modu kontrolü
-  static const bool _useTestAds = false; // PRODUCTION: Gerçek reklamları kullan
+
 
   bool _isInitialized = false;
 
@@ -113,7 +79,7 @@ class AdMobService {
     try {
       Logger.info('🚀 AdMobService - AdMob başlatılıyor...');
       Logger.info('📱 AdMobService - Platform: ${Platform.isIOS ? "iOS" : "Android"}');
-      Logger.info('🔧 AdMobService - Test Modu: ${_useTestAds ? "Aktif" : "Pasif"}');
+      Logger.info('🔧 AdMobService - Production Modu Aktif');
 
       // WidgetsFlutterBinding'in hazır olduğundan emin ol
       if (!WidgetsBinding.instance.isRootWidgetAttached) {
@@ -138,26 +104,14 @@ class AdMobService {
         Logger.warning('⚠️ AdMobService - Reklam sesi kapatılamadı: $e');
       }
 
-      // Production modda daha detaylı request configuration
-      RequestConfiguration requestConfig;
-
-      if (_useTestAds) {
-        // Test modda basit config
-        requestConfig = RequestConfiguration(
-          tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
-          tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
-          maxAdContentRating: MaxAdContentRating.pg,
-        );
-      } else {
-        // Production modda gelişmiş config
-        requestConfig = RequestConfiguration(
-          tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
-          tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
-          maxAdContentRating: MaxAdContentRating.pg,
-          // Production için ek ayarlar
-          testDeviceIds: [], // Boş liste - production için test cihazı yok
-        );
-      }
+      // Production modda gelişmiş config
+      RequestConfiguration requestConfig = RequestConfiguration(
+        tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
+        tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
+        maxAdContentRating: MaxAdContentRating.pg,
+        // Production için ek ayarlar
+        testDeviceIds: [], // Boş liste - production için test cihazı yok
+      );
 
       await MobileAds.instance.updateRequestConfiguration(requestConfig);
 
@@ -168,10 +122,8 @@ class AdMobService {
       // Platform bilgilerini logla
       if (Platform.isIOS) {
         Logger.info('🍎 AdMobService - iOS için optimize edilmiş konfigürasyon aktif');
-        Logger.info('📱 AdMobService - iOS App ID: $_iosAppId');
       } else if (Platform.isAndroid) {
         Logger.info('🤖 AdMobService - Android için optimize edilmiş konfigürasyon aktif');
-        Logger.info('📱 AdMobService - Android App ID: $_androidAppId');
       }
     } catch (e) {
       Logger.error('❌ AdMobService - AdMob başlatılırken hata: $e');
@@ -182,101 +134,50 @@ class AdMobService {
     }
   }
 
-  /// Uygulama ID'sini al
-  String get appId {
-    if (Platform.isAndroid) {
-      return _androidAppId;
-    } else if (Platform.isIOS) {
-      return _iosAppId;
-    }
-    return _androidAppId; // Default
-  }
 
-  /// Native Ad Unit ID'sini al (Test/Production seçimi ile)
+  /// Native Ad Unit ID'sini al (Production only)
   String get nativeAdUnitId {
-    if (_useTestAds) {
-      // Test reklamları kullan
-      if (Platform.isAndroid) {
-        final id = _androidNativeAdUnitIdTest;
-        Logger.info('📡 AdMobService - Android TEST NativeAdUnitId: $id');
-        return id;
-      } else if (Platform.isIOS) {
-        final id = _iosNativeAdUnitIdTest;
-        Logger.info('📡 AdMobService - iOS TEST NativeAdUnitId: $id');
-        return id;
-      }
-      return _androidNativeAdUnitIdTest; // Default test
-    } else {
-      // Production reklamları kullan
-      if (Platform.isAndroid) {
-        final id = _androidNativeAdUnitIdProd;
-        Logger.info('📡 AdMobService - Android PROD NativeAdUnitId: $id');
-        return id;
-      } else if (Platform.isIOS) {
-        final id = _iosNativeAdUnitIdProd;
-        Logger.info('📡 AdMobService - iOS PROD NativeAdUnitId: $id');
-        return id;
-      }
-      return _androidNativeAdUnitIdProd; // Default prod
+    // Production reklamları kullan
+    if (Platform.isAndroid) {
+      final id = _androidNativeAdUnitIdProd;
+      Logger.info('📡 AdMobService - Android PROD NativeAdUnitId: $id');
+      return id;
+    } else if (Platform.isIOS) {
+      final id = _iosNativeAdUnitIdProd;
+      Logger.info('📡 AdMobService - iOS PROD NativeAdUnitId: $id');
+      return id;
     }
+    return _androidNativeAdUnitIdProd; // Default prod
   }
 
-  /// Banner Ad Unit ID'sini al (Test/Production seçimi ile)
+  /// Banner Ad Unit ID'sini al (Production only)
   String get bannerAdUnitId {
-    if (_useTestAds) {
-      // Test reklamları kullan
-      if (Platform.isAndroid) {
-        final id = _androidBannerAdUnitIdTest;
-        Logger.info('📡 AdMobService - Android TEST BannerAdUnitId: $id');
-        return id;
-      } else if (Platform.isIOS) {
-        final id = _iosBannerAdUnitIdTest;
-        Logger.info('📡 AdMobService - iOS TEST BannerAdUnitId: $id');
-        return id;
-      }
-      return _androidBannerAdUnitIdTest; // Default test
-    } else {
-      // Production reklamları kullan
-      if (Platform.isAndroid) {
-        final id = _androidBannerAdUnitIdProd;
-        Logger.info('📡 AdMobService - Android PROD BannerAdUnitId: $id');
-        return id;
-      } else if (Platform.isIOS) {
-        final id = _iosBannerAdUnitIdProd;
-        Logger.info('📡 AdMobService - iOS PROD BannerAdUnitId: $id');
-        return id;
-      }
-      return _androidBannerAdUnitIdProd; // Default prod
+    // Production reklamları kullan
+    if (Platform.isAndroid) {
+      final id = _androidBannerAdUnitIdProd;
+      Logger.info('📡 AdMobService - Android PROD BannerAdUnitId: $id');
+      return id;
+    } else if (Platform.isIOS) {
+      final id = _iosBannerAdUnitIdProd;
+      Logger.info('📡 AdMobService - iOS PROD BannerAdUnitId: $id');
+      return id;
     }
+    return _androidBannerAdUnitIdProd; // Default prod
   }
 
-  /// Rewarded Ad Unit ID'sini al (Test/Production seçimi ile)
+  /// Rewarded Ad Unit ID'sini al (Production only)
   String get rewardedAdUnitId {
-    if (_useTestAds) {
-      // Test reklamları kullan
-      if (Platform.isAndroid) {
-        final id = _androidRewardedAdUnitIdTest;
-        Logger.info('📡 AdMobService - Android TEST RewardedAdUnitId: $id');
-        return id;
-      } else if (Platform.isIOS) {
-        final id = _iosRewardedAdUnitIdTest;
-        Logger.info('📡 AdMobService - iOS TEST RewardedAdUnitId: $id');
-        return id;
-      }
-      return _androidRewardedAdUnitIdTest; // Default test
-    } else {
-      // Production reklamları kullan
-      if (Platform.isAndroid) {
-        final id = _androidRewardedAdUnitIdProd;
-        Logger.info('📡 AdMobService - Android PROD RewardedAdUnitId: $id');
-        return id;
-      } else if (Platform.isIOS) {
-        final id = _iosRewardedAdUnitIdProd;
-        Logger.info('📡 AdMobService - iOS PROD RewardedAdUnitId: $id');
-        return id;
-      }
-      return _androidRewardedAdUnitIdProd; // Default prod
+    // Production reklamları kullan
+    if (Platform.isAndroid) {
+      final id = _androidRewardedAdUnitIdProd;
+      Logger.info('📡 AdMobService - Android PROD RewardedAdUnitId: $id');
+      return id;
+    } else if (Platform.isIOS) {
+      final id = _iosRewardedAdUnitIdProd;
+      Logger.info('📡 AdMobService - iOS PROD RewardedAdUnitId: $id');
+      return id;
     }
+    return _androidRewardedAdUnitIdProd; // Default prod
   }
 
   /// Native reklam yükle (performans optimizasyonlu)
@@ -287,7 +188,7 @@ class AdMobService {
     }
 
     // Production modda rate limiting kontrolü
-    if (!_useTestAds && _lastAdRequest != null) {
+    if (_lastAdRequest != null) {
       final timeSinceLastRequest = DateTime.now().difference(_lastAdRequest!);
       if (timeSinceLastRequest < _minRequestInterval) {
         final waitTime = _minRequestInterval - timeSinceLastRequest;
@@ -362,25 +263,17 @@ class AdMobService {
         await _disposeCurrentAd();
       }
 
-      // Production'da özel request configuration
-      AdRequest adRequest;
-
-      if (_useTestAds) {
-        // Test modda standart request
-        adRequest = const AdRequest();
-      } else {
-        // Production modda optimize edilmiş request
-        adRequest = const AdRequest(
-          // Production için ekstra metadata
-          keywords: [
-            'takasly',
-            'takas',
-            'ilan',
-            'ürün',
-          ], // Uygulama ile ilgili keywords
-          nonPersonalizedAds: false, // Personalize edilmiş reklamlar
-        );
-      }
+      // Production'da optimize edilmiş request
+      AdRequest adRequest = const AdRequest(
+        // Production için ekstra metadata
+        keywords: [
+          'takasly',
+          'takas',
+          'ilan',
+          'ürün',
+        ], // Uygulama ile ilgili keywords
+        nonPersonalizedAds: false, // Personalize edilmiş reklamlar
+      );
 
       // Reklam oluştur
       _nativeAd = NativeAd(
@@ -555,16 +448,11 @@ class AdMobService {
         _isRewardedAdLoaded = false;
       }
 
-      // AdRequest oluştur
-      AdRequest adRequest;
-      if (_useTestAds) {
-        adRequest = const AdRequest();
-      } else {
-        adRequest = const AdRequest(
-          keywords: ['takasly', 'takas', 'ilan', 'ürün'],
-          nonPersonalizedAds: false,
-        );
-      }
+      // AdRequest oluştur - Production
+      AdRequest adRequest = const AdRequest(
+        keywords: ['takasly', 'takas', 'ilan', 'ürün'],
+        nonPersonalizedAds: false,
+      );
 
       // Ödüllü reklam yükle
       await RewardedAd.load(
