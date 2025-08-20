@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'dart:convert';
 import 'firebase_options.dart';
 import 'core/app_theme.dart';
 import 'core/constants.dart';
@@ -52,6 +53,99 @@ import 'services/profanity_service.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Burada ağır iş yapmayın. Genelde log/analitik yeterli olur.
+}
+
+/// Bildirim tıklamasını işler
+void _handleNotificationTap(Map<String, dynamic> data) {
+  try {
+    // Bildirim türünü belirle
+    String type = '';
+    String id = '';
+    
+    // keysandvalues içindeki JSON'u kontrol et
+    final raw = data['keysandvalues'];
+    if (raw is String && raw.isNotEmpty && raw != '{}') {
+      try {
+        final parsed = jsonDecode(raw) as Map<String, dynamic>;
+        type = (parsed['type'] ?? '').toString();
+        id = (parsed['id'] ?? '').toString();
+      } catch (e) {
+        Logger.error('keysandvalues parse error: $e');
+      }
+    }
+    
+    // Eğer keysandvalues boşsa, data içindeki type ve id'yi direkt kontrol et
+    if (type.isEmpty) {
+      type = (data['type'] ?? '').toString();
+      id = (data['id'] ?? '').toString();
+    }
+    
+    // Notification title'dan bildirim türünü çıkarmaya çalış
+    if (type.isEmpty) {
+      final title = data['title'] ?? '';
+      if (title is String) {
+        if (title.contains('Yeni Takas Teklifi')) {
+          type = 'new_trade_offer';
+        } else if (title.contains('Takas Onaylandı')) {
+          type = 'trade_offer_approved';
+        } else if (title.contains('Teklif Reddedildi')) {
+          type = 'trade_offer_rejected';
+        } else if (title.contains('Takas Tamamlandı')) {
+          type = 'trade_completed';
+        } else if (title.contains('Süre doldu') || title.contains('Öne Çıkarma')) {
+          type = 'sponsor_expired';
+        }
+      }
+    }
+    
+    Logger.info('Handling notification tap - Type: $type, ID: $id');
+    
+    // Navigator context'i al
+    final context = ErrorHandlerService.navigatorKey.currentContext;
+    if (context == null) {
+      Logger.error('Navigator context is null');
+      return;
+    }
+    
+    // Bildirim türüne göre yönlendirme
+    switch (type.toLowerCase()) {
+      case 'new_trade_offer':
+      case 'trade_offer_approved':
+      case 'trade_offer_rejected':
+      case 'trade_completed':
+        // Teklif detayına git
+        if (id.isNotEmpty) {
+          Navigator.pushNamed(
+            context,
+            '/trade-detail',
+            arguments: {'offerID': int.tryParse(id) ?? 0},
+          );
+        } else {
+          Navigator.pushNamed(context, '/trade');
+        }
+        break;
+        
+      case 'sponsor_expired':
+        // İlan detayına git
+        if (id.isNotEmpty) {
+          Navigator.pushNamed(
+            context,
+            '/edit-product',
+            arguments: {'productId': id},
+          );
+        } else {
+          Navigator.pushNamed(context, '/home');
+        }
+        break;
+        
+      default:
+        // Varsayılan olarak bildirimler sayfasına git
+        Navigator.pushNamed(context, '/notifications');
+        break;
+    }
+  } catch (e) {
+    Logger.error('Notification tap handling error: $e');
+  }
 }
 
 /// Android için notification channel oluşturur
@@ -166,6 +260,17 @@ void main() async {
 
             if (message.data.isNotEmpty) {
               Logger.info('📊 Background Data: ${message.data}');
+              
+              // Bildirim tıklamasını NotificationService'e delege et
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                try {
+                  // NotificationService import edip kullanmak gerekebilir
+                  // Şimdilik manuel yönlendirme yapıyoruz
+                  _handleNotificationTap(message.data);
+                } catch (e) {
+                  Logger.error('Notification tap handling error: $e');
+                }
+              });
             }
           });
 
@@ -175,6 +280,24 @@ void main() async {
           }
 
           Logger.info('✅ FCM başarıyla başlatıldı');
+          
+          // Uygulama kapalıyken gelen bildirimleri kontrol et (soğuk başlatma)
+          messaging.getInitialMessage().then((RemoteMessage? message) {
+            if (message != null) {
+              Logger.info('🔄 Cold start FCM Message: ${message.notification?.title}');
+              
+              // Uygulama tamamen yüklendikten sonra yönlendirme yap
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Future.delayed(const Duration(milliseconds: 1000), () {
+                  try {
+                    _handleNotificationTap(message.data);
+                  } catch (e) {
+                    Logger.error('Cold start notification handling error: $e');
+                  }
+                });
+              });
+            }
+          });
         } else {
           Logger.warning(
             '⚠️ FCM izinleri reddedildi: ${settings.authorizationStatus}',

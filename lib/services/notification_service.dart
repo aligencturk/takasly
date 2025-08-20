@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import '../core/http_client.dart';
 import '../models/notification.dart' as AppNotification;
 import '../utils/logger.dart';
+import 'error_handler_service.dart';
 
 class NotificationService {
   NotificationService._();
@@ -115,6 +116,14 @@ class NotificationService {
     final body  = m.notification?.body  ?? '';
     final payload = _buildPayload(m);
 
+
+    // Bildirim türüne göre özel kategori belirle
+    final (type, _) = _extractData(m.data);
+    String? categoryIdentifier;
+    if (type.isNotEmpty) {
+      categoryIdentifier = 'notification_$type';
+    }
+
     await _fln.show(
       m.hashCode,
       title,
@@ -127,18 +136,29 @@ class NotificationService {
           icon: '@mipmap/ic_launcher',
           importance: Importance.high,
           priority: Priority.high,
+          // Android için özel ses ve titreşim
+          enableVibration: true,
+          playSound: true,
         ),
-        iOS: const DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          categoryIdentifier: categoryIdentifier,
+          threadIdentifier: type.isNotEmpty ? type : 'default',
+        ),
       ),
       payload: payload,
     );
+    
+    Logger.debug('Foreground notification shown: $title', tag: _tag);
   }
 
   // Tıklamada yönlendirme
   void _handleMessageTap(RemoteMessage m) {
     final data = _extractData(m.data);
-    if (onNavigate != null && data.$1.isNotEmpty && data.$2.isNotEmpty) {
-      onNavigate!(data.$1, data.$2);
+    if (data.$1.isNotEmpty) {
+      _navigateBasedOnType(data.$1, data.$2);
     }
   }
 
@@ -148,24 +168,160 @@ class NotificationService {
       final map = jsonDecode(payload) as Map<String, dynamic>;
       final type = (map['type'] ?? '').toString();
       final id   = (map['id'] ?? '').toString();
-      if (onNavigate != null && type.isNotEmpty && id.isNotEmpty) {
-        onNavigate!(type, id);
+      if (type.isNotEmpty) {
+        _navigateBasedOnType(type, id);
       }
     } catch (_) {}
   }
 
+  /// Bildirim türüne göre yönlendirme yapar
+  void _navigateBasedOnType(String type, String id) {
+    Logger.debug('Navigating based on type: $type, id: $id', tag: _tag);
+    
+    // Eğer custom navigation callback varsa önce onu kullan
+    if (onNavigate != null) {
+      onNavigate!(type, id);
+      return;
+    }
+    
+    // Bildirim türlerine göre yönlendirme
+    switch (type.toLowerCase()) {
+      case 'new_trade_offer':
+      case 'trade_offer_approved':
+      case 'trade_offer_rejected':
+      case 'trade_completed':
+        // Teklif detayına git
+        if (id.isNotEmpty) {
+          _navigateToTradeDetail(id);
+        }
+        break;
+        
+      case 'sponsor_expired':
+        // İlan detayına veya düzenlemeye git
+        if (id.isNotEmpty) {
+          _navigateToProductDetail(id);
+        }
+        break;
+        
+      default:
+        Logger.debug('Unknown notification type: $type', tag: _tag);
+        // Varsayılan olarak bildirimler sayfasına git
+        _navigateToNotifications();
+        break;
+    }
+  }
+  
+  /// Teklif detayına yönlendir
+  void _navigateToTradeDetail(String offerId) {
+    try {
+      final context = _getCurrentContext();
+      if (context != null) {
+        Navigator.pushNamed(
+          context,
+          '/trade-detail',
+          arguments: {'offerID': int.tryParse(offerId) ?? 0},
+        );
+        Logger.debug('Navigated to trade detail: $offerId', tag: _tag);
+      }
+    } catch (e) {
+      Logger.error('Navigation to trade detail failed: $e', tag: _tag);
+    }
+  }
+  
+  /// İlan detayına yönlendir
+  void _navigateToProductDetail(String productId) {
+    try {
+      final context = _getCurrentContext();
+      if (context != null) {
+        Navigator.pushNamed(
+          context,
+          '/edit-product',
+          arguments: {'productId': productId},
+        );
+        Logger.debug('Navigated to product detail: $productId', tag: _tag);
+      }
+    } catch (e) {
+      Logger.error('Navigation to product detail failed: $e', tag: _tag);
+    }
+  }
+  
+  /// Bildirimler sayfasına yönlendir
+  void _navigateToNotifications() {
+    try {
+      final context = _getCurrentContext();
+      if (context != null) {
+        Navigator.pushNamed(context, '/notifications');
+        Logger.debug('Navigated to notifications', tag: _tag);
+      }
+    } catch (e) {
+      Logger.error('Navigation to notifications failed: $e', tag: _tag);
+    }
+  }
+  
+  /// Mevcut context'i al
+  BuildContext? _getCurrentContext() {
+    // ErrorHandlerService'den navigator key kullan
+    try {
+      // ErrorHandlerService import edilmişse onun navigator key'ini kullan
+      final navigatorKey = _getNavigatorKey();
+      return navigatorKey?.currentContext;
+    } catch (e) {
+      Logger.error('Failed to get current context: $e', tag: _tag);
+      return null;
+    }
+  }
+  
+  /// Navigator key'i al (ErrorHandlerService'den)
+  GlobalKey<NavigatorState>? _getNavigatorKey() {
+    try {
+      return ErrorHandlerService.navigatorKey;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Server tarafı `data.keysandvalues` içinde JSON **string** yolluyor.
   /// Burada parse edip (type,id) döndürüyoruz.
+  /// Eğer keysandvalues boşsa, data içindeki type ve id'yi direkt kontrol eder.
   (String, String) _extractData(Map<String, dynamic> data) {
     try {
+      // Önce keysandvalues içindeki JSON'u kontrol et
       final raw = data['keysandvalues'];
-      if (raw is String && raw.isNotEmpty) {
+      if (raw is String && raw.isNotEmpty && raw != '{}') {
         final m = jsonDecode(raw) as Map<String, dynamic>;
         final type = (m['type'] ?? '').toString();
         final id   = (m['id']   ?? '').toString();
-        return (type, id);
+        if (type.isNotEmpty) {
+          return (type, id);
+        }
       }
-    } catch (_) {}
+      
+      // Eğer keysandvalues boşsa, data içindeki type ve id'yi direkt kontrol et
+      final directType = (data['type'] ?? '').toString();
+      final directId = (data['id'] ?? '').toString();
+      if (directType.isNotEmpty) {
+        return (directType, directId);
+      }
+      
+      // Notification title'dan bildirim türünü çıkarmaya çalış
+      final title = data['title'] ?? '';
+      if (title is String) {
+        if (title.contains('Yeni Takas Teklifi') || title.contains('New Trade Offer')) {
+          return ('new_trade_offer', directId);
+        } else if (title.contains('Takas Onaylandı') || title.contains('Trade Approved')) {
+          return ('trade_offer_approved', directId);
+        } else if (title.contains('Teklif Reddedildi') || title.contains('Trade Rejected')) {
+          return ('trade_offer_rejected', directId);
+        } else if (title.contains('Takas Tamamlandı') || title.contains('Trade Completed')) {
+          return ('trade_completed', directId);
+        } else if (title.contains('Süre doldu') || title.contains('Sponsor Expired') || title.contains('Öne Çıkarma')) {
+          return ('sponsor_expired', directId);
+        }
+      }
+      
+    } catch (e) {
+      Logger.error('Extract data error: $e', tag: _tag);
+    }
     return ('','');
   }
 
@@ -521,12 +677,43 @@ class NotificationService {
   }
   
   /// Test bildirimi gönder
-  Future<bool> sendTestNotification() async {
+  Future<bool> sendTestNotification({String? type, String? id}) async {
     try {
       Logger.debug('Sending test notification...', tag: _tag);
       
       // NotificationService init edilmemişse init et
       await _ensureInitialized();
+      
+      // Test için varsayılan değerler
+      final testType = type ?? 'new_trade_offer';
+      final testId = id ?? '123';
+      
+      String title = 'Test Bildirimi';
+      String body = 'Bu bir test bildirimidir';
+      
+      // Test türüne göre mesaj ayarla
+      switch (testType) {
+        case 'new_trade_offer':
+          title = 'Yeni Takas Teklifi 🔄';
+          body = 'İlanınız için yeni bir takas teklifi var! Hemen kontrol edin 👀';
+          break;
+        case 'trade_offer_approved':
+          title = 'Takas Onaylandı ✅';
+          body = 'Harika! Takas teklifiniz kabul edildi. Artık takas yapabilirsiniz 🎉';
+          break;
+        case 'trade_offer_rejected':
+          title = 'Teklif Reddedildi ❌';
+          body = 'Takas teklifiniz reddedildi. Başka fırsatları keşfedin! 🔍';
+          break;
+        case 'trade_completed':
+          title = 'Takas Tamamlandı 🎊';
+          body = 'Takasınız başarıyla tamamlandı! Yeni bir takas yapmaya ne dersiniz? 🚀';
+          break;
+        case 'sponsor_expired':
+          title = 'Süre doldu ⏳';
+          body = 'İlanın öne çıkma süresi sona erdi. Ama merak etme, tek tıkla tekrar öne çıkarabilirsin 🚀';
+          break;
+      }
       
       // iOS için özel test bildirimi
       if (defaultTargetPlatform == TargetPlatform.iOS) {
@@ -534,8 +721,8 @@ class NotificationService {
         
         await _fln.show(
           999,
-          'Test Bildirimi - iOS',
-          'Bu bir iOS test bildirimidir - ${DateTime.now().toString().substring(11, 19)}',
+          title,
+          body,
           NotificationDetails(
             iOS: DarwinNotificationDetails(
               presentAlert: true,
@@ -543,13 +730,13 @@ class NotificationService {
               presentSound: true,
               badgeNumber: 1,
               attachments: null,
-              categoryIdentifier: 'test_category',
-              threadIdentifier: 'test_thread',
+              categoryIdentifier: 'notification_$testType',
+              threadIdentifier: testType,
             ),
           ),
           payload: jsonEncode({
-            'type': 'test_ios',
-            'id': '999',
+            'type': testType,
+            'id': testId,
             'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
             'platform': 'ios',
           }),
@@ -558,8 +745,8 @@ class NotificationService {
         // Android için normal bildirim
         await _fln.show(
           999,
-          'Test Bildirimi',
-          'Bu bir test bildirimidir - ${DateTime.now().toString().substring(11, 19)}',
+          title,
+          body,
           NotificationDetails(
             android: AndroidNotificationDetails(
               _androidChannel.id,
@@ -568,18 +755,20 @@ class NotificationService {
               icon: '@mipmap/ic_launcher',
               importance: Importance.high,
               priority: Priority.high,
+              enableVibration: true,
+              playSound: true,
             ),
             iOS: const DarwinNotificationDetails(),
           ),
           payload: jsonEncode({
-            'type': 'test',
-            'id': '999',
+            'type': testType,
+            'id': testId,
             'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
           }),
         );
       }
       
-      Logger.debug('Test notification sent successfully', tag: _tag);
+      Logger.debug('Test notification sent successfully: $testType', tag: _tag);
       return true;
     } catch (e) {
       Logger.error('Send test notification error: $e', tag: _tag);
