@@ -103,29 +103,22 @@ class _BannerAdListTileState extends State<BannerAdListTile>
     );
 
     if (!_isLoaded || _bannerAd == null) {
-      return Container(
-        height: height,
-        decoration: decoration,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        alignment: Alignment.centerLeft,
-        child: Row(
-          children: [
-            SizedBox(
-              width: screenWidth < 360 ? 16 : 18,
-              height: screenWidth < 360 ? 16 : 18,
-              child: const CircularProgressIndicator(strokeWidth: 2),
+      if (_hasError) {
+        return Container(
+          height: height,
+          decoration: decoration,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Reklam yüklenemedi',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: screenWidth < 360 ? 12 : 13,
             ),
-            const SizedBox(width: 12),
-            Text(
-              _hasError ? 'Reklam yüklenemedi' : 'Reklam yükleniyor',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: screenWidth < 360 ? 12 : 13,
-              ),
-            ),
-          ],
-        ),
-      );
+          ),
+        );
+      }
+      return const SizedBox.shrink();
     }
 
     return Container(

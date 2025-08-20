@@ -152,29 +152,21 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
         const double height = 250.0;
 
         if (!_isLoaded || _bannerAd == null) {
-          return Container(
-            height: height,
-            decoration: decoration,
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: screenWidth < 360 ? 16 : 20,
-                  height: screenWidth < 360 ? 16 : 20,
-                  child: const CircularProgressIndicator(strokeWidth: 2),
+          if (_hasError) {
+            return Container(
+              height: height,
+              decoration: decoration,
+              alignment: Alignment.center,
+              child: Text(
+                'Reklam yüklenemedi',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: screenWidth < 360 ? 11 : 12,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  _hasError ? 'Reklam yüklenemedi' : 'Reklam yükleniyor',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: screenWidth < 360 ? 11 : 12,
-                  ),
-                ),
-              ],
-            ),
-          );
+              ),
+            );
+          }
+          return const SizedBox.shrink();
         }
 
         return Container(

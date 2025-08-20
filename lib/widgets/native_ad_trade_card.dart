@@ -134,30 +134,22 @@ class _NativeAdTradeCardState extends State<NativeAdTradeCard>
     final double height = screenWidth < 360 ? 150 : 170;
 
     if (!_isLoaded || _nativeAd == null) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: decoration,
-        height: height,
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: screenWidth < 360 ? 16 : 18,
-              height: screenWidth < 360 ? 16 : 18,
-              child: const CircularProgressIndicator(strokeWidth: 2),
+      if (_hasError) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: decoration,
+          height: height,
+          alignment: Alignment.center,
+          child: Text(
+            'Reklam yüklenemedi',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: screenWidth < 360 ? 12 : 13,
             ),
-            const SizedBox(width: 12),
-            Text(
-              _hasError ? 'Reklam yüklenemedi' : 'Reklam yükleniyor',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: screenWidth < 360 ? 12 : 13,
-              ),
-            ),
-          ],
-        ),
-      );
+          ),
+        );
+      }
+      return const SizedBox.shrink();
     }
 
     return Container(

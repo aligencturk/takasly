@@ -274,30 +274,22 @@ class _BannerAdDetailFooterState extends State<BannerAdDetailFooter>
     final double height = 60;
 
     if (!_isLoaded || _bannerAd == null) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: decoration,
-        height: height,
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: screenWidth < 360 ? 16 : 18,
-              height: screenWidth < 360 ? 16 : 18,
-              child: const CircularProgressIndicator(strokeWidth: 2),
+      if (_hasError) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: decoration,
+          height: height,
+          alignment: Alignment.center,
+          child: Text(
+            'Reklam yüklenemedi',
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
             ),
-            const SizedBox(width: 10),
-            Text(
-              _hasError ? 'Reklam yüklenemedi' : 'Reklam yükleniyor',
-              style: const TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      );
+          ),
+        );
+      }
+      return const SizedBox.shrink();
     }
 
     return Container(
