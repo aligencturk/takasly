@@ -70,9 +70,16 @@ class NotificationService {
       },
     );
 
-    // Foreground: mesaj geldiğinde local notification göster
+    // Foreground: mesaj geldiğinde notification handling
     FirebaseMessaging.onMessage.listen((RemoteMessage m) {
-      _showForegroundNotification(m);
+      // Foreground'da gelen mesajları sadece log'la, 
+      // duplicate notification'ı önlemek için local notification gösterme
+      Logger.debug('Foreground FCM message received: ${m.notification?.title}', tag: _tag);
+      
+      // İsteğe bağlı: Sadece data-only mesajlar için local notification göster
+      if (m.notification == null && m.data.isNotEmpty) {
+        _showForegroundNotification(m);
+      }
     });
 
     // Bildirime tıklayıp uygulama açıldı (arka plandan -> öne)
