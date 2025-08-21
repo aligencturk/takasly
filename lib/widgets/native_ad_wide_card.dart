@@ -91,8 +91,6 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
     Logger.info('🔄 NativeAdWideCard - Widget activated: $_widgetId');
   }
 
-
-
   @override
   void dispose() {
     Logger.info('🧹 NativeAdWideCard - Disposing widget: $_widgetId');

@@ -381,7 +381,6 @@ class _ContactViewState extends State<ContactView> {
         const SizedBox(height: 6),
         ProfanityCheckTextField(
           controller: _messageController,
-          labelText: 'Mesaj',
           hintText: 'Mesajınızı buraya yazınız...',
           maxLines: 5,
           maxLength: 1000,
