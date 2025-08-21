@@ -77,7 +77,6 @@ class _LoginViewState extends State<LoginView> {
                           children: [
                             SizedBox(height: screenHeight * topSpacing),
                             const _EmailPasswordForm(),
-                            const _BottomButtons(),
                             SizedBox(height: screenHeight * bottomSpacing),
                           ],
                         ),
@@ -278,24 +277,109 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         SizedBox(
           height: verticalSpacing * 2.5,
         ), // Giriş butonu öncesi spacing artırıldı
+        // Giriş Yap ve Sosyal Medya Butonları
+        Row(
+          children: [
+            // Giriş Yap butonu (küçültülmüş)
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () => _submitLogin(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    vertical: isLargeScreen ? 16 : (isMediumScreen ? 14 : 12),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                  ),
+                  elevation: 2,
+                ),
+                child: Text(
+                  'Giriş Yap',
+                  style: TextStyle(
+                    fontSize: fontSize * 0.9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
 
-        ElevatedButton(
-          onPressed: () => _submitLogin(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primary,
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(
-              vertical: isLargeScreen ? 20 : (isMediumScreen ? 18 : 16),
+            SizedBox(width: verticalSpacing),
+
+            // Google butonu
+            Container(
+              width: inputHeight * 0.8,
+              height: inputHeight * 0.8,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(borderRadius * 0.8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(borderRadius * 0.8),
+                  onTap: () => _handleGoogleLogin(context),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/icons/google_icon.png',
+                      width: fontSize * 1.2,
+                      height: fontSize * 1.2,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return SizedBox(
+                          width: fontSize * 1.2,
+                          height: fontSize * 1.2,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(borderRadius),
-            ),
-            elevation: 2,
-          ),
-          child: Text(
-            'Giriş Yap',
-            style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600),
-          ),
+
+            // Apple butonu (sadece iOS'ta)
+            if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+              SizedBox(width: verticalSpacing * 0.5),
+              Container(
+                width: inputHeight * 0.8,
+                height: inputHeight * 0.8,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(borderRadius * 0.8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(borderRadius * 0.8),
+                    onTap: () => _handleAppleLogin(context),
+                    child: Center(
+                      child: Icon(
+                        Icons.apple,
+                        size: fontSize * 1.2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
@@ -374,186 +458,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         );
       }
     }
-  }
-}
-
-class _BottomButtons extends StatefulWidget {
-  const _BottomButtons();
-
-  @override
-  State<_BottomButtons> createState() => _BottomButtonsState();
-}
-
-class _BottomButtonsState extends State<_BottomButtons> {
-  @override
-  Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    // Ekran boyutuna göre responsive değerler
-    final isLargeScreen = screenHeight > 800;
-    final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
-    final isSmallScreen = screenHeight <= 700;
-
-    // Responsive değerler
-    final buttonHeight = isLargeScreen ? 58.0 : (isMediumScreen ? 52.0 : 48.0);
-    final fontSize = isLargeScreen ? 14.0 : (isMediumScreen ? 12.0 : 11.0);
-    final borderRadius = isLargeScreen ? 18.0 : (isMediumScreen ? 16.0 : 14.0);
-    final iconSize = isLargeScreen ? 24.0 : (isMediumScreen ? 22.0 : 20.0);
-    final spacing = isLargeScreen ? 20.0 : (isMediumScreen ? 16.0 : 14.0);
-    final orSpacing = isLargeScreen
-        ? 25.0
-        : (isMediumScreen ? 20.0 : 18.0); // "veya" öncesi spacing azaltıldı
-
-    return Column(
-      children: [
-        // Veya ayırıcı
-        Row(
-          children: [
-            Expanded(
-              child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: spacing),
-              child: Text(
-                'veya',
-                style: TextStyle(color: AppTheme.primary, fontSize: fontSize),
-              ),
-            ),
-            Expanded(
-              child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
-            ),
-          ],
-        ),
-
-        SizedBox(height: orSpacing),
-
-        // Google ve Apple ile Giriş
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                height: buttonHeight,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(borderRadius),
-                    onTap: () => _handleGoogleLogin(context),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
-                        vertical: buttonHeight * 0.3,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/icons/google_icon.png',
-                            width: iconSize,
-                            height: iconSize,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return SizedBox(
-                                width: iconSize,
-                                height: iconSize,
-                              );
-                            },
-                          ),
-                          SizedBox(width: spacing * 0.5),
-                          Flexible(
-                            child: Text(
-                              'Google ile Giriş',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                              style: TextStyle(
-                                fontSize: fontSize,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Apple ile Giriş yalnızca iOS'ta gösterilir
-            if (Theme.of(context).platform == TargetPlatform.iOS) ...[
-              SizedBox(width: spacing),
-              Expanded(
-                child: Container(
-                  height: buttonHeight,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(borderRadius),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      onTap: () => _handleAppleLogin(context),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.05,
-                          vertical: buttonHeight * 0.3,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.apple,
-                              size: iconSize,
-                              color: Colors.white,
-                            ),
-                            SizedBox(width: spacing * 0.5),
-                            Flexible(
-                              child: Text(
-                                'Apple ile Giriş',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                                style: TextStyle(
-                                  fontSize: fontSize,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-
-        SizedBox(height: spacing * 0.8), // Alt spacing azaltıldı
-      ],
-    );
   }
 
   // Google ile giriş
@@ -709,7 +613,7 @@ class _BottomButtonsState extends State<_BottomButtons> {
       Logger.info('Apple Sign-In başlatılıyor...', tag: 'LoginView');
 
       final Map<String, String?>? appleTokens = await SocialAuthService.instance
-          .signInWithAppleAndGetTokens(); // DÜZELTİLDİ: Apple servisi çağrılıyor
+          .signInWithAppleAndGetTokens();
 
       if (appleTokens == null || appleTokens['idToken'] == null) {
         Logger.warning('Apple idToken alınamadı', tag: 'LoginView');
