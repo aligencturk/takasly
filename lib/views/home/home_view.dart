@@ -493,8 +493,8 @@ class _HomeViewState extends State<HomeView> {
             ),
           );
 
-          // Her 4 ürün sonra reklam ekle (sıra 4, 8, 12, 16... olduğunda)
-          if ((i + 1) % 4 == 0 && (i + 1) < productCount) {
+          // Her 6 ürün sonra reklam ekle (sıra 6, 12, 18, 24... olduğunda)
+          if ((i + 1) % 6 == 0 && (i + 1) < productCount) {
             gridItems.add(NativeAdWideCard(key: ValueKey('ad_after_${i + 1}')));
           }
         }

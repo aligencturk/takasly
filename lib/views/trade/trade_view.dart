@@ -17,7 +17,8 @@ import '../../widgets/skeletons/favorite_grid_skeleton.dart';
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
 import 'trade_detail_view.dart';
-import '../../widgets/native_ad_wide_card.dart';
+import '../../widgets/native_ad_list_tile.dart';
+import '../../widgets/fixed_bottom_banner_ad.dart';
 import '../auth/login_view.dart';
 
 class TradeView extends StatefulWidget {
@@ -270,63 +271,75 @@ class _TradeViewState extends State<TradeView>
           ],
         ),
       ),
-      body: Consumer<ProductViewModel>(
-        builder: (context, productViewModel, child) {
-          if (productViewModel.isLoading) {
-            return Container(
-              color: AppTheme.background,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: Offset(0, 10),
+      body: Column(
+        children: [
+          // Ana içerik alanı
+          Expanded(
+            child: Consumer<ProductViewModel>(
+              builder: (context, productViewModel, child) {
+                if (productViewModel.isLoading) {
+                  return Container(
+                    color: AppTheme.background,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            'Yükleniyor...',
+                            style: TextStyle(
+                              color: AppTheme.primary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
-                      child: CircularProgressIndicator(color: AppTheme.primary),
                     ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Yükleniyor...',
-                      style: TextStyle(
-                        color: AppTheme.primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                  );
+                }
+
+                if (productViewModel.hasError) {
+                  return CustomErrorWidget(
+                    message: productViewModel.errorMessage!,
+                    onRetry: _loadData,
+                  );
+                }
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Takasladıklarım tab
+                    _buildTradedItemsTab(),
+
+                    // Favoriler tab
+                    _buildFavoritesTab(),
                   ],
-                ),
-              ),
-            );
-          }
+                );
+              },
+            ),
+          ),
 
-          if (productViewModel.hasError) {
-            return CustomErrorWidget(
-              message: productViewModel.errorMessage!,
-              onRetry: _loadData,
-            );
-          }
-
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              // Takasladıklarım tab
-              _buildTradedItemsTab(),
-
-              // Favoriler tab
-              _buildFavoritesTab(),
-            ],
-          );
-        },
+          // Tabbar'ın üstünde sabit banner reklam
+          const FixedBottomBannerAd(),
+        ],
       ),
     );
   }
@@ -527,7 +540,7 @@ class _TradeViewState extends State<TradeView>
                                 (displayIndex + 1) % (adInterval + 1) == 0) {
                               return Container(
                                 margin: EdgeInsets.only(bottom: 12),
-                                child: const NativeAdWideCard(),
+                                child: const BannerAdListTile(),
                               );
                             }
 
@@ -1629,7 +1642,7 @@ class _TradeViewState extends State<TradeView>
                             (displayIndex + 1) % (adInterval + 1) == 0) {
                           return Container(
                             margin: EdgeInsets.only(bottom: 10),
-                            child: const NativeAdWideCard(),
+                            child: const BannerAdListTile(),
                           );
                         }
 

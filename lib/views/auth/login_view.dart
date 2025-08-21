@@ -36,21 +36,10 @@ class _LoginViewState extends State<LoginView> {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: AppTheme.background,
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            // Constraint güvenliği kontrolü
-            if (constraints.maxHeight.isInfinite ||
-                constraints.maxHeight <= 0 ||
-                constraints.maxWidth.isInfinite ||
-                constraints.maxWidth <= 0) {
-              Logger.warning(
-                '⚠️ LoginView - Geçersiz constraints: maxHeight=${constraints.maxHeight}, maxWidth=${constraints.maxWidth}',
-              );
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final screenHeight = constraints.maxHeight;
-            final screenWidth = constraints.maxWidth;
+        body: Builder(
+          builder: (context) {
+            final screenHeight = MediaQuery.of(context).size.height;
+            final screenWidth = MediaQuery.of(context).size.width;
 
             // Ekran boyutuna göre responsive değerler
             final isLargeScreen = screenHeight > 800;
@@ -134,13 +123,6 @@ class _EmailPasswordForm extends StatefulWidget {
   State<_EmailPasswordForm> createState() => _EmailPasswordFormState();
 }
 
-class _BottomButtons extends StatefulWidget {
-  const _BottomButtons();
-
-  @override
-  State<_BottomButtons> createState() => _BottomButtonsState();
-}
-
 class _EmailPasswordFormState extends State<_EmailPasswordForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -155,189 +137,167 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Constraint güvenliği kontrolü
-        if (constraints.maxHeight.isInfinite ||
-            constraints.maxHeight <= 0 ||
-            constraints.maxWidth.isInfinite ||
-            constraints.maxWidth <= 0) {
-          Logger.warning(
-            '⚠️ _EmailPasswordForm - Geçersiz constraints: maxHeight=${constraints.maxHeight}, maxWidth=${constraints.maxWidth}',
-          );
-          return const Center(child: CircularProgressIndicator());
-        }
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-        final screenHeight = constraints.maxHeight;
-        final screenWidth = constraints.maxWidth;
+    // Ekran boyutuna göre responsive değerler
+    final isLargeScreen = screenHeight > 800;
+    final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
+    final isSmallScreen = screenHeight <= 700;
 
-        // Ekran boyutuna göre responsive değerler
-        final isLargeScreen = screenHeight > 800;
-        final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
-        final isSmallScreen = screenHeight <= 700;
+    // Input field yüksekliği ekran boyutuna göre ayarlanır
+    final inputHeight = isLargeScreen ? 60.0 : (isMediumScreen ? 56.0 : 52.0);
+    final fontSize = isLargeScreen ? 18.0 : (isMediumScreen ? 16.0 : 15.0);
+    final borderRadius = isLargeScreen ? 14.0 : (isMediumScreen ? 12.0 : 10.0);
+    final verticalSpacing = isLargeScreen
+        ? 12.0
+        : (isMediumScreen ? 8.0 : 6.0); // Spacing artırıldı
 
-        // Input field yüksekliği ekran boyutuna göre ayarlanır
-        final inputHeight = isLargeScreen
-            ? 60.0
-            : (isMediumScreen ? 56.0 : 52.0);
-        final fontSize = isLargeScreen ? 18.0 : (isMediumScreen ? 16.0 : 15.0);
-        final borderRadius = isLargeScreen
-            ? 14.0
-            : (isMediumScreen ? 12.0 : 10.0);
-        final verticalSpacing = isLargeScreen
-            ? 12.0
-            : (isMediumScreen ? 8.0 : 6.0); // Spacing artırıldı
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // E-posta input
+        Container(
+          height: inputHeight,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textCapitalization: TextCapitalization.none,
+            style: TextStyle(fontSize: fontSize),
+            decoration: InputDecoration(
+              labelText: 'E-posta',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.05,
+                vertical: inputHeight * 0.3,
+              ),
+              labelStyle: TextStyle(
+                color: Colors.grey,
+                fontSize: fontSize * 0.9,
+              ),
+            ),
+          ),
+        ),
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        SizedBox(height: verticalSpacing),
+
+        // Şifre input
+        Container(
+          height: inputHeight,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: _passwordController,
+            obscureText: _obscureText,
+            textCapitalization: TextCapitalization.sentences,
+            style: TextStyle(fontSize: fontSize),
+            decoration: InputDecoration(
+              labelText: 'Şifre',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.05,
+                vertical: inputHeight * 0.3,
+              ),
+              labelStyle: TextStyle(
+                color: Colors.grey,
+                fontSize: fontSize * 0.9,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureText
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: Colors.grey,
+                  size: fontSize * 1.2,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureText = !_obscureText;
+                  });
+                },
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(height: verticalSpacing),
+
+        // Şifremi Unuttum ve Kayıt Ol butonları
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // E-posta input
-            Container(
-              height: inputHeight,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(borderRadius),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                textCapitalization: TextCapitalization.none,
-                style: TextStyle(fontSize: fontSize),
-                decoration: InputDecoration(
-                  labelText: 'E-posta',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.05,
-                    vertical: inputHeight * 0.3,
-                  ),
-                  labelStyle: TextStyle(
-                    color: Colors.grey,
-                    fontSize: fontSize * 0.9,
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(height: verticalSpacing),
-
-            // Şifre input
-            Container(
-              height: inputHeight,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(borderRadius),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextFormField(
-                controller: _passwordController,
-                obscureText: _obscureText,
-                textCapitalization: TextCapitalization.sentences,
-                style: TextStyle(fontSize: fontSize),
-                decoration: InputDecoration(
-                  labelText: 'Şifre',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.05,
-                    vertical: inputHeight * 0.3,
-                  ),
-                  labelStyle: TextStyle(
-                    color: Colors.grey,
-                    fontSize: fontSize * 0.9,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureText
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      color: Colors.grey,
-                      size: fontSize * 1.2,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureText = !_obscureText;
-                      });
-                    },
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(height: verticalSpacing),
-
-            // Şifremi Unuttum ve Kayıt Ol butonları
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pushNamed('/reset-password');
-                  },
-                  child: Text(
-                    'Şifremi Unuttum',
-                    style: TextStyle(
-                      color: AppTheme.primary,
-                      fontSize: fontSize * 0.85,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pushNamed('/register');
-                  },
-                  child: Text(
-                    'Kayıt Ol',
-                    style: TextStyle(
-                      color: AppTheme.primary,
-                      fontSize: fontSize * 0.85,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(
-              height: verticalSpacing * 2.5,
-            ), // Giriş butonu öncesi spacing artırıldı
-
-            ElevatedButton(
-              onPressed: () => _submitLogin(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
-                  vertical: isLargeScreen ? 20 : (isMediumScreen ? 18 : 16),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(borderRadius),
-                ),
-                elevation: 2,
-              ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed('/reset-password');
+              },
               child: Text(
-                'Giriş Yap',
+                'Şifremi Unuttum',
                 style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primary,
+                  fontSize: fontSize * 0.85,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed('/register');
+              },
+              child: Text(
+                'Kayıt Ol',
+                style: TextStyle(
+                  color: AppTheme.primary,
+                  fontSize: fontSize * 0.85,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ],
-        );
-      },
+        ),
+
+        SizedBox(
+          height: verticalSpacing * 2.5,
+        ), // Giriş butonu öncesi spacing artırıldı
+
+        ElevatedButton(
+          onPressed: () => _submitLogin(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(
+              vertical: isLargeScreen ? 20 : (isMediumScreen ? 18 : 16),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
+            elevation: 2,
+          ),
+          child: Text(
+            'Giriş Yap',
+            style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
     );
   }
 
@@ -417,203 +377,182 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
   }
 }
 
+class _BottomButtons extends StatefulWidget {
+  const _BottomButtons();
+
+  @override
+  State<_BottomButtons> createState() => _BottomButtonsState();
+}
+
 class _BottomButtonsState extends State<_BottomButtons> {
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Constraint güvenliği kontrolü
-        if (constraints.maxHeight.isInfinite ||
-            constraints.maxHeight <= 0 ||
-            constraints.maxWidth.isInfinite ||
-            constraints.maxWidth <= 0) {
-          Logger.warning(
-            '⚠️ _BottomButtons - Geçersiz constraints: maxHeight=${constraints.maxHeight}, maxWidth=${constraints.maxWidth}',
-          );
-          return const Center(child: CircularProgressIndicator());
-        }
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-        final screenHeight = constraints.maxHeight;
-        final screenWidth = constraints.maxWidth;
+    // Ekran boyutuna göre responsive değerler
+    final isLargeScreen = screenHeight > 800;
+    final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
+    final isSmallScreen = screenHeight <= 700;
 
-        // Ekran boyutuna göre responsive değerler
-        final isLargeScreen = screenHeight > 800;
-        final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
-        final isSmallScreen = screenHeight <= 700;
+    // Responsive değerler
+    final buttonHeight = isLargeScreen ? 58.0 : (isMediumScreen ? 52.0 : 48.0);
+    final fontSize = isLargeScreen ? 14.0 : (isMediumScreen ? 12.0 : 11.0);
+    final borderRadius = isLargeScreen ? 18.0 : (isMediumScreen ? 16.0 : 14.0);
+    final iconSize = isLargeScreen ? 24.0 : (isMediumScreen ? 22.0 : 20.0);
+    final spacing = isLargeScreen ? 20.0 : (isMediumScreen ? 16.0 : 14.0);
+    final orSpacing = isLargeScreen
+        ? 25.0
+        : (isMediumScreen ? 20.0 : 18.0); // "veya" öncesi spacing azaltıldı
 
-        // Responsive değerler
-        final buttonHeight = isLargeScreen
-            ? 58.0
-            : (isMediumScreen ? 52.0 : 48.0);
-        final fontSize = isLargeScreen ? 14.0 : (isMediumScreen ? 12.0 : 11.0);
-        final borderRadius = isLargeScreen
-            ? 18.0
-            : (isMediumScreen ? 16.0 : 14.0);
-        final iconSize = isLargeScreen ? 24.0 : (isMediumScreen ? 22.0 : 20.0);
-        final spacing = isLargeScreen ? 20.0 : (isMediumScreen ? 16.0 : 14.0);
-        final orSpacing = isLargeScreen
-            ? 25.0
-            : (isMediumScreen ? 20.0 : 18.0); // "veya" öncesi spacing azaltıldı
-
-        return Column(
+    return Column(
+      children: [
+        // Veya ayırıcı
+        Row(
           children: [
-            // Veya ayırıcı
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 1,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: spacing),
-                  child: Text(
-                    'veya',
-                    style: TextStyle(
-                      color: AppTheme.primary,
-                      fontSize: fontSize,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    height: 1,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                ),
-              ],
+            Expanded(
+              child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
             ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: spacing),
+              child: Text(
+                'veya',
+                style: TextStyle(color: AppTheme.primary, fontSize: fontSize),
+              ),
+            ),
+            Expanded(
+              child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
+            ),
+          ],
+        ),
 
-            SizedBox(height: orSpacing),
+        SizedBox(height: orSpacing),
 
-            // Google ve Apple ile Giriş
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: buttonHeight,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+        // Google ve Apple ile Giriş
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: buttonHeight,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(borderRadius),
-                        onTap: () => _handleGoogleLogin(context),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.05,
-                            vertical: buttonHeight * 0.3,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/icons/google_icon.png',
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                    onTap: () => _handleGoogleLogin(context),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.05,
+                        vertical: buttonHeight * 0.3,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/icons/google_icon.png',
+                            width: iconSize,
+                            height: iconSize,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return SizedBox(
                                 width: iconSize,
                                 height: iconSize,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return SizedBox(
-                                    width: iconSize,
-                                    height: iconSize,
-                                  );
-                                },
-                              ),
-                              SizedBox(width: spacing * 0.5),
-                              Flexible(
-                                child: Text(
-                                  'Google ile Giriş',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: false,
-                                  style: TextStyle(
-                                    fontSize: fontSize,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Apple ile Giriş yalnızca iOS'ta gösterilir
-                if (Theme.of(context).platform == TargetPlatform.iOS) ...[
-                  SizedBox(width: spacing),
-                  Expanded(
-                    child: Container(
-                      height: buttonHeight,
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(borderRadius),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                          SizedBox(width: spacing * 0.5),
+                          Flexible(
+                            child: Text(
+                              'Google ile Giriş',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(borderRadius),
-                          onTap: () => _handleAppleLogin(context),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.05,
-                              vertical: buttonHeight * 0.3,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Apple ile Giriş yalnızca iOS'ta gösterilir
+            if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+              SizedBox(width: spacing),
+              Expanded(
+                child: Container(
+                  height: buttonHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(borderRadius),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(borderRadius),
+                      onTap: () => _handleAppleLogin(context),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.05,
+                          vertical: buttonHeight * 0.3,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.apple,
+                              size: iconSize,
+                              color: Colors.white,
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.apple,
-                                  size: iconSize,
+                            SizedBox(width: spacing * 0.5),
+                            Flexible(
+                              child: Text(
+                                'Apple ile Giriş',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
+                                style: TextStyle(
+                                  fontSize: fontSize,
+                                  fontWeight: FontWeight.w600,
                                   color: Colors.white,
                                 ),
-                                SizedBox(width: spacing * 0.5),
-                                Flexible(
-                                  child: Text(
-                                    'Apple ile Giriş',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false,
-                                    style: TextStyle(
-                                      fontSize: fontSize,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                ],
-              ],
-            ),
-
-            SizedBox(height: spacing * 0.8), // Alt spacing azaltıldı
+                ),
+              ),
+            ],
           ],
-        );
-      },
+        ),
+
+        SizedBox(height: spacing * 0.8), // Alt spacing azaltıldı
+      ],
     );
   }
 
