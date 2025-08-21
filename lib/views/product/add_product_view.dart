@@ -229,8 +229,10 @@ class _AddProductViewState extends State<AddProductView> {
         canGo = _selectedCategoryId != null && _selectedConditionId != null;
         break;
       case 3: // Konum
-        // Sadece manuel seçim (il/ilçe) zorunlu
-        canGo = _selectedCityId != null && _selectedDistrictId != null;
+        // Otomatik konum aktifse veya manuel seçim yapılmışsa devam edilebilir
+        canGo =
+            _currentPosition != null ||
+            (_selectedCityId != null && _selectedDistrictId != null);
         break;
       case 4: // Takas Tercihleri
         canGo = _tradeForController.text.trim().isNotEmpty;
@@ -346,9 +348,9 @@ class _AddProductViewState extends State<AddProductView> {
         }
         break;
       case 3: // Konum
-        if (_selectedCityId == null) {
-          errorMessage = 'Lütfen bir il seçin';
-        } else if (_selectedDistrictId == null) {
+        if (_currentPosition == null && _selectedCityId == null) {
+          errorMessage = 'Lütfen GPS konumu alın veya il seçin';
+        } else if (_currentPosition == null && _selectedDistrictId == null) {
           errorMessage = 'Lütfen bir ilçe seçin';
         }
         break;
@@ -1089,7 +1091,8 @@ class _AddProductViewState extends State<AddProductView> {
       case 2:
         return _selectedCategoryId != null && _selectedConditionId != null;
       case 3:
-        return _selectedCityId != null && _selectedDistrictId != null;
+        return _currentPosition != null ||
+            (_selectedCityId != null && _selectedDistrictId != null);
       case 4:
         return _tradeForController.text.trim().isNotEmpty;
       case 5:
@@ -1381,9 +1384,15 @@ class _AddProductViewState extends State<AddProductView> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: _currentPosition != null
+                  ? Colors.grey.shade100
+                  : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(
+                color: _currentPosition != null
+                    ? Colors.grey.shade300
+                    : Colors.grey.shade300,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1392,7 +1401,9 @@ class _AddProductViewState extends State<AddProductView> {
                   children: [
                     Icon(
                       Icons.location_city,
-                      color: Colors.grey.shade700,
+                      color: _currentPosition != null
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade700,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -1400,17 +1411,23 @@ class _AddProductViewState extends State<AddProductView> {
                       'Manuel Konum Seçimi',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
+                        color: _currentPosition != null
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade700,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'İl ve ilçe seçimi zorunludur',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                  _currentPosition != null
+                      ? 'GPS konumu aktif olduğu için manuel seçim gerekli değil'
+                      : 'İl ve ilçe seçimi zorunludur',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: _currentPosition != null
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade600,
+                  ),
                 ),
               ],
             ),
@@ -1426,14 +1443,23 @@ class _AddProductViewState extends State<AddProductView> {
           // Info card
           Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.blue),
+              Icon(
+                _currentPosition != null
+                    ? Icons.check_circle
+                    : Icons.info_outline,
+                color: _currentPosition != null ? Colors.green : Colors.blue,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'İl ve ilçe seçimi zorunludur. GPS konumu isteğe bağlıdır.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.blue.shade700),
+                  _currentPosition != null
+                      ? 'GPS konumu başarıyla alındı. Manuel konum seçimi gerekli değil.'
+                      : 'İl ve ilçe seçimi zorunludur. GPS konumu isteğe bağlıdır.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: _currentPosition != null
+                        ? Colors.green.shade700
+                        : Colors.blue.shade700,
+                  ),
                 ),
               ),
             ],
@@ -1740,9 +1766,10 @@ class _AddProductViewState extends State<AddProductView> {
 
         return DropdownButtonFormField<String>(
           value: validValue,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'İl',
             hintText: 'İl seçiniz',
+            enabled: _currentPosition == null, // GPS konumu aktifse devre dışı
           ),
           hint: const Text('İl seçiniz'),
           items: [
@@ -1755,18 +1782,24 @@ class _AddProductViewState extends State<AddProductView> {
                   DropdownMenuItem(value: city.id, child: Text(city.name)),
             ),
           ],
-          onChanged: (value) {
-            setState(() {
-              _selectedCityId = value;
-              _selectedDistrictId = null;
-            });
-            if (value != null) {
-              vm.loadDistricts(value);
-              // Seçilen şehrin konumunu haritada göster
-              _showCityLocationOnMap(value, vm);
-            }
+          onChanged: _currentPosition != null
+              ? null
+              : (value) {
+                  setState(() {
+                    _selectedCityId = value;
+                    _selectedDistrictId = null;
+                  });
+                  if (value != null) {
+                    vm.loadDistricts(value);
+                    // Seçilen şehrin konumunu haritada göster
+                    _showCityLocationOnMap(value, vm);
+                  }
+                },
+          validator: (v) {
+            if (_currentPosition != null)
+              return null; // GPS konumu aktifse validasyon yok
+            return v == null ? 'İl seçimi zorunludur' : null;
           },
-          validator: (v) => v == null ? 'İl seçimi zorunludur' : null,
         );
       },
     );
@@ -1786,7 +1819,9 @@ class _AddProductViewState extends State<AddProductView> {
           decoration: InputDecoration(
             labelText: 'İlçe',
             hintText: 'İlçe seçiniz',
-            enabled: _selectedCityId != null,
+            enabled:
+                _currentPosition == null &&
+                _selectedCityId != null, // GPS konumu aktifse devre dışı
           ),
           hint: const Text('İlçe seçiniz'),
           items: [
@@ -1799,7 +1834,7 @@ class _AddProductViewState extends State<AddProductView> {
                   DropdownMenuItem(value: dist.id, child: Text(dist.name)),
             ),
           ],
-          onChanged: _selectedCityId == null
+          onChanged: (_currentPosition != null || _selectedCityId == null)
               ? null
               : (value) async {
                   setState(() => _selectedDistrictId = value);
@@ -1809,9 +1844,13 @@ class _AddProductViewState extends State<AddProductView> {
                     await _showDistrictLocationOnMap(value, vm);
                   }
                 },
-          validator: (v) => _selectedCityId != null && v == null
-              ? 'İlçe seçimi zorunludur'
-              : null,
+          validator: (v) {
+            if (_currentPosition != null)
+              return null; // GPS konumu aktifse validasyon yok
+            return _selectedCityId != null && v == null
+                ? 'İlçe seçimi zorunludur'
+                : null;
+          },
         );
       },
     );
@@ -1926,6 +1965,9 @@ class _AddProductViewState extends State<AddProductView> {
       if (position != null) {
         setState(() {
           _currentPosition = position;
+          // GPS konumu alındığında manuel konum seçimlerini temizle
+          _selectedCityId = null;
+          _selectedDistrictId = null;
         });
 
         // Kullanıcıya başarı mesajı göster
@@ -1972,6 +2014,9 @@ class _AddProductViewState extends State<AddProductView> {
   void _clearLocation() {
     setState(() {
       _currentPosition = null;
+      // GPS konumu temizlendiğinde manuel konum seçimlerini de sıfırla
+      _selectedCityId = null;
+      _selectedDistrictId = null;
     });
   }
 
