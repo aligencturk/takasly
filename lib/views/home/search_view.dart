@@ -156,7 +156,16 @@ class _SearchViewState extends State<SearchView> {
                 ),
               ),
               style: const TextStyle(fontSize: 14, color: Colors.black87),
-              onSubmitted: _performSearch,
+              onSubmitted: (value) {
+                // Enter'a basıldığında da _hasSearched'i sıfırla
+                if (_hasSearched) {
+                  setState(() {
+                    _hasSearched = false;
+                    _currentQuery = '';
+                  });
+                }
+                _performSearch(value);
+              },
               onChanged: (value) {
                 setState(() {});
                 // Debounce ile canlı arama
@@ -165,6 +174,13 @@ class _SearchViewState extends State<SearchView> {
                   if (value.trim().isNotEmpty) {
                     final vm = context.read<ProductViewModel>();
                     vm.liveSearch(value);
+                    // Yeni arama yapıldığında _hasSearched'i false yap
+                    if (_hasSearched) {
+                      setState(() {
+                        _hasSearched = false;
+                        _currentQuery = '';
+                      });
+                    }
                   }
                 });
               },
@@ -176,6 +192,13 @@ class _SearchViewState extends State<SearchView> {
                 onPressed: () {
                   final text = _searchController.text;
                   context.read<ProductViewModel>().liveSearch(text);
+                  // Ara butonuna basıldığında da _hasSearched'i sıfırla
+                  if (_hasSearched) {
+                    setState(() {
+                      _hasSearched = false;
+                      _currentQuery = '';
+                    });
+                  }
                   _performSearch(text);
                 },
                 child: const Text(
