@@ -569,7 +569,24 @@ class _ProfileViewState extends State<ProfileView>
             ),
             itemCount: productViewModel.myProducts.length,
             itemBuilder: (context, index) {
+              // Index güvenliği kontrolü
+              if (index < 0 || index >= productViewModel.myProducts.length) {
+                Logger.warning(
+                  'ProfileView - Grid index out of bounds: $index, length: ${productViewModel.myProducts.length}',
+                );
+                return const SizedBox.shrink();
+              }
+
               final product = productViewModel.myProducts[index];
+
+              // Product null kontrolü
+              if (product == null) {
+                Logger.warning(
+                  'ProfileView - Product is null at index: $index',
+                );
+                return const SizedBox.shrink();
+              }
+
               return Stack(
                 children: [
                   ProductCard(

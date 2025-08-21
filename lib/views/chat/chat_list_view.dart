@@ -265,6 +265,15 @@ class _ChatListViewState extends State<ChatListView> {
                 return ListView.builder(
                   itemCount: totalItemCount,
                   itemBuilder: (context, displayIndex) {
+                    // Index güvenliği kontrolü
+                    if (displayIndex < 0 || displayIndex >= totalItemCount) {
+                      Logger.warning(
+                        'ChatListView - Index out of bounds: displayIndex=$displayIndex, totalItemCount=$totalItemCount',
+                        tag: 'ChatListView',
+                      );
+                      return const SizedBox.shrink();
+                    }
+
                     // Bu index reklam mı?
                     if (displayIndex != 0 &&
                         (displayIndex + 1) % (adInterval + 1) == 0) {
@@ -277,7 +286,26 @@ class _ChatListViewState extends State<ChatListView> {
                         .floor();
                     final int dataIndex = displayIndex - numAdsBefore;
 
+                    // Data index güvenliği kontrolü
+                    if (dataIndex < 0 || dataIndex >= sortedChats.length) {
+                      Logger.warning(
+                        'ChatListView - Data index out of bounds: dataIndex=$dataIndex, sortedChats.length=${sortedChats.length}',
+                        tag: 'ChatListView',
+                      );
+                      return const SizedBox.shrink();
+                    }
+
                     final chat = sortedChats[dataIndex];
+
+                    // Chat null kontrolü
+                    if (chat == null) {
+                      Logger.warning(
+                        'ChatListView - Chat is null at dataIndex: $dataIndex',
+                        tag: 'ChatListView',
+                      );
+                      return const SizedBox.shrink();
+                    }
+
                     return Slidable(
                       key: Key(chat.id),
                       startActionPane: ActionPane(

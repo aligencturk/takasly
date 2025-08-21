@@ -215,12 +215,16 @@ class _ProductCardState extends State<ProductCard> {
       child: Container(
         decoration: BoxDecoration(
           color: widget.product.isSponsor == true
-              ? const Color(0xFFFEFEFC) // Sponsor ürünler için ultra premium white background
+              ? const Color(
+                  0xFFFEFEFC,
+                ) // Sponsor ürünler için ultra premium white background
               : Colors.white,
           borderRadius: BorderRadius.circular(screenWidth < 360 ? 6 : 8),
           border: Border.all(
             color: widget.product.isSponsor == true
-                ? const Color(0xFFB8860B) // Sponsor ürünler için premium dark gold border
+                ? const Color(
+                    0xFFB8860B,
+                  ) // Sponsor ürünler için premium dark gold border
                 : const Color.fromARGB(255, 209, 209, 209),
             width: widget.product.isSponsor == true
                 ? 2
@@ -425,6 +429,24 @@ class _ProductCardState extends State<ProductCard> {
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
+                    // Constraint güvenliği kontrolü
+                    if (constraints.maxHeight.isInfinite ||
+                        constraints.maxHeight <= 0) {
+                      Logger.warning(
+                        '⚠️ ProductCard - Geçersiz constraint: maxHeight=${constraints.maxHeight}',
+                      );
+                      return const SizedBox.shrink();
+                    }
+
+                    // Grid constraint kontrolü - grid içinde kullanıldığında maxHeight sınırlı olmalı
+                    if (constraints.hasBoundedHeight &&
+                        constraints.maxHeight > 1000) {
+                      Logger.warning(
+                        '⚠️ ProductCard - Grid dışı constraint: maxHeight=${constraints.maxHeight}',
+                      );
+                      return const SizedBox.shrink();
+                    }
+
                     final double availableHeight = constraints.maxHeight;
                     final double categoryLineHeight = categoryFontSize * 1.0;
                     final double titleLineHeight = titleFontSize * 1.2;

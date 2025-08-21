@@ -38,6 +38,17 @@ class _LoginViewState extends State<LoginView> {
         backgroundColor: AppTheme.background,
         body: LayoutBuilder(
           builder: (context, constraints) {
+            // Constraint güvenliği kontrolü
+            if (constraints.maxHeight.isInfinite ||
+                constraints.maxHeight <= 0 ||
+                constraints.maxWidth.isInfinite ||
+                constraints.maxWidth <= 0) {
+              Logger.warning(
+                '⚠️ LoginView - Geçersiz constraints: maxHeight=${constraints.maxHeight}, maxWidth=${constraints.maxWidth}',
+              );
+              return const Center(child: CircularProgressIndicator());
+            }
+
             final screenHeight = constraints.maxHeight;
             final screenWidth = constraints.maxWidth;
 
@@ -146,6 +157,17 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Constraint güvenliği kontrolü
+        if (constraints.maxHeight.isInfinite ||
+            constraints.maxHeight <= 0 ||
+            constraints.maxWidth.isInfinite ||
+            constraints.maxWidth <= 0) {
+          Logger.warning(
+            '⚠️ _EmailPasswordForm - Geçersiz constraints: maxHeight=${constraints.maxHeight}, maxWidth=${constraints.maxWidth}',
+          );
+          return const Center(child: CircularProgressIndicator());
+        }
+
         final screenHeight = constraints.maxHeight;
         final screenWidth = constraints.maxWidth;
 
@@ -400,6 +422,17 @@ class _BottomButtonsState extends State<_BottomButtons> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Constraint güvenliği kontrolü
+        if (constraints.maxHeight.isInfinite ||
+            constraints.maxHeight <= 0 ||
+            constraints.maxWidth.isInfinite ||
+            constraints.maxWidth <= 0) {
+          Logger.warning(
+            '⚠️ _BottomButtons - Geçersiz constraints: maxHeight=${constraints.maxHeight}, maxWidth=${constraints.maxWidth}',
+          );
+          return const Center(child: CircularProgressIndicator());
+        }
+
         final screenHeight = constraints.maxHeight;
         final screenWidth = constraints.maxWidth;
 

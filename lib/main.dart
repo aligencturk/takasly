@@ -221,7 +221,11 @@ class MyApp extends StatelessWidget {
             final adViewModel = AdViewModel();
             // AdMob'u güvenli bir şekilde başlat
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              adViewModel.initializeAdMob();
+              try {
+                adViewModel.initializeAdMob();
+              } catch (e) {
+                Logger.error('AdMob başlatma hatası: $e');
+              }
             });
             return adViewModel;
           },
@@ -235,7 +239,11 @@ class MyApp extends StatelessWidget {
             final remoteConfigViewModel = RemoteConfigViewModel();
             // Remote Config'i güvenli bir şekilde başlat
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              remoteConfigViewModel.initialize();
+              try {
+                remoteConfigViewModel.initialize();
+              } catch (e) {
+                Logger.error('Remote Config başlatma hatası: $e');
+              }
             });
             return remoteConfigViewModel;
           },
@@ -250,20 +258,24 @@ class MyApp extends StatelessWidget {
           builder: (context) {
             // ViewModel'ler arasında bağlantı kur
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              final authViewModel = Provider.of<AuthViewModel>(
-                context,
-                listen: false,
-              );
-              final notificationViewModel = Provider.of<NotificationViewModel>(
-                context,
-                listen: false,
-              );
-              authViewModel.setNotificationViewModel(notificationViewModel);
-              // Uygulama açılışında iOS/Android fark etmeksizin FCM'i başlatmayı dene
-              // Kullanıcı login ise, topic aboneliği ve izin akışı kurulacak
-              // Login değilse, izinler ve token yine alınır; login sonrası topic'e abone olunur
-              if (!notificationViewModel.fcmInitialized) {
-                notificationViewModel.initializeFCM();
+              try {
+                final authViewModel = Provider.of<AuthViewModel>(
+                  context,
+                  listen: false,
+                );
+                final notificationViewModel = Provider.of<NotificationViewModel>(
+                  context,
+                  listen: false,
+                );
+                authViewModel.setNotificationViewModel(notificationViewModel);
+                // Uygulama açılışında iOS/Android fark etmeksizin FCM'i başlatmayı dene
+                // Kullanıcı login ise, topic aboneliği ve izin akışı kurulacak
+                // Login değilse, izinler ve token yine alınır; login sonrası topic'e abone olunur
+                if (!notificationViewModel.fcmInitialized) {
+                  notificationViewModel.initializeFCM();
+                }
+              } catch (e) {
+                Logger.error('Provider bağlantı hatası: $e');
               }
             });
             return SplashVideoPage();

@@ -149,19 +149,49 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
             }
           },
           child: _controller.value.isInitialized
-              ? SizedBox.expand(
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: _controller.value.size.width,
-                      height: _controller.value.size.height,
-                      child: Focus(
-                        autofocus: false,
-                        canRequestFocus: false,
-                        child: VideoPlayer(_controller),
-                      ),
-                    ),
-                  ),
+              ? Builder(
+                  builder: (context) {
+                    try {
+                      // Video boyutlarını güvenli bir şekilde al
+                      final videoSize = _controller.value.size;
+                      if (videoSize.width <= 0 || videoSize.height <= 0) {
+                        Logger.warning(
+                          'Video boyutları geçersiz: ${videoSize.width}x${videoSize.height}',
+                          tag: 'SplashView',
+                        );
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      // Ekran boyutlarını al
+                      final screenSize = MediaQuery.of(context).size;
+                      
+                      Logger.info(
+                        'Video boyutları: ${videoSize.width}x${videoSize.height}, Ekran boyutları: ${screenSize.width}x${screenSize.height}',
+                        tag: 'SplashView',
+                      );
+
+                      return SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: videoSize.width,
+                            height: videoSize.height,
+                            child: Focus(
+                              autofocus: false,
+                              canRequestFocus: false,
+                              child: VideoPlayer(_controller),
+                            ),
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      Logger.error(
+                        'Video player build hatası: $e',
+                        tag: 'SplashView',
+                      );
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                  },
                 )
               : const Center(child: CircularProgressIndicator()),
         ),

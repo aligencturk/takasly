@@ -329,10 +329,7 @@ class _HomeViewState extends State<HomeView> {
 
         // Ürün listesi geçerlilik kontrolü
         final validProducts = vm.products
-            .where(
-              (product) =>
-                  product.id.isNotEmpty,
-            )
+            .where((product) => product.id.isNotEmpty)
             .toList();
 
         if (validProducts.isEmpty) {
@@ -382,7 +379,7 @@ class _HomeViewState extends State<HomeView> {
 
         // Ürünleri ve reklamları karıştırarak tek bir grid oluştur
         final List<Widget> gridItems = [];
-        
+
         for (int i = 0; i < productCount; i++) {
           final product = sortedProducts[i];
 
@@ -407,13 +404,10 @@ class _HomeViewState extends State<HomeView> {
               );
               final currentUserId = authViewModel.currentUser?.id;
               isOwnProduct =
-                  currentUserId != null &&
-                  product.ownerId == currentUserId;
+                  currentUserId != null && product.ownerId == currentUserId;
             }
           } catch (e) {
-            Logger.error(
-              '❌ HomeView - Error checking product ownership: $e',
-            );
+            Logger.error('❌ HomeView - Error checking product ownership: $e');
             isOwnProduct = false;
           }
 
@@ -423,9 +417,7 @@ class _HomeViewState extends State<HomeView> {
 
           gridItems.add(
             ProductCard(
-              key: ValueKey(
-                'product_${product.id}_$i',
-              ),
+              key: ValueKey('product_${product.id}_$i'),
               product: product,
               heroTag: uniqueHeroTag,
               hideFavoriteIcon: isOwnProduct,
@@ -434,11 +426,7 @@ class _HomeViewState extends State<HomeView> {
 
           // Her 4 ürün sonra reklam ekle (sıra 4, 8, 12, 16... olduğunda)
           if ((i + 1) % 4 == 0 && (i + 1) < productCount) {
-            gridItems.add(
-              NativeAdWideCard(
-                key: ValueKey('ad_after_${i + 1}'),
-              ),
-            );
+            gridItems.add(NativeAdWideCard(key: ValueKey('ad_after_${i + 1}')));
           }
         }
 
@@ -453,10 +441,25 @@ class _HomeViewState extends State<HomeView> {
               mainAxisSpacing: _calculateGridSpacing(context),
               childAspectRatio: _calculateChildAspectRatio(context),
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => gridItems[index],
-              childCount: gridItems.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              // Index güvenliği kontrolü
+              if (index < 0 || index >= gridItems.length) {
+                Logger.warning(
+                  '⚠️ HomeView - Grid index out of bounds: $index, length: ${gridItems.length}',
+                );
+                return const SizedBox.shrink();
+              }
+
+              final item = gridItems[index];
+              if (item == null) {
+                Logger.warning(
+                  '⚠️ HomeView - Grid item is null at index: $index',
+                );
+                return const SizedBox.shrink();
+              }
+
+              return item;
+            }, childCount: gridItems.length),
           ),
         );
       },
@@ -477,22 +480,30 @@ class _HomeViewState extends State<HomeView> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
-                      Logger.info('🔍 HomeView - Arama butonuna tıklandı, geçmiş yükleniyor...');
-                      
+                      Logger.info(
+                        '🔍 HomeView - Arama butonuna tıklandı, geçmiş yükleniyor...',
+                      );
+
                       // Arama geçmişini önceden yükle
                       final productViewModel = Provider.of<ProductViewModel>(
                         context,
                         listen: false,
                       );
-                      
+
                       try {
-                        Logger.info('📡 HomeView - loadSearchHistory() çağrılıyor...');
+                        Logger.info(
+                          '📡 HomeView - loadSearchHistory() çağrılıyor...',
+                        );
                         await productViewModel.loadSearchHistory();
-                        Logger.info('✅ HomeView - Arama geçmişi başarıyla yüklendi');
+                        Logger.info(
+                          '✅ HomeView - Arama geçmişi başarıyla yüklendi',
+                        );
                       } catch (e) {
-                        Logger.error('❌ HomeView - Arama geçmişi yüklenirken hata: $e');
+                        Logger.error(
+                          '❌ HomeView - Arama geçmişi yüklenirken hata: $e',
+                        );
                       }
-                      
+
                       Logger.info('🚀 HomeView - SearchView açılıyor...');
                       Navigator.push(
                         context,
