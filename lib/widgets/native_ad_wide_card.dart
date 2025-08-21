@@ -135,7 +135,9 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
   Widget build(BuildContext context) {
     super.build(context);
     final screenWidth = MediaQuery.of(context).size.width;
-    final borderRadius = BorderRadius.circular(screenWidth < 360 ? 10 : 12);
+    
+    // ProductCard ile aynı styling kullan
+    final borderRadius = BorderRadius.circular(screenWidth < 360 ? 6 : 8);
 
     final decoration = BoxDecoration(
       color: Colors.white,
@@ -148,21 +150,103 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Banner ad için büyük kare yükseklik (AdSize.mediumRectangle 300x250)
-        const double height = 250.0;
+        // ProductCard ile aynı aspect ratio kullan (kare format)
+        final cardWidth = constraints.maxWidth;
+        final cardHeight = cardWidth / 0.7; // ProductCard'daki childAspectRatio: 0.7
 
         if (!_isLoaded || _bannerAd == null) {
           if (_hasError) {
             return Container(
-              height: height,
+              height: cardHeight,
               decoration: decoration,
-              alignment: Alignment.center,
-              child: Text(
-                'Reklam yüklenemedi',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: screenWidth < 360 ? 11 : 12,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Üst kısım - resim alanı
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(screenWidth < 360 ? 6 : 8),
+                        ),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.ad_units_outlined,
+                              color: Colors.grey[400],
+                              size: screenWidth < 360 ? 20 : 28,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Reklam yüklenemedi',
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: screenWidth < 360 ? 8 : 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Alt kısım - bilgi alanı
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: EdgeInsets.all(screenWidth < 360 ? 6 : 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Reklam',
+                            style: TextStyle(
+                              fontSize: screenWidth < 360 ? 9.0 : 11.0,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Sponsorlu İçerik',
+                            style: TextStyle(
+                              fontSize: screenWidth < 360 ? 10.0 : 12.0,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const Spacer(),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: screenWidth < 360 ? 10 : 12,
+                                color: Colors.grey[500],
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Türkiye',
+                                style: TextStyle(
+                                  fontSize: screenWidth < 360 ? 8.0 : 10.0,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }
@@ -170,29 +254,172 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
         }
 
         return Container(
-          height: height,
+          height: cardHeight,
           decoration: decoration,
           child: _isDisposed || _bannerAd == null
               ? Container(
-                  color: Colors.grey[200],
-                  child: Center(
-                    child: Text(
-                      'Reklam Alanı',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
+                  decoration: decoration,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Üst kısım - placeholder resim alanı
+                      Expanded(
+                        flex: 3,
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(screenWidth < 360 ? 6 : 8),
+                            ),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.ad_units_outlined,
+                                  color: Colors.grey[400],
+                                  size: screenWidth < 360 ? 20 : 28,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Reklam Alanı',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: screenWidth < 360 ? 8 : 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      // Alt kısım - bilgi alanı
+                      Expanded(
+                        flex: 2,
+                        child: Padding(
+                          padding: EdgeInsets.all(screenWidth < 360 ? 6 : 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Reklam',
+                                style: TextStyle(
+                                  fontSize: screenWidth < 360 ? 9.0 : 11.0,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'Sponsorlu İçerik',
+                                style: TextStyle(
+                                  fontSize: screenWidth < 360 ? 10.0 : 12.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on_outlined,
+                                    size: screenWidth < 360 ? 10 : 12,
+                                    color: Colors.grey[500],
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    'Türkiye',
+                                    style: TextStyle(
+                                      fontSize: screenWidth < 360 ? 8.0 : 10.0,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 )
-              : ClipRRect(
-                  borderRadius: borderRadius,
-                  child: SizedBox.expand(
-                    child: AdWidget(
-                      key: ValueKey('${_widgetId}_${_bannerAd.hashCode}'),
-                      ad: _bannerAd!,
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Üst kısım - reklam alanı
+                    Expanded(
+                      flex: 3,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(screenWidth < 360 ? 6 : 8),
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          child: AdWidget(
+                            key: ValueKey('${_widgetId}_${_bannerAd.hashCode}'),
+                            ad: _bannerAd!,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    // Alt kısım - bilgi alanı (ProductCard benzeri)
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: EdgeInsets.all(screenWidth < 360 ? 6 : 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Reklam',
+                              style: TextStyle(
+                                fontSize: screenWidth < 360 ? 9.0 : 11.0,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Sponsorlu İçerik',
+                              style: TextStyle(
+                                fontSize: screenWidth < 360 ? 10.0 : 12.0,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const Spacer(),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: screenWidth < 360 ? 10 : 12,
+                                  color: Colors.grey[500],
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Türkiye',
+                                  style: TextStyle(
+                                    fontSize: screenWidth < 360 ? 8.0 : 10.0,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
         );
       },

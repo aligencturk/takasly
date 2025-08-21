@@ -20,8 +20,6 @@ import '../home/search_view.dart';
 import '../notifications/notification_list_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/native_ad_wide_card.dart';
-import 'dart:math' as math;
-import 'package:sliver_tools/sliver_tools.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
 
@@ -333,8 +331,6 @@ class _HomeViewState extends State<HomeView> {
         final validProducts = vm.products
             .where(
               (product) =>
-                  product != null &&
-                  product.id != null &&
                   product.id.isNotEmpty,
             )
             .toList();
@@ -384,110 +380,85 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
-        // Ürünleri 4'lük parçalara böl, her parçadan sonra geniş reklam yerleştir
-        final List<Widget> sections = [];
-        for (int start = 0; start < productCount; start += 4) {
-          final end = math.min(start + 4, productCount);
-          final chunk = sortedProducts.sublist(
-            start,
-            end,
-          ); // Sıralanmış ürünlerden chunk oluştur
+        // Ürünleri ve reklamları karıştırarak tek bir grid oluştur
+        final List<Widget> gridItems = [];
+        
+        for (int i = 0; i < productCount; i++) {
+          final product = sortedProducts[i];
 
-          // Chunk null safety kontrolü
-          if (chunk.isEmpty) {
+          // Product ID kontrolü
+          if (product.id.isEmpty) {
             Logger.warning(
-              '⚠️ HomeView - Empty chunk detected at start: $start',
+              '⚠️ HomeView - Invalid product ID at index $i: ${product.id}',
             );
             continue;
           }
 
-          sections.add(
-            SliverPadding(
-              padding: EdgeInsets.symmetric(
-                horizontal: _calculateHorizontalPadding(context),
+          bool isOwnProduct = false;
+          try {
+            if (vm.myProducts.isNotEmpty) {
+              isOwnProduct = vm.myProducts.any(
+                (myProduct) => myProduct.id == product.id,
+              );
+            } else {
+              final authViewModel = Provider.of<AuthViewModel>(
+                context,
+                listen: false,
+              );
+              final currentUserId = authViewModel.currentUser?.id;
+              isOwnProduct =
+                  currentUserId != null &&
+                  product.ownerId == currentUserId;
+            }
+          } catch (e) {
+            Logger.error(
+              '❌ HomeView - Error checking product ownership: $e',
+            );
+            isOwnProduct = false;
+          }
+
+          // Unique hero tag oluştur
+          final uniqueHeroTag =
+              'home_product_${product.id}_${DateTime.now().millisecondsSinceEpoch}_$i';
+
+          gridItems.add(
+            ProductCard(
+              key: ValueKey(
+                'product_${product.id}_$i',
               ),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: _calculateGridSpacing(context),
-                  mainAxisSpacing: _calculateGridSpacing(context),
-                  childAspectRatio: _calculateChildAspectRatio(context),
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final product = chunk[index];
-
-                  // Null safety kontrolü
-                  if (product == null) {
-                    Logger.warning(
-                      '⚠️ HomeView - Null product detected at index $index',
-                    );
-                    return const SizedBox.shrink();
-                  }
-
-                  // Product ID kontrolü
-                  if (product.id == null || product.id.isEmpty) {
-                    Logger.warning(
-                      '⚠️ HomeView - Invalid product ID at index $index: ${product.id}',
-                    );
-                    return const SizedBox.shrink();
-                  }
-
-                  bool isOwnProduct = false;
-                  try {
-                    if (vm.myProducts.isNotEmpty) {
-                      isOwnProduct = vm.myProducts.any(
-                        (myProduct) => myProduct.id == product.id,
-                      );
-                    } else {
-                      final authViewModel = Provider.of<AuthViewModel>(
-                        context,
-                        listen: false,
-                      );
-                      final currentUserId = authViewModel.currentUser?.id;
-                      isOwnProduct =
-                          currentUserId != null &&
-                          product.ownerId == currentUserId;
-                    }
-                  } catch (e) {
-                    Logger.error(
-                      '❌ HomeView - Error checking product ownership: $e',
-                    );
-                    isOwnProduct = false;
-                  }
-
-                  // Unique hero tag oluştur
-                  final uniqueHeroTag =
-                      'home_product_${product.id}_${DateTime.now().millisecondsSinceEpoch}_$index';
-
-                  return ProductCard(
-                    key: ValueKey(
-                      'product_${product.id}_$index',
-                    ), // Unique key ekle
-                    product: product,
-                    heroTag: uniqueHeroTag,
-                    hideFavoriteIcon: isOwnProduct,
-                  );
-                }, childCount: chunk.length),
-              ),
+              product: product,
+              heroTag: uniqueHeroTag,
+              hideFavoriteIcon: isOwnProduct,
             ),
           );
 
-          // Parça sonu: geniş reklam ekle (son parça hariç)
-          if (end < productCount) {
-            sections.add(
-              SliverPadding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: _calculateHorizontalPadding(context),
-                  vertical: _calculateGridSpacing(context),
-                ),
-                sliver: const SliverToBoxAdapter(child: NativeAdWideCard()),
+          // Her 4 ürün sonra reklam ekle (sıra 4, 8, 12, 16... olduğunda)
+          if ((i + 1) % 4 == 0 && (i + 1) < productCount) {
+            gridItems.add(
+              NativeAdWideCard(
+                key: ValueKey('ad_after_${i + 1}'),
               ),
             );
           }
         }
 
-        // Bütün bölümleri bir araya getir
-        return MultiSliver(children: sections);
+        return SliverPadding(
+          padding: EdgeInsets.symmetric(
+            horizontal: _calculateHorizontalPadding(context),
+          ),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: _calculateGridSpacing(context),
+              mainAxisSpacing: _calculateGridSpacing(context),
+              childAspectRatio: _calculateChildAspectRatio(context),
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => gridItems[index],
+              childCount: gridItems.length,
+            ),
+          ),
+        );
       },
     );
   }
