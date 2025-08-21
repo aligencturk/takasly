@@ -284,12 +284,18 @@ class ProfanityService {
 
     for (final pattern in _regexPatterns) {
       try {
+        // Pattern'ı temizle ve Dart RegExp için uygun hale getir
+        String cleanPattern = pattern['pattern'] as String;
+        
+        // (?i) inline flag'ini kaldır (case insensitive zaten RegExp parametresi ile set ediliyor)
+        cleanPattern = cleanPattern.replaceFirst(RegExp(r'^\(\?i\)'), '');
+        
         final regex = RegExp(
-          pattern['pattern'] as String,
+          cleanPattern,
           caseSensitive: false,
         );
         Logger.info(
-          '🔍 ProfanityService - Regex pattern test ediliyor: ${pattern['pattern']}',
+          '🔍 ProfanityService - Regex pattern test ediliyor: $cleanPattern',
         );
 
         if (regex.hasMatch(normalizedText)) {
