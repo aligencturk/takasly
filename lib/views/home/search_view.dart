@@ -99,12 +99,16 @@ class _SearchViewState extends State<SearchView> {
       onWillPop: () async {
         // Sadece arama yapıldıysa filtreleri temizle
         if (_hasSearched) {
-          final productViewModel = context.read<ProductViewModel>();
-          Logger.info('🔍 SearchView - clearFilters() çağrılıyor...');
-          await productViewModel.clearFilters();
-          Logger.info(
-            '🔍 SearchView - Arama yapıldı, filtreler temizlendi (en yakın filtresi otomatik uygulandı)',
-          );
+          try {
+            final productViewModel = context.read<ProductViewModel>();
+            Logger.info('🔍 SearchView - clearFilters() çağrılıyor...');
+            await productViewModel.clearFilters();
+            Logger.info(
+              '🔍 SearchView - Arama yapıldı, filtreler temizlendi (en yakın filtresi otomatik uygulandı)',
+            );
+          } catch (e) {
+            Logger.error('❌ SearchView - WillPopScope clearFilters hatası: $e');
+          }
         }
         return true;
       },
@@ -120,14 +124,22 @@ class _SearchViewState extends State<SearchView> {
             onPressed: () async {
               // Sadece arama yapıldıysa filtreleri temizle
               if (_hasSearched) {
-                final productViewModel = context.read<ProductViewModel>();
-                Logger.info('🔍 SearchView - clearFilters() çağrılıyor...');
-                await productViewModel.clearFilters();
-                Logger.info(
-                  '🔍 SearchView - Geri butonuna basıldı, arama yapıldı, filtreler temizlendi (en yakın filtresi otomatik uygulandı)',
-                );
+                try {
+                  final productViewModel = context.read<ProductViewModel>();
+                  Logger.info('🔍 SearchView - clearFilters() çağrılıyor...');
+                  await productViewModel.clearFilters();
+                  Logger.info(
+                    '🔍 SearchView - Geri butonuna basıldı, arama yapıldı, filtreler temizlendi (en yakın filtresi otomatik uygulandı)',
+                  );
+                } catch (e) {
+                  Logger.error('❌ SearchView - clearFilters hatası: $e');
+                }
               }
-              Navigator.pop(context);
+              
+              // Widget hala mounted mı kontrol et
+              if (mounted && context.mounted) {
+                Navigator.pop(context);
+              }
             },
           ),
           title: Container(
