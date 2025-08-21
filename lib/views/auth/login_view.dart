@@ -277,110 +277,148 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         SizedBox(
           height: verticalSpacing * 2.5,
         ), // Giriş butonu öncesi spacing artırıldı
-        // Giriş Yap ve Sosyal Medya Butonları
+        // Giriş Yap butonu
+        ElevatedButton(
+          onPressed: () => _submitLogin(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(
+              vertical: isLargeScreen ? 18 : (isMediumScreen ? 16 : 14),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
+            elevation: 2,
+          ),
+          child: Text(
+            'Giriş Yap',
+            style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600),
+          ),
+        ),
+
+        SizedBox(height: verticalSpacing * 1.5),
+
+        // Veya ayırıcı
         Row(
           children: [
-            // Giriş Yap butonu (küçültülmüş)
             Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: () => _submitLogin(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(
-                    vertical: isLargeScreen ? 16 : (isMediumScreen ? 14 : 12),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(borderRadius),
-                  ),
-                  elevation: 2,
-                ),
-                child: Text(
-                  'Giriş Yap',
-                  style: TextStyle(
-                    fontSize: fontSize * 0.9,
-                    fontWeight: FontWeight.w600,
-                  ),
+              child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: verticalSpacing),
+              child: Text(
+                'veya',
+                style: TextStyle(
+                  color: AppTheme.primary,
+                  fontSize: fontSize * 0.9,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+            Expanded(
+              child: Container(height: 1, color: Colors.white.withOpacity(0.3)),
+            ),
+          ],
+        ),
 
-            SizedBox(width: verticalSpacing),
+        SizedBox(height: verticalSpacing * 1.5),
 
-            // Google butonu
-            Container(
-              width: inputHeight * 0.8,
-              height: inputHeight * 0.8,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(borderRadius * 0.8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+        // Google ile Giriş butonu
+        Container(
+          width: double.infinity,
+          height: inputHeight,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(borderRadius),
+              onTap: () => _handleGoogleLogin(context),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/icons/google_icon.png',
+                    width: fontSize * 1.2,
+                    height: fontSize * 1.2,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return SizedBox(
+                        width: fontSize * 1.2,
+                        height: fontSize * 1.2,
+                      );
+                    },
+                  ),
+                  SizedBox(width: verticalSpacing),
+                  Text(
+                    'Google ile Giriş',
+                    style: TextStyle(
+                      fontSize: fontSize * 0.9,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                 ],
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(borderRadius * 0.8),
-                  onTap: () => _handleGoogleLogin(context),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/icons/google_icon.png',
-                      width: fontSize * 1.2,
-                      height: fontSize * 1.2,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return SizedBox(
-                          width: fontSize * 1.2,
-                          height: fontSize * 1.2,
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
             ),
+          ),
+        ),
 
-            // Apple butonu (sadece iOS'ta)
-            if (Theme.of(context).platform == TargetPlatform.iOS) ...[
-              SizedBox(width: verticalSpacing * 0.5),
-              Container(
-                width: inputHeight * 0.8,
-                height: inputHeight * 0.8,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(borderRadius * 0.8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+        // Apple ile Giriş butonu (sadece iOS'ta)
+        if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+          SizedBox(height: verticalSpacing),
+          Container(
+            width: double.infinity,
+            height: inputHeight,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(borderRadius * 0.8),
-                    onTap: () => _handleAppleLogin(context),
-                    child: Center(
-                      child: Icon(
-                        Icons.apple,
-                        size: fontSize * 1.2,
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(borderRadius),
+                onTap: () => _handleAppleLogin(context),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.apple,
+                      size: fontSize * 1.2,
+                      color: Colors.white,
+                    ),
+                    SizedBox(width: verticalSpacing),
+                    Text(
+                      'Apple ile Giriş',
+                      style: TextStyle(
+                        fontSize: fontSize * 0.9,
+                        fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ],
     );
   }
