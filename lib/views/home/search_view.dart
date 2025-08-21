@@ -84,7 +84,7 @@ class _SearchViewState extends State<SearchView> {
       if (match != null) {
         return int.tryParse(match.group(1) ?? '0') ?? 0;
       }
-      
+
       // Sayı yoksa varsayılan olarak 0 döndür
       return 0;
     } catch (e) {
@@ -163,8 +163,8 @@ class _SearchViewState extends State<SearchView> {
                 _debounce?.cancel();
                 _debounce = Timer(const Duration(milliseconds: 300), () {
                   if (value.trim().isNotEmpty) {
-                  final vm = context.read<ProductViewModel>();
-                  vm.liveSearch(value);
+                    final vm = context.read<ProductViewModel>();
+                    vm.liveSearch(value);
                   }
                 });
               },
@@ -198,92 +198,94 @@ class _SearchViewState extends State<SearchView> {
                   if (!_hasSearched)
                     Consumer<ProductViewModel>(
                       builder: (context, vm, _) {
-
-                        
                         // "Geçmişler" başlığı her zaman üstte sabit
                         return Column(
-                              children: [
+                          children: [
                             // Sabit "Geçmişler" başlığı
-                                Container(
-                                  width: double.infinity,
-                                  color: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
+                            Container(
+                              width: double.infinity,
+                              color: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
                                 vertical: 12,
-                                  ),
-                                  child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
                                     'Geçmişler',
-                                        style: TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.grey[800],
-                                        ),
-                                      ),
-                                  if (vm.searchHistory.isNotEmpty)
-                                      TextButton.icon(
-                                        onPressed: () {
-                                          context
-                                              .read<ProductViewModel>()
-                                              .clearSearchHistory();
-                                        },
-                                        icon: const Icon(
-                                          Icons.delete_sweep,
-                                          size: 18,
-                                        ),
-                                        label: const Text('Geçmişi temizle'),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.redAccent,
-                                        ),
-                                      ),
-                                    ],
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[800],
+                                    ),
                                   ),
-                                ),
-                            
+                                  if (vm.searchHistory.isNotEmpty)
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        context
+                                            .read<ProductViewModel>()
+                                            .clearSearchHistory();
+                                      },
+                                      icon: const Icon(
+                                        Icons.delete_sweep,
+                                        size: 18,
+                                      ),
+                                      label: const Text('Geçmişi temizle'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.redAccent,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+
                             // Arama geçmişi listesi
                             if (vm.searchHistory.isNotEmpty)
                               Container(
                                 color: Colors.white,
-                                  child: ListView.separated(
+                                child: ListView.separated(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                    itemCount: vm.searchHistory.length,
-                                    separatorBuilder: (_, __) => Divider(
-                                      height: 1,
-                                      color: Colors.grey[200],
-                                    ),
-                                    itemBuilder: (context, index) {
-                                      final item = vm.searchHistory[index];
-                                      return ListTile(
-                                        leading: const Icon(
-                                          Icons.history,
-                                          color: Colors.grey,
-                                          size: 20,
-                                        ),
-                                        title: Text(
-                                          item.search,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(fontSize: 14),
-                                        ),
-                                        onTap: () {
-                                          _searchController.text = item.search;
-                                          setState(() {});
-                                          context
-                                              .read<ProductViewModel>()
-                                              .liveSearch(item.search);
-                                          _performSearch(item.search);
-                                        },
-                                      );
-                                    },
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
                                   ),
+                                  itemCount: vm.searchHistory.length,
+                                  separatorBuilder: (_, __) => Divider(
+                                    height: 1,
+                                    color: Colors.grey[200],
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final item = vm.searchHistory[index];
+                                    return ListTile(
+                                      leading: const Icon(
+                                        Icons.history,
+                                        color: Colors.grey,
+                                        size: 20,
+                                      ),
+                                      title: Text(
+                                        item.search,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                      onTap: () {
+                                        _searchController.text = item.search;
+                                        setState(() {});
+                                        context
+                                            .read<ProductViewModel>()
+                                            .liveSearch(item.search);
+                                        _performSearch(item.search);
+                                      },
+                                    );
+                                  },
+                                ),
                               ),
-                            
+
                             // Canlı öneriler (sadece arama çubuğu boşken göster)
-                            if (vm.liveResults.isNotEmpty && _searchController.text.isEmpty)
+                            if (vm.liveResults.isNotEmpty &&
+                                _searchController.text.isEmpty)
                               Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
@@ -315,23 +317,33 @@ class _SearchViewState extends State<SearchView> {
                                       builder: (context) {
                                         // Sadece kategorileri filtrele ve sırala
                                         final categories = vm.liveResults
-                                            .where((item) => 
-                                                item.type != 'product' && 
-                                                item.icon != 'product')
+                                            .where(
+                                              (item) =>
+                                                  item.type != 'product' &&
+                                                  item.icon != 'product',
+                                            )
                                             .toList();
-                                        
+
                                         // En çok ilandan en aza sırala (subtitle'daki sayıya göre)
                                         categories.sort((a, b) {
-                                          final aCount = _extractProductCount(a.subtitle);
-                                          final bCount = _extractProductCount(b.subtitle);
-                                          return bCount.compareTo(aCount); // Büyükten küçüğe
+                                          final aCount = _extractProductCount(
+                                            a.subtitle,
+                                          );
+                                          final bCount = _extractProductCount(
+                                            b.subtitle,
+                                          );
+                                          return bCount.compareTo(
+                                            aCount,
+                                          ); // Büyükten küçüğe
                                         });
-                                        
-                                        if (categories.isEmpty) return const SizedBox.shrink();
-                                        
+
+                                        if (categories.isEmpty)
+                                          return const SizedBox.shrink();
+
                                         return ListView.separated(
                                           shrinkWrap: true,
-                                          physics: const NeverScrollableScrollPhysics(),
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
                                           itemCount: categories.length,
                                           separatorBuilder: (_, __) => Divider(
                                             height: 1,
@@ -362,17 +374,24 @@ class _SearchViewState extends State<SearchView> {
                                               ),
                                               onTap: () {
                                                 // Kategori önerisine tıklandığında arama geçmişine ekle
-                                                final vm = context.read<ProductViewModel>();
-                                                vm.addSearchHistoryEntry(item.title);
-                                                
-                                                final filter = vm.currentFilter.copyWith(
-                                                  categoryId: item.id.toString(),
-                                                  searchText: null,
+                                                final vm = context
+                                                    .read<ProductViewModel>();
+                                                vm.addSearchHistoryEntry(
+                                                  item.title,
                                                 );
+
+                                                final filter = vm.currentFilter
+                                                    .copyWith(
+                                                      categoryId: item.id
+                                                          .toString(),
+                                                      searchText: null,
+                                                    );
                                                 vm.applyFilter(filter);
                                                 setState(() {
                                                   _searchController.clear();
-                                                  FocusScope.of(context).unfocus();
+                                                  FocusScope.of(
+                                                    context,
+                                                  ).unfocus();
                                                   _hasSearched = true;
                                                   _currentQuery = '';
                                                 });
@@ -381,44 +400,46 @@ class _SearchViewState extends State<SearchView> {
                                           },
                                         );
                                       },
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
                               ),
-                            
-                            // Eğer hem geçmiş hem de öneriler boşsa bilgilendirme göster
-                            if (vm.searchHistory.isEmpty && (_searchController.text.isEmpty ? vm.liveResults.isEmpty : true))
+
+                            // Eğer hem geçmiş hem de öneriler boşsa VE arama çubuğu boşsa bilgilendirme göster
+                            if (vm.searchHistory.isEmpty &&
+                                vm.liveResults.isEmpty &&
+                                _searchController.text.isEmpty)
                               Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.search,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Ürün Arama',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[700],
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.search,
+                                      size: 64,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Ürün Arama',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'En az 2 karakter yazarak\nürün aramaya başlayın',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                        height: 1.4,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'En az 2 karakter yazarak\nürün aramaya başlayın',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                  height: 1.4,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
                               ),
                           ],
                         );
@@ -449,38 +470,39 @@ class _SearchViewState extends State<SearchView> {
                                 // Sonuç bulunamadı mesajı
                                 Expanded(
                                   child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.search_off,
-                                    size: 64,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Sonuç Bulunamadı',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey[700],
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.search_off,
+                                          size: 64,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Sonuç Bulunamadı',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey[700],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '"$_currentQuery" için sonuç bulunamadı.\nFarklı anahtar kelimeler deneyin.',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                            height: 1.4,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '"$_currentQuery" için sonuç bulunamadı.\nFarklı anahtar kelimeler deneyin.',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                      height: 1.4,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
                                   ),
                                 ),
-                                
+
                                 // Öneriler (sonuç bulunamadığında)
                                 if (vm.liveResults.isNotEmpty)
                                   Container(
@@ -494,7 +516,8 @@ class _SearchViewState extends State<SearchView> {
                                       ),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Padding(
                                           padding: const EdgeInsets.all(16),
@@ -509,7 +532,8 @@ class _SearchViewState extends State<SearchView> {
                                         ),
                                         ListView.separated(
                                           shrinkWrap: true,
-                                          physics: const NeverScrollableScrollPhysics(),
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
                                           itemCount: vm.liveResults.length,
                                           separatorBuilder: (_, __) => Divider(
                                             height: 1,
@@ -551,22 +575,31 @@ class _SearchViewState extends State<SearchView> {
                                                     context,
                                                     '/product-detail',
                                                     arguments: {
-                                                      'productId': item.id.toString(),
+                                                      'productId': item.id
+                                                          .toString(),
                                                     },
                                                   );
                                                 } else {
-                                                  final vm = context.read<ProductViewModel>();
+                                                  final vm = context
+                                                      .read<ProductViewModel>();
                                                   // Kategori önerisine tıklandığında arama geçmişine ekle
-                                                  vm.addSearchHistoryEntry(item.title);
-                                                  
-                                                  final filter = vm.currentFilter.copyWith(
-                                                    categoryId: item.id.toString(),
-                                                    searchText: null,
+                                                  vm.addSearchHistoryEntry(
+                                                    item.title,
                                                   );
+
+                                                  final filter = vm
+                                                      .currentFilter
+                                                      .copyWith(
+                                                        categoryId: item.id
+                                                            .toString(),
+                                                        searchText: null,
+                                                      );
                                                   vm.applyFilter(filter);
                                                   setState(() {
                                                     _searchController.clear();
-                                                    FocusScope.of(context).unfocus();
+                                                    FocusScope.of(
+                                                      context,
+                                                    ).unfocus();
                                                     _hasSearched = true;
                                                     _currentQuery = '';
                                                   });
@@ -727,7 +760,7 @@ class _SearchViewState extends State<SearchView> {
                                     final vm = context.read<ProductViewModel>();
                                     // Kategori önerisine tıklandığında arama geçmişine ekle
                                     vm.addSearchHistoryEntry(item.title);
-                                    
+
                                     final filter = vm.currentFilter.copyWith(
                                       categoryId: item.id.toString(),
                                       searchText: null,
@@ -750,8 +783,6 @@ class _SearchViewState extends State<SearchView> {
                 ],
               ),
             ),
-
-
 
             // Vitrin alanı kaldırıldı
           ],
