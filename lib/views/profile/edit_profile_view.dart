@@ -113,18 +113,16 @@ class _EditProfileViewState extends State<EditProfileView> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        // Temel kalite ayarları - optimize servis daha detaylı boyutlandırma yapacak
-        maxWidth: 2400,
-        maxHeight: 2400,
-        imageQuality: 95,
+        // Backend optimizasyon yapacağı için yüksek kalite seçiliyor
+        imageQuality: 100,
       );
 
       if (image != null) {
-        // Kullanıcıya optimizasyon başladığını bildir
+        // Kullanıcıya dönüşüm başladığını bildir
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Profil fotoğrafı optimize ediliyor...'),
+              content: Text('Profil fotoğrafı seçiliyor...'),
               backgroundColor: Colors.blue,
               duration: Duration(seconds: 2),
             ),
@@ -133,21 +131,21 @@ class _EditProfileViewState extends State<EditProfileView> {
 
         // Seçilen görseli optimize et
         Logger.debug(
-          '🖼️ EditProfileView - Optimizing profile image...',
+          '🖼️ EditProfileView - Converting profile image...',
           tag: 'EditProfile',
         );
-        final File optimizedFile =
-            await ImageOptimizationService.optimizeSingleXFile(image);
+        final File convertedFile =
+            await ImageOptimizationService.convertSingleXFileToFile(image);
 
         setState(() {
-          _selectedImage = optimizedFile;
+          _selectedImage = convertedFile;
         });
 
-        // Kullanıcıya optimizasyon tamamlandığını bildir
+        // Kullanıcıya dönüşüm tamamlandığını bildir
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Profil fotoğrafı optimize edilerek seçildi'),
+              content: Text('Profil fotoğrafı seçildi'),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 2),
             ),
@@ -155,7 +153,7 @@ class _EditProfileViewState extends State<EditProfileView> {
         }
 
         Logger.debug(
-          'Profile image optimized and selected: ${optimizedFile.path}',
+          'Profile image converted and selected: ${convertedFile.path}',
           tag: 'EditProfile',
         );
       }

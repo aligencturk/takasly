@@ -1326,7 +1326,10 @@ class _EditProductViewState extends State<EditProductView> {
         return;
       }
 
-      final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia();
+      final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia(
+        // Backend optimizasyon yapacağı için yüksek kalite seçiliyor
+        imageQuality: 100,
+      );
 
       if (pickedFiles.isNotEmpty) {
         final List<XFile> filesToAdd = pickedFiles
@@ -1336,7 +1339,7 @@ class _EditProductViewState extends State<EditProductView> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Fotoğraflar optimize ediliyor...'),
+              content: Text('Fotoğraflar dönüştürülüyor...'),
               backgroundColor: Colors.blue,
               duration: Duration(seconds: 2),
             ),
@@ -1344,23 +1347,23 @@ class _EditProductViewState extends State<EditProductView> {
         }
 
         Logger.debug(
-          '🖼️ EditProductView - Optimizing ${filesToAdd.length} selected images...',
+          '🖼️ EditProductView - Converting ${filesToAdd.length} selected images...',
         );
-        final List<File> optimizedFiles =
-            await ImageOptimizationService.optimizeXFiles(
+        final List<File> convertedFiles =
+            await ImageOptimizationService.convertXFilesToFiles(
               filesToAdd,
               maxImages: remainingSlots,
             );
 
         setState(() {
-          _newImages.addAll(optimizedFiles);
+          _newImages.addAll(convertedFiles);
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${optimizedFiles.length} fotoğraf optimize edilerek eklendi',
+                '${convertedFiles.length} fotoğraf dönüştürülerek eklendi',
               ),
               backgroundColor: Colors.green,
             ),

@@ -2287,20 +2287,18 @@ class _AddProductViewState extends State<AddProductView> {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: source,
-        // Temel kalite ayarları - optimize servis daha detaylı boyutlandırma yapacak
-        maxWidth: 2400,
-        maxHeight: 2400,
-        imageQuality: 95,
+        // Backend optimizasyon yapacağı için yüksek kalite seçiliyor
+        imageQuality: 100,
       );
 
       if (pickedFile != null) {
-        // Seçilen görseli optimize et
-        Logger.debug('🖼️ AddProductView - Optimizing selected image...');
-        final File optimizedFile =
-            await ImageOptimizationService.optimizeSingleXFile(pickedFile);
+        // Seçilen görseli dönüştür
+        Logger.debug('🖼️ AddProductView - Converting selected image...');
+        final File convertedFile =
+            await ImageOptimizationService.convertSingleXFileToFile(pickedFile);
 
         setState(() {
-          _selectedImages.add(optimizedFile);
+          _selectedImages.add(convertedFile);
           // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
           if (_selectedImages.length == 1) {
             _coverImageIndex = 0;
@@ -2309,7 +2307,7 @@ class _AddProductViewState extends State<AddProductView> {
 
         // Kullanıcıya bilgi ver
         // Sessiz: sadece log
-        Logger.info('Fotoğraf optimize edilerek eklendi');
+        Logger.info('Fotoğraf dönüştürülerek eklendi');
       }
     } catch (e) {
       Logger.error('❌ Error picking image: $e');
@@ -2338,10 +2336,8 @@ class _AddProductViewState extends State<AddProductView> {
       }
 
       final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia(
-        // Temel kalite ayarları - optimize servis daha detaylı boyutlandırma yapacak
-        maxWidth: 2400,
-        maxHeight: 2400,
-        imageQuality: 95,
+        // Backend optimizasyon yapacağı için yüksek kalite seçiliyor
+        imageQuality: 100,
       );
 
       if (pickedFiles.isNotEmpty) {
@@ -2350,30 +2346,28 @@ class _AddProductViewState extends State<AddProductView> {
             .toList();
 
         // Sessiz: sadece log
-        Logger.info('Fotoğraflar optimize ediliyor...');
+        Logger.info('Fotoğraflar dönüştürülüyor...');
 
-        // Seçilen görselleri optimize et
+        // Seçilen görselleri dönüştür
         Logger.debug(
-          '🖼️ AddProductView - Optimizing ${filesToAdd.length} selected images...',
+          '🖼️ AddProductView - Converting ${filesToAdd.length} selected images...',
         );
-        final List<File> optimizedFiles =
-            await ImageOptimizationService.optimizeXFiles(
+        final List<File> convertedFiles =
+            await ImageOptimizationService.convertXFilesToFiles(
               filesToAdd,
               maxImages: remainingSlots,
             );
 
         setState(() {
-          _selectedImages.addAll(optimizedFiles);
+          _selectedImages.addAll(convertedFiles);
           // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
-          if (_selectedImages.length == optimizedFiles.length) {
+          if (_selectedImages.length == convertedFiles.length) {
             _coverImageIndex = 0;
           }
         });
 
         // Sessiz: sadece log
-        Logger.info(
-          '${optimizedFiles.length} fotoğraf optimize edilerek eklendi',
-        );
+        Logger.info('${convertedFiles.length} fotoğraf dönüştürülerek eklendi');
 
         if (pickedFiles.length > remainingSlots) {
           ScaffoldMessenger.of(context).showSnackBar(
