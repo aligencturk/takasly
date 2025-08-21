@@ -18,6 +18,7 @@ import '../utils/logger.dart';
 import '../services/error_handler_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../services/location_service.dart';
 
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
@@ -646,35 +647,41 @@ class ProductViewModel extends ChangeNotifier {
   // Arama geçmişini getir
   Future<void> loadSearchHistory() async {
     Logger.info('🔍 ProductViewModel.loadSearchHistory() başlatıldı');
-    
+
     try {
       final currentUser = await _authService.getCurrentUser();
       Logger.info('👤 Current user: ${currentUser?.id ?? "null"}');
-      
+
       if (currentUser == null || currentUser.id.isEmpty) {
         Logger.warning('⚠️ Kullanıcı bulunamadı, local fallback kullanılıyor');
         await _loadLocalHistoryFallback();
         notifyListeners();
         return;
       }
-      
+
       final userId = int.tryParse(currentUser.id);
       Logger.info('🆔 Parsed user ID: $userId');
-      
+
       if (userId == null) {
-        Logger.warning('⚠️ User ID parse edilemedi, local fallback kullanılıyor');
+        Logger.warning(
+          '⚠️ User ID parse edilemedi, local fallback kullanılıyor',
+        );
         await _loadLocalHistoryFallback();
         notifyListeners();
         return;
       }
-      
+
       Logger.info('📡 API isteği gönderiliyor: userId=$userId');
       final resp = await _userService.getSearchHistory(userId: userId);
-      Logger.info('📥 API response: success=${resp.isSuccess}, data=${resp.data?.items.length ?? 0} items');
-      
+      Logger.info(
+        '📥 API response: success=${resp.isSuccess}, data=${resp.data?.items.length ?? 0} items',
+      );
+
       if (resp.isSuccess && resp.data != null && resp.data!.items.isNotEmpty) {
         _searchHistory = resp.data!.items;
-        Logger.info('✅ Backend\'den ${_searchHistory.length} arama geçmişi yüklendi');
+        Logger.info(
+          '✅ Backend\'den ${_searchHistory.length} arama geçmişi yüklendi',
+        );
         // Local cache'e yaz
         await _saveLocalHistory(_searchHistory);
         Logger.info('💾 Local cache güncellendi');
@@ -2739,5 +2746,164 @@ class ProductViewModel extends ChangeNotifier {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  /// Koordinatlardan il ve ilçe ID'lerini bulur
+  Future<Map<String, String>?> findCityDistrictIdsFromCoordinates(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      Logger.info(
+        'Koordinatlardan il/ilçe ID\'leri aranıyor: $latitude, $longitude',
+      );
+
+      // Önce şehirler yüklenmemişse yükle
+      if (_cities.isEmpty) {
+        await loadCities();
+      }
+
+      // Koordinatlardan il ve ilçe isimlerini al
+      final locationService = LocationService();
+      final locationInfo = await locationService.getCityDistrictFromCoordinates(
+        latitude,
+        longitude,
+      );
+
+      if (locationInfo == null) {
+        Logger.warning('Koordinatlardan il/ilçe bilgisi alınamadı');
+        return null;
+      }
+
+      final cityName = locationInfo['city'];
+      final districtName = locationInfo['district'];
+
+      Logger.info('Bulunan il: $cityName, ilçe: $districtName');
+
+      // İl ID'sini bul
+      String? cityId;
+      if (cityName != null && cityName.isNotEmpty) {
+        // Türkçe karakterleri normalize et
+        final normalizedCityName = _normalizeTurkishText(cityName);
+
+        cityId = _findCityIdByName(normalizedCityName);
+
+        if (cityId != null) {
+          Logger.info('İl ID bulundu: $cityId ($cityName)');
+        } else {
+          Logger.warning('İl ID bulunamadı: $cityName');
+        }
+      }
+
+      // İlçe ID'sini bul (eğer il bulunduysa)
+      String? districtId;
+      if (cityId != null && districtName != null && districtName.isNotEmpty) {
+        // İlçeler yüklenmemişse yükle
+        if (_districts.isEmpty) {
+          await loadDistricts(cityId);
+        }
+
+        // Türkçe karakterleri normalize et
+        final normalizedDistrictName = _normalizeTurkishText(districtName);
+
+        districtId = _findDistrictIdByName(normalizedDistrictName);
+
+        if (districtId != null) {
+          Logger.info('İlçe ID bulundu: $districtId ($districtName)');
+        } else {
+          Logger.warning('İlçe ID bulunamadı: $districtName');
+        }
+      }
+
+      if (cityId != null) {
+        return {
+          'cityId': cityId,
+          'districtId': districtId ?? '',
+          'cityName': cityName ?? '',
+          'districtName': districtName ?? '',
+        };
+      }
+
+      return null;
+    } catch (e) {
+      Logger.error('Koordinatlardan il/ilçe ID\'leri bulunurken hata: $e');
+      return null;
+    }
+  }
+
+  /// İl adına göre ID bulur
+  String? _findCityIdByName(String cityName) {
+    try {
+      // Tam eşleşme ara
+      var city = _cities.firstWhere(
+        (city) =>
+            _normalizeTurkishText(city.name).toLowerCase() ==
+            cityName.toLowerCase(),
+        orElse: () => throw Exception('Şehir bulunamadı'),
+      );
+      return city.id;
+    } catch (e) {
+      // Tam eşleşme bulunamadıysa kısmi eşleşme ara
+      try {
+        var city = _cities.firstWhere(
+          (city) =>
+              _normalizeTurkishText(
+                city.name,
+              ).toLowerCase().contains(cityName.toLowerCase()) ||
+              cityName.toLowerCase().contains(
+                _normalizeTurkishText(city.name).toLowerCase(),
+              ),
+          orElse: () => throw Exception('Şehir bulunamadı'),
+        );
+        return city.id;
+      } catch (e) {
+        Logger.warning('İl bulunamadı: $cityName');
+        return null;
+      }
+    }
+  }
+
+  /// İlçe adına göre ID bulur
+  String? _findDistrictIdByName(String districtName) {
+    try {
+      // Tam eşleşme ara
+      var district = _districts.firstWhere(
+        (district) =>
+            _normalizeTurkishText(district.name).toLowerCase() ==
+            districtName.toLowerCase(),
+        orElse: () => throw Exception('İlçe bulunamadı'),
+      );
+      return district.id;
+    } catch (e) {
+      // Tam eşleşme bulunamadıysa kısmi eşleşme ara
+      try {
+        var district = _districts.firstWhere(
+          (district) =>
+              _normalizeTurkishText(
+                district.name,
+              ).toLowerCase().contains(districtName.toLowerCase()) ||
+              districtName.toLowerCase().contains(
+                _normalizeTurkishText(district.name).toLowerCase(),
+              ),
+          orElse: () => throw Exception('İlçe bulunamadı'),
+        );
+        return district.id;
+      } catch (e) {
+        Logger.warning('İlçe bulunamadı: $districtName');
+        return null;
+      }
+    }
+  }
+
+  /// Türkçe karakterleri normalize eder
+  String _normalizeTurkishText(String text) {
+    return text
+        .replaceAll('İ', 'i')
+        .replaceAll('I', 'ı')
+        .replaceAll('Ğ', 'ğ')
+        .replaceAll('Ü', 'ü')
+        .replaceAll('Ş', 'ş')
+        .replaceAll('Ö', 'ö')
+        .replaceAll('Ç', 'ç');
   }
 }

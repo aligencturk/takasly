@@ -1440,6 +1440,88 @@ class _AddProductViewState extends State<AddProductView> {
           _buildDistrictDropdown(),
           const SizedBox(height: 16),
 
+          // Otomatik konum bilgisi kartı
+          if (_currentPosition != null &&
+              (_selectedCityId != null || _selectedDistrictId != null))
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Otomatik Konum Bilgileri',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Builder(
+                          builder: (context) {
+                            final vm = Provider.of<ProductViewModel>(
+                              context,
+                              listen: false,
+                            );
+                            String cityName = 'Bilinmeyen';
+                            String districtName = '';
+
+                            if (_selectedCityId != null) {
+                              try {
+                                final city = vm.cities.firstWhere(
+                                  (c) => c.id == _selectedCityId,
+                                );
+                                cityName = city.name;
+                              } catch (e) {
+                                cityName = 'Bilinmeyen';
+                              }
+                            }
+
+                            if (_selectedDistrictId != null) {
+                              try {
+                                final district = vm.districts.firstWhere(
+                                  (d) => d.id == _selectedDistrictId,
+                                );
+                                districtName = district.name;
+                              } catch (e) {
+                                districtName = '';
+                              }
+                            }
+
+                            String message = 'İl: $cityName';
+                            if (districtName.isNotEmpty) {
+                              message += '\nİlçe: $districtName';
+                            }
+
+                            return Text(
+                              message,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.blue.shade600),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Info card
           Row(
             children: [
@@ -1891,6 +1973,14 @@ class _AddProductViewState extends State<AddProductView> {
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey.shade600,
                       ),
+                    )
+                  else
+                    Text(
+                      'Konum alındığında il ve ilçe bilgileri otomatik olarak doldurulacaktır',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                 ],
               ),
@@ -1970,6 +2060,12 @@ class _AddProductViewState extends State<AddProductView> {
           _selectedDistrictId = null;
         });
 
+        // Koordinatlardan il ve ilçe bilgilerini al
+        await _updateCityDistrictFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+
         // Kullanıcıya başarı mesajı göster
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2011,6 +2107,109 @@ class _AddProductViewState extends State<AddProductView> {
     }
   }
 
+  /// Koordinatlardan il ve ilçe bilgilerini alır ve UI'ı günceller
+  Future<void> _updateCityDistrictFromCoordinates(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      Logger.info('Koordinatlardan il/ilçe bilgileri alınıyor...');
+
+      final vm = Provider.of<ProductViewModel>(context, listen: false);
+      final locationInfo = await vm.findCityDistrictIdsFromCoordinates(
+        latitude,
+        longitude,
+      );
+
+      if (locationInfo != null && mounted) {
+        setState(() {
+          _selectedCityId = locationInfo['cityId'];
+          _selectedDistrictId = locationInfo['districtId']?.isNotEmpty == true
+              ? locationInfo['districtId']
+              : null;
+        });
+
+        Logger.info(
+          'İl/ilçe bilgileri güncellendi: ${locationInfo['cityName']} / ${locationInfo['districtName']}',
+        );
+
+        // Kullanıcıya bilgi ver
+        if (mounted) {
+          final cityName = locationInfo['cityName'];
+          final districtName = locationInfo['districtName'];
+
+          String message = 'Konum: $cityName';
+          if (districtName != null && districtName.isNotEmpty) {
+            message += ', $districtName';
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(message)),
+                ],
+              ),
+              backgroundColor: Colors.blue.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        Logger.warning('Koordinatlardan il/ilçe bilgileri alınamadı');
+
+        // Kullanıcıya bilgi ver
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Konum alındı ancak il/ilçe bilgileri bulunamadı. Lütfen manuel olarak seçin.',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      Logger.error('Koordinatlardan il/ilçe bilgileri alınırken hata: $e');
+
+      // Kullanıcıya hata bilgisi ver
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'İl/ilçe bilgileri alınırken hata oluştu. Lütfen manuel olarak seçin.',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
   void _clearLocation() {
     setState(() {
       _currentPosition = null;
@@ -2018,6 +2217,8 @@ class _AddProductViewState extends State<AddProductView> {
       _selectedCityId = null;
       _selectedDistrictId = null;
     });
+
+    Logger.info('Konum bilgileri temizlendi');
   }
 
   Future<void> _showCityLocationOnMap(

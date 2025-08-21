@@ -14,25 +14,25 @@ class LocationService {
     try {
       // Önce geolocator ile kontrol et
       LocationPermission permission = await Geolocator.checkPermission();
-      
+
       if (permission == LocationPermission.denied) {
         // İzin iste
         permission = await Geolocator.requestPermission();
       }
-      
+
       if (permission == LocationPermission.deniedForever) {
         // Kullanıcı kalıcı olarak reddetti
         Logger.warning('Konum izni kalıcı olarak reddedildi');
         return false;
       }
-      
+
       // İzin verildi mi kontrol et
-      if (permission == LocationPermission.whileInUse || 
+      if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
         Logger.info('Konum izni verildi');
         return true;
       }
-      
+
       Logger.warning('Konum izni verilmedi: $permission');
       return false;
     } catch (e) {
@@ -137,21 +137,23 @@ class LocationService {
   Future<Position?> getLocationFromCityName(String locationName) async {
     try {
       Logger.info('Konum aranıyor: $locationName');
-      
+
       List<Location> locations = [];
-      
+
       // Farklı formatları dene
       List<String> searchFormats = [
         locationName, // Orijinal format
         '$locationName, Turkey', // Turkey eklenmişse
         locationName.replaceAll(', Turkey', ''), // Turkey'i kaldır
       ];
-      
+
       for (String searchTerm in searchFormats) {
         try {
           locations = await locationFromAddress(searchTerm);
           if (locations.isNotEmpty) {
-            Logger.info('Konum bulundu ($searchTerm): ${locations.first.latitude}, ${locations.first.longitude}');
+            Logger.info(
+              'Konum bulundu ($searchTerm): ${locations.first.latitude}, ${locations.first.longitude}',
+            );
             break;
           }
         } catch (e) {
@@ -159,10 +161,10 @@ class LocationService {
           continue;
         }
       }
-      
+
       if (locations.isNotEmpty) {
         final location = locations.first;
-        
+
         return Position(
           latitude: location.latitude,
           longitude: location.longitude,
@@ -176,11 +178,79 @@ class LocationService {
           speedAccuracy: 0,
         );
       }
-      
+
       Logger.warning('Konum bulunamadı: $locationName');
       return null;
     } catch (e) {
       Logger.error('Konum alınırken hata: $e');
+      return null;
+    }
+  }
+
+  /// Koordinatlardan il ve ilçe bilgilerini alır (reverse geocoding)
+  Future<Map<String, String>?> getCityDistrictFromCoordinates(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      Logger.info('Koordinatlardan il/ilçe aranıyor: $latitude, $longitude');
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        latitude,
+        longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final placemark = placemarks.first;
+        Logger.info(
+          'İl/ilçe bulundu: ${placemark.administrativeArea} / ${placemark.subLocality ?? placemark.locality}',
+        );
+
+        return {
+          'city': placemark.administrativeArea ?? '',
+          'district': placemark.subLocality ?? placemark.locality ?? '',
+          'country': placemark.country ?? '',
+        };
+      }
+
+      Logger.warning('Koordinatlardan il/ilçe bulunamadı');
+      return null;
+    } catch (e) {
+      Logger.error('Koordinatlardan il/ilçe alınırken hata: $e');
+      return null;
+    }
+  }
+
+  /// Koordinatlardan sadece il bilgisini alır
+  Future<String?> getCityFromCoordinates(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      final locationInfo = await getCityDistrictFromCoordinates(
+        latitude,
+        longitude,
+      );
+      return locationInfo?['city'];
+    } catch (e) {
+      Logger.error('Koordinatlardan il alınırken hata: $e');
+      return null;
+    }
+  }
+
+  /// Koordinatlardan sadece ilçe bilgisini alır
+  Future<String?> getDistrictFromCoordinates(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      final locationInfo = await getCityDistrictFromCoordinates(
+        latitude,
+        longitude,
+      );
+      return locationInfo?['district'];
+    } catch (e) {
+      Logger.error('Koordinatlardan ilçe alınırken hata: $e');
       return null;
     }
   }
