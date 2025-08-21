@@ -8,6 +8,7 @@ import '../../core/app_theme.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/skeletons/product_grid_skeleton.dart';
+import '../../utils/logger.dart';
 
 class SearchView extends StatefulWidget {
   const SearchView({super.key});
@@ -96,10 +97,14 @@ class _SearchViewState extends State<SearchView> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Geri dönmeden önce filtreleri temizle
+        // Sadece arama yapıldıysa filtreleri temizle
         if (_hasSearched) {
           final productViewModel = context.read<ProductViewModel>();
-          productViewModel.clearFilters();
+          Logger.info('🔍 SearchView - clearFilters() çağrılıyor...');
+          await productViewModel.clearFilters();
+          Logger.info(
+            '🔍 SearchView - Arama yapıldı, filtreler temizlendi (en yakın filtresi otomatik uygulandı)',
+          );
         }
         return true;
       },
@@ -112,11 +117,15 @@ class _SearchViewState extends State<SearchView> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              // Geri dönmeden önce filtreleri temizle
+            onPressed: () async {
+              // Sadece arama yapıldıysa filtreleri temizle
               if (_hasSearched) {
                 final productViewModel = context.read<ProductViewModel>();
-                productViewModel.clearFilters();
+                Logger.info('🔍 SearchView - clearFilters() çağrılıyor...');
+                await productViewModel.clearFilters();
+                Logger.info(
+                  '🔍 SearchView - Geri butonuna basıldı, arama yapıldı, filtreler temizlendi (en yakın filtresi otomatik uygulandı)',
+                );
               }
               Navigator.pop(context);
             },

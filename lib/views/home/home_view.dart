@@ -40,80 +40,149 @@ class _HomeViewState extends State<HomeView> {
     _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Hot reload kontrolü - sadece debug modda
-      if (kDebugMode) {
-        Logger.info(
-          '🔧 HomeView - Debug mode detected, checking hot reload state...',
-        );
-        final authViewModel = Provider.of<AuthViewModel>(
-          context,
-          listen: false,
-        );
-        await authViewModel.checkHotReloadState();
-      }
-
-      final productViewModel = Provider.of<ProductViewModel>(
-        context,
-        listen: false,
-      );
-      productViewModel.loadInitialData();
-      // Kullanıcı giriş yaptıysa varsayılan olarak konuma göre en yakın ilanları göster
-      final authViewModelForLocation = Provider.of<AuthViewModel>(
-        context,
-        listen: false,
-      );
-      if (authViewModelForLocation.currentUser != null) {
-        final currentFilter = productViewModel.currentFilter;
-        // Kullanıcının kendi filtresini ezmemek için sadece varsayılanda ve aktif filtre yokken uygula
-        if (currentFilter.sortType == 'default' &&
-            !currentFilter.hasActiveFilters) {
-          Logger.info(
-            '📍 HomeView - Logged-in user detected, applying nearest-to-me sorting',
-          );
-          await productViewModel.applyFilter(
-            currentFilter.copyWith(sortType: 'location'),
-          );
-        }
-      }
-      // Favorileri arka planda yükle (UI'ı bloklamasın)
-      Future.microtask(() {
-        productViewModel.loadFavoriteProducts();
-      });
-      // Kategorilerin yüklendiğinden emin ol
-      if (productViewModel.categories.isEmpty) {
-        productViewModel.loadCategories();
-      }
-
-      // Logo bilgilerini yükle
-      final generalViewModel = Provider.of<GeneralViewModel>(
-        context,
-        listen: false,
-      );
-      Future.microtask(() {
-        generalViewModel.loadLogos();
-      });
-
-      // Bildirimleri arka planda yükle
-      final notificationViewModel = Provider.of<NotificationViewModel>(
-        context,
-        listen: false,
-      );
-      Future.microtask(() {
-        notificationViewModel.loadNotifications();
-      });
-
-      // Remote Config duyuru kontrolü - arka planda çalıştır
-      Future.microtask(() async {
-        try {
-          // 2 saniye bekle ki remote config initialize olsun
-          await Future.delayed(const Duration(seconds: 2));
-
-          await AnnouncementDialog.showIfNeeded(context);
-        } catch (e) {
-          Logger.error('❌ Remote Config duyuru kontrolü hatası: $e', error: e);
-        }
-      });
+      await _initializeHomeView();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Sayfa tekrar aktif olduğunda (örn: search_view'dan dönüldüğünde) en yakın filtresini kontrol et
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _checkAndApplyLocationFilter();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Widget güncellendiğinde en yakın filtresini kontrol et
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _checkAndApplyLocationFilter();
+    });
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    Logger.info('🔄 HomeView - activate() called, checking location filter...');
+    // Sayfa tekrar aktif olduğunda (örn: navigator'dan dönüldüğünde) en yakın filtresini kontrol et
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _checkAndApplyLocationFilter();
+    });
+  }
+
+  Future<void> _initializeHomeView() async {
+    // Hot reload kontrolü - sadece debug modda
+    if (kDebugMode) {
+      Logger.info(
+        '🔧 HomeView - Debug mode detected, checking hot reload state...',
+      );
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      await authViewModel.checkHotReloadState();
+    }
+
+    final productViewModel = Provider.of<ProductViewModel>(
+      context,
+      listen: false,
+    );
+    productViewModel.loadInitialData();
+
+    // En yakın filtresini uygula
+    await _checkAndApplyLocationFilter();
+
+    // Favorileri arka planda yükle (UI'ı bloklamasın)
+    Future.microtask(() {
+      productViewModel.loadFavoriteProducts();
+    });
+    // Kategorilerin yüklendiğinden emin ol
+    if (productViewModel.categories.isEmpty) {
+      productViewModel.loadCategories();
+    }
+
+    // Logo bilgilerini yükle
+    final generalViewModel = Provider.of<GeneralViewModel>(
+      context,
+      listen: false,
+    );
+    Future.microtask(() {
+      generalViewModel.loadLogos();
+    });
+
+    // Bildirimleri arka planda yükle
+    final notificationViewModel = Provider.of<NotificationViewModel>(
+      context,
+      listen: false,
+    );
+    Future.microtask(() {
+      notificationViewModel.loadNotifications();
+    });
+
+    // Remote Config duyuru kontrolü - arka planda çalıştır
+    Future.microtask(() async {
+      try {
+        // 2 saniye bekle ki remote config initialize olsun
+        await Future.delayed(const Duration(seconds: 2));
+
+        await AnnouncementDialog.showIfNeeded(context);
+      } catch (e) {
+        Logger.error('❌ Remote Config duyuru kontrolü hatası: $e', error: e);
+      }
+    });
+  }
+
+  Future<void> _checkAndApplyLocationFilter() async {
+    final productViewModel = Provider.of<ProductViewModel>(
+      context,
+      listen: false,
+    );
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+
+    // Kullanıcı giriş yaptıysa varsayılan olarak konuma göre en yakın ilanları göster
+    if (authViewModel.currentUser != null) {
+      final currentFilter = productViewModel.currentFilter;
+
+      Logger.info(
+        '📍 HomeView - Checking location filter: sortType=${currentFilter.sortType}, hasActiveFilters=${currentFilter.hasActiveFilters}',
+      );
+
+      // Eğer filtreler temizlenmişse veya varsayılan filtre varsa, en yakın filtresini uygula
+      if (currentFilter.sortType == 'default' &&
+          !currentFilter.hasActiveFilters) {
+        Logger.info(
+          '📍 HomeView - Logged-in user detected, applying nearest-to-me sorting',
+        );
+        await productViewModel.applyFilter(
+          currentFilter.copyWith(sortType: 'location'),
+        );
+      } else if (currentFilter.sortType != 'location' &&
+          !currentFilter.hasActiveFilters) {
+        // Eğer sortType location değilse ve aktif filtre yoksa, en yakın filtresini uygula
+        Logger.info(
+          '📍 HomeView - Filter reset detected, applying nearest-to-me sorting',
+        );
+        await productViewModel.applyFilter(
+          currentFilter.copyWith(sortType: 'location'),
+        );
+      } else if (currentFilter.sortType == 'location') {
+        // Zaten location filtresi uygulanmışsa, sadece log yaz
+        Logger.info(
+          '📍 HomeView - Location filter already applied, no action needed',
+        );
+      } else if (currentFilter.sortType == 'location' &&
+          currentFilter.hasActiveFilters) {
+        // Location filtresi var ama başka filtreler de var, sadece log yaz
+        Logger.info(
+          '📍 HomeView - Location filter with other filters, no action needed',
+        );
+      } else {
+        Logger.info(
+          '📍 HomeView - Other filters active, not applying location filter',
+        );
+      }
+    } else {
+      Logger.info('📍 HomeView - No logged-in user, skipping location filter');
+    }
   }
 
   @override

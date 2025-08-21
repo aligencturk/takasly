@@ -2478,6 +2478,15 @@ class ProductViewModel extends ChangeNotifier {
 
     await loadAllProducts(refresh: true);
 
+    // Eğer kullanıcı giriş yapmışsa, otomatik olarak "en yakın" filtresini uygula
+    final currentUser = await _authService.getCurrentUser();
+    if (currentUser != null) {
+      Logger.info(
+        '📍 ProductViewModel.clearFilters - Auto-applying nearest-to-me filter for logged-in user',
+      );
+      await applyFilter(_currentFilter.copyWith(sortType: 'location'));
+    }
+
     Logger.info(
       '✅ ProductViewModel.clearFilters - Completed, products count: ${_products.length}',
     );
