@@ -56,10 +56,8 @@ class AuthViewModel extends ChangeNotifier {
 
   AuthViewModel() {
     Logger.info('🚀 AuthViewModel constructor called');
-    // Constructor'da hiç otomatik giriş yapma
-    // Sadece manuel olarak çağrıldığında giriş yap
-    _isLoggedIn = false;
-    _isInitialized = false;
+    // Constructor'da otomatik giriş kontrolü yap
+    _initializeAuth();
   }
 
   /// SharedPreferences'tan mevcut kullanıcıyı ViewModel'e yükler (gerekirse)
