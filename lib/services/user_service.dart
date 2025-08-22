@@ -915,9 +915,10 @@ class UserService {
     required int userId,
   }) async {
     try {
-      print('🔍 GET USER PROFILE DETAIL');
-      print(
+      Logger.debug('🔍 GET USER PROFILE DETAIL', tag: 'UserService');
+      Logger.debug(
         '📤 User ID: $userId, User Token: ${userToken != null ? "${userToken.substring(0, 20)}..." : "null"}',
+        tag: 'UserService',
       );
 
       // Token varsa query parameter olarak ekle, yoksa sadece Basic Auth kullan
@@ -925,17 +926,25 @@ class UserService {
           ? '${ApiConstants.userProfileDetail}/$userId/profileDetail?userToken=$userToken'
           : '${ApiConstants.userProfileDetail}/$userId/profileDetail';
 
+      Logger.debug('🔗 Endpoint: $endpoint', tag: 'UserService');
+
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
         fromJson: (json) {
-          print('🔍 Get Profile Detail fromJson - Raw data: $json');
+          Logger.debug(
+            '🔍 Get Profile Detail fromJson - Raw data: $json',
+            tag: 'UserService',
+          );
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
             // Eğer data field'ı içinde profil detayları varsa
             if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
-              print('🔍 Get Profile Detail - Data field format detected');
+              Logger.debug(
+                '🔍 Get Profile Detail - Data field format detected',
+                tag: 'UserService',
+              );
               final dataField = json['data'] as Map<String, dynamic>;
 
               // Token güncelleme kontrolü
@@ -943,8 +952,9 @@ class UserService {
                   dataField['token'] != null &&
                   dataField['token'].toString().isNotEmpty) {
                 final newToken = dataField['token'].toString();
-                print(
+                Logger.debug(
                   '🔄 Profile Detail - Data field içinde yeni token bulundu: ${newToken.substring(0, 20)}...',
+                  tag: 'UserService',
                 );
                 _updateTokenInBackground(newToken);
               }
@@ -953,8 +963,9 @@ class UserService {
               if (dataField.containsKey('products') &&
                   dataField['products'] is List) {
                 final products = dataField['products'] as List;
-                print(
+                Logger.debug(
                   '🔍 Get Profile Detail - Products count: ${products.length}',
+                  tag: 'UserService',
                 );
               }
 
@@ -962,8 +973,9 @@ class UserService {
               if (dataField.containsKey('reviews') &&
                   dataField['reviews'] is List) {
                 final reviews = dataField['reviews'] as List;
-                print(
+                Logger.debug(
                   '🔍 Get Profile Detail - Reviews count: ${reviews.length}',
+                  tag: 'UserService',
                 );
               }
 
@@ -971,8 +983,9 @@ class UserService {
               if (dataField.containsKey('myReviews') &&
                   dataField['myReviews'] is List) {
                 final myReviews = dataField['myReviews'] as List;
-                print(
+                Logger.debug(
                   '🔍 Get Profile Detail - MyReviews count: ${myReviews.length}',
+                  tag: 'UserService',
                 );
               }
 
@@ -981,68 +994,98 @@ class UserService {
             // Eğer direkt profil detayları gelirse
             else if (json.containsKey('userID') ||
                 json.containsKey('userFullname')) {
-              print(
+              Logger.debug(
                 '🔍 Get Profile Detail - Direct profile data format detected',
+                tag: 'UserService',
               );
 
               // Products array'ini logla
               if (json.containsKey('products') && json['products'] is List) {
                 final products = json['products'] as List;
-                print(
+                Logger.debug(
                   '🔍 Get Profile Detail - Products count: ${products.length}',
+                  tag: 'UserService',
                 );
               }
 
               // Reviews array'ini detaylı logla
               if (json.containsKey('reviews') && json['reviews'] is List) {
                 final reviews = json['reviews'] as List;
-                print(
+                Logger.debug(
                   '🔍 Get Profile Detail - Reviews count: ${reviews.length}',
+                  tag: 'UserService',
                 );
                 for (int i = 0; i < reviews.length && i < 3; i++) {
                   final review = reviews[i];
-                  print('🔍 Review $i: $review');
+                  Logger.debug('🔍 Review $i: $review', tag: 'UserService');
                 }
               }
 
               // MyReviews array'ini detaylı logla
               if (json.containsKey('myReviews') && json['myReviews'] is List) {
                 final myReviews = json['myReviews'] as List;
-                print(
+                Logger.debug(
                   '🔍 Get Profile Detail - MyReviews count: ${myReviews.length}',
+                  tag: 'UserService',
                 );
-                print('🔍 Get Profile Detail - MyReviews raw data: $myReviews');
+                Logger.debug(
+                  '🔍 Get Profile Detail - MyReviews raw data: $myReviews',
+                  tag: 'UserService',
+                );
                 for (int i = 0; i < myReviews.length && i < 3; i++) {
                   final review = myReviews[i];
-                  print('🔍 MyReview $i: $review');
+                  Logger.debug('🔍 MyReview $i: $review', tag: 'UserService');
                   if (review is Map<String, dynamic>) {
-                    print('🔍 MyReview $i keys: ${review.keys.toList()}');
-                    print('🔍 MyReview $i reviewID: ${review['reviewID']}');
-                    print(
+                    Logger.debug(
+                      '🔍 MyReview $i keys: ${review.keys.toList()}',
+                      tag: 'UserService',
+                    );
+                    Logger.debug(
+                      '🔍 MyReview $i reviewID: ${review['reviewID']}',
+                      tag: 'UserService',
+                    );
+                    Logger.debug(
                       '🔍 MyReview $i revieweeName: ${review['revieweeName']}',
+                      tag: 'UserService',
                     );
-                    print(
+                    Logger.debug(
                       '🔍 MyReview $i revieweeImage: ${review['revieweeImage']}',
+                      tag: 'UserService',
                     );
-                    print('🔍 MyReview $i rating: ${review['rating']}');
-                    print('🔍 MyReview $i comment: ${review['comment']}');
-                    print('🔍 MyReview $i reviewDate: ${review['reviewDate']}');
+                    Logger.debug(
+                      '🔍 MyReview $i rating: ${review['rating']}',
+                      tag: 'UserService',
+                    );
+                    Logger.debug(
+                      '🔍 MyReview $i comment: ${review['comment']}',
+                      tag: 'UserService',
+                    );
+                    Logger.debug(
+                      '🔍 MyReview $i reviewDate: ${review['reviewDate']}',
+                      tag: 'UserService',
+                    );
                   }
                 }
               } else {
-                print(
+                Logger.warning(
                   '⚠️ Get Profile Detail - myReviews field not found or not a list',
+                  tag: 'UserService',
                 );
-                print(
+                Logger.debug(
                   '⚠️ Get Profile Detail - Available keys: ${json.keys.toList()}',
+                  tag: 'UserService',
                 );
               }
 
               return UserProfileDetail.fromJson(json);
             } else {
-              print('⚠️ Get Profile Detail - Unexpected response format');
-              print(
+              Logger.warning(
+                '⚠️ Get Profile Detail - Unexpected response format',
+                tag: 'UserService',
+              );
+              Logger.debug(
                 '⚠️ Get Profile Detail - Available keys: ${json.keys.toList()}',
+                tag: 'UserService',
               );
               throw Exception(
                 'API returned unexpected format. Response: $json',
@@ -1054,13 +1097,16 @@ class UserService {
         },
       );
 
-      print('✅ Get Profile Detail Response: ${response.isSuccess}');
-      print('🔍 Response Data: ${response.data}');
-      print('🔍 Response Error: ${response.error}');
+      Logger.debug(
+        '✅ Get Profile Detail Response: ${response.isSuccess}',
+        tag: 'UserService',
+      );
+      Logger.debug('🔍 Response Data: ${response.data}', tag: 'UserService');
+      Logger.debug('🔍 Response Error: ${response.error}', tag: 'UserService');
 
       return response;
     } catch (e) {
-      print('❌ Get Profile Detail Error: $e');
+      Logger.error('❌ Get Profile Detail Error: $e', tag: 'UserService');
       return ApiResponse<UserProfileDetail>.error(ErrorMessages.userNotFound);
     }
   }
@@ -1069,13 +1115,16 @@ class UserService {
   /// GET /service/user/id
   Future<ApiResponse<User>> getUserById(String userId) async {
     try {
-      print('🔍 GET USER BY ID');
-      print('📤 User ID: $userId');
+      Logger.debug('🔍 GET USER BY ID', tag: 'UserService');
+      Logger.debug('📤 User ID: $userId', tag: 'UserService');
 
       final response = await _httpClient.getWithBasicAuth(
         '${ApiConstants.userProfile}/$userId',
         fromJson: (json) {
-          print('🔍 Get User By ID fromJson - Raw data: $json');
+          Logger.debug(
+            '🔍 Get User By ID fromJson - Raw data: $json',
+            tag: 'UserService',
+          );
 
           // Response formatını kontrol et
           if (json is Map<String, dynamic>) {
@@ -1084,26 +1133,37 @@ class UserService {
 
             // Eğer direkt user verisi gelirse
             if (json.containsKey('id') || json.containsKey('userID')) {
-              print('🔍 Get User By ID - Direct user data format detected');
+              Logger.debug(
+                '🔍 Get User By ID - Direct user data format detected',
+                tag: 'UserService',
+              );
               userDataToTransform = json;
             }
             // Eğer data field'ı içinde user verisi varsa
             else if (json.containsKey('data') &&
                 json['data'] is Map<String, dynamic>) {
-              print('🔍 Get User By ID - Data field format detected');
+              Logger.debug(
+                '🔍 Get User By ID - Data field format detected',
+                tag: 'UserService',
+              );
               userDataToTransform = json['data'];
             }
             // Eğer user field'ı içinde user verisi varsa
             else if (json.containsKey('user') &&
                 json['user'] is Map<String, dynamic>) {
-              print('🔍 Get User By ID - User field format detected');
+              Logger.debug(
+                '🔍 Get User By ID - User field format detected',
+                tag: 'UserService',
+              );
               userDataToTransform = json['user'];
             } else {
-              print(
+              Logger.warning(
                 '⚠️ Get User By ID - Unexpected response format, creating default user',
+                tag: 'UserService',
               );
-              print(
+              Logger.debug(
                 '⚠️ Get User By ID - Available keys: ${json.keys.toList()}',
+                tag: 'UserService',
               );
               return User(
                 id: userId,
@@ -1182,13 +1242,16 @@ class UserService {
         },
       );
 
-      print('✅ Get User By ID Response: ${response.isSuccess}');
-      print('🔍 Response Data: ${response.data}');
-      print('🔍 Response Error: ${response.error}');
+      Logger.debug(
+        '✅ Get User By ID Response: ${response.isSuccess}',
+        tag: 'UserService',
+      );
+      Logger.debug('🔍 Response Data: ${response.data}', tag: 'UserService');
+      Logger.debug('🔍 Response Error: ${response.error}', tag: 'UserService');
 
       return response;
     } catch (e) {
-      print('❌ Get User By ID Error: $e');
+      Logger.error('❌ Get User By ID Error: $e', tag: 'UserService');
       return ApiResponse<User>.error(ErrorMessages.userNotFound);
     }
   }
@@ -1200,23 +1263,35 @@ class UserService {
     try {
       final endpoint =
           '${ApiConstants.searchHistoryBase}/$userId/searchHistory';
-      Logger.info('🔍 UserService.getSearchHistory() - userId: $userId', tag: 'UserService');
+      Logger.info(
+        '🔍 UserService.getSearchHistory() - userId: $userId',
+        tag: 'UserService',
+      );
       Logger.info('📡 Endpoint: $endpoint', tag: 'UserService');
-      
+
       final response = await _httpClient
           .getWithBasicAuth<SearchHistoryResponse>(
             endpoint,
             fromJson: (json) => SearchHistoryResponse.fromJson(json),
           );
-      
-      Logger.info('📥 API Response: success=${response.isSuccess}', tag: 'UserService');
-      
+
+      Logger.info(
+        '📥 API Response: success=${response.isSuccess}',
+        tag: 'UserService',
+      );
+
       if (response.isSuccess && response.data != null) {
-        Logger.info('✅ Arama geçmişi başarıyla alındı: ${response.data!.items.length} item', tag: 'UserService');
+        Logger.info(
+          '✅ Arama geçmişi başarıyla alındı: ${response.data!.items.length} item',
+          tag: 'UserService',
+        );
       } else {
-        Logger.warning('⚠️ API response başarısız: ${response.error}', tag: 'UserService');
+        Logger.warning(
+          '⚠️ API response başarısız: ${response.error}',
+          tag: 'UserService',
+        );
       }
-      
+
       return response;
     } catch (e) {
       Logger.error('❌ getSearchHistory error: $e', tag: 'UserService');
@@ -1228,13 +1303,14 @@ class UserService {
 
   /// Arama geçmişini temizler
   /// DELETE /service/user/account/{userId}/searchHistoryClear
-  Future<ApiResponse<bool>> clearSearchHistory({
-    required int userId,
-  }) async {
+  Future<ApiResponse<bool>> clearSearchHistory({required int userId}) async {
     try {
       final endpoint =
           '${ApiConstants.searchHistoryBase}/$userId/searchHistoryClear';
-      Logger.debug('DELETE Search History Clear: $endpoint', tag: 'UserService');
+      Logger.debug(
+        'DELETE Search History Clear: $endpoint',
+        tag: 'UserService',
+      );
       final response = await _httpClient.deleteWithBasicAuth<bool>(
         endpoint,
         fromJson: (json) {
@@ -1262,14 +1338,17 @@ class UserService {
     try {
       final token = await getUserToken();
       if (token == null) {
-        print('❌ Test User Service: No token found');
+        Logger.warning(
+          '❌ Test User Service: No token found',
+          tag: 'UserService',
+        );
         return false;
       }
 
       final response = await getUserProfile(userToken: token);
       return response.isSuccess;
     } catch (e) {
-      print('❌ Test User Service Error: $e');
+      Logger.error('❌ Test User Service Error: $e', tag: 'UserService');
       return false;
     }
   }
