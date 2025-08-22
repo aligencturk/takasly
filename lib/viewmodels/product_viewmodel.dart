@@ -747,7 +747,7 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   // Local arama geçmişine kayıt ekle (login olmasa da çalışır)
-  Future<void> addSearchHistoryEntry(String query) async {
+  Future<void> addSearchHistoryEntry(String query, {String? type, String? categoryId}) async {
     try {
       final normalized = query.trim();
       if (normalized.isEmpty) return;
@@ -764,6 +764,8 @@ class ProductViewModel extends ChangeNotifier {
           searchCount: (current.searchCount) + 1,
           lastSearched: DateTime.now().toIso8601String(),
           formattedDate: 'az önce',
+          type: type ?? current.type,
+          categoryId: categoryId ?? current.categoryId,
         );
         _searchHistory[existingIndex] = updated;
         // En üste taşı
@@ -777,6 +779,8 @@ class ProductViewModel extends ChangeNotifier {
             searchCount: 1,
             lastSearched: DateTime.now().toIso8601String(),
             formattedDate: 'az önce',
+            type: type ?? 'text',
+            categoryId: categoryId,
           ),
         );
       }
@@ -791,6 +795,16 @@ class ProductViewModel extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  /// Kategori arama geçmişi ekler
+  Future<void> addCategorySearchHistory(String categoryName, String categoryId) async {
+    await addSearchHistoryEntry(categoryName, type: 'category', categoryId: categoryId);
+  }
+
+  /// Metin arama geçmişi ekler
+  Future<void> addTextSearchHistory(String query) async {
+    await addSearchHistoryEntry(query, type: 'text');
   }
 
   Future<void> _loadLocalHistoryFallback() async {

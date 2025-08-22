@@ -131,12 +131,16 @@ class SearchHistoryItem {
   final int searchCount;
   final String lastSearched;
   final String formattedDate;
+  final String? type; // 'text' veya 'category'
+  final String? categoryId; // Kategori ID'si (sadece kategori türü için)
 
   SearchHistoryItem({
     required this.search,
     required this.searchCount,
     required this.lastSearched,
     required this.formattedDate,
+    this.type,
+    this.categoryId,
   });
 
   factory SearchHistoryItem.fromJson(Map<String, dynamic> json) {
@@ -172,12 +176,28 @@ class SearchHistoryItem {
                 '')
             .toString();
 
+    final String? itemType = json['type']?.toString();
+    final String? catId = json['categoryId']?.toString();
+
     return SearchHistoryItem(
       search: searchText,
       searchCount: count,
       lastSearched: last,
       formattedDate: formatted,
+      type: itemType,
+      categoryId: catId,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'search': search,
+      'searchCount': searchCount,
+      'lastSearched': lastSearched,
+      'formattedDate': formattedDate,
+      'type': type,
+      'categoryId': categoryId,
+    };
   }
 }
 

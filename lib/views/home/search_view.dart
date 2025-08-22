@@ -59,6 +59,9 @@ class _SearchViewState extends State<SearchView> {
       });
 
       final productViewModel = context.read<ProductViewModel>();
+      // Metin arama geçmişine ekle
+      productViewModel.addTextSearchHistory(query.trim());
+      
       final filter = productViewModel.currentFilter.copyWith(
         searchText: query.trim(),
       );
@@ -288,8 +291,10 @@ class _SearchViewState extends State<SearchView> {
                                   itemBuilder: (context, index) {
                                     final item = vm.searchHistory[index];
                                     return ListTile(
-                                      leading: const Icon(
-                                        Icons.history,
+                                      leading: Icon(
+                                        item.type == 'category' 
+                                          ? Icons.category
+                                          : Icons.history,
                                         color: Colors.grey,
                                         size: 20,
                                       ),
@@ -300,12 +305,30 @@ class _SearchViewState extends State<SearchView> {
                                         style: TextStyle(fontSize: 14),
                                       ),
                                       onTap: () {
-                                        _searchController.text = item.search;
-                                        setState(() {});
-                                        context
-                                            .read<ProductViewModel>()
-                                            .liveSearch(item.search);
-                                        _performSearch(item.search);
+                                        // Türüne göre farklı davran
+                                        if (item.type == 'category' && item.categoryId != null) {
+                                          // Kategori ise filtre uygula
+                                          final vm = context.read<ProductViewModel>();
+                                          final filter = vm.currentFilter.copyWith(
+                                            categoryId: item.categoryId,
+                                            searchText: null,
+                                          );
+                                          vm.applyFilter(filter);
+                                          setState(() {
+                                            _searchController.clear();
+                                            FocusScope.of(context).unfocus();
+                                            _hasSearched = true;
+                                            _currentQuery = '';
+                                          });
+                                        } else {
+                                          // Metin arama ise normal arama yap
+                                          _searchController.text = item.search;
+                                          setState(() {});
+                                          context
+                                              .read<ProductViewModel>()
+                                              .liveSearch(item.search);
+                                          _performSearch(item.search);
+                                        }
                                       },
                                     );
                                   },
@@ -385,8 +408,9 @@ class _SearchViewState extends State<SearchView> {
                                                 // Kategori tıklandığında arama geçmişine ekle
                                                 final vm = context
                                                     .read<ProductViewModel>();
-                                                vm.addSearchHistoryEntry(
+                                                vm.addCategorySearchHistory(
                                                   category.catName,
+                                                  category.catId.toString(),
                                                 );
 
                                                 final filter = vm.currentFilter
@@ -578,8 +602,9 @@ class _SearchViewState extends State<SearchView> {
                                                 final vm = context
                                                     .read<ProductViewModel>();
                                                 // Kategori tıklandığında arama geçmişine ekle
-                                                vm.addSearchHistoryEntry(
+                                                vm.addCategorySearchHistory(
                                                   category.catName,
+                                                  category.catId.toString(),
                                                 );
 
                                                 final filter = vm
@@ -753,7 +778,10 @@ class _SearchViewState extends State<SearchView> {
                                   } else {
                                     final vm = context.read<ProductViewModel>();
                                     // Kategori önerisine tıklandığında arama geçmişine ekle
-                                    vm.addSearchHistoryEntry(item.title);
+                                    vm.addCategorySearchHistory(
+                                      item.title,
+                                      item.id.toString(),
+                                    );
 
                                     final filter = vm.currentFilter.copyWith(
                                       categoryId: item.id.toString(),
