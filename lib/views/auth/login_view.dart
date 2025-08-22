@@ -655,6 +655,11 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       final Map<String, String?>? appleTokens = await SocialAuthService.instance
           .signInWithAppleAndGetTokens();
 
+      // Loading dialog'u kapat (her durumda)
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
       if (appleTokens == null || appleTokens['idToken'] == null) {
         Logger.warning('Apple idToken alınamadı', tag: 'LoginView');
         if (mounted) {
@@ -691,11 +696,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         fcmToken: fcmToken,
       );
 
-      // Loading dialog'u kapat
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-
       if (!mounted) return;
 
       if (success) {
@@ -727,6 +727,11 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       }
     } catch (e, s) {
       Logger.error('Apple giriş hatası: $e', stackTrace: s, tag: 'LoginView');
+
+      // Hata durumunda da loading dialog'unu kapat
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
