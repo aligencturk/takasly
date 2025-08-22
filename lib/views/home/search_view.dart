@@ -228,130 +228,153 @@ class _SearchViewState extends State<SearchView> {
                 children: [
                   // Ana içerik: Geçmiş ve popüler kategoriler (arama yapılmamışsa)
                   if (!_hasSearched)
-                    Consumer<ProductViewModel>(
-                      builder: (context, vm, _) {
-                        // "Geçmişler" başlığı her zaman üstte sabit
-                        return Column(
-                          children: [
-                            // Sabit "Geçmişler" başlığı
-                            Container(
-                              width: double.infinity,
-                              color: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Geçmişler',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey[800],
-                                    ),
-                                  ),
-                                  if (vm.searchHistory.isNotEmpty)
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        context
-                                            .read<ProductViewModel>()
-                                            .clearSearchHistory();
-                                      },
-                                      icon: const Icon(
-                                        Icons.delete_sweep,
-                                        size: 18,
-                                      ),
-                                      label: const Text('Geçmişi temizle'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.redAccent,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-
-                            // Arama geçmişi listesi
-                            if (vm.searchHistory.isNotEmpty)
-                              Container(
-                                color: Colors.white,
-                                child: ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                  itemCount: vm.searchHistory.length,
-                                  separatorBuilder: (_, __) => Divider(
-                                    height: 1,
-                                    color: Colors.grey[200],
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    final item = vm.searchHistory[index];
-                                    return ListTile(
-                                      leading: Icon(
-                                        item.type == 'category' 
-                                          ? Icons.category
-                                          : Icons.history,
-                                        color: Colors.grey,
-                                        size: 20,
-                                      ),
-                                      title: Text(
-                                        item.search,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                      onTap: () {
-                                        // Türüne göre farklı davran
-                                        if (item.type == 'category' && item.categoryId != null) {
-                                          // Kategori ise filtre uygula
-                                          final vm = context.read<ProductViewModel>();
-                                          final filter = vm.currentFilter.copyWith(
-                                            categoryId: item.categoryId,
-                                            searchText: null,
-                                          );
-                                          vm.applyFilter(filter);
-                                          setState(() {
-                                            _searchController.clear();
-                                            FocusScope.of(context).unfocus();
-                                            _hasSearched = true;
-                                            _currentQuery = '';
-                                          });
-                                        } else {
-                                          // Metin arama ise normal arama yap
-                                          _searchController.text = item.search;
-                                          setState(() {});
-                                          context
-                                              .read<ProductViewModel>()
-                                              .liveSearch(item.search);
-                                          _performSearch(item.search);
-                                        }
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-
-                            // Popüler Kategoriler (sadece arama çubuğu boşken göster)
-                            if (vm.popularCategories.isNotEmpty &&
-                                _searchController.text.isEmpty)
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[50],
-                                  border: Border(
-                                    top: BorderSide(
-                                      color: Colors.grey[200]!,
-                                      width: 1,
-                                    ),
-                                  ),
-                                ),
+                    Expanded(
+                      child: Consumer<ProductViewModel>(
+                        builder: (context, vm, _) {
+                          return Column(
+                            children: [
+                              // Geçmişler bölümü - üst kısım
+                              Expanded(
+                                flex: 2,
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Padding(
+                                    // Sabit "Geçmişler" başlığı
+                                    Container(
+                                      width: double.infinity,
+                                      color: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Geçmişler',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey[800],
+                                            ),
+                                          ),
+                                          if (vm.searchHistory.isNotEmpty)
+                                            TextButton.icon(
+                                              onPressed: () {
+                                                context
+                                                    .read<ProductViewModel>()
+                                                    .clearSearchHistory();
+                                              },
+                                              icon: const Icon(
+                                                Icons.delete_sweep,
+                                                size: 18,
+                                              ),
+                                              label: const Text('Geçmişi temizle'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: Colors.redAccent,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Arama geçmişi listesi (son 4 öğe) veya boş mesajı
+                                    Expanded(
+                                      child: vm.searchHistory.isNotEmpty
+                                          ? Container(
+                                              color: Colors.white,
+                                              child: ListView.separated(
+                                                padding: const EdgeInsets.symmetric(
+                                                  vertical: 8,
+                                                ),
+                                                itemCount: vm.searchHistory.length > 4 ? 4 : vm.searchHistory.length,
+                                                separatorBuilder: (_, __) => Divider(
+                                                  height: 1,
+                                                  color: Colors.grey[200],
+                                                ),
+                                                itemBuilder: (context, index) {
+                                                  final item = vm.searchHistory[index];
+                                                  return ListTile(
+                                                    leading: Icon(
+                                                      item.type == 'category' 
+                                                        ? Icons.category
+                                                        : Icons.history,
+                                                      color: Colors.grey,
+                                                      size: 20,
+                                                    ),
+                                                    title: Text(
+                                                      item.search,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(fontSize: 14),
+                                                    ),
+                                                    onTap: () {
+                                                      // Türüne göre farklı davran
+                                                      if (item.type == 'category' && item.categoryId != null) {
+                                                        // Kategori ise filtre uygula
+                                                        final vm = context.read<ProductViewModel>();
+                                                        final filter = vm.currentFilter.copyWith(
+                                                          categoryId: item.categoryId,
+                                                          searchText: null,
+                                                        );
+                                                        vm.applyFilter(filter);
+                                                        setState(() {
+                                                          _searchController.clear();
+                                                          FocusScope.of(context).unfocus();
+                                                          _hasSearched = true;
+                                                          _currentQuery = '';
+                                                        });
+                                                      } else {
+                                                        // Metin arama ise normal arama yap
+                                                        _searchController.text = item.search;
+                                                        setState(() {});
+                                                        context
+                                                            .read<ProductViewModel>()
+                                                            .liveSearch(item.search);
+                                                        _performSearch(item.search);
+                                                      }
+                                                    },
+                                                  );
+                                                },
+                                              ),
+                                            )
+                                          : Container(
+                                              color: Colors.white,
+                                              child: Center(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.history,
+                                                      size: 48,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      'Henüz arama geçmişi yok',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Popüler Kategoriler bölümü - ana kısım
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  children: [
+                                    // Popüler kategoriler başlığı
+                                    Container(
+                                      width: double.infinity,
+                                      color: Colors.grey[50],
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 16,
                                         vertical: 12,
@@ -365,118 +388,144 @@ class _SearchViewState extends State<SearchView> {
                                         ),
                                       ),
                                     ),
-                                    Builder(
-                                      builder: (context) {
-                                        final popularCategories = vm.popularCategories;
 
-                                        if (popularCategories.isEmpty)
-                                          return const SizedBox.shrink();
+                                    // Popüler kategoriler listesi
+                                    Expanded(
+                                      child: vm.popularCategories.isNotEmpty
+                                          ? Container(
+                                              color: Colors.grey[50],
+                                              child: ListView.separated(
+                                                padding: const EdgeInsets.symmetric(
+                                                  vertical: 8,
+                                                ),
+                                                itemCount: vm.popularCategories.length,
+                                                separatorBuilder: (_, __) => Divider(
+                                                  height: 1,
+                                                  color: Colors.grey[200],
+                                                ),
+                                                itemBuilder: (context, index) {
+                                                  final category = vm.popularCategories[index];
+                                                  return ListTile(
+                                                    leading: const Icon(
+                                                      Icons.category,
+                                                      color: Colors.grey,
+                                                      size: 20,
+                                                    ),
+                                                    title: Text(
+                                                      category.catName,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(fontSize: 14),
+                                                    ),
+                                                    subtitle: Text(
+                                                      '${category.productCount} ürün',
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                    onTap: () {
+                                                      // Kategori tıklandığında arama geçmişine ekle
+                                                      final vm = context
+                                                          .read<ProductViewModel>();
+                                                      vm.addCategorySearchHistory(
+                                                        category.catName,
+                                                        category.catId.toString(),
+                                                      );
 
-                                        return ListView.separated(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          itemCount: popularCategories.length,
-                                          separatorBuilder: (_, __) => Divider(
-                                            height: 1,
-                                            color: Colors.grey[200],
-                                          ),
-                                          itemBuilder: (context, index) {
-                                            final category = popularCategories[index];
-                                            return ListTile(
-                                              leading: const Icon(
-                                                Icons.category,
-                                                color: Colors.grey,
-                                                size: 20,
+                                                      final filter = vm.currentFilter
+                                                          .copyWith(
+                                                            categoryId: category.catId
+                                                                .toString(),
+                                                            searchText: null,
+                                                          );
+                                                      vm.applyFilter(filter);
+                                                      setState(() {
+                                                        _searchController.clear();
+                                                        FocusScope.of(
+                                                          context,
+                                                        ).unfocus();
+                                                        _hasSearched = true;
+                                                        _currentQuery = '';
+                                                      });
+                                                    },
+                                                  );
+                                                },
                                               ),
-                                              title: Text(
-                                                category.catName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(fontSize: 14),
-                                              ),
-                                              subtitle: Text(
-                                                '${category.productCount} ürün',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600],
+                                            )
+                                          : Container(
+                                              color: Colors.grey[50],
+                                              child: Center(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.category,
+                                                      size: 48,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      'Popüler kategoriler yükleniyor...',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                              onTap: () {
-                                                // Kategori tıklandığında arama geçmişine ekle
-                                                final vm = context
-                                                    .read<ProductViewModel>();
-                                                vm.addCategorySearchHistory(
-                                                  category.catName,
-                                                  category.catId.toString(),
-                                                );
-
-                                                final filter = vm.currentFilter
-                                                    .copyWith(
-                                                      categoryId: category.catId
-                                                          .toString(),
-                                                      searchText: null,
-                                                    );
-                                                vm.applyFilter(filter);
-                                                setState(() {
-                                                  _searchController.clear();
-                                                  FocusScope.of(
-                                                    context,
-                                                  ).unfocus();
-                                                  _hasSearched = true;
-                                                  _currentQuery = '';
-                                                });
-                                              },
-                                            );
-                                          },
-                                        );
-                                      },
+                                            ),
                                     ),
                                   ],
                                 ),
                               ),
 
-                            // Eğer hem geçmiş hem de popüler kategoriler boşsa VE arama çubuğu boşsa bilgilendirme göster
-                            if (vm.searchHistory.isEmpty &&
-                                vm.popularCategories.isEmpty &&
-                                _searchController.text.isEmpty)
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.search,
-                                      size: 64,
-                                      color: Colors.grey[400],
+                              // Eğer hem geçmiş hem de popüler kategoriler boşsa VE arama çubuğu boşsa bilgilendirme göster
+                              if (vm.searchHistory.isEmpty &&
+                                  vm.popularCategories.isEmpty &&
+                                  _searchController.text.isEmpty)
+                                Expanded(
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.search,
+                                          size: 64,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Ürün Arama',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey[700],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'En az 2 karakter yazarak\nürün aramaya başlayın',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                            height: 1.4,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Ürün Arama',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey[700],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'En az 2 karakter yazarak\nürün aramaya başlayın',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
-                                        height: 1.4,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                          ],
-                        );
-                      },
+                            ],
+                          );
+                        },
+                      ),
                     ),
 
                   // Arama sonuçları
