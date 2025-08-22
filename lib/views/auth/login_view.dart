@@ -44,7 +44,6 @@ class _LoginViewState extends State<LoginView> {
             // Ekran boyutuna göre responsive değerler
             final isLargeScreen = screenHeight > 800;
             final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
-            final isSmallScreen = screenHeight <= 700;
 
             // Background görselinin kompozisyonuna göre form alanlarını daha aşağıda konumlandır
             // Büyük ekranlarda daha fazla üst boşluk, küçük ekranlarda daha az
@@ -76,7 +75,9 @@ class _LoginViewState extends State<LoginView> {
                         child: Column(
                           children: [
                             SizedBox(height: screenHeight * topSpacing),
-                            const _EmailPasswordForm(),
+                            Expanded(
+                              child: const _EmailPasswordForm(),
+                            ),
                             SizedBox(height: screenHeight * bottomSpacing),
                           ],
                         ),
@@ -142,17 +143,17 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
     // Ekran boyutuna göre responsive değerler
     final isLargeScreen = screenHeight > 800;
     final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
-    final isSmallScreen = screenHeight <= 700;
 
-    // Input field yüksekliği ekran boyutuna göre ayarlanır
-    final inputHeight = isLargeScreen ? 60.0 : (isMediumScreen ? 56.0 : 52.0);
-    final fontSize = isLargeScreen ? 18.0 : (isMediumScreen ? 16.0 : 15.0);
-    final borderRadius = isLargeScreen ? 14.0 : (isMediumScreen ? 12.0 : 10.0);
+    // Input field yüksekliği ekran boyutuna göre ayarlanır - daha küçük boyutlar
+    final inputHeight = isLargeScreen ? 50.0 : (isMediumScreen ? 46.0 : 42.0);
+    final fontSize = isLargeScreen ? 16.0 : (isMediumScreen ? 15.0 : 14.0);
+    final borderRadius = isLargeScreen ? 12.0 : (isMediumScreen ? 10.0 : 8.0);
     final verticalSpacing = isLargeScreen
-        ? 12.0
-        : (isMediumScreen ? 8.0 : 6.0); // Spacing artırıldı
+        ? 8.0
+        : (isMediumScreen ? 6.0 : 4.0); // Daha küçük spacing
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // E-posta input
@@ -275,8 +276,8 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         ),
 
         SizedBox(
-          height: verticalSpacing * 2.5,
-        ), // Giriş butonu öncesi spacing artırıldı
+          height: verticalSpacing * 1.5,
+        ), // Giriş butonu öncesi spacing
         // Giriş Yap butonu
         ElevatedButton(
           onPressed: () => _submitLogin(context),
@@ -284,7 +285,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
             backgroundColor: AppTheme.primary,
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(
-              vertical: isLargeScreen ? 18 : (isMediumScreen ? 16 : 14),
+              vertical: isLargeScreen ? 14 : (isMediumScreen ? 12 : 10),
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
@@ -297,7 +298,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ),
         ),
 
-        SizedBox(height: verticalSpacing * 1.5),
+        SizedBox(height: verticalSpacing),
 
         // Veya ayırıcı
         Row(
@@ -322,7 +323,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ],
         ),
 
-        SizedBox(height: verticalSpacing * 1.5),
+        SizedBox(height: verticalSpacing),
 
         // Google ile Giriş butonu
         Container(
