@@ -6,6 +6,8 @@ import '../core/constants.dart';
 import '../models/user.dart';
 import '../models/user_profile_detail.dart';
 import '../models/live_search.dart';
+import '../models/user_block.dart';
+import '../models/blocked_user.dart';
 import '../utils/logger.dart';
 
 class UserService {
@@ -1519,5 +1521,216 @@ class UserService {
       '🔍 Verification Status - Default: false (no verification fields found)',
     );
     return false;
+  }
+
+  /// Kullanıcıyı engeller
+  /// POST /service/user/account/userBlocked
+  Future<ApiResponse<UserBlock>> blockUser({
+    required String userToken,
+    required int blockedUserID,
+    String? reason,
+  }) async {
+    try {
+      Logger.debug('BLOCK USER called', tag: 'UserService');
+      Logger.debug(
+        'Request Body: {"userToken": "$userToken", "blockedUserID": $blockedUserID, "reason": "$reason"}',
+        tag: 'UserService',
+      );
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.userBlocked,
+        body: {
+          'userToken': userToken,
+          'blockedUserID': blockedUserID,
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+        },
+        useBasicAuth: true,
+        fromJson: (json) {
+          Logger.debug(
+            'Block User fromJson - Raw data: $json',
+            tag: 'UserService',
+          );
+
+          // Response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            // Data field'ı içinde user block verisi varsa
+            if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
+              final data = json['data'];
+              return UserBlock(
+                blockedUserID: blockedUserID,
+                reason: reason,
+                blockedAt: DateTime.now(),
+                message: data['message']?.toString(),
+              );
+            }
+            // Direkt user block verisi gelirse
+            else if (json.containsKey('message')) {
+              return UserBlock(
+                blockedUserID: blockedUserID,
+                reason: reason,
+                blockedAt: DateTime.now(),
+                message: json['message']?.toString(),
+              );
+            }
+          }
+
+          // Varsayılan response
+          return UserBlock(
+            blockedUserID: blockedUserID,
+            reason: reason,
+            blockedAt: DateTime.now(),
+            message: 'Kullanıcı başarıyla engellendi.',
+          );
+        },
+      );
+
+      Logger.debug(
+        '✅ Block User Response: ${response.isSuccess}',
+        tag: 'UserService',
+      );
+      Logger.debug('🔍 Response Data: ${response.data}', tag: 'UserService');
+      Logger.debug('🔍 Response Error: ${response.error}', tag: 'UserService');
+
+      return response;
+    } catch (e) {
+      Logger.error('❌ Block User Error: $e', tag: 'UserService');
+      return ApiResponse<UserBlock>.error(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Kullanıcı engelini kaldırır
+  /// POST /service/user/account/userUnBlocked
+  Future<ApiResponse<UserBlock>> unblockUser({
+    required String userToken,
+    required int blockedUserID,
+  }) async {
+    try {
+      Logger.debug('UNBLOCK USER called', tag: 'UserService');
+      Logger.debug(
+        'Request Body: {"userToken": "$userToken", "blockedUserID": $blockedUserID}',
+        tag: 'UserService',
+      );
+
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.userUnBlocked,
+        body: {'userToken': userToken, 'blockedUserID': blockedUserID},
+        useBasicAuth: true,
+        fromJson: (json) {
+          Logger.debug(
+            'Unblock User fromJson - Raw data: $json',
+            tag: 'UserService',
+          );
+
+          // Response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            // Data field'ı içinde user block verisi varsa
+            if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
+              final data = json['data'];
+              return UserBlock(
+                blockedUserID: blockedUserID,
+                reason: null,
+                blockedAt: null,
+                message: data['message']?.toString(),
+              );
+            }
+            // Direkt user block verisi gelirse
+            else if (json.containsKey('message')) {
+              return UserBlock(
+                blockedUserID: blockedUserID,
+                reason: null,
+                blockedAt: null,
+                message: json['message']?.toString(),
+              );
+            }
+          }
+
+          // Varsayılan response
+          return UserBlock(
+            blockedUserID: blockedUserID,
+            reason: null,
+            blockedAt: null,
+            message: 'Kullanıcı engeli başarıyla kaldırıldı.',
+          );
+        },
+      );
+
+      Logger.debug(
+        '✅ Unblock User Response: ${response.isSuccess}',
+        tag: 'UserService',
+      );
+      Logger.debug('🔍 Response Data: ${response.data}', tag: 'UserService');
+      Logger.debug('🔍 Response Error: ${response.error}', tag: 'UserService');
+
+      return response;
+    } catch (e) {
+      Logger.error('❌ Unblock User Error: $e', tag: 'UserService');
+      return ApiResponse<UserBlock>.error(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Engellenen kullanıcıları getirir
+  /// GET /service/user/account/{userId}/blockedUsers
+  Future<ApiResponse<List<BlockedUser>>> getBlockedUsers({
+    required String userToken,
+    required int userId,
+  }) async {
+    try {
+      Logger.debug('GET BLOCKED USERS called', tag: 'UserService');
+
+      final endpoint = ApiConstants.blockedUsers.replaceAll(
+        '{userId}',
+        userId.toString(),
+      );
+      final response = await _httpClient.getWithBasicAuth(
+        endpoint,
+        fromJson: (json) {
+          Logger.debug(
+            'Get Blocked Users fromJson - Raw data: $json',
+            tag: 'UserService',
+          );
+
+          // Response formatını kontrol et
+          if (json is Map<String, dynamic>) {
+            // Data field'ı içinde users array varsa
+            if (json.containsKey('data') &&
+                json['data'] is Map<String, dynamic>) {
+              final data = json['data'];
+              if (data.containsKey('users') && data['users'] is List) {
+                final usersList = data['users'] as List;
+                // Her user objesi bir BlockedUser'a dönüştür
+                return usersList.map((user) {
+                  if (user is Map<String, dynamic>) {
+                    try {
+                      return BlockedUser.fromJson(user);
+                    } catch (e) {
+                      Logger.warning('Failed to parse blocked user: $e', tag: 'UserService');
+                      return null;
+                    }
+                  }
+                  return null;
+                }).where((user) => user != null).cast<BlockedUser>().toList();
+              }
+            }
+          }
+
+          // Varsayılan response
+          return <BlockedUser>[];
+        },
+      );
+
+      Logger.debug(
+        '✅ Get Blocked Users Response: ${response.isSuccess}',
+        tag: 'UserService',
+      );
+      Logger.debug('🔍 Response Data: ${response.data}', tag: 'UserService');
+      Logger.debug('🔍 Response Error: ${response.error}', tag: 'UserService');
+
+      return response;
+    } catch (e) {
+      Logger.error('❌ Get Blocked Users Error: $e', tag: 'UserService');
+      return ApiResponse<List<BlockedUser>>.error(ErrorMessages.unknownError);
+    }
   }
 }

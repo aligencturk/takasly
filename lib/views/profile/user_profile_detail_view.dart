@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/user_profile_detail_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/user_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
@@ -9,6 +10,7 @@ import '../../models/user_profile_detail.dart';
 import '../../models/product.dart';
 import '../../models/user.dart';
 import '../../widgets/report_dialog.dart';
+import '../../widgets/user_block_dialog.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/fixed_bottom_banner_ad.dart';
 import '../../views/product/product_detail_view.dart';
@@ -43,11 +45,8 @@ class UserProfileDetailView extends StatefulWidget {
   final int userId;
   final String? userToken;
 
-  const UserProfileDetailView({
-    Key? key,
-    required this.userId,
-    this.userToken,
-  }) : super(key: key);
+  const UserProfileDetailView({Key? key, required this.userId, this.userToken})
+    : super(key: key);
 
   @override
   State<UserProfileDetailView> createState() => _UserProfileDetailViewState();
@@ -134,6 +133,31 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     );
   }
 
+  void _showBlockDialog() {
+    final authViewModel = context.read<AuthViewModel>();
+
+    // Kullanıcı kendini engellemeye çalışıyorsa uyarı göster
+    if (authViewModel.currentUser?.id == widget.userId.toString()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kendinizi engelleyemezsiniz'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => UserBlockDialog(
+        userId: widget.userId,
+        userName:
+            _viewModel.profileDetail?.userFullname ?? 'Bilinmeyen Kullanıcı',
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _tabController?.dispose();
@@ -143,8 +167,11 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _viewModel),
+        ChangeNotifierProvider(create: (_) => UserViewModel()),
+      ],
       child: Consumer<UserProfileDetailViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
@@ -170,6 +197,11 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                   onPressed: () => _showReportDialog(),
                   tooltip: 'Kullanıcıyı Şikayet Et',
                 ),
+                IconButton(
+                  icon: const Icon(Icons.block_outlined),
+                  onPressed: () => _showBlockDialog(),
+                  tooltip: 'Kullanıcıyı Engelle',
+                ),
               ],
             ),
             body: viewModel.isLoading
@@ -186,27 +218,32 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                       ScrollConfiguration(
                         behavior: const _NoStretchScrollBehavior(),
                         child: NestedScrollView(
-                          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                            SliverToBoxAdapter(
-                              child: SafeArea(
-                                bottom: false,
-                                child: _buildProfileHeader(
-                                  viewModel.profileDetail!,
+                          headerSliverBuilder: (context, innerBoxIsScrolled) =>
+                              [
+                                SliverToBoxAdapter(
+                                  child: SafeArea(
+                                    bottom: false,
+                                    child: _buildProfileHeader(
+                                      viewModel.profileDetail!,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            SliverToBoxAdapter(
-                              child: _buildModernTabBar(),
-                            ),
-                          ],
+                                SliverToBoxAdapter(child: _buildModernTabBar()),
+                              ],
                           body: _tabController != null
                               ? Padding(
-                                  padding: const EdgeInsets.only(bottom: 60), // banner ad yüksekliği kadar padding
+                                  padding: const EdgeInsets.only(
+                                    bottom: 60,
+                                  ), // banner ad yüksekliği kadar padding
                                   child: TabBarView(
                                     controller: _tabController!,
                                     children: [
-                                      _buildProductsTab(viewModel.profileDetail!),
-                                      _buildReviewsTab(viewModel.profileDetail!),
+                                      _buildProductsTab(
+                                        viewModel.profileDetail!,
+                                      ),
+                                      _buildReviewsTab(
+                                        viewModel.profileDetail!,
+                                      ),
                                     ],
                                   ),
                                 )
@@ -675,15 +712,18 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
               GestureDetector(
                 onTap: () {
                   final reviewerId = review.reviewerUserID ?? 0;
-                  final token =
-                      context.read<AuthViewModel>().currentUser?.token;
+                  final token = context
+                      .read<AuthViewModel>()
+                      .currentUser
+                      ?.token;
                   if (reviewerId > 0) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => UserProfileDetailView(
                           userId: reviewerId,
-                          userToken: token, // null olabilir - artık problem değil
+                          userToken:
+                              token, // null olabilir - artık problem değil
                         ),
                       ),
                     );
@@ -744,15 +784,18 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                     GestureDetector(
                       onTap: () {
                         final reviewerId = review.reviewerUserID ?? 0;
-                        final token =
-                            context.read<AuthViewModel>().currentUser?.token;
+                        final token = context
+                            .read<AuthViewModel>()
+                            .currentUser
+                            ?.token;
                         if (reviewerId > 0) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => UserProfileDetailView(
                                 userId: reviewerId,
-                                userToken: token, // null olabilir - artık problem değil
+                                userToken:
+                                    token, // null olabilir - artık problem değil
                               ),
                             ),
                           );
@@ -886,10 +929,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
         indicatorSize: TabBarIndicatorSize.tab,
         labelColor: AppTheme.primary,
         unselectedLabelColor: Colors.grey[600],
-        labelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
@@ -897,23 +937,14 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
         dividerColor: Colors.transparent,
         overlayColor: MaterialStateProperty.all(Colors.transparent),
         tabs: [
-          _buildCompactTab(
-            icon: Icons.store_outlined,
-            label: 'İlanlar',
-          ),
-          _buildCompactTab(
-            icon: Icons.rate_review_outlined,
-            label: 'Yorumlar',
-          ),
+          _buildCompactTab(icon: Icons.store_outlined, label: 'İlanlar'),
+          _buildCompactTab(icon: Icons.rate_review_outlined, label: 'Yorumlar'),
         ],
       ),
     );
   }
 
-  Widget _buildCompactTab({
-    required IconData icon,
-    required String label,
-  }) {
+  Widget _buildCompactTab({required IconData icon, required String label}) {
     return Tab(
       height: 40,
       child: Row(
@@ -923,11 +954,7 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
           Icon(icon, size: 16),
           const SizedBox(width: 4),
           Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
+            child: Text(label, overflow: TextOverflow.ellipsis, maxLines: 1),
           ),
         ],
       ),

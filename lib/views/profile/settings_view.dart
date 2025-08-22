@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/contact_viewmodel.dart';
+import '../../widgets/user_block_dialog.dart';
+import 'blocked_users_view.dart';
 import 'change_password_view.dart';
 import 'edit_profile_view.dart';
 import '../settings/privacy_view.dart';
@@ -181,6 +183,12 @@ class _SettingsViewState extends State<SettingsView> {
                 );
               }
             },
+          ),
+          _buildSettingItem(
+            icon: Icons.block_outlined,
+            title: 'Engellenen Kullanıcılar',
+            subtitle: 'Engellediğiniz kullanıcıları yönetin',
+            onTap: () => _navigateToBlockedUsers(),
           ),
         ],
       ),
@@ -380,6 +388,18 @@ class _SettingsViewState extends State<SettingsView> {
             child: const Text('Çıkış Yap'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToBlockedUsers() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider(
+          create: (_) => UserViewModel(),
+          child: const BlockedUsersView(),
+        ),
       ),
     );
   }

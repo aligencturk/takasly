@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
+import '../models/user_block.dart';
+import '../models/blocked_user.dart';
 import '../services/user_service.dart';
 import '../core/constants.dart';
 import '../services/error_handler_service.dart';
@@ -7,7 +9,7 @@ import '../utils/logger.dart';
 
 class UserViewModel extends ChangeNotifier {
   final UserService _userService = UserService();
-  
+
   User? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
@@ -31,13 +33,19 @@ class UserViewModel extends ChangeNotifier {
         _currentUser = user;
         Logger.info('Local user loaded: ${user.name}', tag: 'UserViewModel');
       } else {
-        Logger.warning('No local user, checking token...', tag: 'UserViewModel');
+        Logger.warning(
+          'No local user, checking token...',
+          tag: 'UserViewModel',
+        );
         final token = await _userService.getUserToken();
         if (token != null && token.isNotEmpty) {
           Logger.debug('Token found, fetching from API', tag: 'UserViewModel');
           await refreshUser();
         } else {
-          Logger.error('No token found, user needs to login', tag: 'UserViewModel');
+          Logger.error(
+            'No token found, user needs to login',
+            tag: 'UserViewModel',
+          );
         }
       }
     } catch (e) {
@@ -52,25 +60,40 @@ class UserViewModel extends ChangeNotifier {
   Future<void> forceRefreshUser() async {
     _setLoading(true);
     _clearError();
-    
+
     try {
       Logger.debug('forceRefreshUser - Starting...', tag: 'UserViewModel');
-      
+
       // Önce local storage'daki mevcut kullanıcıyı kontrol et
       final localUser = await _userService.getCurrentUser();
       if (localUser != null) {
-        Logger.debug('Found local user: ${localUser.name} (ID: ${localUser.id})', tag: 'UserViewModel');
-        Logger.debug('Local user details: firstName=${localUser.firstName}, lastName=${localUser.lastName}', tag: 'UserViewModel');
+        Logger.debug(
+          'Found local user: ${localUser.name} (ID: ${localUser.id})',
+          tag: 'UserViewModel',
+        );
+        Logger.debug(
+          'Local user details: firstName=${localUser.firstName}, lastName=${localUser.lastName}',
+          tag: 'UserViewModel',
+        );
       } else {
         Logger.debug('No local user found', tag: 'UserViewModel');
       }
-      
+
       final success = await getUserProfile();
       if (success) {
         Logger.info('User refreshed successfully', tag: 'UserViewModel');
-        Logger.debug('Current user: ${_currentUser?.name} (ID: ${_currentUser?.id})', tag: 'UserViewModel');
-        Logger.debug('User details: firstName=${_currentUser?.firstName}, lastName=${_currentUser?.lastName}', tag: 'UserViewModel');
-        Logger.debug('User isVerified: ${_currentUser?.isVerified}', tag: 'UserViewModel');
+        Logger.debug(
+          'Current user: ${_currentUser?.name} (ID: ${_currentUser?.id})',
+          tag: 'UserViewModel',
+        );
+        Logger.debug(
+          'User details: firstName=${_currentUser?.firstName}, lastName=${_currentUser?.lastName}',
+          tag: 'UserViewModel',
+        );
+        Logger.debug(
+          'User isVerified: ${_currentUser?.isVerified}',
+          tag: 'UserViewModel',
+        );
       } else {
         Logger.error('Failed to refresh user', tag: 'UserViewModel');
       }
@@ -83,10 +106,7 @@ class UserViewModel extends ChangeNotifier {
   }
 
   /// Kullanıcı profilini günceller
-  Future<bool> updateUserProfile({
-    String? platform,
-    String? version,
-  }) async {
+  Future<bool> updateUserProfile({String? platform, String? version}) async {
     final token = await _userService.getUserToken();
     if (token == null) {
       _setError(ErrorMessages.sessionExpired);
@@ -102,7 +122,7 @@ class UserViewModel extends ChangeNotifier {
         platform: platform,
         version: version,
       );
-      
+
       if (response.isSuccess && response.data != null) {
         _currentUser = response.data;
         await _userService.saveCurrentUser(response.data!);
@@ -110,14 +130,16 @@ class UserViewModel extends ChangeNotifier {
         return true;
       } else {
         // 403 hatası kontrolü
-        if (response.error != null && 
-            (response.error!.contains('403') || 
-             response.error!.contains('Erişim reddedildi') ||
-             response.error!.contains('Geçersiz kullanıcı token'))) {
-          print('🚨 403 error detected in UserViewModel.updateUserProfile - triggering global error handler');
+        if (response.error != null &&
+            (response.error!.contains('403') ||
+                response.error!.contains('Erişim reddedildi') ||
+                response.error!.contains('Geçersiz kullanıcı token'))) {
+          print(
+            '🚨 403 error detected in UserViewModel.updateUserProfile - triggering global error handler',
+          );
           ErrorHandlerService.handleForbiddenError(null);
         }
-        
+
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
@@ -148,8 +170,11 @@ class UserViewModel extends ChangeNotifier {
     Logger.debug('userBirthday: $userBirthday', tag: 'UserViewModel');
     Logger.debug('userGender: $userGender', tag: 'UserViewModel');
     Logger.debug('isShowContact: $isShowContact', tag: 'UserViewModel');
-    Logger.debug('profilePhoto: ${profilePhoto != null ? "provided" : "null"}', tag: 'UserViewModel');
-    
+    Logger.debug(
+      'profilePhoto: ${profilePhoto != null ? "provided" : "null"}',
+      tag: 'UserViewModel',
+    );
+
     final token = await _userService.getUserToken();
     if (token == null) {
       Logger.error('No token found for updateAccount', tag: 'UserViewModel');
@@ -161,7 +186,10 @@ class UserViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      Logger.debug('Calling _userService.updateAccount...', tag: 'UserViewModel');
+      Logger.debug(
+        'Calling _userService.updateAccount...',
+        tag: 'UserViewModel',
+      );
       final response = await _userService.updateAccount(
         userToken: token,
         userFirstname: userFirstname,
@@ -173,12 +201,15 @@ class UserViewModel extends ChangeNotifier {
         profilePhoto: profilePhoto,
         isShowContact: isShowContact,
       );
-      
+
       Logger.debug('updateAccount response received:', tag: 'UserViewModel');
       Logger.debug('isSuccess: ${response.isSuccess}', tag: 'UserViewModel');
       Logger.debug('error: ${response.error}', tag: 'UserViewModel');
-      Logger.debug('data: ${response.data != null ? "present" : "null"}', tag: 'UserViewModel');
-      
+      Logger.debug(
+        'data: ${response.data != null ? "present" : "null"}',
+        tag: 'UserViewModel',
+      );
+
       if (response.isSuccess && response.data != null) {
         Logger.info('Account updated successfully', tag: 'UserViewModel');
         _currentUser = response.data;
@@ -186,7 +217,10 @@ class UserViewModel extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        Logger.error('Account update failed: ${response.error}', tag: 'UserViewModel');
+        Logger.error(
+          'Account update failed: ${response.error}',
+          tag: 'UserViewModel',
+        );
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
@@ -200,10 +234,7 @@ class UserViewModel extends ChangeNotifier {
   }
 
   /// Kullanıcı profilini alır
-  Future<bool> getUserProfile({
-    String? platform,
-    String? version,
-  }) async {
+  Future<bool> getUserProfile({String? platform, String? version}) async {
     final token = await _userService.getUserToken();
     if (token == null) {
       Logger.error('getUserProfile - No token found', tag: 'UserViewModel');
@@ -215,39 +246,63 @@ class UserViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      Logger.debug('getUserProfile - Calling API with token: ${token.substring(0, 20)}...', tag: 'UserViewModel');
-      
+      Logger.debug(
+        'getUserProfile - Calling API with token: ${token.substring(0, 20)}...',
+        tag: 'UserViewModel',
+      );
+
       final response = await _userService.getUserProfile(
         userToken: token,
         platform: platform,
         version: version,
       );
-      
-      Logger.debug('getUserProfile - API response received', tag: 'UserViewModel');
-      Logger.debug('Response isSuccess: ${response.isSuccess}', tag: 'UserViewModel');
+
+      Logger.debug(
+        'getUserProfile - API response received',
+        tag: 'UserViewModel',
+      );
+      Logger.debug(
+        'Response isSuccess: ${response.isSuccess}',
+        tag: 'UserViewModel',
+      );
       Logger.debug('Response error: ${response.error}', tag: 'UserViewModel');
-      
+
       if (response.isSuccess && response.data != null) {
-        Logger.info('getUserProfile - API returned user data', tag: 'UserViewModel');
-        Logger.debug('User data: name=${response.data!.name}, firstName=${response.data!.firstName}, lastName=${response.data!.lastName}', tag: 'UserViewModel');
-        Logger.debug('User data: email=${response.data!.email}, phone=${response.data!.phone}', tag: 'UserViewModel');
-        
+        Logger.info(
+          'getUserProfile - API returned user data',
+          tag: 'UserViewModel',
+        );
+        Logger.debug(
+          'User data: name=${response.data!.name}, firstName=${response.data!.firstName}, lastName=${response.data!.lastName}',
+          tag: 'UserViewModel',
+        );
+        Logger.debug(
+          'User data: email=${response.data!.email}, phone=${response.data!.phone}',
+          tag: 'UserViewModel',
+        );
+
         _currentUser = response.data;
         await _userService.saveCurrentUser(response.data!);
         _setLoading(false);
         return true;
       } else {
-        Logger.error('getUserProfile - API failed or returned null', tag: 'UserViewModel');
-        
+        Logger.error(
+          'getUserProfile - API failed or returned null',
+          tag: 'UserViewModel',
+        );
+
         // 403 hatası kontrolü
-        if (response.error != null && 
-            (response.error!.contains('403') || 
-             response.error!.contains('Erişim reddedildi') ||
-             response.error!.contains('Geçersiz kullanıcı token'))) {
-          Logger.warning('403 error detected in getUserProfile - triggering global error handler', tag: 'UserViewModel');
+        if (response.error != null &&
+            (response.error!.contains('403') ||
+                response.error!.contains('Erişim reddedildi') ||
+                response.error!.contains('Geçersiz kullanıcı token'))) {
+          Logger.warning(
+            '403 error detected in getUserProfile - triggering global error handler',
+            tag: 'UserViewModel',
+          );
           ErrorHandlerService.handleForbiddenError(null);
         }
-        
+
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
@@ -305,7 +360,7 @@ class UserViewModel extends ChangeNotifier {
         oldPassword: oldPassword,
         newPassword: newPassword,
       );
-      
+
       if (response.isSuccess) {
         _setLoading(false);
         return true;
@@ -322,9 +377,7 @@ class UserViewModel extends ChangeNotifier {
   }
 
   /// Kullanıcı hesabını siler (eski endpoint)
-  Future<bool> deleteUserAccount({
-    required String password,
-  }) async {
+  Future<bool> deleteUserAccount({required String password}) async {
     final token = await _userService.getUserToken();
     if (token == null) {
       _setError(ErrorMessages.sessionExpired);
@@ -339,7 +392,7 @@ class UserViewModel extends ChangeNotifier {
         userToken: token,
         password: password,
       );
-      
+
       if (response.isSuccess) {
         // Hesap silindikten sonra tüm local data'yı temizle
         await logout();
@@ -372,7 +425,7 @@ class UserViewModel extends ChangeNotifier {
       final response = await _userService.deleteUserAccountNew(
         userToken: token,
       );
-      
+
       if (response.isSuccess && response.data == true) {
         // Hesap silindikten sonra tüm local data'yı temizle
         await logout();
@@ -453,16 +506,18 @@ class UserViewModel extends ChangeNotifier {
 
     try {
       final response = await _userService.getUserById(userId);
-      
+
       print('📡 UserViewModel.getUserById - API response received');
       print('📡 Response isSuccess: ${response.isSuccess}');
       print('📡 Response error: ${response.error}');
-      
+
       if (response.isSuccess && response.data != null) {
         print('✅ UserViewModel.getUserById - API returned user data');
-        print('✅ User data: name=${response.data!.name}, id=${response.data!.id}');
+        print(
+          '✅ User data: name=${response.data!.name}, id=${response.data!.id}',
+        );
         print('✅ User data: email=${response.data!.email}');
-        
+
         _setLoading(false);
         return response.data;
       } else {
@@ -473,6 +528,157 @@ class UserViewModel extends ChangeNotifier {
       }
     } catch (e) {
       print('❌ UserViewModel.getUserById - Exception: $e');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return null;
+    }
+  }
+
+  /// Kullanıcıyı engeller
+  Future<bool> blockUser({required int blockedUserID, String? reason}) async {
+    final token = await _userService.getUserToken();
+    if (token == null) {
+      _setError(ErrorMessages.sessionExpired);
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      Logger.debug('Blocking user: $blockedUserID', tag: 'UserViewModel');
+
+      final response = await _userService.blockUser(
+        userToken: token,
+        blockedUserID: blockedUserID,
+        reason: reason,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info(
+          'User blocked successfully: ${response.data!.message}',
+          tag: 'UserViewModel',
+        );
+        _setLoading(false);
+        return true;
+      } else {
+        Logger.error(
+          'Failed to block user: ${response.error}',
+          tag: 'UserViewModel',
+        );
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Block user error: $e', tag: 'UserViewModel');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Kullanıcı engelini kaldırır
+  Future<bool> unblockUser({required int blockedUserID}) async {
+    final token = await _userService.getUserToken();
+    if (token == null) {
+      _setError(ErrorMessages.sessionExpired);
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      Logger.debug('Unblocking user: $blockedUserID', tag: 'UserViewModel');
+
+      final response = await _userService.unblockUser(
+        userToken: token,
+        blockedUserID: blockedUserID,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info(
+          'User unblocked successfully: ${response.data!.message}',
+          tag: 'UserViewModel',
+        );
+        _setLoading(false);
+        return true;
+      } else {
+        Logger.error(
+          'Failed to unblock user: ${response.error}',
+          tag: 'UserViewModel',
+        );
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Unblock user error: $e', tag: 'UserViewModel');
+      _setError(ErrorMessages.unknownError);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Engellenen kullanıcıları getirir
+  Future<List<BlockedUser>?> getBlockedUsers() async {
+    final token = await _userService.getUserToken();
+    if (token == null) {
+      _setError(ErrorMessages.sessionExpired);
+      return null;
+    }
+
+    // Mevcut kullanıcının ID'sini al
+    final currentUser = await _userService.getCurrentUser();
+    if (currentUser == null) {
+      Logger.warning('No current user found', tag: 'UserViewModel');
+      _setError('Kullanıcı bilgisi bulunamadı');
+      return null;
+    }
+
+    final userId = int.tryParse(currentUser.id);
+    if (userId == null) {
+      Logger.warning(
+        'Invalid user ID: ${currentUser.id}',
+        tag: 'UserViewModel',
+      );
+      _setError('Geçersiz kullanıcı ID');
+      return null;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      Logger.debug(
+        'Getting blocked users for user ID: $userId',
+        tag: 'UserViewModel',
+      );
+
+      final response = await _userService.getBlockedUsers(
+        userToken: token,
+        userId: userId,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        Logger.info(
+          'Blocked users retrieved successfully: ${response.data!.length} users',
+          tag: 'UserViewModel',
+        );
+        _setLoading(false);
+        return response.data;
+      } else {
+        Logger.error(
+          'Failed to get blocked users: ${response.error}',
+          tag: 'UserViewModel',
+        );
+        _setError(response.error ?? ErrorMessages.unknownError);
+        _setLoading(false);
+        return null;
+      }
+    } catch (e) {
+      Logger.error('Get blocked users error: $e', tag: 'UserViewModel');
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return null;

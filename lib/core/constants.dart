@@ -72,7 +72,8 @@ class ApiConstants {
 
   // General Service Endpoints
   static const String logos = '/service/general/general/logos';
-  static const String popularCategories = '/service/general/general/popularCategories';
+  static const String popularCategories =
+      '/service/general/general/popularCategories';
 
   // Trade Service Endpoints
   static const String startTrade = '/service/user/product/startTrade';
@@ -93,6 +94,12 @@ class ApiConstants {
 
   // Report Service Endpoints
   static const String reportUser = '/service/user/product/reportUser';
+
+  // User Block Service Endpoints
+  static const String userBlocked = '/service/user/account/userBlocked';
+  static const String userUnBlocked = '/service/user/account/userUnBlocked';
+  static const String blockedUsers =
+      '/service/user/account/{userId}/blockedUsers';
 
   // Sponsor Service Endpoints
   static const String sponsorEdit = '/service/user/product/sponsorEdit';

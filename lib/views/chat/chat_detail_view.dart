@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
+import '../../viewmodels/user_viewmodel.dart';
 import '../../models/chat.dart';
 import '../../models/product.dart';
 import '../../core/app_theme.dart';
@@ -12,6 +13,7 @@ import '../../views/product/product_detail_view.dart';
 import '../../views/trade/start_trade_view.dart';
 import '../../views/profile/user_profile_detail_view.dart';
 import '../../widgets/report_dialog.dart';
+import '../../widgets/user_block_dialog.dart';
 import '../../widgets/profanity_check_chat_input.dart';
 import '../../services/profanity_service.dart';
 import '../../models/profanity_check_result.dart';
@@ -1134,6 +1136,55 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     }
   }
 
+  void _showBlockDialog() {
+    final authViewModel = context.read<AuthViewModel>();
+    final otherParticipant = widget.chat.participants
+        .where((user) => user.id != authViewModel.currentUser?.id)
+        .firstOrNull;
+
+    if (otherParticipant == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kullanıcı bilgisi bulunamadı'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Kullanıcı kendini engellemeye çalışıyorsa uyarı göster
+    if (authViewModel.currentUser?.id == otherParticipant.id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kendinizi engelleyemezsiniz'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final userId = int.parse(otherParticipant.id);
+
+      showDialog(
+        context: context,
+        builder: (context) =>
+            UserBlockDialog(userId: userId, userName: otherParticipant.name),
+      );
+    } catch (e) {
+      Logger.error('ChatDetailView: _showBlockDialog hatası: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Engelleme dialog açılamadı'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _startTrade(BuildContext context, Product product) {
     final authViewModel = context.read<AuthViewModel>();
 
@@ -1178,223 +1229,250 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   Widget build(BuildContext context) {
     // Sohbete ait ürün bilgisini kullan
     final chatProduct = _chatProduct;
-    return Scaffold(
-      appBar: AppBar(
-        title: _buildAppBarTitle(),
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          // Takas Başlat butonu
-          if (chatProduct != null)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              child: ElevatedButton(
-                onPressed: () => _startTrade(context, chatProduct!),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppTheme.primary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+    return ChangeNotifierProvider(
+      create: (_) => UserViewModel(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: _buildAppBarTitle(),
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            // Takas Başlat butonu
+            if (chatProduct != null)
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                child: ElevatedButton(
+                  onPressed: () => _startTrade(context, chatProduct!),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppTheme.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                    minimumSize: const Size(0, 32),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  child: const Text(
+                    'Takas Başlat',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
-                  elevation: 0,
-                  minimumSize: const Size(0, 32),
-                ),
-                child: const Text(
-                  'Takas Başlat',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ),
-            ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'report') {
-                _showReportDialog();
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem<String>(
-                value: 'report',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.report_problem_outlined,
-                      size: 20,
-                      color: Colors.red[600],
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Kullanıcıyı Şikayet Et',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Ürün kartı gösterimi (sohbete ait ürün varsa)
-          if (chatProduct != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: _buildChatProductCard(chatProduct),
-            ),
-          Expanded(
-            child: Consumer<ChatViewModel>(
-              builder: (context, chatViewModel, child) {
-                // Mesajlar yüklendiğinde ürün bilgisini güncelle (sadece chat'in üst kısmında ürün yoksa)
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!_isDisposed && _chatProduct == null) {
-                    _updateChatProductFromMessages();
-                  }
-                });
-
-                if (chatViewModel.isLoading && chatViewModel.messages.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'report') {
+                  _showReportDialog();
+                } else if (value == 'block') {
+                  _showBlockDialog();
                 }
-
-                if (chatViewModel.error != null) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Mesajlar yüklenemedi',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          chatViewModel.error!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            chatViewModel.clearError();
-                            _loadMessages();
-                          },
-                          child: const Text('Tekrar Dene'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (chatViewModel.messages.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.chat_bubble_outline,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Henüz mesaj yok',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'İlk mesajı göndererek\nsohbeti başlatın',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount:
-                      chatViewModel.messages.length +
-                      (chatViewModel.isLoadingMore ? 1 : 0),
-                  reverse: true, // Mesajları ters çevir - en yeni en aşağıda
-                  itemBuilder: (context, index) {
-                    // Loading indicator için
-                    if (chatViewModel.isLoadingMore && index == 0) {
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        child: const Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Eski mesajlar yükleniyor...',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    // Reverse olduğu için index'i ters çevir
-                    final messageIndex = chatViewModel.isLoadingMore
-                        ? index - 1
-                        : index;
-                    final message =
-                        chatViewModel.messages[chatViewModel.messages.length -
-                            1 -
-                            messageIndex];
-                    return _MessageBubble(
-                      message: message,
-                      isMe:
-                          message.senderId ==
-                          context.read<AuthViewModel>().currentUser?.id,
-                    );
-                  },
-                );
               },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'report',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.report_problem_outlined,
+                        size: 20,
+                        color: Colors.red[600],
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Kullanıcıyı Şikayet Et',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'block',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.block_outlined,
+                        size: 20,
+                        color: Colors.orange[600],
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Kullanıcıyı Engelle',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          _buildMessageInput(),
-        ],
+          ],
+        ),
+        body: Column(
+          children: [
+            // Ürün kartı gösterimi (sohbete ait ürün varsa)
+            if (chatProduct != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _buildChatProductCard(chatProduct),
+              ),
+            Expanded(
+              child: Consumer<ChatViewModel>(
+                builder: (context, chatViewModel, child) {
+                  // Mesajlar yüklendiğinde ürün bilgisini güncelle (sadece chat'in üst kısmında ürün yoksa)
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!_isDisposed && _chatProduct == null) {
+                      _updateChatProductFromMessages();
+                    }
+                  });
+
+                  if (chatViewModel.isLoading &&
+                      chatViewModel.messages.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (chatViewModel.error != null) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Mesajlar yüklenemedi',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            chatViewModel.error!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              chatViewModel.clearError();
+                              _loadMessages();
+                            },
+                            child: const Text('Tekrar Dene'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (chatViewModel.messages.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Henüz mesaj yok',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'İlk mesajı göndererek\nsohbeti başlatın',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount:
+                        chatViewModel.messages.length +
+                        (chatViewModel.isLoadingMore ? 1 : 0),
+                    reverse: true, // Mesajları ters çevir - en yeni en aşağıda
+                    itemBuilder: (context, index) {
+                      // Loading indicator için
+                      if (chatViewModel.isLoadingMore && index == 0) {
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          child: const Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Eski mesajlar yükleniyor...',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Reverse olduğu için index'i ters çevir
+                      final messageIndex = chatViewModel.isLoadingMore
+                          ? index - 1
+                          : index;
+                      final message =
+                          chatViewModel.messages[chatViewModel.messages.length -
+                              1 -
+                              messageIndex];
+                      return _MessageBubble(
+                        message: message,
+                        isMe:
+                            message.senderId ==
+                            context.read<AuthViewModel>().currentUser?.id,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            _buildMessageInput(),
+          ],
+        ),
       ),
     );
   }
