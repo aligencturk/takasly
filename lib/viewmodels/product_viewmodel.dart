@@ -747,7 +747,11 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   // Local arama geçmişine kayıt ekle (login olmasa da çalışır)
-  Future<void> addSearchHistoryEntry(String query, {String? type, String? categoryId}) async {
+  Future<void> addSearchHistoryEntry(
+    String query, {
+    String? type,
+    String? categoryId,
+  }) async {
     try {
       final normalized = query.trim();
       if (normalized.isEmpty) return;
@@ -798,8 +802,15 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   /// Kategori arama geçmişi ekler
-  Future<void> addCategorySearchHistory(String categoryName, String categoryId) async {
-    await addSearchHistoryEntry(categoryName, type: 'category', categoryId: categoryId);
+  Future<void> addCategorySearchHistory(
+    String categoryName,
+    String categoryId,
+  ) async {
+    await addSearchHistoryEntry(
+      categoryName,
+      type: 'category',
+      categoryId: categoryId,
+    );
   }
 
   /// Metin arama geçmişi ekler
@@ -1191,10 +1202,7 @@ class ProductViewModel extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      Logger.error(
-        '💥 Popular categories error: $e',
-        tag: 'ProductViewModel',
-      );
+      Logger.error('💥 Popular categories error: $e', tag: 'ProductViewModel');
       _popularCategories.clear();
       notifyListeners();
     }
@@ -2594,63 +2602,99 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   /// Ürün detayını getirir (detay sayfası için)
+  /// Kullanıcının giriş durumuna göre API endpoint'ini dinamik olarak yönetir
   Future<product_model.Product?> getProductDetail(String productId) async {
-    print(
+    Logger.info(
       '🔍 ProductViewModel.getProductDetail - Starting to get product detail: $productId',
+      tag: 'ProductViewModel',
     );
     _setLoading(true);
     _clearError();
     try {
-      print(
+      Logger.info(
         '🔑 ProductViewModel.getProductDetail - Getting user token (optional)',
+        tag: 'ProductViewModel',
       );
       final userToken = await _authService.getToken();
       if (userToken == null || userToken.isEmpty) {
-        print(
+        Logger.info(
           '💡 ProductViewModel.getProductDetail - No user token found, proceeding without authentication',
+          tag: 'ProductViewModel',
         );
       } else {
-        print(
+        Logger.info(
           '✅ ProductViewModel.getProductDetail - User token obtained: ${userToken.substring(0, 20)}...',
+          tag: 'ProductViewModel',
         );
       }
 
-      print(
+      Logger.info(
         '📡 ProductViewModel.getProductDetail - Making API call for product detail',
+        tag: 'ProductViewModel',
       );
       final response = await _productService.getProductDetail(
         userToken: userToken, // Token yoksa null gönderilecek
         productId: productId,
       );
 
-      print('📡 ProductViewModel.getProductDetail - Response received');
-      print('📊 Response success: ${response.isSuccess}');
-      print('📊 Response error: ${response.error}');
-      print('📊 Response data: ${response.data?.title ?? 'null'}');
+      Logger.info(
+        '📡 ProductViewModel.getProductDetail - Response received',
+        tag: 'ProductViewModel',
+      );
+      Logger.info(
+        '📊 Response success: ${response.isSuccess}',
+        tag: 'ProductViewModel',
+      );
+      Logger.info(
+        '📊 Response error: ${response.error}',
+        tag: 'ProductViewModel',
+      );
+      Logger.info(
+        '📊 Response data: ${response.data?.title ?? 'null'}',
+        tag: 'ProductViewModel',
+      );
+
       if (response.data != null) {
-        print('📊 Response data.userImage: ${response.data!.userImage}');
-        print('📊 Response data.userFullname: ${response.data!.userFullname}');
-        print('📊 Response data.owner avatar: ${response.data!.owner.avatar}');
-        print('📊 Response data.owner name: ${response.data!.owner.name}');
+        Logger.info(
+          '📊 Response data.userImage: ${response.data!.userImage}',
+          tag: 'ProductViewModel',
+        );
+        Logger.info(
+          '📊 Response data.userFullname: ${response.data!.userFullname}',
+          tag: 'ProductViewModel',
+        );
+        Logger.info(
+          '📊 Response data.owner avatar: ${response.data!.owner.avatar}',
+          tag: 'ProductViewModel',
+        );
+        Logger.info(
+          '📊 Response data.owner name: ${response.data!.owner.name}',
+          tag: 'ProductViewModel',
+        );
       }
 
       if (response.isSuccess && response.data != null) {
         _selectedProduct = response.data;
-        print(
+        Logger.info(
           '✅ ProductViewModel.getProductDetail - Product detail loaded successfully: ${response.data!.title}',
+          tag: 'ProductViewModel',
         );
         _setLoading(false);
         return response.data;
       } else {
-        print(
+        Logger.error(
           '❌ ProductViewModel.getProductDetail - API error: ${response.error}',
+          tag: 'ProductViewModel',
         );
         _setError(response.error ?? 'Ürün detayı alınamadı');
         _setLoading(false);
         return null;
       }
     } catch (e) {
-      print('💥 ProductViewModel.getProductDetail - Exception: $e');
+      Logger.error(
+        '💥 ProductViewModel.getProductDetail - Exception: $e',
+        tag: 'ProductViewModel',
+      );
       _setError('Ürün detayı alınamadı: $e');
       _setLoading(false);
       return null;

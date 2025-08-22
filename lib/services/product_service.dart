@@ -562,20 +562,45 @@ class ProductService {
   }
 
   /// Ürün detayını getirir (410: başarı, 417: hata)
-  /// userToken artık opsiyonel - backend'de token zorunluluğu kaldırıldı
+  /// Kullanıcının giriş durumuna göre API endpoint'ini dinamik olarak yönetir
+  /// Giriş yapmış kullanıcı: /service/user/product/{productId}/productDetail?userToken={token}
+  /// Giriş yapmamış kullanıcı: /service/user/product/{productId}/productDetail
   Future<ApiResponse<Product>> getProductDetail({
     String? userToken,
     required String productId,
   }) async {
     try {
-      final endpoint = '${ApiConstants.productDetail}/$productId/productDetail';
+      Logger.info(
+        '🔍 ProductService.getProductDetail - productId: $productId, hasUserToken: ${userToken?.isNotEmpty ?? false}',
+        tag: _tag,
+      );
 
-      // userToken varsa Authorization header'ında gönder, yoksa Basic auth kullan
-      // Backend'de token zorunluluğu kaldırıldı
+      // Kullanıcının giriş durumuna göre endpoint'i hazırla
+      String endpoint;
+      Map<String, dynamic>? queryParams;
+
+      if (userToken != null && userToken.isNotEmpty) {
+        // Giriş yapmış kullanıcı - userToken query parameter olarak ekle
+        endpoint = '${ApiConstants.productDetail}/$productId/productDetail';
+        queryParams = {'userToken': userToken};
+        Logger.info(
+          '✅ ProductService.getProductDetail - Authenticated user, using userToken in query params',
+          tag: _tag,
+        );
+      } else {
+        // Giriş yapmamış kullanıcı - sadece endpoint
+        endpoint = '${ApiConstants.productDetail}/$productId/productDetail';
+        Logger.info(
+          'ℹ️ ProductService.getProductDetail - Anonymous user, no userToken',
+          tag: _tag,
+        );
+      }
+
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
+        queryParams: queryParams,
         fromJson: (json) {
-          print('🔍 Product Detail API Response: $json');
+          Logger.info('🔍 Product Detail API Response: $json', tag: _tag);
 
           // 410: Gone -> başarı
           if (json is Map<String, dynamic> &&
@@ -615,7 +640,7 @@ class ProductService {
       );
       return response;
     } catch (e) {
-      print('❌ Product Detail Error: $e');
+      Logger.error('❌ Product Detail Error: $e', tag: _tag);
       return ApiResponse.error(e.toString());
     }
   }
@@ -1922,32 +1947,47 @@ class ProductService {
     try {
       Logger.info('🏷️ ProductService.getPopularCategories', tag: _tag);
 
-      final response = await _httpClient.getWithBasicAuth<List<PopularCategory>>(
-        ApiConstants.popularCategories,
-        fromJson: (json) {
-          try {
-            // API response yapısına göre parse et
-            final popularCategoriesResponse = PopularCategoriesResponse.fromJson(json);
-            
-            if (!popularCategoriesResponse.success || popularCategoriesResponse.error) {
-              Logger.warning('🏷️ Popular categories API returned error', tag: _tag);
-              return <PopularCategory>[];
-            }
+      final response = await _httpClient
+          .getWithBasicAuth<List<PopularCategory>>(
+            ApiConstants.popularCategories,
+            fromJson: (json) {
+              try {
+                // API response yapısına göre parse et
+                final popularCategoriesResponse =
+                    PopularCategoriesResponse.fromJson(json);
 
-            final categories = popularCategoriesResponse.data.categories;
-            Logger.info('🏷️ Popular categories loaded: ${categories.length} items', tag: _tag);
-            
-            return categories;
-          } catch (e) {
-            Logger.error('🏷️ Popular categories parse error: $e', tag: _tag);
-            return <PopularCategory>[];
-          }
-        },
-      );
+                if (!popularCategoriesResponse.success ||
+                    popularCategoriesResponse.error) {
+                  Logger.warning(
+                    '🏷️ Popular categories API returned error',
+                    tag: _tag,
+                  );
+                  return <PopularCategory>[];
+                }
+
+                final categories = popularCategoriesResponse.data.categories;
+                Logger.info(
+                  '🏷️ Popular categories loaded: ${categories.length} items',
+                  tag: _tag,
+                );
+
+                return categories;
+              } catch (e) {
+                Logger.error(
+                  '🏷️ Popular categories parse error: $e',
+                  tag: _tag,
+                );
+                return <PopularCategory>[];
+              }
+            },
+          );
 
       return response;
     } catch (e) {
-      Logger.error('💥 ProductService.getPopularCategories exception: $e', tag: _tag);
+      Logger.error(
+        '💥 ProductService.getPopularCategories exception: $e',
+        tag: _tag,
+      );
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -2282,16 +2322,21 @@ class ProductService {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
         userId = prefs.getString(AppConstants.userIdKey) ?? '';
-        print(
+        Logger.info(
           '🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}',
+          tag: _tag,
         );
-        print('🔑 User ID retrieved: $userId');
+        Logger.info('🔑 User ID retrieved: $userId', tag: _tag);
       } catch (e) {
-        print('⚠️ Error getting user data: $e');
+        Logger.warning('⚠️ Error getting user data: $e', tag: _tag);
       }
 
       // Kullanıcının kendi ürünü olup olmadığını kontrol et
       try {
+        Logger.info(
+          '🔍 ProductService.addToFavorites - Checking product ownership for productId: $productId',
+          tag: _tag,
+        );
         final productDetailResponse = await getProductDetail(
           userToken: userToken,
           productId: productId,
@@ -2300,28 +2345,30 @@ class ProductService {
             productDetailResponse.data != null) {
           final product = productDetailResponse.data!;
           if (product.ownerId == userId) {
-            print(
+            Logger.warning(
               '❌ ProductService.addToFavorites - User cannot favorite their own product: $productId',
+              tag: _tag,
             );
             return ApiResponse.error('Kendi ürününüzü favoriye ekleyemezsiniz');
           }
         }
       } catch (e) {
-        print(
+        Logger.warning(
           '⚠️ ProductService.addToFavorites - Error checking product ownership: $e',
+          tag: _tag,
         );
         // Ürün sahipliği kontrolü başarısız olsa bile devam et
       }
 
       // API body'sini hazırla
       final body = {'userToken': userToken, 'productID': productId};
-      print('🌐 Add to favorites body: $body');
+      Logger.info('🌐 Add to favorites body: $body', tag: _tag);
 
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.addFavorite,
         body: body,
         fromJson: (json) {
-          print('📥 Add to favorites response: $json');
+          Logger.info('📥 Add to favorites response: $json', tag: _tag);
           return null;
         },
         useBasicAuth: true,
@@ -2329,14 +2376,15 @@ class ProductService {
 
       return response;
     } catch (e) {
-      print('❌ Error adding to favorites: $e');
+      Logger.error('❌ Error adding to favorites: $e', tag: _tag);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
 
   Future<ApiResponse<void>> removeFromFavorites(String productId) async {
-    print(
+    Logger.info(
       '🔄 ProductService.removeFromFavorites - Starting for product ID: $productId',
+      tag: _tag,
     );
     try {
       // User token ve userId'yi al
@@ -2346,25 +2394,28 @@ class ProductService {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
         userId = prefs.getString(AppConstants.userIdKey) ?? '';
-        print(
+        Logger.info(
           '🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}',
+          tag: _tag,
         );
-        print('🔑 User ID retrieved: $userId');
+        Logger.info('🔑 User ID retrieved: $userId', tag: _tag);
       } catch (e) {
-        print('⚠️ Error getting user data: $e');
+        Logger.warning('⚠️ Error getting user data: $e', tag: _tag);
       }
 
       // API body'sini hazırla
       final body = {'userToken': userToken, 'productID': productId};
-      print('🌐 Remove from favorites body: $body');
+      Logger.info('🌐 Remove from favorites body: $body', tag: _tag);
 
-      print(
+      Logger.info(
         '🌐 Calling removeFromFavorites API with endpoint: ${ApiConstants.removeFavorite}',
+        tag: _tag,
       );
-      print(
+      Logger.info(
         '🌐 Full URL: ${ApiConstants.fullUrl}${ApiConstants.removeFavorite}',
+        tag: _tag,
       );
-      print('🌐 Request body: $body');
+      Logger.info('🌐 Request body: $body', tag: _tag);
       final response = await _httpClient.postWithBasicAuth(
         ApiConstants.removeFavorite,
         body: body,
