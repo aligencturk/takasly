@@ -75,9 +75,7 @@ class _LoginViewState extends State<LoginView> {
                         child: Column(
                           children: [
                             SizedBox(height: screenHeight * topSpacing),
-                            Expanded(
-                              child: const _EmailPasswordForm(),
-                            ),
+                            Expanded(child: const _EmailPasswordForm()),
                             SizedBox(height: screenHeight * bottomSpacing),
                           ],
                         ),
@@ -275,9 +273,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ],
         ),
 
-        SizedBox(
-          height: verticalSpacing * 1.5,
-        ), // Giriş butonu öncesi spacing
+        SizedBox(height: verticalSpacing * 1.5), // Giriş butonu öncesi spacing
         // Giriş Yap butonu
         ElevatedButton(
           onPressed: () => _submitLogin(context),
@@ -533,6 +529,11 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           .instance
           .signInWithGoogleAndGetTokens();
 
+      // Loading dialog'u kapat (her durumda)
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
       if (googleTokens == null ||
           googleTokens['accessToken'] == null ||
           googleTokens['idToken'] == null) {
@@ -573,11 +574,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         fcmToken: fcmToken,
       );
 
-      // Loading dialog'u kapat
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-
       if (!mounted) return;
 
       if (success) {
@@ -609,6 +605,11 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       }
     } catch (e, s) {
       Logger.error('Google giriş hatası: $e', stackTrace: s, tag: 'LoginView');
+
+      // Hata durumunda da loading dialog'unu kapat
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
