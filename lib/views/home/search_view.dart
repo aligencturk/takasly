@@ -30,8 +30,10 @@ class _SearchViewState extends State<SearchView> {
     // Sayfa açıldığında arama çubuğuna odaklan
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchFocusNode.requestFocus();
-      // Arama geçmişini yükle
-      context.read<ProductViewModel>().loadSearchHistory();
+      // Arama geçmişini ve popüler kategorileri yükle
+      final vm = context.read<ProductViewModel>();
+      vm.loadSearchHistory();
+      vm.loadPopularCategories();
     });
     // Odaklanınca geçmişi tazele
     _searchFocusNode.addListener(() {
@@ -74,23 +76,6 @@ class _SearchViewState extends State<SearchView> {
     final productViewModel = context.read<ProductViewModel>();
     // Filtreleri temizle ve tüm ürünleri yükle
     productViewModel.clearFilters();
-  }
-
-  /// Subtitle'dan ürün sayısını çıkarır (örn: "İZMİR > KARŞIYAKA" -> 0, "Kategori" -> 0)
-  int _extractProductCount(String subtitle) {
-    try {
-      // Subtitle'da sayı varsa onu al
-      final regex = RegExp(r'(\d+)');
-      final match = regex.firstMatch(subtitle);
-      if (match != null) {
-        return int.tryParse(match.group(1) ?? '0') ?? 0;
-      }
-
-      // Sayı yoksa varsayılan olarak 0 döndür
-      return 0;
-    } catch (e) {
-      return 0;
-    }
   }
 
   @override
@@ -238,7 +223,7 @@ class _SearchViewState extends State<SearchView> {
             Expanded(
               child: Column(
                 children: [
-                  // Ana içerik: Geçmiş ve öneriler (arama yapılmamışsa)
+                  // Ana içerik: Geçmiş ve popüler kategoriler (arama yapılmamışsa)
                   if (!_hasSearched)
                     Consumer<ProductViewModel>(
                       builder: (context, vm, _) {
@@ -327,8 +312,8 @@ class _SearchViewState extends State<SearchView> {
                                 ),
                               ),
 
-                            // Canlı öneriler (sadece arama çubuğu boşken göster)
-                            if (vm.liveResults.isNotEmpty &&
+                            // Popüler Kategoriler (sadece arama çubuğu boşken göster)
+                            if (vm.popularCategories.isNotEmpty &&
                                 _searchController.text.isEmpty)
                               Container(
                                 decoration: BoxDecoration(
@@ -349,7 +334,7 @@ class _SearchViewState extends State<SearchView> {
                                         vertical: 12,
                                       ),
                                       child: Text(
-                                        'Arama Önerileri',
+                                        'Popüler Kategoriler',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -359,42 +344,22 @@ class _SearchViewState extends State<SearchView> {
                                     ),
                                     Builder(
                                       builder: (context) {
-                                        // Sadece kategorileri filtrele ve sırala
-                                        final categories = vm.liveResults
-                                            .where(
-                                              (item) =>
-                                                  item.type != 'product' &&
-                                                  item.icon != 'product',
-                                            )
-                                            .toList();
+                                        final popularCategories = vm.popularCategories;
 
-                                        // En çok ilandan en aza sırala (subtitle'daki sayıya göre)
-                                        categories.sort((a, b) {
-                                          final aCount = _extractProductCount(
-                                            a.subtitle,
-                                          );
-                                          final bCount = _extractProductCount(
-                                            b.subtitle,
-                                          );
-                                          return bCount.compareTo(
-                                            aCount,
-                                          ); // Büyükten küçüğe
-                                        });
-
-                                        if (categories.isEmpty)
+                                        if (popularCategories.isEmpty)
                                           return const SizedBox.shrink();
 
                                         return ListView.separated(
                                           shrinkWrap: true,
                                           physics:
                                               const NeverScrollableScrollPhysics(),
-                                          itemCount: categories.length,
+                                          itemCount: popularCategories.length,
                                           separatorBuilder: (_, __) => Divider(
                                             height: 1,
                                             color: Colors.grey[200],
                                           ),
                                           itemBuilder: (context, index) {
-                                            final item = categories[index];
+                                            final category = popularCategories[index];
                                             return ListTile(
                                               leading: const Icon(
                                                 Icons.category,
@@ -402,13 +367,13 @@ class _SearchViewState extends State<SearchView> {
                                                 size: 20,
                                               ),
                                               title: Text(
-                                                item.title,
+                                                category.catName,
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(fontSize: 14),
                                               ),
                                               subtitle: Text(
-                                                item.subtitle,
+                                                '${category.productCount} ürün',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
@@ -417,16 +382,16 @@ class _SearchViewState extends State<SearchView> {
                                                 ),
                                               ),
                                               onTap: () {
-                                                // Kategori önerisine tıklandığında arama geçmişine ekle
+                                                // Kategori tıklandığında arama geçmişine ekle
                                                 final vm = context
                                                     .read<ProductViewModel>();
                                                 vm.addSearchHistoryEntry(
-                                                  item.title,
+                                                  category.catName,
                                                 );
 
                                                 final filter = vm.currentFilter
                                                     .copyWith(
-                                                      categoryId: item.id
+                                                      categoryId: category.catId
                                                           .toString(),
                                                       searchText: null,
                                                     );
@@ -449,9 +414,9 @@ class _SearchViewState extends State<SearchView> {
                                 ),
                               ),
 
-                            // Eğer hem geçmiş hem de öneriler boşsa VE arama çubuğu boşsa bilgilendirme göster
+                            // Eğer hem geçmiş hem de popüler kategoriler boşsa VE arama çubuğu boşsa bilgilendirme göster
                             if (vm.searchHistory.isEmpty &&
-                                vm.liveResults.isEmpty &&
+                                vm.popularCategories.isEmpty &&
                                 _searchController.text.isEmpty)
                               Container(
                                 width: double.infinity,
@@ -547,8 +512,8 @@ class _SearchViewState extends State<SearchView> {
                                   ),
                                 ),
 
-                                // Öneriler (sonuç bulunamadığında)
-                                if (vm.liveResults.isNotEmpty)
+                                // Popüler Kategoriler (sonuç bulunamadığında)
+                                if (vm.popularCategories.isNotEmpty)
                                   Container(
                                     decoration: BoxDecoration(
                                       color: Colors.white,
@@ -566,7 +531,7 @@ class _SearchViewState extends State<SearchView> {
                                         Padding(
                                           padding: const EdgeInsets.all(16),
                                           child: Text(
-                                            'Öneriler',
+                                            'Popüler Kategoriler',
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
@@ -578,24 +543,21 @@ class _SearchViewState extends State<SearchView> {
                                           shrinkWrap: true,
                                           physics:
                                               const NeverScrollableScrollPhysics(),
-                                          itemCount: vm.liveResults.length,
+                                          itemCount: vm.popularCategories.length,
                                           separatorBuilder: (_, __) => Divider(
                                             height: 1,
                                             color: Colors.grey[200],
                                           ),
                                           itemBuilder: (context, index) {
-                                            final item = vm.liveResults[index];
+                                            final category = vm.popularCategories[index];
                                             return ListTile(
-                                              leading: Icon(
-                                                (item.type == 'product' ||
-                                                        item.icon == 'product')
-                                                    ? Icons.shopping_bag
-                                                    : Icons.category,
+                                              leading: const Icon(
+                                                Icons.category,
                                                 color: Colors.grey,
                                                 size: 20,
                                               ),
                                               title: Text(
-                                                item.title,
+                                                category.catName,
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
@@ -604,7 +566,7 @@ class _SearchViewState extends State<SearchView> {
                                                 ),
                                               ),
                                               subtitle: Text(
-                                                item.subtitle,
+                                                '${category.productCount} ürün',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
@@ -613,41 +575,29 @@ class _SearchViewState extends State<SearchView> {
                                                 ),
                                               ),
                                               onTap: () {
-                                                if (item.type == 'product' ||
-                                                    item.icon == 'product') {
-                                                  Navigator.pushNamed(
-                                                    context,
-                                                    '/product-detail',
-                                                    arguments: {
-                                                      'productId': item.id
-                                                          .toString(),
-                                                    },
-                                                  );
-                                                } else {
-                                                  final vm = context
-                                                      .read<ProductViewModel>();
-                                                  // Kategori önerisine tıklandığında arama geçmişine ekle
-                                                  vm.addSearchHistoryEntry(
-                                                    item.title,
-                                                  );
+                                                final vm = context
+                                                    .read<ProductViewModel>();
+                                                // Kategori tıklandığında arama geçmişine ekle
+                                                vm.addSearchHistoryEntry(
+                                                  category.catName,
+                                                );
 
-                                                  final filter = vm
-                                                      .currentFilter
-                                                      .copyWith(
-                                                        categoryId: item.id
-                                                            .toString(),
-                                                        searchText: null,
-                                                      );
-                                                  vm.applyFilter(filter);
-                                                  setState(() {
-                                                    _searchController.clear();
-                                                    FocusScope.of(
-                                                      context,
-                                                    ).unfocus();
-                                                    _hasSearched = true;
-                                                    _currentQuery = '';
-                                                  });
-                                                }
+                                                final filter = vm
+                                                    .currentFilter
+                                                    .copyWith(
+                                                      categoryId: category.catId
+                                                          .toString(),
+                                                      searchText: null,
+                                                    );
+                                                vm.applyFilter(filter);
+                                                setState(() {
+                                                  _searchController.clear();
+                                                  FocusScope.of(
+                                                    context,
+                                                  ).unfocus();
+                                                  _hasSearched = true;
+                                                  _currentQuery = '';
+                                                });
                                               },
                                             );
                                           },

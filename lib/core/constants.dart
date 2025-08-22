@@ -72,6 +72,7 @@ class ApiConstants {
 
   // General Service Endpoints
   static const String logos = '/service/general/general/logos';
+  static const String popularCategories = '/service/general/general/popularCategories';
 
   // Trade Service Endpoints
   static const String startTrade = '/service/user/product/startTrade';

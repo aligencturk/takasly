@@ -9,6 +9,7 @@ import '../models/user.dart';
 import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
+import '../models/popular_category.dart';
 import '../services/location_service.dart';
 import '../utils/logger.dart';
 import '../models/live_search.dart';
@@ -1912,6 +1913,41 @@ class ProductService {
       return response;
     } catch (e) {
       print('❌ ProductService: Error getting categories: $e');
+      return ApiResponse.error(ErrorMessages.unknownError);
+    }
+  }
+
+  /// Popüler kategorileri getirir
+  Future<ApiResponse<List<PopularCategory>>> getPopularCategories() async {
+    try {
+      Logger.info('🏷️ ProductService.getPopularCategories', tag: _tag);
+
+      final response = await _httpClient.getWithBasicAuth<List<PopularCategory>>(
+        ApiConstants.popularCategories,
+        fromJson: (json) {
+          try {
+            // API response yapısına göre parse et
+            final popularCategoriesResponse = PopularCategoriesResponse.fromJson(json);
+            
+            if (!popularCategoriesResponse.success || popularCategoriesResponse.error) {
+              Logger.warning('🏷️ Popular categories API returned error', tag: _tag);
+              return <PopularCategory>[];
+            }
+
+            final categories = popularCategoriesResponse.data.categories;
+            Logger.info('🏷️ Popular categories loaded: ${categories.length} items', tag: _tag);
+            
+            return categories;
+          } catch (e) {
+            Logger.error('🏷️ Popular categories parse error: $e', tag: _tag);
+            return <PopularCategory>[];
+          }
+        },
+      );
+
+      return response;
+    } catch (e) {
+      Logger.error('💥 ProductService.getPopularCategories exception: $e', tag: _tag);
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

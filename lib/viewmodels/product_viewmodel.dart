@@ -5,6 +5,7 @@ import '../models/city.dart';
 import '../models/district.dart';
 import '../models/condition.dart';
 import '../models/product_filter.dart';
+import '../models/popular_category.dart';
 import '../services/product_service.dart';
 import '../models/live_search.dart';
 import '../services/auth_service.dart';
@@ -39,6 +40,7 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Category> _subCategories = [];
   List<product_model.Category> _subSubCategories = [];
   List<product_model.Category> _subSubSubCategories = [];
+  List<PopularCategory> _popularCategories = [];
   String? _selectedParentCategoryId;
   String? _selectedSubCategoryId;
   String? _selectedSubSubCategoryId;
@@ -81,6 +83,7 @@ class ProductViewModel extends ChangeNotifier {
   List<product_model.Category> get subCategories => _subCategories;
   List<product_model.Category> get subSubCategories => _subSubCategories;
   List<product_model.Category> get subSubSubCategories => _subSubSubCategories;
+  List<PopularCategory> get popularCategories => _popularCategories;
   String? get selectedParentCategoryId => _selectedParentCategoryId;
   String? get selectedSubCategoryId => _selectedSubCategoryId;
   String? get selectedSubSubCategoryId => _selectedSubSubCategoryId;
@@ -1149,6 +1152,38 @@ class ProductViewModel extends ChangeNotifier {
         .catchError((error) {
           print('⚠️ Failed to preload category icon: $iconUrl, error: $error');
         });
+  }
+
+  /// Popüler kategorileri yükler
+  Future<void> loadPopularCategories() async {
+    try {
+      Logger.info('🏷️ Loading popular categories...', tag: 'ProductViewModel');
+
+      final response = await _productService.getPopularCategories();
+
+      if (response.isSuccess && response.data != null) {
+        _popularCategories = response.data ?? [];
+        Logger.info(
+          '🏷️ Popular categories loaded: ${_popularCategories.length} items',
+          tag: 'ProductViewModel',
+        );
+        notifyListeners();
+      } else {
+        Logger.warning(
+          '🏷️ Popular categories failed: ${response.error}',
+          tag: 'ProductViewModel',
+        );
+        _popularCategories.clear();
+        notifyListeners();
+      }
+    } catch (e) {
+      Logger.error(
+        '💥 Popular categories error: $e',
+        tag: 'ProductViewModel',
+      );
+      _popularCategories.clear();
+      notifyListeners();
+    }
   }
 
   Future<void> loadSubCategories(String parentCategoryId) async {
