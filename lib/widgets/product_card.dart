@@ -87,6 +87,22 @@ class _ProductCardState extends State<ProductCard> {
       tag: 'ProductCard',
     );
 
+    // API'den gelen categoryList alanını kontrol et
+    if (product.categoryList != null && product.categoryList!.isNotEmpty) {
+      Logger.debug(
+        '🔍 ProductCard._getCategoryDisplayName - categoryList found with ${product.categoryList!.length} items',
+        tag: 'ProductCard',
+      );
+
+      // categoryList'ten en spesifik kategoriyi al (son eleman)
+      final mostSpecificCategory = product.categoryList!.last;
+      Logger.debug(
+        '🔍 ProductCard._getCategoryDisplayName - Using categoryList most specific: ${mostSpecificCategory.name}',
+        tag: 'ProductCard',
+      );
+      return mostSpecificCategory.name;
+    }
+
     // 3 katmanlı kategori sisteminde öncelik sırası:
     // 1. Ana kategori adı (mainCategoryName)
     if (product.mainCategoryName != null &&

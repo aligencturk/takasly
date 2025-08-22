@@ -1867,7 +1867,7 @@ class _TradeViewState extends State<TradeView>
                       // Kategori
                       _buildDetailCard(
                         'Kategori',
-                        product.category.name,
+                        _getCategoryDisplayNameForDialog(product),
                         icon: Icons.category_outlined,
                       ),
 
@@ -3495,6 +3495,51 @@ class _TradeViewState extends State<TradeView>
           ),
         );
       }
+    }
+  }
+
+  String _getCategoryDisplayNameForDialog(dynamic product) {
+    try {
+      // API'den gelen categoryList alanını kontrol et
+      if (product.categoryList != null && product.categoryList!.isNotEmpty) {
+        Logger.info(
+          '🔍 Favori ürün dialog - categoryList found with ${product.categoryList!.length} items',
+          tag: 'TradeView',
+        );
+
+        // categoryList'ten en spesifik kategoriyi al (son eleman)
+        final mostSpecificCategory = product.categoryList!.last;
+        Logger.info(
+          '🔍 Favori ürün dialog - Using categoryList most specific: ${mostSpecificCategory.name}',
+          tag: 'TradeView',
+        );
+        return mostSpecificCategory.name;
+      }
+
+      // Eğer categoryList yoksa, mevcut category.name alanını kullan
+      if (product.category != null &&
+          product.category.name.isNotEmpty &&
+          product.category.name != 'null' &&
+          product.category.name != 'Kategori') {
+        Logger.info(
+          '🔍 Favori ürün dialog - Using category.name: ${product.category.name}',
+          tag: 'TradeView',
+        );
+        return product.category.name;
+      }
+
+      // Eğer hiçbir kategori bulunamazsa, varsayılan değer
+      Logger.info(
+        '🔍 Favori ürün dialog - No valid category found, using default: Kategori',
+        tag: 'TradeView',
+      );
+      return 'Kategori';
+    } catch (e) {
+      Logger.error(
+        '🔍 Favori ürün dialog - Error getting category name: $e',
+        tag: 'TradeView',
+      );
+      return 'Kategori';
     }
   }
 }
