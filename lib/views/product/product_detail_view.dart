@@ -1117,8 +1117,12 @@ class _ProductInfoState extends State<_ProductInfo> {
                   widget.product.productLong!.isNotEmpty)
                 _buildMapButtons(widget.product),
 
-              // Şikayet butonu - çok gizli, en altta
+              // Şikayet butonu - sadece giriş yapmış kullanıcılar için ve kendi ilanı değilse
               if (Provider.of<AuthViewModel>(
+                    context,
+                    listen: false,
+                  ).isLoggedIn &&
+                  Provider.of<AuthViewModel>(
                     context,
                     listen: false,
                   ).currentUser?.id !=

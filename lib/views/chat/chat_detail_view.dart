@@ -1272,50 +1272,60 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   _showBlockDialog();
                 }
               },
-              itemBuilder: (context) => [
-                PopupMenuItem<String>(
-                  value: 'report',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.report_problem_outlined,
-                        size: 20,
-                        color: Colors.red[600],
+              itemBuilder: (context) {
+                // Sadece giriş yapmış kullanıcılar için şikayet ve engelleme seçenekleri
+                final authViewModel = context.read<AuthViewModel>();
+                final items = <PopupMenuItem<String>>[];
+                
+                if (authViewModel.isLoggedIn) {
+                  items.addAll([
+                    PopupMenuItem<String>(
+                      value: 'report',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.report_problem_outlined,
+                            size: 20,
+                            color: Colors.red[600],
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Kullanıcıyı Şikayet Et',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Kullanıcıyı Şikayet Et',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
-                        ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'block',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.block_outlined,
+                            size: 20,
+                            color: Colors.orange[600],
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Kullanıcıyı Engelle',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'block',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.block_outlined,
-                        size: 20,
-                        color: Colors.orange[600],
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Kullanıcıyı Engelle',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                  ]);
+                }
+                
+                return items;
+              },
             ),
           ],
         ),

@@ -115,8 +115,6 @@ class _RegisterFormState extends State<_RegisterForm> {
   bool _acceptPolicy = false;
   bool _acceptKvkk = false;
 
-
-
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -464,9 +462,33 @@ class _RegisterFormState extends State<_RegisterForm> {
             onChanged: (value) {
               setState(() => _acceptPolicy = value ?? false);
             },
-            title: const Text(
-              'Kullanım Koşullarını kabul ediyorum',
-              style: TextStyle(fontSize: 12),
+            title: RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 12, color: Colors.black87),
+                children: [
+                  TextSpan(
+                    text: 'Kullanım Koşullarını',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () async {
+                        final Uri url = Uri.parse(
+                          'https://www.takasly.tr/sozlesmeler',
+                        );
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                  ),
+                  const TextSpan(text: ' kabul ediyorum'),
+                ],
+              ),
             ),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
@@ -490,7 +512,17 @@ class _RegisterFormState extends State<_RegisterForm> {
                       decoration: TextDecoration.underline,
                     ),
                     recognizer: TapGestureRecognizer()
-                      ..onTap = () => _showKvkkDialog(context),
+                      ..onTap = () async {
+                        final Uri url = Uri.parse(
+                          'https://www.takasly.tr/sozlesmeler',
+                        );
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
                   ),
                   const TextSpan(text: ' okudum ve kabul ediyorum'),
                 ],

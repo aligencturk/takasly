@@ -192,16 +192,19 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
                 ),
               ),
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.report_problem_outlined),
-                  onPressed: () => _showReportDialog(),
-                  tooltip: 'Kullanıcıyı Şikayet Et',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.block_outlined),
-                  onPressed: () => _showBlockDialog(),
-                  tooltip: 'Kullanıcıyı Engelle',
-                ),
+                // Sadece giriş yapmış kullanıcılar için şikayet ve engelleme butonları
+                if (context.read<AuthViewModel>().isLoggedIn) ...[
+                  IconButton(
+                    icon: const Icon(Icons.report_problem_outlined),
+                    onPressed: () => _showReportDialog(),
+                    tooltip: 'Kullanıcıyı Şikayet Et',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.block_outlined),
+                    onPressed: () => _showBlockDialog(),
+                    tooltip: 'Kullanıcıyı Engelle',
+                  ),
+                ],
               ],
             ),
             body: viewModel.isLoading
