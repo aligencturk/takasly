@@ -20,7 +20,7 @@ import '../../widgets/error_widget.dart';
 import '../chat/chat_detail_view.dart';
 import '../profile/user_profile_detail_view.dart';
 import 'edit_product_view.dart';
-import '../../services/user_service.dart';
+
 import '../../utils/logger.dart';
 import '../../widgets/native_ad_detail_footer.dart';
 import '../../widgets/report_dialog.dart';
@@ -209,9 +209,10 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
       context: context,
       builder: (context) => ReportDialog(
         reportedUserID: int.parse(product.ownerId),
-        reportedUserName: product.userFullname ?? 
-                         product.owner?.name ?? 
-                         'Bilinmeyen Kullanıcı',
+        reportedUserName:
+            product.userFullname ??
+            product.owner?.name ??
+            'Bilinmeyen Kullanıcı',
         productID: int.tryParse(product.id),
       ),
     );
@@ -773,16 +774,8 @@ class _ProductInfo extends StatefulWidget {
 }
 
 class _ProductInfoState extends State<_ProductInfo> {
-  double? _averageRating;
-  int? _totalReviews;
-  bool _isLoadingProfile = false;
-  final UserService _userService = UserService();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserProfile();
-  }
+  // Puan bilgileri artık product objesinden direkt alınıyor
+  // getUserProfileDetail endpoint'ine ayrıca istek atılmıyor
 
   void _showReportDialog(BuildContext context, Product product) {
     // Kullanıcı kendini şikayet etmeye çalışıyorsa uyarı göster
@@ -803,66 +796,17 @@ class _ProductInfoState extends State<_ProductInfo> {
       context: context,
       builder: (context) => ReportDialog(
         reportedUserID: int.parse(product.ownerId),
-        reportedUserName: product.userFullname ?? 
-                         product.owner?.name ?? 
-                         'Bilinmeyen Kullanıcı',
+        reportedUserName:
+            product.userFullname ??
+            product.owner?.name ??
+            'Bilinmeyen Kullanıcı',
         productID: int.tryParse(product.id),
       ),
     );
   }
 
-  Future<void> _loadUserProfile() async {
-    if (_isLoadingProfile) return;
-
-    if (!mounted) return;
-    setState(() {
-      _isLoadingProfile = true;
-    });
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userToken = prefs.getString(AppConstants.userTokenKey);
-
-      if (userToken != null && userToken.isNotEmpty) {
-        try {
-          // Yeni API'den gelen userID'yi kullan
-          final userId = int.parse(widget.product.ownerId);
-          Logger.debug(
-            '🔍 Product Detail - Loading user profile for ID: $userId',
-          );
-
-          final response = await _userService.getUserProfileDetail(
-            userToken: userToken,
-            userId: userId,
-          );
-
-          if (mounted && response.isSuccess && response.data != null) {
-            setState(() {
-              _averageRating = response.data!.averageRating.toDouble();
-              _totalReviews = response.data!.totalReviews;
-            });
-            Logger.debug(
-              '✅ Product Detail - Profile loaded: Rating: $_averageRating, Reviews: $_totalReviews',
-            );
-          } else {
-            Logger.error(
-              '❌ Product Detail - Profile load failed: ${response.error}',
-            );
-          }
-        } catch (e) {
-          Logger.error('❌ Product Detail - Profile load error: $e');
-        }
-      }
-    } catch (e) {
-      Logger.error('❌ Product Detail - SharedPreferences error: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingProfile = false;
-        });
-      }
-    }
-  }
+  // _loadUserProfile metodu kaldırıldı
+  // Puan bilgileri artık product objesinden direkt alınıyor
 
   @override
   Widget build(BuildContext context) {
@@ -1172,7 +1116,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                   widget.product.productLat!.isNotEmpty &&
                   widget.product.productLong!.isNotEmpty)
                 _buildMapButtons(widget.product),
-              
+
               // Şikayet butonu - çok gizli, en altta
               if (Provider.of<AuthViewModel>(
                     context,
@@ -1626,9 +1570,19 @@ class _ProductInfoState extends State<_ProductInfo> {
       );
     }
 
-    // Gerçek verileri kullan
-    final averageRating = _averageRating ?? 0.0;
-    final totalReviews = _totalReviews ?? 0;
+    // Puan bilgileri artık product objesinden direkt alınıyor
+    final averageRating = widget.product.averageRating?.toDouble() ?? 0.0;
+    final totalReviews = widget.product.totalReviews ?? 0;
+
+    // Debug log'ları ekle
+    Logger.debug(
+      'Product Detail - Puan bilgileri: Rating: $averageRating, Reviews: $totalReviews',
+      tag: 'ProductDetail',
+    );
+    Logger.debug(
+      'Product Detail - Product objesinden: averageRating: ${widget.product.averageRating}, totalReviews: ${widget.product.totalReviews}',
+      tag: 'ProductDetail',
+    );
 
     return Material(
       color: Colors.transparent,

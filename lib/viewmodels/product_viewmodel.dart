@@ -2671,6 +2671,14 @@ class ProductViewModel extends ChangeNotifier {
           '📊 Response data.owner name: ${response.data!.owner.name}',
           tag: 'ProductViewModel',
         );
+        Logger.info(
+          '📊 Response data.averageRating: ${response.data!.averageRating}',
+          tag: 'ProductViewModel',
+        );
+        Logger.info(
+          '📊 Response data.totalReviews: ${response.data!.totalReviews}',
+          tag: 'ProductViewModel',
+        );
       }
 
       if (response.isSuccess && response.data != null) {

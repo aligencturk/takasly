@@ -64,6 +64,9 @@ class Product {
   final int? favoriteCount;
   final String? profilePhoto;
   final String? shareLink;
+  // Kullanıcı puan bilgileri - artık product detail API'den geliyor
+  final double? averageRating;
+  final int? totalReviews;
 
   const Product({
     required this.id,
@@ -123,6 +126,8 @@ class Product {
     this.favoriteCount,
     this.profilePhoto,
     this.shareLink,
+    this.averageRating,
+    this.totalReviews,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -273,6 +278,14 @@ class Product {
         ? safeString(json['shareLink'])
         : null;
 
+    // Kullanıcı puan bilgileri - artık product detail API'den geliyor
+    final averageRating = json['averageRating'] != null
+        ? double.tryParse(json['averageRating'].toString())
+        : null;
+    final totalReviews = json['totalReviews'] != null
+        ? int.tryParse(json['totalReviews'].toString())
+        : null;
+
     // Ana resim ve galeri resimlerini birleştir
     final allImages = <String>[];
     if (productImage != null && productImage.isNotEmpty) {
@@ -408,6 +421,9 @@ class Product {
       favoriteCount: favoriteCount,
       profilePhoto: profilePhoto,
       shareLink: shareLink,
+      // Kullanıcı puan bilgileri - artık product detail API'den geliyor
+      averageRating: averageRating,
+      totalReviews: totalReviews,
     );
   }
   Map<String, dynamic> toJson() {
@@ -476,6 +492,8 @@ class Product {
     int? favoriteCount,
     String? profilePhoto,
     String? shareLink,
+    double? averageRating,
+    int? totalReviews,
   }) {
     return Product(
       id: id ?? this.id,
@@ -538,6 +556,8 @@ class Product {
       favoriteCount: favoriteCount ?? this.favoriteCount,
       profilePhoto: profilePhoto ?? this.profilePhoto,
       shareLink: shareLink ?? this.shareLink,
+      averageRating: averageRating ?? this.averageRating,
+      totalReviews: totalReviews ?? this.totalReviews,
     );
   }
 

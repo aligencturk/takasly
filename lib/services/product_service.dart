@@ -602,6 +602,18 @@ class ProductService {
         fromJson: (json) {
           Logger.info('🔍 Product Detail API Response: $json', tag: _tag);
 
+          // Puan bilgilerini kontrol et
+          if (json is Map<String, dynamic>) {
+            Logger.info(
+              '🔍 Product Detail - averageRating: ${json['averageRating']} (type: ${json['averageRating']?.runtimeType})',
+              tag: _tag,
+            );
+            Logger.info(
+              '🔍 Product Detail - totalReviews: ${json['totalReviews']} (type: ${json['totalReviews']?.runtimeType})',
+              tag: _tag,
+            );
+          }
+
           // 410: Gone -> başarı
           if (json is Map<String, dynamic> &&
               (json['410'] == 'Gone' || json['success'] == true)) {

@@ -63,6 +63,7 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   isShowContact: json['isShowContact'] as bool?,
   isFavorite: json['isFavorite'] as bool?,
   isSponsor: json['isSponsor'] as bool?,
+  sponsorUntil: json['sponsorUntil'] as String?,
   isTrade: json['isTrade'] as bool?,
   productLat: json['productLat'] as String?,
   productLong: json['productLong'] as String?,
@@ -70,6 +71,8 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   favoriteCount: (json['favoriteCount'] as num?)?.toInt(),
   profilePhoto: json['profilePhoto'] as String?,
   shareLink: json['shareLink'] as String?,
+  averageRating: (json['averageRating'] as num?)?.toDouble(),
+  totalReviews: (json['totalReviews'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
@@ -121,6 +124,7 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'isShowContact': instance.isShowContact,
   'isFavorite': instance.isFavorite,
   'isSponsor': instance.isSponsor,
+  'sponsorUntil': instance.sponsorUntil,
   'isTrade': instance.isTrade,
   'productLat': instance.productLat,
   'productLong': instance.productLong,
@@ -128,6 +132,8 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'favoriteCount': instance.favoriteCount,
   'profilePhoto': instance.profilePhoto,
   'shareLink': instance.shareLink,
+  'averageRating': instance.averageRating,
+  'totalReviews': instance.totalReviews,
 };
 
 const _$ProductStatusEnumMap = {
