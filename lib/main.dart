@@ -21,6 +21,7 @@ import 'viewmodels/report_viewmodel.dart';
 import 'viewmodels/user_profile_detail_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
 import 'viewmodels/general_viewmodel.dart';
+import 'viewmodels/contract_viewmodel.dart';
 import 'viewmodels/remote_config_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/home/home_view.dart';
@@ -71,7 +72,7 @@ Future<void> _createNotificationChannel() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Performans optimizasyonları
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -234,6 +235,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProfileDetailViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
         ChangeNotifierProvider(create: (_) => GeneralViewModel()),
+        ChangeNotifierProvider(create: (_) => ContractViewModel()),
         ChangeNotifierProvider(
           create: (context) {
             final remoteConfigViewModel = RemoteConfigViewModel();
@@ -263,10 +265,8 @@ class MyApp extends StatelessWidget {
                   context,
                   listen: false,
                 );
-                final notificationViewModel = Provider.of<NotificationViewModel>(
-                  context,
-                  listen: false,
-                );
+                final notificationViewModel =
+                    Provider.of<NotificationViewModel>(context, listen: false);
                 authViewModel.setNotificationViewModel(notificationViewModel);
                 // Uygulama açılışında iOS/Android fark etmeksizin FCM'i başlatmayı dene
                 // Kullanıcı login ise, topic aboneliği ve izin akışı kurulacak
@@ -312,12 +312,11 @@ class MyApp extends StatelessWidget {
                 builder: (context) => const AddProductView(),
               );
 
-
             case '/edit-product':
               final args = settings.arguments as Map<String, dynamic>?;
               final product = args?['product'] as Product?;
               final productId = args?['productId'] as String?;
-              
+
               if (product != null) {
                 // Doğrudan Product objesi ile
                 return MaterialPageRoute(
@@ -328,16 +327,15 @@ class MyApp extends StatelessWidget {
                 return MaterialPageRoute(
                   builder: (context) => _ProductDetailLoader(
                     productId: productId,
-                    onProductLoaded: (loadedProduct) => EditProductView(product: loadedProduct),
+                    onProductLoaded: (loadedProduct) =>
+                        EditProductView(product: loadedProduct),
                   ),
                 );
               } else {
                 return MaterialPageRoute(
                   builder: (context) => Scaffold(
                     appBar: AppBar(title: Text('Hata')),
-                    body: Center(
-                      child: Text('Ürün bilgisi bulunamadı'),
-                    ),
+                    body: Center(child: Text('Ürün bilgisi bulunamadı')),
                   ),
                 );
               }
@@ -455,7 +453,7 @@ class _ProductDetailLoaderState extends State<_ProductDetailLoader> {
     try {
       final productViewModel = context.read<ProductViewModel>();
       final product = await productViewModel.getProductDetail(widget.productId);
-      
+
       if (product != null && mounted) {
         // Product yüklendi, EditProductView'a yönlendir
         Navigator.of(context).pushReplacement(
@@ -469,9 +467,7 @@ class _ProductDetailLoaderState extends State<_ProductDetailLoader> {
           MaterialPageRoute(
             builder: (context) => Scaffold(
               appBar: AppBar(title: Text('Hata')),
-              body: Center(
-                child: Text('Ürün bulunamadı'),
-              ),
+              body: Center(child: Text('Ürün bulunamadı')),
             ),
           ),
         );
@@ -482,9 +478,7 @@ class _ProductDetailLoaderState extends State<_ProductDetailLoader> {
           MaterialPageRoute(
             builder: (context) => Scaffold(
               appBar: AppBar(title: Text('Hata')),
-              body: Center(
-                child: Text('Ürün yüklenirken hata oluştu: $e'),
-              ),
+              body: Center(child: Text('Ürün yüklenirken hata oluştu: $e')),
             ),
           ),
         );

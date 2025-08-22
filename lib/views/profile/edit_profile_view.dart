@@ -25,7 +25,6 @@ class _EditProfileViewState extends State<EditProfileView> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _birthdayController = TextEditingController();
 
   File? _selectedImage;
   bool _isLoading = false;
@@ -91,7 +90,6 @@ class _EditProfileViewState extends State<EditProfileView> {
         _phoneController.text = user.phone != null && user.phone!.isNotEmpty
             ? PhoneFormatter.formatPhoneNumber(user.phone!)
             : '';
-        _birthdayController.text = user.birthday ?? '';
 
         // Telefon numarası görünürlük ayarı kaldırıldığı için yüklenmiyor
       });
@@ -173,34 +171,6 @@ class _EditProfileViewState extends State<EditProfileView> {
     }
   }
 
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      locale: const Locale('tr', 'TR'),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(
-              context,
-            ).colorScheme.copyWith(primary: AppTheme.primary),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        // Türkçe tarih formatı: GG/AA/YYYY
-        _birthdayController.text =
-            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
-      });
-    }
-  }
-
   Future<void> _updateProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -258,7 +228,6 @@ class _EditProfileViewState extends State<EditProfileView> {
         userLastname: _lastNameController.text,
         userEmail: _emailController.text,
         userPhone: PhoneFormatter.prepareForApi(_phoneController.text),
-        userBirthday: _birthdayController.text,
         profilePhoto: profilePhotoBase64,
         // Telefon numarası görünürlüğü kaldırıldığı için gönderilmiyor
       );
@@ -463,7 +432,6 @@ class _EditProfileViewState extends State<EditProfileView> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _birthdayController.dispose();
     super.dispose();
   }
 
@@ -536,8 +504,6 @@ class _EditProfileViewState extends State<EditProfileView> {
                           icon: Icons.phone,
                           keyboardType: TextInputType.phone,
                         ),
-                        const SizedBox(height: 16),
-                        _buildDateField(),
                         const SizedBox(height: 16),
                         const SizedBox(height: 8),
                         Align(
@@ -677,29 +643,6 @@ class _EditProfileViewState extends State<EditProfileView> {
       validator: validator,
     );
   }
-
-  Widget _buildDateField() {
-    return TextFormField(
-      controller: _birthdayController,
-      readOnly: true,
-      textCapitalization: TextCapitalization.sentences,
-      onTap: _selectDate,
-      decoration: InputDecoration(
-        labelText: 'Doğum Tarihi',
-        prefixIcon: const Icon(Icons.calendar_today),
-        suffixIcon: const Icon(Icons.arrow_drop_down),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.primary, width: 2),
-        ),
-      ),
-    );
-  }
-
-  // Cinsiyet seçimi uygulamadan kaldırıldı
-
-  // Telefon numarası görünürlüğü bölümü kaldırıldı
 
   Widget _buildUpdateButton() {
     return SizedBox(

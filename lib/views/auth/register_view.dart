@@ -3,6 +3,9 @@ import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/contract_viewmodel.dart';
+import 'membership_contract_view.dart';
+import 'kvkk_contract_view.dart';
 import '../../utils/logger.dart';
 import '../../utils/phone_formatter.dart';
 
@@ -112,8 +115,6 @@ class _RegisterFormState extends State<_RegisterForm> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _acceptPolicy = false;
-  bool _acceptKvkk = false;
 
   @override
   void dispose() {
@@ -129,15 +130,19 @@ class _RegisterFormState extends State<_RegisterForm> {
   Future<void> _submitRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (!_acceptPolicy) {
-      _showErrorSnackBar('Lütfen kullanım koşullarını kabul edin.');
+    // Önce üyelik sözleşmesi göster
+    final membershipAccepted = await _showMembershipDialog();
+
+    // Eğer üyelik sözleşmesi reddedildiyse işlemi durdur
+    if (membershipAccepted != true) {
+      _showErrorSnackBar(
+        'Kayıt işlemi için üyelik sözleşmesi kabul edilmelidir.',
+      );
       return;
     }
 
-    if (!_acceptKvkk) {
-      _showErrorSnackBar('Lütfen KVKK metnini kabul edin.');
-      return;
-    }
+    // KVKK metni zaten _showMembershipDialog içinde gösterildi
+    // Burada sadece kayıt işlemini başlat
 
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
@@ -157,8 +162,8 @@ class _RegisterFormState extends State<_RegisterForm> {
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
       phone: PhoneFormatter.prepareForApi(_phoneController.text.trim()),
-      policy: _acceptPolicy,
-      kvkk: _acceptKvkk,
+      policy: true, // Üyelik sözleşmesi kabul edildi
+      kvkk: true, // KVKK kabul edildi
     );
 
     Logger.debug('📊 Kayıt sonucu: $success', tag: 'RegisterView');
@@ -220,50 +225,46 @@ class _RegisterFormState extends State<_RegisterForm> {
     );
   }
 
-  void _showKvkkDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('KVKK Aydınlatma Metni'),
-          content: const SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Bu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("Kanun") kapsamında, Rivorya Yazılım\'nın veri sorumlusu sıfatıyla hareket ettiği hallerde, Kanun\'un 10.maddesine uygun olarak, gerçek kişilere ("Veri Sahibi"), kişisel verilerinin toplanma, işlenme, saklanma, korunma ve imha süreç, şekil ve amaçları ile Kanun uyarınca haklarına ve haklarını kullanma yöntemlerine ilişkin bilgi verilmesi amacıyla hazırlanmıştır.',
-                  style: TextStyle(fontSize: 14),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Detaylı bilgi için aşağıdaki linke tıklayabilirsiniz:',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Kapat'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                final Uri url = Uri.parse(
-                  'https://www.todobus.tr/kvkk-aydinlatma-metni',
-                );
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              },
-              child: const Text('Detaylı Görüntüle'),
-            ),
-          ],
-        );
-      },
+  Future<bool?> _showMembershipDialog() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => MembershipContractView(
+          onContractAccepted: (accepted) {
+            Navigator.of(context).pop(accepted);
+          },
+        ),
+      ),
     );
+
+    if (result == true) {
+      // Üyelik sözleşmesi kabul edildi, KVKK'ya geç
+      _showKvkkDialog();
+      return true;
+    } else {
+      // Üyelik sözleşmesi reddedildi
+      Logger.info('❌ Üyelik sözleşmesi reddedildi', tag: 'RegisterView');
+      return false;
+    }
+  }
+
+  void _showKvkkDialog() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => KvkkContractView(
+          onContractAccepted: (accepted) {
+            Navigator.of(context).pop(accepted);
+          },
+        ),
+      ),
+    );
+
+    if (result == true) {
+      // KVKK kabul edildi
+      Logger.info('✅ KVKK aydınlatma metni kabul edildi', tag: 'RegisterView');
+    } else {
+      // KVKK reddedildi
+      Logger.info('❌ KVKK aydınlatma metni reddedildi', tag: 'RegisterView');
+    }
   }
 
   @override
@@ -456,84 +457,53 @@ class _RegisterFormState extends State<_RegisterForm> {
           ),
           const SizedBox(height: 16),
 
-          // Kullanım Koşulları ve KVKK
-          CheckboxListTile(
-            value: _acceptPolicy,
-            onChanged: (value) {
-              setState(() => _acceptPolicy = value ?? false);
-            },
-            title: RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 12, color: Colors.black87),
-                children: [
-                  TextSpan(
-                    text: 'Kullanım Koşullarını',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.primary,
-                      decoration: TextDecoration.underline,
+          // Sözleşme Link'leri
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: Column(
+              children: [
+                Text(
+                  'Kayıt olarak aşağıdaki sözleşmeleri kabul etmiş sayılırsınız:',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: _showMembershipDialog,
+                      child: Text(
+                        'Üyelik Sözleşmesi',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () async {
-                        final Uri url = Uri.parse(
-                          'https://www.takasly.tr/sozlesmeler',
-                        );
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(
-                            url,
-                            mode: LaunchMode.externalApplication,
-                          );
-                        }
-                      },
-                  ),
-                  const TextSpan(text: ' kabul ediyorum'),
-                ],
-              ),
-            ),
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-            activeColor: colorScheme.primary,
-            dense: true,
-          ),
-          CheckboxListTile(
-            value: _acceptKvkk,
-            onChanged: (value) {
-              setState(() => _acceptKvkk = value ?? false);
-            },
-            title: RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 12, color: Colors.black87),
-                children: [
-                  TextSpan(
-                    text: 'KVKK Aydınlatma Metnini',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.primary,
-                      decoration: TextDecoration.underline,
+                    Text(
+                      ' ve ',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () async {
-                        final Uri url = Uri.parse(
-                          'https://www.takasly.tr/sozlesmeler',
-                        );
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(
-                            url,
-                            mode: LaunchMode.externalApplication,
-                          );
-                        }
-                      },
-                  ),
-                  const TextSpan(text: ' okudum ve kabul ediyorum'),
-                ],
-              ),
+                    GestureDetector(
+                      onTap: _showKvkkDialog,
+                      child: Text(
+                        'KVKK Aydınlatma Metni',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-            activeColor: colorScheme.primary,
-            dense: true,
           ),
-          const SizedBox(height: 20),
 
           // Kayıt Ol Butonu
           Consumer<AuthViewModel>(
