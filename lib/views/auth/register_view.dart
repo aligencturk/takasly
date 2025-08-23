@@ -226,44 +226,152 @@ class _RegisterFormState extends State<_RegisterForm> {
   }
 
   Future<bool?> _showMembershipDialog() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => MembershipContractView(
-          onContractAccepted: (accepted) {
-            Navigator.of(context).pop(accepted);
-          },
-        ),
-      ),
-    );
+    try {
+      Logger.info(
+        '📋 Üyelik sözleşmesi dialog\'u açılıyor...',
+        tag: 'RegisterView',
+      );
 
-    if (result == true) {
-      // Üyelik sözleşmesi kabul edildi, KVKK'ya geç
-      _showKvkkDialog();
-      return true;
-    } else {
-      // Üyelik sözleşmesi reddedildi
-      Logger.info('❌ Üyelik sözleşmesi reddedildi', tag: 'RegisterView');
+      // Loading state göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Sözleşme yükleniyor...'),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      final result = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => MembershipContractView(
+            onContractAccepted: (accepted) {
+              Logger.info(
+                '📋 Üyelik sözleşmesi sonucu: $accepted',
+                tag: 'RegisterView',
+              );
+              Navigator.of(context).pop(accepted);
+            },
+          ),
+        ),
+      );
+
+      Logger.info(
+        '📋 Üyelik sözleşmesi dialog sonucu: $result',
+        tag: 'RegisterView',
+      );
+
+      if (result == true) {
+        // Üyelik sözleşmesi kabul edildi, KVKK'ya geç
+        Logger.info(
+          '✅ Üyelik sözleşmesi kabul edildi, KVKK dialog\'u açılıyor...',
+          tag: 'RegisterView',
+        );
+        await _showKvkkDialog();
+        return true;
+      } else {
+        // Üyelik sözleşmesi reddedildi
+        Logger.info('❌ Üyelik sözleşmesi reddedildi', tag: 'RegisterView');
+        return false;
+      }
+    } catch (e) {
+      Logger.error(
+        '❌ Üyelik sözleşmesi dialog hatası: $e',
+        tag: 'RegisterView',
+      );
+      _showErrorSnackBar('Sözleşme açılırken hata oluştu: $e');
       return false;
     }
   }
 
-  void _showKvkkDialog() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => KvkkContractView(
-          onContractAccepted: (accepted) {
-            Navigator.of(context).pop(accepted);
-          },
-        ),
-      ),
-    );
+  Future<void> _showKvkkDialog() async {
+    try {
+      Logger.info('🔒 KVKK dialog\'u açılıyor...', tag: 'RegisterView');
 
-    if (result == true) {
-      // KVKK kabul edildi
-      Logger.info('✅ KVKK aydınlatma metni kabul edildi', tag: 'RegisterView');
-    } else {
-      // KVKK reddedildi
-      Logger.info('❌ KVKK aydınlatma metni reddedildi', tag: 'RegisterView');
+      // Loading state göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('KVKK metni yükleniyor...'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      final result = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => KvkkContractView(
+            onContractAccepted: (accepted) {
+              Logger.info('🔒 KVKK sonucu: $accepted', tag: 'RegisterView');
+              Navigator.of(context).pop(accepted);
+            },
+          ),
+        ),
+      );
+
+      Logger.info('🔒 KVKK dialog sonucu: $result', tag: 'RegisterView');
+
+      if (result == true) {
+        // KVKK kabul edildi
+        Logger.info(
+          '✅ KVKK aydınlatma metni kabul edildi',
+          tag: 'RegisterView',
+        );
+
+        // Başarı mesajı göster
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Text('Sözleşmeler kabul edildi!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // KVKK reddedildi
+        Logger.info('❌ KVKK aydınlatma metni reddedildi', tag: 'RegisterView');
+      }
+    } catch (e) {
+      Logger.error('❌ KVKK dialog hatası: $e', tag: 'RegisterView');
+      _showErrorSnackBar('KVKK metni açılırken hata oluştu: $e');
     }
   }
 

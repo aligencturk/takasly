@@ -27,8 +27,9 @@ class ContractService {
           if (json is Map<String, dynamic>) {
             // Error kontrolü
             if (json['error'] == true) {
+              final errorMsg = json['message'] ?? 'API hatası';
               Logger.error(
-                '❌ ContractService - API error: ${json['message']}',
+                '❌ ContractService - API error: $errorMsg',
                 tag: 'ContractService',
               );
               return null;
@@ -52,18 +53,24 @@ class ContractService {
               return null;
             }
 
-            final contract = Contract.fromJson(json['data']);
-
-            Logger.info(
-              '✅ ContractService - Contract loaded successfully',
-              tag: 'ContractService',
-            );
-            Logger.debug(
-              '🔍 ContractService - Contract: ${contract.title}',
-              tag: 'ContractService',
-            );
-
-            return contract;
+            try {
+              final contract = Contract.fromJson(json['data']);
+              Logger.info(
+                '✅ ContractService - Contract loaded successfully',
+                tag: 'ContractService',
+              );
+              Logger.debug(
+                '🔍 ContractService - Contract: ${contract.title}',
+                tag: 'ContractService',
+              );
+              return contract;
+            } catch (parseError) {
+              Logger.error(
+                '❌ ContractService - Contract parse error: $parseError',
+                tag: 'ContractService',
+              );
+              return null;
+            }
           }
 
           Logger.error(
@@ -75,17 +82,23 @@ class ContractService {
       );
 
       if (response.isSuccess && response.data != null) {
-        return ApiResponse.success(response.data!);
-      } else {
-        Logger.error(
-          '❌ ContractService - API call failed: ${response.error}',
+        Logger.info(
+          '✅ ContractService - Membership contract API call successful',
           tag: 'ContractService',
         );
-        return ApiResponse.error(response.error ?? 'Sözleşme yüklenemedi');
+        return ApiResponse.success(response.data!);
+      } else {
+        final errorMsg = response.error ?? 'Sözleşme yüklenemedi';
+        Logger.error(
+          '❌ ContractService - API call failed: $errorMsg',
+          tag: 'ContractService',
+        );
+        return ApiResponse.error(errorMsg);
       }
     } catch (e) {
+      final errorMsg = 'Sözleşme yükleme hatası: $e';
       Logger.error('❌ ContractService - Exception: $e', tag: 'ContractService');
-      return ApiResponse.error('Sözleşme yükleme hatası: $e');
+      return ApiResponse.error(errorMsg);
     }
   }
 
@@ -109,8 +122,9 @@ class ContractService {
           if (json is Map<String, dynamic>) {
             // Error kontrolü
             if (json['error'] == true) {
+              final errorMsg = json['message'] ?? 'KVKK API hatası';
               Logger.error(
-                '❌ ContractService - KVKK API error: ${json['message']}',
+                '❌ ContractService - KVKK API error: $errorMsg',
                 tag: 'ContractService',
               );
               return null;
@@ -134,18 +148,24 @@ class ContractService {
               return null;
             }
 
-            final contract = Contract.fromJson(json['data']);
-
-            Logger.info(
-              '✅ ContractService - KVKK loaded successfully',
-              tag: 'ContractService',
-            );
-            Logger.debug(
-              '🔍 ContractService - KVKK: ${contract.title}',
-              tag: 'ContractService',
-            );
-
-            return contract;
+            try {
+              final contract = Contract.fromJson(json['data']);
+              Logger.info(
+                '✅ ContractService - KVKK loaded successfully',
+                tag: 'ContractService',
+              );
+              Logger.debug(
+                '🔍 ContractService - KVKK: ${contract.title}',
+                tag: 'ContractService',
+              );
+              return contract;
+            } catch (parseError) {
+              Logger.error(
+                '❌ ContractService - KVKK parse error: $parseError',
+                tag: 'ContractService',
+              );
+              return null;
+            }
           }
 
           Logger.error(
@@ -157,20 +177,26 @@ class ContractService {
       );
 
       if (response.isSuccess && response.data != null) {
-        return ApiResponse.success(response.data!);
-      } else {
-        Logger.error(
-          '❌ ContractService - KVKK API call failed: ${response.error}',
+        Logger.info(
+          '✅ ContractService - KVKK contract API call successful',
           tag: 'ContractService',
         );
-        return ApiResponse.error(response.error ?? 'KVKK metni yüklenemedi');
+        return ApiResponse.success(response.data!);
+      } else {
+        final errorMsg = response.error ?? 'KVKK metni yüklenemedi';
+        Logger.error(
+          '❌ ContractService - KVKK API call failed: $errorMsg',
+          tag: 'ContractService',
+        );
+        return ApiResponse.error(errorMsg);
       }
     } catch (e) {
+      final errorMsg = 'KVKK yükleme hatası: $e';
       Logger.error(
         '❌ ContractService - KVKK Exception: $e',
         tag: 'ContractService',
       );
-      return ApiResponse.error('KVKK yükleme hatası: $e');
+      return ApiResponse.error(errorMsg);
     }
   }
 }

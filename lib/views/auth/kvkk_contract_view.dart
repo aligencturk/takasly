@@ -29,6 +29,8 @@ class _KvkkContractViewState extends State<KvkkContractView> {
 
   Future<void> _loadContract() async {
     try {
+      Logger.info('🔒 KVKK metni yükleniyor...', tag: 'KvkkContractView');
+
       final contractViewModel = Provider.of<ContractViewModel>(
         context,
         listen: false,
@@ -41,14 +43,24 @@ class _KvkkContractViewState extends State<KvkkContractView> {
           _isLoading = false;
           if (success) {
             _contractContent = contractViewModel.kvkkContractContent;
+            Logger.info(
+              '✅ KVKK metni başarıyla yüklendi',
+              tag: 'KvkkContractView',
+            );
+          } else {
+            Logger.error('❌ KVKK metni yüklenemedi', tag: 'KvkkContractView');
+            _contractContent =
+                'KVKK metni yüklenirken hata oluştu. Lütfen tekrar deneyin.';
           }
         });
       }
     } catch (e) {
-      Logger.error('KVKK yükleme hatası: $e', tag: 'KvkkContractView');
+      Logger.error('❌ KVKK yükleme hatası: $e', tag: 'KvkkContractView');
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _contractContent =
+              'KVKK metni yüklenirken beklenmeyen bir hata oluştu: $e';
         });
       }
     }
@@ -57,7 +69,6 @@ class _KvkkContractViewState extends State<KvkkContractView> {
   void _onAcceptContract() {
     if (_isContractAccepted) {
       widget.onContractAccepted(true);
-      Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -70,7 +81,6 @@ class _KvkkContractViewState extends State<KvkkContractView> {
 
   void _onDeclineContract() {
     widget.onContractAccepted(false);
-    Navigator.of(context).pop();
   }
 
   @override
@@ -87,103 +97,103 @@ class _KvkkContractViewState extends State<KvkkContractView> {
           // Content
           Expanded(
             child: _isLoading
-                ? const Center(child: LoadingWidget())
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppTheme.primary,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                      ],
+                    ),
+                  )
                 : _contractContent.isNotEmpty
                 ? SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
-                    child: Html(
-                      data: _contractContent,
-                      style: {
-                        "body": Style(
-                          fontSize: FontSize(16),
-                          lineHeight: LineHeight(1.6),
-                          color: Colors.black87,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Html(
+                          data: _contractContent,
+                          style: {
+                            "body": Style(
+                              fontSize: FontSize(16),
+                              lineHeight: LineHeight(1.6),
+                              color: Colors.black87,
+                            ),
+                          },
                         ),
-                        "h1": Style(
-                          fontSize: FontSize(20),
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                          margin: Margins.only(bottom: 20),
+                        const SizedBox(height: 20),
+                        // Checkbox
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: _isContractAccepted,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _isContractAccepted = value ?? false;
+                                  });
+                                },
+                                activeColor: AppTheme.primary,
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isContractAccepted =
+                                          !_isContractAccepted;
+                                    });
+                                  },
+                                  child: const Text(
+                                    'KVKK aydınlatma metnini okudum ve kabul ediyorum',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        "h2": Style(
-                          fontSize: FontSize(18),
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                          margin: Margins.only(bottom: 16, top: 24),
-                        ),
-                        "h3": Style(
-                          fontSize: FontSize(16),
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                          margin: Margins.only(bottom: 14, top: 20),
-                        ),
-                        "h4": Style(
-                          fontSize: FontSize(15),
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                          margin: Margins.only(bottom: 12, top: 18),
-                        ),
-                        "p": Style(margin: Margins.only(bottom: 16)),
-                        "ul": Style(margin: Margins.only(bottom: 16, left: 24)),
-                        "li": Style(margin: Margins.only(bottom: 8)),
-                        "strong": Style(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                        ),
-                        "a": Style(
-                          color: AppTheme.primary,
-                          textDecoration: TextDecoration.underline,
-                        ),
-                      },
+                      ],
                     ),
                   )
                 : const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text(
-                        'KVKK metni yüklenemedi',
-                        style: TextStyle(color: Colors.red, fontSize: 16),
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'KVKK metni yüklenemedi',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Lütfen tekrar deneyin',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                      ],
                     ),
                   ),
           ),
 
-          // Checkbox
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border(top: BorderSide(color: Colors.grey[300]!)),
-            ),
-            child: Row(
-              children: [
-                Checkbox(
-                  value: _isContractAccepted,
-                  onChanged: (value) {
-                    setState(() {
-                      _isContractAccepted = value ?? false;
-                    });
-                  },
-                  activeColor: AppTheme.primary,
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isContractAccepted = !_isContractAccepted;
-                      });
-                    },
-                    child: const Text(
-                      'KVKK aydınlatma metnini okudum ve kabul ediyorum',
-                      style: TextStyle(fontSize: 16, color: Colors.black87),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Buttons
+          // Accept/Decline buttons
           Container(
             padding: const EdgeInsets.all(20),
             child: Row(
@@ -193,15 +203,13 @@ class _KvkkContractViewState extends State<KvkkContractView> {
                     onPressed: _onDeclineContract,
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.red[300]!),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      side: const BorderSide(color: Colors.red),
+                      foregroundColor: Colors.red,
                     ),
-                    child: Text(
+                    child: const Text(
                       'Reddet',
                       style: TextStyle(
-                        color: Colors.red[700],
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -210,19 +218,19 @@ class _KvkkContractViewState extends State<KvkkContractView> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _onAcceptContract,
+                    onPressed: _isContractAccepted ? _onAcceptContract : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      disabledBackgroundColor: Colors.grey.shade300,
                     ),
                     child: const Text(
                       'Kabul Et',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),

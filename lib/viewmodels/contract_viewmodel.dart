@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import '../services/contract_service.dart';
 import '../models/contract.dart';
 import '../utils/logger.dart';
@@ -51,15 +52,17 @@ class ContractViewModel extends ChangeNotifier {
         );
         return true;
       } else {
-        _setError(response.error ?? 'Üyelik sözleşmesi yüklenemedi');
+        final errorMsg = response.error ?? 'Üyelik sözleşmesi yüklenemedi';
+        _setError(errorMsg);
         Logger.error(
-          '❌ ContractViewModel - Failed to load membership contract',
+          '❌ ContractViewModel - Failed to load membership contract: $errorMsg',
           tag: 'ContractViewModel',
         );
         return false;
       }
     } catch (e) {
-      _setError('Üyelik sözleşmesi yükleme hatası: $e');
+      final errorMsg = 'Üyelik sözleşmesi yükleme hatası: $e';
+      _setError(errorMsg);
       Logger.error(
         '❌ ContractViewModel - Exception: $e',
         tag: 'ContractViewModel',
@@ -98,20 +101,22 @@ class ContractViewModel extends ChangeNotifier {
           tag: 'ContractViewModel',
         );
         Logger.debug(
-          '🔍 ContractViewModel - KVKK title: ${_kvkkContract!.title}',
+          '🔍 ContractViewModel - Contract title: ${_kvkkContract!.title}',
           tag: 'ContractViewModel',
         );
         return true;
       } else {
-        _setError(response.error ?? 'KVKK metni yüklenemedi');
+        final errorMsg = response.error ?? 'KVKK metni yüklenemedi';
+        _setError(errorMsg);
         Logger.error(
-          '❌ ContractViewModel - Failed to load KVKK contract',
+          '❌ ContractViewModel - Failed to load KVKK contract: $errorMsg',
           tag: 'ContractViewModel',
         );
         return false;
       }
     } catch (e) {
-      _setError('KVKK yükleme hatası: $e');
+      final errorMsg = 'KVKK metni yükleme hatası: $e';
+      _setError(errorMsg);
       Logger.error(
         '❌ ContractViewModel - Exception: $e',
         tag: 'ContractViewModel',
@@ -164,21 +169,28 @@ class ContractViewModel extends ChangeNotifier {
   void _setLoading(bool loading) {
     if (_isLoading != loading) {
       _isLoading = loading;
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
   void _setError(String error) {
     if (_errorMessage != error) {
       _errorMessage = error;
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
   void _clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;
-      notifyListeners();
+      _safeNotifyListeners();
     }
+  }
+
+  /// Build sırasında güvenli notifyListeners çağrısı
+  void _safeNotifyListeners() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 }

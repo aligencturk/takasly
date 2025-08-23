@@ -2386,6 +2386,50 @@ class _AddProductViewState extends State<AddProductView> {
                 width: 100,
                 height: 100,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  Logger.error('❌ Resim yükleme hatası: $error');
+                  return Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(
+                        isCoverImage ? 10 : 11,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.broken_image,
+                          color: Colors.grey.shade400,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Resim\nYüklenemedi',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded) {
+                    return child;
+                  }
+                  return AnimatedOpacity(
+                    opacity: frame == null ? 0 : 1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: child,
+                  );
+                },
               ),
             ),
           ),
@@ -2514,7 +2558,7 @@ class _AddProductViewState extends State<AddProductView> {
                   child: Icon(Icons.photo_library, color: AppTheme.primary),
                 ),
                 title: const Text('Galeri'),
-                subtitle: const Text('Tek veya birden fazla fotoğraf seç'),
+                subtitle: const Text('Birden fazla fotoğraf seç'),
                 onTap: () {
                   Navigator.pop(context);
                   _pickMultipleImages();
@@ -2538,10 +2582,52 @@ class _AddProductViewState extends State<AddProductView> {
       );
 
       if (pickedFile != null) {
+        // Yükleniyor mesajını göster
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Fotoğraf yükleniyor...'),
+                ],
+              ),
+              backgroundColor: AppTheme.primary,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+
         // Seçilen görseli dönüştür
         Logger.debug('🖼️ AddProductView - Converting selected image...');
         final File convertedFile =
             await ImageOptimizationService.convertSingleXFileToFile(pickedFile);
+
+        // Dosya varlığını ve boyutunu kontrol et
+        if (!await convertedFile.exists()) {
+          Logger.error('❌ Converted file does not exist');
+          throw Exception('Dönüştürülen dosya bulunamadı');
+        }
+
+        final fileSize = await convertedFile.length();
+        if (fileSize == 0) {
+          Logger.error('❌ Converted file is empty (0 bytes)');
+          throw Exception('Dönüştürülen dosya boş');
+        }
+
+        Logger.info('✅ File converted successfully: ${fileSize} bytes');
 
         setState(() {
           _selectedImages.add(convertedFile);
@@ -2559,9 +2645,21 @@ class _AddProductViewState extends State<AddProductView> {
       Logger.error('❌ Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Fotoğraf seçilirken hata oluştu'),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Fotoğraf seçilirken hata oluştu: ${e.toString().contains('Exception:') ? e.toString().split('Exception: ').last : 'Bilinmeyen hata'}',
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -2581,12 +2679,40 @@ class _AddProductViewState extends State<AddProductView> {
         return;
       }
 
-      final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia(
+      final List<XFile> pickedFiles = await _imagePicker.pickMultiImage(
         // Backend optimizasyon yapacağı için yüksek kalite seçiliyor
         imageQuality: 100,
       );
 
       if (pickedFiles.isNotEmpty) {
+        // Yükleniyor mesajını göster
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Fotoğraflar yükleniyor...'),
+                ],
+              ),
+              backgroundColor: AppTheme.primary,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+
         final List<XFile> filesToAdd = pickedFiles
             .take(remainingSlots)
             .toList();
@@ -2604,10 +2730,38 @@ class _AddProductViewState extends State<AddProductView> {
               maxImages: remainingSlots,
             );
 
+        // Dönüştürülen dosyaları kontrol et
+        final List<File> validFiles = [];
+        for (final file in convertedFiles) {
+          try {
+            if (await file.exists()) {
+              final fileSize = await file.length();
+              if (fileSize > 0) {
+                validFiles.add(file);
+                Logger.info('✅ File validated: ${fileSize} bytes');
+              } else {
+                Logger.warning('⚠️ File is empty: ${file.path}');
+              }
+            } else {
+              Logger.warning('⚠️ File does not exist: ${file.path}');
+            }
+          } catch (e) {
+            Logger.error('❌ Error validating file: $e');
+          }
+        }
+
+        if (validFiles.isEmpty) {
+          throw Exception('Hiçbir geçerli dosya dönüştürülemedi');
+        }
+
+        Logger.info(
+          '✅ ${validFiles.length}/${convertedFiles.length} dosya başarıyla dönüştürüldü',
+        );
+
         setState(() {
-          _selectedImages.addAll(convertedFiles);
+          _selectedImages.addAll(validFiles);
           // İlk fotoğraf eklendiğinde otomatik olarak kapak resmi yap
-          if (_selectedImages.length == convertedFiles.length) {
+          if (_selectedImages.length == validFiles.length) {
             _coverImageIndex = 0;
           }
         });
@@ -2640,17 +2794,53 @@ class _AddProductViewState extends State<AddProductView> {
   }
 
   void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
+    if (index < 0 || index >= _selectedImages.length) {
+      Logger.warning('⚠️ Invalid image index for removal: $index');
+      return;
+    }
 
-      // Eğer silinen resim kapak resmiyse, ilk resmi kapak resmi yap
-      if (index == _coverImageIndex) {
-        _coverImageIndex = 0;
-      } else if (index < _coverImageIndex) {
-        // Eğer silinen resim kapak resminden önceyse, kapak resmi indeksini güncelle
-        _coverImageIndex--;
+    try {
+      final removedImage = _selectedImages[index];
+      Logger.info('🗑️ Removing image: ${removedImage.path}');
+
+      setState(() {
+        _selectedImages.removeAt(index);
+
+        // Eğer silinen resim kapak resmiyse, ilk resmi kapak resmi yap
+        if (index == _coverImageIndex) {
+          _coverImageIndex = 0;
+        } else if (index < _coverImageIndex) {
+          // Eğer silinen resim kapak resminden önceyse, kapak resmi indeksini güncelle
+          _coverImageIndex--;
+        }
+      });
+
+      // Kapak resmi indeksini sınırlar içinde tut
+      if (_selectedImages.isNotEmpty &&
+          _coverImageIndex >= _selectedImages.length) {
+        setState(() {
+          _coverImageIndex = _selectedImages.length - 1;
+        });
       }
-    });
+    } catch (e) {
+      Logger.error('❌ Error removing image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Resim silinirken hata oluştu')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _setCoverImage(int index) {
