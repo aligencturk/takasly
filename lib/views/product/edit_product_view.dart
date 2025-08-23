@@ -1156,19 +1156,23 @@ class _EditProductViewState extends State<EditProductView> {
           children: [
             Expanded(
               child: SizedBox(
-                height: 40,
+                height: 48,
                 child: ElevatedButton.icon(
                   onPressed: _pickImages,
-                  icon: const Icon(Icons.add_photo_alternate, size: 18),
+                  icon: const Icon(Icons.add_photo_alternate, size: 20),
                   label: const Text(
                     'Yeni Resim Ekle',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.grey[200],
                     foregroundColor: Colors.black87,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                   ),
                 ),
