@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -49,6 +50,7 @@ class _EditProductViewState extends State<EditProductView> {
   // Sponsor ile ilgili değişkenler
   final AdMobService _adMobService = AdMobService();
   bool _isProcessingSponsor = false;
+  Timer? _sponsorTimer;
 
   // ExpansionTile durumları
   bool _isBasicInfoExpanded = false; // Temel bilgiler kapalı
@@ -86,6 +88,9 @@ class _EditProductViewState extends State<EditProductView> {
       ]);
 
       Logger.info('✅ EditProductView - All data loaded successfully');
+
+      // Sponsor timer'ını başlat
+      _startSponsorTimer();
     } catch (e) {
       Logger.error('💥 EditProductView - Error in parallel loading: $e');
       // Hata durumunda widget'tan gelen veriyi kullan
@@ -93,6 +98,9 @@ class _EditProductViewState extends State<EditProductView> {
         _currentProduct = widget.product;
       });
       _initializeFieldsWithProductData(widget.product);
+
+      // Hata durumunda da timer'ı başlat
+      _startSponsorTimer();
     } finally {
       setState(() {
         _isLoadingProductDetail = false;
@@ -302,6 +310,7 @@ class _EditProductViewState extends State<EditProductView> {
     _titleController.dispose();
     _descriptionController.dispose();
     _tradePreferencesController.dispose();
+    _sponsorTimer?.cancel();
     super.dispose();
   }
 
@@ -595,6 +604,25 @@ class _EditProductViewState extends State<EditProductView> {
   }
 
   Widget _buildSponsorSection() {
+    final currentProduct = _currentProduct ?? widget.product;
+    final isCurrentlySponsored = currentProduct.isSponsor == true;
+    final sponsorUntil = currentProduct.sponsorUntil;
+
+    // Sponsor süresinin dolup dolmadığını kontrol et
+    bool isSponsorExpired = false;
+    if (sponsorUntil != null && sponsorUntil.isNotEmpty) {
+      try {
+        final sponsorEndTime = DateTime.parse(sponsorUntil);
+        isSponsorExpired = DateTime.now().isAfter(sponsorEndTime);
+      } catch (e) {
+        Logger.error('Error parsing sponsorUntil: $e');
+        isSponsorExpired = true;
+      }
+    }
+
+    // Sponsor aktif mi kontrol et
+    final isSponsorActive = isCurrentlySponsored && !isSponsorExpired;
+
     return ExpansionTile(
       initiallyExpanded: _isSponsorExpanded,
       onExpansionChanged: (expanded) {
@@ -602,12 +630,18 @@ class _EditProductViewState extends State<EditProductView> {
           _isSponsorExpanded = expanded;
         });
       },
-      leading: Icon(Icons.star, color: Colors.blue.shade600, size: 20),
+      leading: Icon(
+        isSponsorActive ? Icons.star : Icons.star_border,
+        color: isSponsorActive ? Colors.orange.shade600 : Colors.blue.shade600,
+        size: 20,
+      ),
       title: Text(
-        'İlanı Öne Çıkar',
+        isSponsorActive ? 'İlan Öne Çıkarıldı' : 'İlanı Öne Çıkar',
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: Colors.blue.shade600,
+          color: isSponsorActive
+              ? Colors.orange.shade600
+              : Colors.blue.shade600,
           fontSize: 15,
         ),
       ),
@@ -617,81 +651,149 @@ class _EditProductViewState extends State<EditProductView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'ÜCRETSİZ Premium Görünürlük',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blue.shade600,
-                  fontSize: 14,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                'İlanınızı ödüllü reklam izleyerek 1 saat boyunca öne çıkarabilirsiniz.',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-              ),
-
-              const SizedBox(height: 16),
-
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: _isProcessingSponsor
-                      ? null
-                      : () => _handleSponsorProcess(),
-                  icon: _isProcessingSponsor
-                      ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+              if (isSponsorActive) ...[
+                // Sponsor aktif durumu
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: Colors.orange.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'İlanınız Şu Anda Öne Çıkarılmış!',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange.shade700,
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                        )
-                      : Icon(Icons.play_arrow, size: 18),
-                  label: Text(
-                    _isProcessingSponsor
-                        ? 'İşleniyor...'
-                        : 'Reklam İzle ve Öne Çıkar',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                            const SizedBox(height: 4),
+                            if (sponsorUntil != null && sponsorUntil.isNotEmpty)
+                              Text(
+                                'Bitiş: ${_formatSponsorEndTime(sponsorUntil)}',
+                                style: TextStyle(
+                                  color: Colors.orange.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-              Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green.shade600,
-                    size: 16,
+                Text(
+                  'İlanınız anasayfada en üstte özel çerçeve ile gösteriliyor.',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'ÜCRETSİZ - Reklam izledikten sonra otomatik olarak öne çıkarılır',
+                ),
+
+                const SizedBox(height: 16),
+
+                Text(
+                  'Süre dolduktan sonra tekrar öne çıkarabilirsiniz.',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+              ] else ...[
+                // Sponsor aktif değil durumu
+                Text(
+                  'ÜCRETSİZ Premium Görünürlük',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  'İlanınızı ödüllü reklam izleyerek 1 saat boyunca öne çıkarabilirsiniz.',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+
+                const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _isProcessingSponsor
+                        ? null
+                        : () => _handleSponsorProcess(),
+                    icon: _isProcessingSponsor
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : Icon(Icons.play_arrow, size: 18),
+                    label: Text(
+                      _isProcessingSponsor
+                          ? 'İşleniyor...'
+                          : 'Reklam İzle ve Öne Çıkar',
                       style: TextStyle(
-                        color: Colors.green.shade600,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade600,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green.shade600,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'ÜCRETSİZ - Reklam izledikten sonra otomatik olarak öne çıkarılır',
+                        style: TextStyle(
+                          color: Colors.green.shade600,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -1761,6 +1863,55 @@ class _EditProductViewState extends State<EditProductView> {
     }
   }
 
+  /// Sponsor timer'ını başlat
+  void _startSponsorTimer() {
+    _sponsorTimer?.cancel();
+
+    final currentProduct = _currentProduct ?? widget.product;
+    if (currentProduct.sponsorUntil != null &&
+        currentProduct.sponsorUntil!.isNotEmpty) {
+      try {
+        final endTime = DateTime.parse(currentProduct.sponsorUntil!);
+        final now = DateTime.now();
+
+        if (endTime.isAfter(now)) {
+          final duration = endTime.difference(now);
+
+          _sponsorTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+            final currentTime = DateTime.now();
+            if (currentTime.isAfter(endTime)) {
+              // Süre doldu, UI'ı güncelle
+              setState(() {
+                if (_currentProduct != null) {
+                  _currentProduct = _currentProduct!.copyWith(
+                    isSponsor: false,
+                    sponsorUntil: null,
+                  );
+                }
+              });
+              timer.cancel();
+              Logger.info(
+                '⏰ EditProductView - Sponsor süresi doldu, UI güncellendi',
+              );
+            }
+          });
+
+          Logger.info(
+            '⏰ EditProductView - Sponsor timer başlatıldı, süre: ${duration.inMinutes} dakika',
+          );
+        }
+      } catch (e) {
+        Logger.error('Error starting sponsor timer: $e');
+      }
+    }
+  }
+
+  /// Sponsor timer'ını durdur
+  void _stopSponsorTimer() {
+    _sponsorTimer?.cancel();
+    _sponsorTimer = null;
+  }
+
   /// Sponsor işlemini yönet - ürün düzenleme için
   Future<void> _handleSponsorProcess() async {
     try {
@@ -1796,6 +1947,23 @@ class _EditProductViewState extends State<EditProductView> {
 
         if (sponsorSuccess) {
           Logger.info('✅ EditProductView - Ürün başarıyla sponsor edildi');
+
+          // UI'ı güncelle - sponsor durumu değişti
+          setState(() {
+            // Sponsor durumunu güncelle
+            if (_currentProduct != null) {
+              _currentProduct = _currentProduct!.copyWith(
+                isSponsor: true,
+                sponsorUntil: DateTime.now()
+                    .add(const Duration(hours: 1))
+                    .toIso8601String(),
+              );
+            }
+          });
+
+          // Timer'ı yeniden başlat
+          _startSponsorTimer();
+
           _showSponsorSuccessMessage();
         } else {
           Logger.error('❌ EditProductView - Sponsor işlemi başarısız');
@@ -1977,6 +2145,31 @@ class _EditProductViewState extends State<EditProductView> {
           duration: const Duration(seconds: 4),
         ),
       );
+    }
+  }
+
+  /// Sponsor bitiş zamanını formatla
+  String _formatSponsorEndTime(String sponsorUntil) {
+    try {
+      final endTime = DateTime.parse(sponsorUntil);
+      final now = DateTime.now();
+      final difference = endTime.difference(now);
+
+      if (difference.isNegative) {
+        return 'Süre doldu';
+      }
+
+      final hours = difference.inHours;
+      final minutes = difference.inMinutes % 60;
+
+      if (hours > 0) {
+        return '${hours} saat ${minutes} dakika';
+      } else {
+        return '${minutes} dakika';
+      }
+    } catch (e) {
+      Logger.error('Error formatting sponsor end time: $e');
+      return 'Bilinmiyor';
     }
   }
 
