@@ -61,7 +61,7 @@ class _SearchViewState extends State<SearchView> {
       final productViewModel = context.read<ProductViewModel>();
       // Metin arama geçmişine ekle
       productViewModel.addTextSearchHistory(query.trim());
-      
+
       final filter = productViewModel.currentFilter.copyWith(
         searchText: query.trim(),
       );
@@ -102,7 +102,8 @@ class _SearchViewState extends State<SearchView> {
       },
       child: Scaffold(
         backgroundColor: AppTheme.background,
-        resizeToAvoidBottomInset: true, // Klavyeyi dikkate al
+        resizeToAvoidBottomInset:
+            false, // Klavye açıldığında yukarı kaymayı engelle
         appBar: AppBar(
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
@@ -123,7 +124,7 @@ class _SearchViewState extends State<SearchView> {
                   Logger.error('❌ SearchView - clearFilters hatası: $e');
                 }
               }
-              
+
               // Widget hala mounted mı kontrol et
               if (mounted && context.mounted) {
                 Navigator.pop(context);
@@ -269,9 +270,12 @@ class _SearchViewState extends State<SearchView> {
                                                 Icons.delete_sweep,
                                                 size: 18,
                                               ),
-                                              label: const Text('Geçmişi temizle'),
+                                              label: const Text(
+                                                'Geçmişi temizle',
+                                              ),
                                               style: TextButton.styleFrom(
-                                                foregroundColor: Colors.redAccent,
+                                                foregroundColor:
+                                                    Colors.redAccent,
                                               ),
                                             ),
                                         ],
@@ -284,54 +288,82 @@ class _SearchViewState extends State<SearchView> {
                                           ? Container(
                                               color: Colors.white,
                                               child: ListView.separated(
-                                                padding: const EdgeInsets.symmetric(
-                                                  vertical: 8,
-                                                ),
-                                                itemCount: vm.searchHistory.length > 4 ? 4 : vm.searchHistory.length,
-                                                separatorBuilder: (_, __) => Divider(
-                                                  height: 1,
-                                                  color: Colors.grey[200],
-                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                    ),
+                                                itemCount:
+                                                    vm.searchHistory.length > 4
+                                                    ? 4
+                                                    : vm.searchHistory.length,
+                                                separatorBuilder: (_, __) =>
+                                                    Divider(
+                                                      height: 1,
+                                                      color: Colors.grey[200],
+                                                    ),
                                                 itemBuilder: (context, index) {
-                                                  final item = vm.searchHistory[index];
+                                                  final item =
+                                                      vm.searchHistory[index];
                                                   return ListTile(
                                                     leading: Icon(
-                                                      item.type == 'category' 
-                                                        ? Icons.category
-                                                        : Icons.history,
+                                                      item.type == 'category'
+                                                          ? Icons.category
+                                                          : Icons.history,
                                                       color: Colors.grey,
                                                       size: 20,
                                                     ),
                                                     title: Text(
                                                       item.search,
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                      style: TextStyle(fontSize: 14),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                      ),
                                                     ),
                                                     onTap: () {
                                                       // Türüne göre farklı davran
-                                                      if (item.type == 'category' && item.categoryId != null) {
+                                                      if (item.type ==
+                                                              'category' &&
+                                                          item.categoryId !=
+                                                              null) {
                                                         // Kategori ise filtre uygula
-                                                        final vm = context.read<ProductViewModel>();
-                                                        final filter = vm.currentFilter.copyWith(
-                                                          categoryId: item.categoryId,
-                                                          searchText: null,
-                                                        );
+                                                        final vm = context
+                                                            .read<
+                                                              ProductViewModel
+                                                            >();
+                                                        final filter = vm
+                                                            .currentFilter
+                                                            .copyWith(
+                                                              categoryId: item
+                                                                  .categoryId,
+                                                              searchText: null,
+                                                            );
                                                         vm.applyFilter(filter);
                                                         setState(() {
-                                                          _searchController.clear();
-                                                          FocusScope.of(context).unfocus();
+                                                          _searchController
+                                                              .clear();
+                                                          FocusScope.of(
+                                                            context,
+                                                          ).unfocus();
                                                           _hasSearched = true;
                                                           _currentQuery = '';
                                                         });
                                                       } else {
                                                         // Metin arama ise normal arama yap
-                                                        _searchController.text = item.search;
+                                                        _searchController.text =
+                                                            item.search;
                                                         setState(() {});
                                                         context
-                                                            .read<ProductViewModel>()
-                                                            .liveSearch(item.search);
-                                                        _performSearch(item.search);
+                                                            .read<
+                                                              ProductViewModel
+                                                            >()
+                                                            .liveSearch(
+                                                              item.search,
+                                                            );
+                                                        _performSearch(
+                                                          item.search,
+                                                        );
                                                       }
                                                     },
                                                   );
@@ -342,7 +374,8 @@ class _SearchViewState extends State<SearchView> {
                                               color: Colors.white,
                                               child: Center(
                                                 child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
                                                   children: [
                                                     Icon(
                                                       Icons.history,
@@ -395,16 +428,20 @@ class _SearchViewState extends State<SearchView> {
                                           ? Container(
                                               color: Colors.grey[50],
                                               child: ListView.separated(
-                                                padding: const EdgeInsets.symmetric(
-                                                  vertical: 8,
-                                                ),
-                                                itemCount: vm.popularCategories.length,
-                                                separatorBuilder: (_, __) => Divider(
-                                                  height: 1,
-                                                  color: Colors.grey[200],
-                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                    ),
+                                                itemCount:
+                                                    vm.popularCategories.length,
+                                                separatorBuilder: (_, __) =>
+                                                    Divider(
+                                                      height: 1,
+                                                      color: Colors.grey[200],
+                                                    ),
                                                 itemBuilder: (context, index) {
-                                                  final category = vm.popularCategories[index];
+                                                  final category = vm
+                                                      .popularCategories[index];
                                                   return ListTile(
                                                     leading: const Icon(
                                                       Icons.category,
@@ -414,13 +451,17 @@ class _SearchViewState extends State<SearchView> {
                                                     title: Text(
                                                       category.catName,
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                      style: TextStyle(fontSize: 14),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                      ),
                                                     ),
                                                     subtitle: Text(
                                                       '${category.productCount} ürün',
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         color: Colors.grey[600],
@@ -429,21 +470,27 @@ class _SearchViewState extends State<SearchView> {
                                                     onTap: () {
                                                       // Kategori tıklandığında arama geçmişine ekle
                                                       final vm = context
-                                                          .read<ProductViewModel>();
+                                                          .read<
+                                                            ProductViewModel
+                                                          >();
                                                       vm.addCategorySearchHistory(
                                                         category.catName,
-                                                        category.catId.toString(),
+                                                        category.catId
+                                                            .toString(),
                                                       );
 
-                                                      final filter = vm.currentFilter
+                                                      final filter = vm
+                                                          .currentFilter
                                                           .copyWith(
-                                                            categoryId: category.catId
+                                                            categoryId: category
+                                                                .catId
                                                                 .toString(),
                                                             searchText: null,
                                                           );
                                                       vm.applyFilter(filter);
                                                       setState(() {
-                                                        _searchController.clear();
+                                                        _searchController
+                                                            .clear();
                                                         FocusScope.of(
                                                           context,
                                                         ).unfocus();
@@ -459,7 +506,8 @@ class _SearchViewState extends State<SearchView> {
                                               color: Colors.grey[50],
                                               child: Center(
                                                 child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
                                                   children: [
                                                     Icon(
                                                       Icons.category,
@@ -492,7 +540,8 @@ class _SearchViewState extends State<SearchView> {
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(20),
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.search,
@@ -616,13 +665,15 @@ class _SearchViewState extends State<SearchView> {
                                           shrinkWrap: true,
                                           physics:
                                               const NeverScrollableScrollPhysics(),
-                                          itemCount: vm.popularCategories.length,
+                                          itemCount:
+                                              vm.popularCategories.length,
                                           separatorBuilder: (_, __) => Divider(
                                             height: 1,
                                             color: Colors.grey[200],
                                           ),
                                           itemBuilder: (context, index) {
-                                            final category = vm.popularCategories[index];
+                                            final category =
+                                                vm.popularCategories[index];
                                             return ListTile(
                                               leading: const Icon(
                                                 Icons.category,
@@ -656,8 +707,7 @@ class _SearchViewState extends State<SearchView> {
                                                   category.catId.toString(),
                                                 );
 
-                                                final filter = vm
-                                                    .currentFilter
+                                                final filter = vm.currentFilter
                                                     .copyWith(
                                                       categoryId: category.catId
                                                           .toString(),
@@ -705,7 +755,12 @@ class _SearchViewState extends State<SearchView> {
                                 child: Container(
                                   color: AppTheme.background,
                                   child: GridView.builder(
-                                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      0,
+                                      16,
+                                      16,
+                                    ),
                                     gridDelegate:
                                         const SliverGridDelegateWithFixedCrossAxisCount(
                                           crossAxisCount: 2,
