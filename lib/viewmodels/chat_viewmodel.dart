@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../models/chat.dart';
-import '../models/user.dart';
 import '../models/product.dart';
 import '../services/firebase_chat_service.dart';
 import '../services/notification_service.dart';
 import '../utils/logger.dart';
+import '../services/auth_service.dart'; // Added for debugFCMToken
 
 class ChatViewModel extends ChangeNotifier {
   static const String _tag = 'ChatViewModel';
@@ -233,6 +233,31 @@ class ChatViewModel extends ChangeNotifier {
     Product? product,
   }) async {
     try {
+      Logger.info('📤 Mesaj gönderiliyor...', tag: _tag);
+      Logger.info('💬 Chat ID: $chatId', tag: _tag);
+      Logger.info('👤 Sender ID: $senderId', tag: _tag);
+      Logger.info(
+        '📝 Content: ${content.length > 50 ? '${content.substring(0, 50)}...' : content}',
+        tag: _tag,
+      );
+
+      // FCM token'ı debug et
+      try {
+        await debugFCMToken(senderId);
+      } catch (debugError) {
+        Logger.warning('⚠️ FCM token debug hatası: $debugError', tag: _tag);
+      }
+
+      // FCM token'ı test et (debug için)
+      try {
+        await _chatService.testFCMToken(senderId);
+      } catch (fcmError) {
+        Logger.warning(
+          '⚠️ FCM token test hatası (mesaj göndermeye devam ediliyor): $fcmError',
+          tag: _tag,
+        );
+      }
+
       await _chatService.sendMessage(
         chatId: chatId,
         content: content,
@@ -242,10 +267,27 @@ class ChatViewModel extends ChangeNotifier {
         replyToId: replyToId,
         product: product,
       );
+
+      Logger.info('✅ Mesaj başarıyla gönderildi', tag: _tag);
     } catch (e) {
-      _error = e.toString();
+      Logger.error('❌ Mesaj gönderme hatası: $e', tag: _tag);
+
+      // Hata tipine göre özel mesajlar
+      String errorMessage = 'Mesaj gönderilemedi';
+
+      if (e.toString().contains('FCM token geçersiz')) {
+        errorMessage = 'Bildirim ayarları hatası';
+      } else if (e.toString().contains('Cloud Function')) {
+        errorMessage = 'Sunucu hatası';
+      } else if (e.toString().contains('network')) {
+        errorMessage = 'İnternet bağlantı hatası';
+      }
+
+      _error = errorMessage;
       notifyListeners();
-      Logger.error('Mesaj gönderme hatası: $e', tag: _tag);
+
+      // Hata detayını log'la
+      Logger.error('🔍 Hata detayı: $e', tag: _tag);
     }
   }
 
@@ -609,6 +651,21 @@ class ChatViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('ChatViewModel: getChatById hatası: $e', tag: _tag);
       return null;
+    }
+  }
+
+  // FCM token'ı debug et
+  Future<void> debugFCMToken(String userId) async {
+    try {
+      Logger.info('🔍 FCM token debug başlatılıyor...', tag: _tag);
+
+      // AuthService'den debug yap
+      final authService = AuthService();
+      await authService.debugFCMToken(userId);
+
+      Logger.info('✅ FCM token debug tamamlandı', tag: _tag);
+    } catch (e) {
+      Logger.error('❌ FCM token debug hatası: $e', tag: _tag);
     }
   }
 }

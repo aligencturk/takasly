@@ -10,6 +10,7 @@ import '../core/http_client.dart';
 import '../models/notification.dart' as AppNotification;
 import '../utils/logger.dart';
 import 'error_handler_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Background message handler - uygulama kapalıyken gelen mesajları işler
 @pragma('vm:entry-point')
@@ -117,6 +118,36 @@ class NotificationService {
       },
     );
 
+    // FCM token'ı otomatik olarak al ve kaydet
+    try {
+      final fcmToken = await _fcm.getToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        Logger.info(
+          '✅ NotificationService init - FCM token alındı: ${fcmToken.substring(0, 20)}...',
+          tag: _tag,
+        );
+
+        // Token'ı SharedPreferences'a kaydet
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('fcmToken', fcmToken);
+        Logger.info(
+          '✅ NotificationService init - FCM token SharedPreferences\'a kaydedildi',
+          tag: _tag,
+        );
+      } else {
+        Logger.warning(
+          '⚠️ NotificationService init - FCM token alınamadı',
+          tag: _tag,
+        );
+      }
+    } catch (e) {
+      Logger.error(
+        '❌ NotificationService init - FCM token alma hatası: $e',
+        tag: _tag,
+        error: e,
+      );
+    }
+
     // Foreground: mesaj geldiğinde notification handling
     FirebaseMessaging.onMessage.listen((RemoteMessage m) {
       // Chat bildirimi kontrolü
@@ -200,7 +231,7 @@ class NotificationService {
           _androidChannel.id,
           _androidChannel.name,
           channelDescription: _androidChannel.description,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
           importance: Importance.high,
           priority: Priority.high,
           // Android için özel ses ve titreşim
@@ -613,21 +644,86 @@ class NotificationService {
   /// FCM Token'ını alır
   Future<String?> getFCMToken() async {
     try {
-      Logger.debug('Getting FCM token...', tag: _tag);
-      final token = await _fcm.getToken();
+      Logger.debug('🔄 FCM token alınıyor...', tag: _tag);
 
-      if (token != null) {
-        Logger.debug(
-          'FCM token retrieved: ${token.substring(0, 20)}...',
+      // Firebase Messaging'in hazır olup olmadığını kontrol et
+      if (!_isInitialized) {
+        Logger.warning(
+          '⚠️ NotificationService henüz initialize edilmemiş, initialize ediliyor...',
           tag: _tag,
         );
-      } else {
-        Logger.warning('FCM token is null', tag: _tag);
+        await init();
       }
 
-      return token;
+      final token = await _fcm.getToken();
+
+      if (token != null && token.isNotEmpty) {
+        Logger.info(
+          '✅ FCM token başarıyla alındı: ${token.substring(0, 20)}...',
+          tag: _tag,
+        );
+
+        // Token'ı SharedPreferences'a kaydet
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('fcmToken', token);
+          Logger.debug(
+            '✅ FCM token SharedPreferences\'a kaydedildi',
+            tag: _tag,
+          );
+        } catch (e) {
+          Logger.warning(
+            '⚠️ FCM token SharedPreferences\'a kaydedilemedi: $e',
+            tag: _tag,
+          );
+        }
+
+        return token;
+      } else {
+        Logger.warning('⚠️ FCM token null veya boş', tag: _tag);
+
+        // Token alınamadıysa tekrar deneme
+        await Future.delayed(Duration(seconds: 2));
+        Logger.debug('🔄 FCM token retry deneniyor...', tag: _tag);
+
+        final retryToken = await _fcm.getToken();
+        if (retryToken != null && retryToken.isNotEmpty) {
+          Logger.info(
+            '✅ FCM token retry ile alındı: ${retryToken.substring(0, 20)}...',
+            tag: _tag,
+          );
+          return retryToken;
+        }
+
+        return null;
+      }
     } catch (e) {
-      Logger.error('Get FCM token error: $e', tag: _tag);
+      Logger.error('❌ FCM token alma hatası: $e', tag: _tag, error: e);
+
+      // Hata durumunda tekrar deneme
+      try {
+        await Future.delayed(Duration(seconds: 3));
+        Logger.debug(
+          '🔄 FCM token alma hatası sonrası retry deneniyor...',
+          tag: _tag,
+        );
+
+        final retryToken = await _fcm.getToken();
+        if (retryToken != null && retryToken.isNotEmpty) {
+          Logger.info(
+            '✅ FCM token retry ile alındı: ${retryToken.substring(0, 20)}...',
+            tag: _tag,
+          );
+          return retryToken;
+        }
+      } catch (retryError) {
+        Logger.error(
+          '❌ FCM token retry hatası: $retryError',
+          tag: _tag,
+          error: retryError,
+        );
+      }
+
       return null;
     }
   }
@@ -925,7 +1021,7 @@ class NotificationService {
               _androidChannel.id,
               _androidChannel.name,
               channelDescription: _androidChannel.description,
-              icon: '@mipmap/ic_launcher',
+              icon: '@drawable/ic_notification',
               importance: Importance.high,
               priority: Priority.high,
               enableVibration: true,
@@ -1061,7 +1157,7 @@ class NotificationService {
             chatChannel.id,
             chatChannel.name,
             channelDescription: chatChannel.description,
-            icon: '@mipmap/ic_launcher',
+            icon: '@drawable/ic_notification',
             importance: Importance.high,
             priority: Priority.high,
             enableVibration: true,

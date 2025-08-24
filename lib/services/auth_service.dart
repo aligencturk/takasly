@@ -8,6 +8,7 @@ import '../services/user_service.dart';
 import '../utils/logger.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../services/notification_service.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class AuthService {
   final HttpClient _httpClient = HttpClient();
@@ -1276,8 +1277,17 @@ class AuthService {
           json.encode(user.toJson()),
         );
 
-        // FCM token'ı Firebase'e kaydet
-        await _saveFCMTokenToFirebase(user.id);
+        // FCM token'ı Firebase'e kaydet - async olarak çalıştır
+        _saveFCMTokenToFirebase(user.id)
+            .then((_) {
+              Logger.info('✅ FCM token Firebase\'e kaydetme tamamlandı');
+            })
+            .catchError((error) {
+              Logger.error(
+                '❌ FCM token Firebase\'e kaydetme hatası: $error',
+                error: error,
+              );
+            });
 
         // Kaydetme sonrası kontrol
         final savedUserId = prefs.getString(AppConstants.userIdKey);
@@ -1297,22 +1307,102 @@ class AuthService {
   // FCM token'ı Firebase'e kaydet
   Future<void> _saveFCMTokenToFirebase(String userId) async {
     try {
+      Logger.info('🔄 FCM token Firebase\'e kaydediliyor...');
+      Logger.info('👤 User ID: $userId');
+
       // NotificationService'ten FCM token'ı al
       final fcmToken = await NotificationService.instance.getFCMToken();
-      
+
       if (fcmToken != null && fcmToken.isNotEmpty) {
-        Logger.info('FCM token Firebase\'e kaydediliyor: ${fcmToken.substring(0, 20)}...');
-        
+        Logger.info('✅ FCM token alındı: ${fcmToken.substring(0, 20)}...');
+
         // Firebase Database'e FCM token'ı kaydet
         final database = FirebaseDatabase.instance.ref();
-        await database.child('users/$userId/fcmToken').set(fcmToken);
-        
-        Logger.info('FCM token başarıyla Firebase\'e kaydedildi');
+
+        // Cihaz bilgisi ile birlikte FCM token'ı kaydet
+        final deviceInfo = await _getDeviceInfo();
+        final path = 'users/$userId/fcmToken';
+
+        Logger.info(
+          '📝 FCM token kaydediliyor: $path = ${fcmToken.substring(0, 20)}...',
+        );
+        Logger.info('📱 Cihaz bilgisi: $deviceInfo');
+
+        // Token ve cihaz bilgisini birlikte kaydet
+        final tokenData = {
+          'token': fcmToken,
+          'deviceInfo': deviceInfo,
+          'lastUpdated': DateTime.now().millisecondsSinceEpoch,
+        };
+
+        await database.child(path).set(tokenData);
+        Logger.info('✅ FCM token ve cihaz bilgisi Firebase\'e kaydedildi');
+
+        // Kaydedilen token'ı kontrol et
+        final savedToken = await database.child(path).get();
+        if (savedToken.value != null) {
+          final savedValue = savedToken.value.toString();
+          Logger.info(
+            '✅ FCM token başarıyla Firebase\'e kaydedildi ve doğrulandı: ${fcmToken.substring(0, 20)}...',
+          );
+
+          // Token'ı SharedPreferences'a kaydet
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('fcmToken', fcmToken);
+          Logger.info('✅ FCM token SharedPreferences\'a kaydedildi');
+        } else {
+          Logger.error('❌ FCM token kaydedildi ama doğrulanamadı!');
+        }
       } else {
-        Logger.warning('FCM token alınamadı, Firebase\'e kaydedilmedi');
+        Logger.warning('⚠️ FCM token alınamadı, Firebase\'e kaydedilmedi');
+
+        // FCM token alınamadıysa tekrar deneme
+        await Future.delayed(Duration(seconds: 2));
+        final retryToken = await NotificationService.instance.getFCMToken();
+        if (retryToken != null && retryToken.isNotEmpty) {
+          Logger.info(
+            '🔄 FCM token retry ile alındı, tekrar kaydetme deneniyor...',
+          );
+          await _saveFCMTokenToFirebase(userId);
+        }
       }
     } catch (e) {
-      Logger.error('FCM token Firebase\'e kaydetme hatası: $e', error: e);
+      Logger.error('❌ FCM token Firebase\'e kaydetme hatası: $e', error: e);
+
+      // Hata durumunda tekrar deneme
+      try {
+        await Future.delayed(Duration(seconds: 3));
+        Logger.info('🔄 FCM token kaydetme hatası sonrası tekrar deneniyor...');
+        await _saveFCMTokenToFirebase(userId);
+      } catch (retryError) {
+        Logger.error(
+          '❌ FCM token kaydetme retry hatası: $retryError',
+          error: retryError,
+        );
+      }
+    }
+  }
+
+  // Cihaz bilgisini al
+  Future<String> _getDeviceInfo() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      String deviceId = 'unknown';
+
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceId =
+            '${androidInfo.brand}_${androidInfo.model}_${androidInfo.id}';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceId =
+            '${iosInfo.name}_${iosInfo.model}_${iosInfo.identifierForVendor}';
+      }
+
+      return deviceId;
+    } catch (e) {
+      Logger.warning('⚠️ Cihaz bilgisi alınamadı: $e');
+      return 'unknown_device';
     }
   }
 
@@ -1521,6 +1611,92 @@ class AuthService {
     }
   }
 
+  /// FCM token'ları temizler
+  Future<void> clearFCMTokens() async {
+    try {
+      Logger.info('🧹 FCM token\'lar temizleniyor...');
+
+      final database = FirebaseDatabase.instance.ref();
+
+      // Tüm kullanıcılardaki FCM token'ları temizle
+      final allUsersSnapshot = await database.child('users').get();
+      if (allUsersSnapshot.value != null) {
+        dynamic rawValue = allUsersSnapshot.value;
+        Map<String, dynamic>? allUsers;
+
+        if (rawValue is Map) {
+          allUsers = Map<String, dynamic>.from(rawValue);
+        } else if (rawValue is List) {
+          allUsers = <String, dynamic>{};
+          for (int i = 0; i < rawValue.length; i++) {
+            if (rawValue[i] != null) {
+              allUsers[i.toString()] = rawValue[i];
+            }
+          }
+        }
+
+        if (allUsers != null) {
+          Logger.info('🔍 Firebase\'de ${allUsers.length} kullanıcı bulundu');
+
+          for (final entry in allUsers.entries) {
+            final userId = entry.key;
+            final userData = entry.value;
+
+            Logger.info('🔍 Kullanıcı $userId kontrol ediliyor...');
+
+            if (userData is Map && userData.containsKey('fcmToken')) {
+              final fcmToken = userData['fcmToken'] as String;
+              Logger.info(
+                '🧹 Kullanıcı $userId\'den FCM token temizleniyor: ${fcmToken.substring(0, 20)}...',
+              );
+
+              await database.child('users/$userId/fcmToken').remove();
+              Logger.info('✅ Kullanıcı $userId\'den FCM token temizlendi');
+            } else {
+              Logger.info('ℹ️ Kullanıcı $userId\'de FCM token yok');
+            }
+          }
+        }
+      }
+
+      Logger.info('✅ Tüm FCM token\'lar temizlendi!');
+    } catch (e) {
+      Logger.error('❌ FCM token temizleme hatası: $e', error: e);
+    }
+  }
+
+  /// FCM token'ı test etmek için kullanılır
+  Future<void> testFCMToken() async {
+    try {
+      Logger.info('🧪 FCM token test başlatılıyor...');
+
+      // Mevcut kullanıcı bilgilerini kontrol et
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userIdKey);
+      final userToken = prefs.getString(AppConstants.userTokenKey);
+      final fcmToken = prefs.getString('fcmToken');
+
+      Logger.info('🔍 Mevcut kullanıcı bilgileri:');
+      Logger.info('👤 User ID: [$userId]');
+      Logger.info('🔑 User Token: [${userToken?.substring(0, 10)}...]');
+      Logger.info('📱 FCM Token: [${fcmToken?.substring(0, 20)}...]');
+
+      if (userId != null && userId.isNotEmpty) {
+        Logger.info('✅ Kullanıcı ID bulundu: $userId');
+
+        // Sadece mevcut kullanıcıya FCM token kaydet (temizlik yapma)
+        Logger.info('📝 Kullanıcı $userId için FCM token kaydediliyor...');
+        await _saveFCMTokenToFirebase(userId);
+
+        Logger.info('✅ FCM token başarıyla kaydedildi!');
+      } else {
+        Logger.warning('⚠️ Kullanıcı ID bulunamadı, FCM token kaydedilemedi');
+      }
+    } catch (e) {
+      Logger.error('❌ FCM token test hatası: $e', error: e);
+    }
+  }
+
   /// Token'ın geçerli olup olmadığını kontrol eder
   Future<bool> isTokenValid() async {
     try {
@@ -1562,6 +1738,88 @@ class AuthService {
     } catch (e) {
       Logger.error('❌ AuthService.isTokenValid - Exception: $e', error: e);
       return false;
+    }
+  }
+
+  // FCM token'ı debug et
+  Future<void> debugFCMToken(String userId) async {
+    try {
+      Logger.info('🔍 FCM token debug başlatılıyor...', tag: 'AuthService');
+
+      // 1. SharedPreferences'dan token al
+      final prefs = await SharedPreferences.getInstance();
+      final localToken = prefs.getString('fcmToken');
+      Logger.info(
+        '📱 Local FCM token: ${localToken != null ? '${localToken.substring(0, 20)}...' : 'null'}',
+        tag: 'AuthService',
+      );
+
+      // 2. NotificationService'den token al
+      final notificationToken = await NotificationService.instance
+          .getFCMToken();
+      Logger.info(
+        '🔔 NotificationService FCM token: ${notificationToken != null ? '${notificationToken.substring(0, 20)}...' : 'null'}',
+        tag: 'AuthService',
+      );
+
+      // 3. Firebase'den token al
+      final database = FirebaseDatabase.instance.ref();
+      final firebaseTokenSnapshot = await database
+          .child('users/$userId/fcmToken')
+          .get();
+      final firebaseToken = firebaseTokenSnapshot.value?.toString();
+      Logger.info(
+        '🔥 Firebase FCM token: ${firebaseToken != null ? '${firebaseToken.substring(0, 20)}...' : 'null'}',
+        tag: 'AuthService',
+      );
+
+      // 4. Token'ları karşılaştır
+      if (localToken == notificationToken &&
+          notificationToken == firebaseToken) {
+        Logger.info('✅ Tüm FCM token\'lar eşleşiyor', tag: 'AuthService');
+      } else {
+        Logger.warning('⚠️ FCM token\'lar eşleşmiyor!', tag: 'AuthService');
+        Logger.warning(
+          '📱 Local: ${localToken?.substring(0, 20)}...',
+          tag: 'AuthService',
+        );
+        Logger.warning(
+          '🔔 Notification: ${notificationToken?.substring(0, 20)}...',
+          tag: 'AuthService',
+        );
+        Logger.warning(
+          '🔥 Firebase: ${firebaseToken?.substring(0, 20)}...',
+          tag: 'AuthService',
+        );
+
+        // Firebase'deki token'ı güncelle
+        if (notificationToken != null && notificationToken.isNotEmpty) {
+          Logger.info(
+            '🔄 Firebase\'deki FCM token güncelleniyor...',
+            tag: 'AuthService',
+          );
+          await database.child('users/$userId/fcmToken').set(notificationToken);
+          Logger.info('✅ Firebase FCM token güncellendi', tag: 'AuthService');
+        }
+      }
+
+      // 5. Token uzunluklarını kontrol et
+      Logger.info('📏 Token uzunlukları:', tag: 'AuthService');
+      Logger.info('📱 Local: ${localToken?.length ?? 0}', tag: 'AuthService');
+      Logger.info(
+        '🔔 Notification: ${notificationToken?.length ?? 0}',
+        tag: 'AuthService',
+      );
+      Logger.info(
+        '🔥 Firebase: ${firebaseToken?.length ?? 0}',
+        tag: 'AuthService',
+      );
+    } catch (e) {
+      Logger.error(
+        '❌ FCM token debug hatası: $e',
+        error: e,
+        tag: 'AuthService',
+      );
     }
   }
 }

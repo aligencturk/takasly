@@ -15,7 +15,7 @@ class FirebaseAuthService {
 
   // Email/Password ile giriş
   Future<firebase_auth.UserCredential> signInWithEmailAndPassword(
-    String email, 
+    String email,
     String password,
   ) async {
     try {
@@ -23,8 +23,11 @@ class FirebaseAuthService {
         email: email,
         password: password,
       );
-      
-      Logger.info('Firebase giriş başarılı: ${credential.user?.email}', tag: _tag);
+
+      Logger.info(
+        'Firebase giriş başarılı: ${credential.user?.email}',
+        tag: _tag,
+      );
       return credential;
     } catch (e) {
       Logger.error('Firebase giriş hatası: $e', tag: _tag);
@@ -34,7 +37,7 @@ class FirebaseAuthService {
 
   // Email/Password ile kayıt
   Future<firebase_auth.UserCredential> createUserWithEmailAndPassword(
-    String email, 
+    String email,
     String password,
   ) async {
     try {
@@ -42,8 +45,11 @@ class FirebaseAuthService {
         email: email,
         password: password,
       );
-      
-      Logger.info('Firebase kayıt başarılı: ${credential.user?.email}', tag: _tag);
+
+      Logger.info(
+        'Firebase kayıt başarılı: ${credential.user?.email}',
+        tag: _tag,
+      );
       return credential;
     } catch (e) {
       Logger.error('Firebase kayıt hatası: $e', tag: _tag);
@@ -65,23 +71,63 @@ class FirebaseAuthService {
   // Kullanıcı ID token'ını al
   Future<String?> getIdToken() async {
     try {
+      Logger.info('🔐 Firebase Auth token alınmaya çalışılıyor...', tag: _tag);
+
       final user = _auth.currentUser;
+      Logger.info('👤 Current user: ${user?.uid ?? 'null'}', tag: _tag);
+
       if (user != null) {
+        Logger.info('✅ Kullanıcı bulundu, token alınıyor...', tag: _tag);
+
+        // Token'ı al
         final token = await user.getIdToken();
-        return token;
+
+        if (token != null && token.isNotEmpty) {
+          Logger.info(
+            '✅ Firebase Auth token başarıyla alındı: ${token.substring(0, 20)}...',
+            tag: _tag,
+          );
+          Logger.info('📏 Token uzunluğu: ${token.length}', tag: _tag);
+          return token;
+        } else {
+          Logger.warning('⚠️ Firebase Auth token null veya boş', tag: _tag);
+          return null;
+        }
+      } else {
+        Logger.warning('⚠️ Firebase Auth currentUser null', tag: _tag);
+
+        // Auth state'i kontrol et
+        final authState = _auth.authStateChanges();
+        final currentAuthState = await authState.first;
+        Logger.info(
+          '🔍 Auth state: ${currentAuthState?.uid ?? 'null'}',
+          tag: _tag,
+        );
+
+        return null;
       }
-      return null;
     } catch (e) {
-      Logger.error('Token alma hatası: $e', tag: _tag);
+      Logger.error(
+        '❌ Firebase Auth token alma hatası: $e',
+        error: e,
+        tag: _tag,
+      );
+
+      // Hata detayını log'la
+      if (e is firebase_auth.FirebaseAuthException) {
+        Logger.error('🔍 Firebase Auth Exception Code: ${e.code}', tag: _tag);
+        Logger.error(
+          '🔍 Firebase Auth Exception Message: ${e.message}',
+          tag: _tag,
+        );
+      }
+
       return null;
     }
   }
 
   // Kullanıcı profilini güncelle
-  Future<void> updateProfile({
-    String? displayName,
-    String? photoURL,
-  }) async {
+  Future<void> updateProfile({String? displayName, String? photoURL}) async {
     try {
       final user = _auth.currentUser;
       if (user != null) {
@@ -94,4 +140,4 @@ class FirebaseAuthService {
       rethrow;
     }
   }
-} 
+}

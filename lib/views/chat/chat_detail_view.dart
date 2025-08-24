@@ -217,43 +217,23 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
 
-    Logger.info(
-      '🔍 ChatDetailView - Mesaj gönderilmeye çalışılıyor: "${message.substring(0, message.length > 50 ? 50 : message.length)}..."',
-    );
-
     // Küfür kontrolü yap
     if (ProfanityService.instance.isInitialized) {
-      Logger.info(
-        '🔍 ChatDetailView - ProfanityService başlatılmış, küfür kontrolü yapılıyor...',
-      );
-
       final result = ProfanityService.instance.checkText(
         message,
         sensitivity: 'medium',
       );
 
-      Logger.info('🔍 ChatDetailView - Küfür kontrol sonucu: $result');
-
       if (result.hasProfanity) {
         // Küfür tespit edildi, uyarı göster
-        Logger.warning(
-          '🚫 ChatDetailView - Küfür tespit edildi: ${result.detectedWord}',
-        );
         _showProfanityWarning(result);
         return;
       }
     } else {
-      Logger.warning(
-        '⚠️ ChatDetailView - ProfanityService henüz başlatılmamış',
-      );
       // ProfanityService başlatılmamışsa uyarı göster
       _showServiceNotInitializedWarning();
       return;
     }
-
-    Logger.info(
-      '✅ ChatDetailView - Küfür kontrolü geçildi, mesaj gönderiliyor...',
-    );
 
     try {
       final authViewModel = context.read<AuthViewModel>();
@@ -1276,7 +1256,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 // Sadece giriş yapmış kullanıcılar için şikayet ve engelleme seçenekleri
                 final authViewModel = context.read<AuthViewModel>();
                 final items = <PopupMenuItem<String>>[];
-                
+
                 if (authViewModel.isLoggedIn) {
                   items.addAll([
                     PopupMenuItem<String>(
@@ -1323,7 +1303,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                     ),
                   ]);
                 }
-                
+
                 return items;
               },
             ),
@@ -1653,22 +1633,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () async {
-              Logger.info('🔍 Chat Detail - Kullanıcı resmine tıklandı');
-              Logger.info(
-                '🔍 Chat Detail - otherParticipant: ${otherParticipant?.id} - ${otherParticipant?.name}',
-              );
-              Logger.info(
-                '🔍 Chat Detail - currentUser: ${authViewModel.currentUser?.id}',
-              );
-
-              // Token'ı SharedPreferences'dan al
               final prefs = await SharedPreferences.getInstance();
               final userToken = prefs.getString(AppConstants.userTokenKey);
-              Logger.info(
-                '🔍 Chat Detail - userToken from SharedPreferences: ${userToken?.substring(0, 20)}...',
-              );
-
-              // Test snackbar kaldırıldı
 
               if (otherParticipant != null &&
                   authViewModel.currentUser != null &&
@@ -1676,10 +1642,6 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   userToken.isNotEmpty) {
                 try {
                   final userId = int.parse(otherParticipant.id);
-                  Logger.info('🔍 Chat Detail - userId parsed: $userId');
-                  Logger.info(
-                    '🔍 Chat Detail - Navigating to UserProfileDetailView...',
-                  );
 
                   Navigator.push(
                     context,
@@ -1690,10 +1652,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                       ),
                     ),
                   );
-                  Logger.info('🔍 Chat Detail - Navigation completed');
                 } catch (e) {
-                  Logger.error('❌ Chat Detail - ID parse error: $e');
-                  // ID parse edilemezse hata göster
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Text('Kullanıcı profili açılamadı'),
@@ -1703,15 +1662,12 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   );
                 }
               } else {
-                Logger.error('❌ Chat Detail - Navigation conditions not met');
-                Logger.error(
-                  '❌ Chat Detail - otherParticipant: ${otherParticipant != null}',
-                );
-                Logger.error(
-                  '❌ Chat Detail - currentUser: ${authViewModel.currentUser != null}',
-                );
-                Logger.error(
-                  '❌ Chat Detail - token: ${authViewModel.currentUser?.token != null}',
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Kullanıcı bilgisi bulunamadı'),
+                    backgroundColor: AppTheme.error,
+                    behavior: SnackBarBehavior.floating,
+                  ),
                 );
               }
             },

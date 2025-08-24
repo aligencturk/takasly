@@ -5,9 +5,8 @@ import '../models/trade.dart';
 import '../models/product.dart';
 import '../utils/logger.dart';
 import 'notification_service.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:cloud_functions/cloud_functions.dart';
+import 'firebase_auth_service.dart';
 
 class FirebaseChatService {
   static const String _tag = 'FirebaseChatService';
@@ -95,154 +94,456 @@ class FirebaseChatService {
     try {
       // Chat bilgilerini al
       final chatSnapshot = await _database.child('chats/$chatId').get();
-      if (chatSnapshot.value == null) return;
+      if (chatSnapshot.value == null) {
+        Logger.warning('⚠️ Chat bulunamadı: $chatId', tag: _tag);
+        return;
+      }
 
       final chatData = Map<String, dynamic>.from(chatSnapshot.value as Map);
       final List<String> participantIds = List<String>.from(
         chatData['participantIds'] ?? [],
       );
 
-      // Gönderen hariç diğer katılımcılara bildirim gönder
-      for (final participantId in participantIds) {
-        if (participantId != senderId) {
-          // Kullanıcı bilgilerini al
-          final senderSnapshot = await _database.child('users/$senderId').get();
-          if (senderSnapshot.value == null) continue;
+      // Gönderen hariç diğer katılımcıyı bul (ALICI)
+      final String? recipientId = participantIds
+          .where((id) => id != senderId)
+          .firstOrNull;
 
-          final senderData = Map<String, dynamic>.from(
-            senderSnapshot.value as Map,
+      if (recipientId == null) {
+        Logger.warning('⚠️ Alıcı bulunamadı: $chatId', tag: _tag);
+        return;
+      }
+
+      Logger.info('👤 Gönderen ID: $senderId', tag: _tag);
+      Logger.info('👥 Alıcı ID: $recipientId', tag: _tag);
+
+      // Gönderen bilgilerini al
+      final senderSnapshot = await _database.child('users/$senderId').get();
+      if (senderSnapshot.value == null) {
+        Logger.warning(
+          '⚠️ Gönderen kullanıcı bulunamadı: $senderId',
+          tag: _tag,
+        );
+        return;
+      }
+
+      final senderData = Map<String, dynamic>.from(senderSnapshot.value as Map);
+      final String senderName = senderData['name'] ?? 'Bilinmeyen Kullanıcı';
+
+      // Mesaj içeriğini kısalt
+      String messageContent = content;
+      if (type == MessageType.text && content.length > 100) {
+        messageContent = '${content.substring(0, 97)}...';
+      } else if (type == MessageType.image) {
+        messageContent = '📷 Fotoğraf';
+      } else if (type == MessageType.product) {
+        messageContent = '🛍️ Ürün';
+      }
+
+      Logger.info('🔍 Alıcının FCM token\'ı aranıyor: $recipientId', tag: _tag);
+
+      // ALICININ FCM token'ını al (gönderenin değil!)
+      final fcmTokenPath = 'users/$recipientId/fcmToken';
+      final fcmTokenSnapshot = await _database.child(fcmTokenPath).get();
+
+      // Gönderenin FCM token'ını da kontrol et (debug için)
+      final senderFcmTokenPath = 'users/$senderId/fcmToken';
+      final senderFcmTokenSnapshot = await _database
+          .child(senderFcmTokenPath)
+          .get();
+
+      Logger.info('🔍 FCM Token Karşılaştırması:', tag: _tag);
+      Logger.info(
+        '👤 Gönderen ($senderId) FCM token: ${senderFcmTokenSnapshot.value?.toString().substring(0, 20) ?? 'null'}...',
+        tag: _tag,
+      );
+      Logger.info(
+        '👥 Alıcı ($recipientId) FCM token: ${fcmTokenSnapshot.value?.toString().substring(0, 20) ?? 'null'}...',
+        tag: _tag,
+      );
+
+      if (fcmTokenSnapshot.value != null) {
+        // Yeni yapı: tokenData objesi içinde token var
+        final tokenData = fcmTokenSnapshot.value;
+        String fcmToken;
+
+        if (tokenData is Map) {
+          // Yeni yapı: {token: "...", deviceInfo: "...", lastUpdated: ...}
+          fcmToken = tokenData['token']?.toString() ?? '';
+          final deviceInfo = tokenData['deviceInfo']?.toString() ?? 'unknown';
+          Logger.info('📱 Alıcı cihaz bilgisi: $deviceInfo', tag: _tag);
+        } else {
+          // Eski yapı: direkt string token
+          fcmToken = tokenData.toString();
+          Logger.info('📱 Alıcı eski token formatında', tag: _tag);
+        }
+
+        // FCM token validasyonu
+        if (fcmToken.isEmpty || fcmToken.length < 100) {
+          Logger.warning(
+            '⚠️ Geçersiz FCM token uzunluğu: ${fcmToken.length}',
+            tag: _tag,
           );
-          final senderName = senderData['name'] ?? 'Kullanıcı';
+          // Geçersiz token'ı sil ve yenilemeye çalış
+          await _database.child(fcmTokenPath).remove();
+          Logger.info(
+            '🔄 Geçersiz FCM token silindi, yenileme deneniyor...',
+            tag: _tag,
+          );
+        } else {
+          Logger.info(
+            '✅ Alıcının FCM token\'ı bulundu: ${fcmToken.substring(0, 20)}...',
+            tag: _tag,
+          );
 
-          // Bildirim içeriğini hazırla
-          String notificationTitle = 'Yeni Mesaj';
-          String notificationBody = '';
-
-          switch (type) {
-            case MessageType.text:
-              notificationBody =
-                  '$senderName: ${content.length > 50 ? '${content.substring(0, 50)}...' : content}';
-              break;
-            case MessageType.image:
-              notificationBody = '$senderName bir fotoğraf gönderdi';
-              break;
-            case MessageType.product:
-              notificationBody = '$senderName bir ürün paylaştı';
-              break;
-            default:
-              notificationBody = '$senderName bir mesaj gönderdi';
+          // Gönderen token'ını da yeni yapıya göre oku
+          String senderFcmToken = '';
+          if (senderFcmTokenSnapshot.value != null) {
+            final senderTokenData = senderFcmTokenSnapshot.value;
+            if (senderTokenData is Map) {
+              senderFcmToken = senderTokenData['token']?.toString() ?? '';
+            } else {
+              senderFcmToken = senderTokenData.toString();
+            }
           }
 
-          // FCM ile bildirim gönder (uygulama kapalıyken de çalışır)
-          await _sendFCMChatNotification(
-            participantId,
-            notificationTitle,
-            notificationBody,
-            chatId,
-            senderId,
-            type.name,
+          // Token'lar aynı mı kontrol et
+          if (senderFcmToken.isNotEmpty && senderFcmToken == fcmToken) {
+            Logger.warning(
+              '⚠️ DİKKAT: Gönderen ve alıcının FCM token\'ları aynı!',
+              tag: _tag,
+            );
+            Logger.warning(
+              '⚠️ Bu, aynı cihazda iki farklı kullanıcı giriş yapıldığı anlamına gelebilir',
+              tag: _tag,
+            );
+            Logger.info(
+              '🔍 DEBUG: Gönderen token: ${senderFcmToken.substring(0, 20)}...',
+              tag: _tag,
+            );
+            Logger.info(
+              '🔍 DEBUG: Alıcı token: ${fcmToken.substring(0, 20)}...',
+              tag: _tag,
+            );
+
+            // Aynı token'ları temizle ve yeniden oluştur
+            Logger.info(
+              '🔄 Aynı FCM token\'lar temizleniyor ve yeniden oluşturuluyor...',
+              tag: _tag,
+            );
+
+            try {
+              // NotificationService'den yeni token al
+              final notificationService = NotificationService.instance;
+              final newToken = await notificationService.getFCMToken();
+
+              if (newToken != null && newToken.isNotEmpty) {
+                Logger.info(
+                  '⚠️ Aynı FCM token tespit edildi, her iki kullanıcının da token\'ı temizleniyor...',
+                  tag: _tag,
+                );
+
+                // HER İKİ kullanıcının da token'ını temizle
+                await _database.child(fcmTokenPath).remove(); // Alıcı
+                await _database.child(senderFcmTokenPath).remove(); // Gönderen
+
+                Logger.info(
+                  '✅ Her iki kullanıcının FCM token\'ı temizlendi',
+                  tag: _tag,
+                );
+                Logger.info(
+                  '👤 Gönderen token temizlendi: $senderId',
+                  tag: _tag,
+                );
+                Logger.info(
+                  '👥 Alıcı token temizlendi: $recipientId',
+                  tag: _tag,
+                );
+
+                // Bildirim gönderilemeyecek çünkü her iki kullanıcının da token\'ı yok
+                Logger.warning(
+                  '⚠️ Her iki kullanıcının da FCM token\'ı temizlendi, bildirim gönderilemedi',
+                  tag: _tag,
+                );
+                Logger.warning(
+                  '💡 Her iki kullanıcı da uygulamayı açtığında yeni benzersiz FCM token\'lar kaydedilecek',
+                  tag: _tag,
+                );
+
+                // CRITICAL: Burada kesinlikle çıkılmalı!
+                Logger.info(
+                  '🛑 Aynı token nedeniyle bildirim gönderimi durduruldu',
+                  tag: _tag,
+                );
+                Logger.info(
+                  '🔍 DEBUG: return statement çalıştırılıyor...',
+                  tag: _tag,
+                );
+                return; // Bildirim gönderilemedi, çık
+              }
+            } catch (tokenError) {
+              Logger.error('❌ Token temizleme hatası: $tokenError', tag: _tag);
+              // Hata durumunda da çık
+              Logger.warning(
+                '🛑 Token temizleme hatası nedeniyle bildirim gönderimi durduruldu',
+                tag: _tag,
+              );
+              Logger.info(
+                '🔍 DEBUG: Token temizleme hatası sonrası return çalıştırılıyor...',
+                tag: _tag,
+              );
+              return;
+            }
+
+            // Eğer yukarıdaki return'lar çalışmadıysa, burada da çık
+            Logger.warning(
+              '🛑 Aynı token nedeniyle bildirim gönderimi durduruldu (fallback)',
+              tag: _tag,
+            );
+            Logger.info(
+              '🔍 DEBUG: Fallback return statement çalıştırılıyor...',
+              tag: _tag,
+            );
+            return;
+          }
+
+          // Eğer buraya kadar geldiyse, token'lar farklı demektir
+          Logger.info(
+            '✅ Token\'lar farklı, bildirim gönderimi devam ediyor...',
+            tag: _tag,
+          );
+
+          // SON KONTROL: Token hala geçerli mi?
+          if (fcmToken.isEmpty || fcmToken.length < 100) {
+            Logger.error(
+              '❌ CRITICAL: FCM token geçersiz hale geldi!',
+              tag: _tag,
+            );
+            Logger.error('📏 Token uzunluğu: ${fcmToken.length}', tag: _tag);
+            Logger.error('🔑 Token: $fcmToken', tag: _tag);
+            return;
+          }
+
+          Logger.info('🔍 SON KONTROL: FCM token geçerli', tag: _tag);
+          Logger.info('📏 Token uzunluğu: ${fcmToken.length}', tag: _tag);
+          Logger.info('🔑 Token: ${fcmToken.substring(0, 30)}...', tag: _tag);
+
+          // Cloud Function'a bildirim gönder (ALICIYA!)
+          await _sendFCMNotificationToCloudFunction(
+            fcmToken: fcmToken,
+            title: 'Yeni Mesaj - $senderName',
+            body: messageContent,
+            recipientId: recipientId, // ALICI ID
+            chatId: chatId,
+            senderId: senderId, // GÖNDEREN ID
           );
 
           Logger.info(
-            'FCM chat bildirimi gönderildi: $participantId',
+            '✅ FCM chat bildirimi ALICIYA gönderildi: $recipientId',
             tag: _tag,
           );
+          return; // Başarılı, çık
         }
       }
-    } catch (e) {
-      Logger.error('Chat bildirimi gönderme hatası: $e', tag: _tag);
-    }
-  }
 
-  // FCM ile chat bildirimi gönder
-  Future<void> _sendFCMChatNotification(
-    String recipientId,
-    String title,
-    String body,
-    String chatId,
-    String senderId,
-    String messageType,
-  ) async {
-    try {
-      // Kullanıcının FCM token'ını al
-      final userSnapshot = await _database
-          .child('users/$recipientId/fcmToken')
-          .get();
-      if (userSnapshot.value == null) {
-        Logger.debug('Kullanıcının FCM token\'ı yok: $recipientId', tag: _tag);
-        return;
-      }
-
-      final fcmToken = userSnapshot.value as String;
-      if (fcmToken.isEmpty) {
-        Logger.debug('Kullanıcının FCM token\'ı boş: $recipientId', tag: _tag);
-        return;
-      }
-
-      // Cloud Functions ile FCM bildirimi gönder
-      await _sendChatNotificationViaCloudFunction(
-        recipientId,
-        fcmToken,
-        title,
-        body,
-        chatId,
-        senderId,
-        messageType,
+      // FCM token bulunamadı veya geçersiz, yenilemeye çalış
+      Logger.warning(
+        '⚠️ Alıcının FCM token\'ı bulunamadı veya geçersiz: $fcmTokenPath',
+        tag: _tag,
       );
+      Logger.info('🔄 FCM token yenileme deneniyor...', tag: _tag);
 
-      Logger.info(
-        'Cloud Function FCM bildirimi gönderildi: $recipientId',
+      // Burada alıcının token'ını yenilemeye çalışamayız çünkü
+      // alıcı farklı cihazda olabilir. Sadece log yazalım.
+      Logger.error(
+        '❌ Alıcının FCM token\'ı bulunamadı, bildirim gönderilemedi: $recipientId',
+        tag: _tag,
+      );
+      Logger.error(
+        '💡 Alıcı uygulamayı açtığında FCM token otomatik olarak kaydedilecek',
         tag: _tag,
       );
     } catch (e) {
-      Logger.error('FCM bildirimi gönderme hatası: $e', tag: _tag);
+      Logger.error('❌ FCM chat bildirimi hatası: $e', error: e, tag: _tag);
     }
   }
 
-  // Cloud Functions ile chat bildirimi gönder
-  Future<void> _sendChatNotificationViaCloudFunction(
-    String recipientId,
-    String fcmToken,
-    String title,
-    String body,
-    String chatId,
-    String senderId,
-    String messageType,
-  ) async {
+  // FCM ile chat bildirimi gönder - ESKİ METOD, KALDIRILDI
+  // Artık _sendChatNotification metodu kullanılıyor
+  // Bu metod kaldırıldı çünkü duplicate kod ve karışıklık yaratıyordu
+
+  // Cloud Functions ile FCM bildirimi gönder
+  Future<void> _sendFCMNotificationToCloudFunction({
+    required String fcmToken,
+    required String title,
+    required String body,
+    required String recipientId,
+    required String chatId,
+    required String senderId,
+    Map<String, dynamic>? data,
+  }) async {
     try {
+      Logger.info('🚀 FCM bildirimi gönderiliyor...', tag: _tag);
+      Logger.info('👤 Gönderen ID: $senderId', tag: _tag);
+      Logger.info('👥 Alıcı ID: $recipientId', tag: _tag);
+      Logger.info(
+        '🔑 Kullanılan FCM token: ${fcmToken.substring(0, 20)}...',
+        tag: _tag,
+      );
+      Logger.info('📝 Token uzunluğu: ${fcmToken.length}', tag: _tag);
+
+      // FCM token validasyonu
+      if (fcmToken.isEmpty || fcmToken.length < 100) {
+        Logger.warning(
+          '⚠️ Geçersiz FCM token: ${fcmToken.length} karakter',
+          tag: _tag,
+        );
+        return;
+      }
+
+      Logger.info(
+        '🔍 FCM token validasyonu geçti: ${fcmToken.substring(0, 20)}...',
+        tag: _tag,
+      );
+
+      // Firebase Auth token'ını al
+      final firebaseAuthService = FirebaseAuthService();
+      final authToken = await firebaseAuthService.getIdToken();
+
+      if (authToken == null) {
+        Logger.warning(
+          '⚠️ Firebase Auth token alınamadı, auth olmadan devam ediliyor...',
+          tag: _tag,
+        );
+        // Auth token olmadan devam et, Cloud Function'da auth kontrolü yapılacak
+      } else {
+        Logger.info(
+          '🔐 Firebase Auth token alındı: ${authToken.substring(0, 20)}...',
+          tag: _tag,
+        );
+      }
+
       // Cloud Functions'ı çağır
       final functions = FirebaseFunctions.instance;
 
       // Cloud Function parametreleri
-      final data = {
+      final Map<String, dynamic> notificationData = {
         'recipientId': recipientId,
         'fcmToken': fcmToken,
         'title': title,
         'body': body,
         'chatId': chatId,
         'senderId': senderId,
-        'messageType': messageType,
+        'messageType': 'chat_message',
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
 
-      // Cloud Function'ı çağır
+      Logger.info('📤 Cloud Function çağrılıyor...', tag: _tag);
+      Logger.info('📋 Gönderilen veriler:', tag: _tag);
+      Logger.info('   👥 recipientId: $recipientId', tag: _tag);
+      Logger.info('   🔑 fcmToken: ${fcmToken.substring(0, 20)}...', tag: _tag);
+      Logger.info('   👤 senderId: $senderId', tag: _tag);
+
+      // Cloud Function'ı çağır (auth token ile)
       final result = await functions
           .httpsCallable('sendChatNotification')
-          .call(data);
+          .call(notificationData);
 
-      Logger.info('Cloud Function başarılı: ${result.data}', tag: _tag);
-    } catch (e) {
-      Logger.error('Cloud Function hatası: $e', tag: _tag);
-
-      // Fallback: Local notification göster
-      Logger.info('Fallback: Local notification gösteriliyor', tag: _tag);
-      await NotificationService.instance.showChatNotification(
-        title: title,
-        body: body,
-        chatId: chatId,
-        senderId: senderId,
-        messageType: messageType,
+      Logger.info('✅ Cloud Function başarılı: ${result.data}', tag: _tag);
+      Logger.info('🎯 FCM bildirimi başarıyla gönderildi!', tag: _tag);
+      Logger.info('👥 Alıcı ID: $recipientId', tag: _tag);
+      Logger.info(
+        '🔑 Kullanılan token: ${fcmToken.substring(0, 20)}...',
+        tag: _tag,
       );
+    } catch (e) {
+      Logger.error('❌ Cloud Function hatası: $e', tag: _tag);
+
+      // Hata tipine göre özel işlemler
+      if (e.toString().contains('FCM token geçersiz')) {
+        Logger.warning(
+          '⚠️ FCM token geçersiz, kullanıcıya bildirim gönderilemiyor',
+          tag: _tag,
+        );
+        // Bu durumda kullanıcının FCM token'ını yenilemesi gerekebilir
+        return;
+      }
+
+      if (e.toString().contains('FCM token kayıtlı değil')) {
+        Logger.warning(
+          '⚠️ FCM token kayıtlı değil, kullanıcıya bildirim gönderilemiyor',
+          tag: _tag,
+        );
+        return;
+      }
+
+      // FALLBACK KALDIRILDI: Local notification gösterilmeyecek
+      Logger.warning(
+        '⚠️ Cloud Function hatası nedeniyle bildirim gönderilemedi',
+        tag: _tag,
+      );
+      Logger.warning(
+        '💡 Local notification gösterilmeyecek (kullanıcı isteği)',
+        tag: _tag,
+      );
+      Logger.warning('🔍 Hata detayı: $e', tag: _tag);
+    }
+  }
+
+  // FCM token'ı test et
+  Future<void> testFCMToken(String userId) async {
+    try {
+      Logger.info('🧪 FCM token test başlatılıyor...', tag: _tag);
+
+      // Firebase'den FCM token'ı al
+      final fcmTokenPath = 'users/$userId/fcmToken';
+      final fcmTokenSnapshot = await _database.child(fcmTokenPath).get();
+
+      if (fcmTokenSnapshot.value != null) {
+        final fcmToken = fcmTokenSnapshot.value.toString();
+        Logger.info(
+          '✅ Firebase\'de FCM token bulundu: ${fcmToken.substring(0, 20)}...',
+          tag: _tag,
+        );
+        Logger.info('📏 Token uzunluğu: ${fcmToken.length}', tag: _tag);
+
+        // Token formatını kontrol et
+        if (fcmToken.length < 100) {
+          Logger.warning('⚠️ FCM token çok kısa, geçersiz olabilir', tag: _tag);
+        }
+
+        Logger.info('✅ FCM token test başarılı', tag: _tag);
+      } else {
+        Logger.warning(
+          '⚠️ Firebase\'de FCM token bulunamadı: $fcmTokenPath',
+          tag: _tag,
+        );
+
+        // NotificationService'den token almayı dene
+        final notificationService = NotificationService.instance;
+        final localToken = await notificationService.getFCMToken();
+
+        if (localToken != null && localToken.isNotEmpty) {
+          Logger.info(
+            '✅ Local FCM token bulundu: ${localToken.substring(0, 20)}...',
+            tag: _tag,
+          );
+          Logger.info(
+            '📏 Local token uzunluğu: ${localToken.length}',
+            tag: _tag,
+          );
+
+          // Local token'ı Firebase'e kaydet
+          await _database.child(fcmTokenPath).set(localToken);
+          Logger.info('✅ Local FCM token Firebase\'e kaydedildi', tag: _tag);
+
+          Logger.info('✅ FCM token test ve yenileme başarılı', tag: _tag);
+        } else {
+          Logger.error('❌ Local FCM token da bulunamadı', tag: _tag);
+        }
+      }
+    } catch (e) {
+      Logger.error('❌ FCM token test hatası: $e', error: e, tag: _tag);
     }
   }
 
@@ -466,11 +767,6 @@ class FirebaseChatService {
           final chatData = Map<String, dynamic>.from(value);
           chatData['id'] = key;
 
-          Logger.debug(
-            'FirebaseChatService: Chat işleniyor - ID: $key, tradeId: ${chatData['tradeId']}',
-            tag: _tag,
-          );
-
           // Sadece kullanıcının katıldığı chat'leri filtrele
           final List<String> participantIds = List<String>.from(
             chatData['participantIds'] ?? [],
@@ -585,25 +881,11 @@ class FirebaseChatService {
               if (!chat.deletedBy.contains(userId)) {
                 // Tüm chat'leri ekle (son mesaj kontrolü kaldırıldı)
                 chats.add(chat);
-                Logger.debug(
-                  'FirebaseChatService: Chat eklendi - ID: ${chat.id}, tradeId: ${chat.tradeId}',
-                  tag: _tag,
-                );
-              } else {
-                Logger.debug(
-                  'FirebaseChatService: Chat atlandı (kullanıcı tarafından silinmiş) - ID: ${chat.id}',
-                  tag: _tag,
-                );
-              }
+              } else {}
             } catch (e) {
               Logger.error('Chat parse hatası: $e', tag: _tag);
             }
-          } else {
-            Logger.debug(
-              'FirebaseChatService: Chat atlandı (kullanıcı katılımcı değil) - ID: $key',
-              tag: _tag,
-            );
-          }
+          } else {}
         }
       }
 

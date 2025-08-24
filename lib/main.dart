@@ -46,6 +46,7 @@ import 'views/notifications/notification_list_view.dart';
 import 'models/product.dart';
 import 'utils/logger.dart';
 import 'services/profanity_service.dart';
+import 'services/notification_service.dart';
 
 /// FCM Background Message Handler
 /// Bu fonksiyon uygulama background veya terminate durumundayken
@@ -173,6 +174,14 @@ void main() async {
           Logger.info('✅ ProfanityService başarıyla başlatıldı');
         } catch (e) {
           Logger.error('❌ ProfanityService başlatma hatası: $e');
+        }
+
+        // NotificationService'i başlat
+        try {
+          await NotificationService.instance.init();
+          Logger.info('✅ NotificationService başarıyla başlatıldı');
+        } catch (e) {
+          Logger.error('❌ NotificationService başlatma hatası: $e');
         }
       } catch (e) {
         Logger.error('❌ FCM başlatılırken hata: $e');
