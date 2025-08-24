@@ -8,9 +8,9 @@ import '../utils/logger.dart';
 
 class ChatViewModel extends ChangeNotifier {
   static const String _tag = 'ChatViewModel';
-  
+
   final FirebaseChatService _chatService = FirebaseChatService();
-  
+
   List<Chat> _chats = [];
   List<Message> _messages = [];
   bool _isLoading = false;
@@ -37,54 +37,78 @@ class ChatViewModel extends ChangeNotifier {
   void loadChats(String userId) {
     // Eğer zaten yükleniyorsa tekrar yükleme
     if (_isLoading) {
-      Logger.info('ChatViewModel: Zaten yükleniyor, tekrar yükleme yapılmıyor', tag: _tag);
+      Logger.info(
+        'ChatViewModel: Zaten yükleniyor, tekrar yükleme yapılmıyor',
+        tag: _tag,
+      );
       return;
     }
-    
+
     _currentUserId = userId;
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      Logger.info('ChatViewModel: Chat\'ler yükleniyor... userId= [1m$userId [0m', tag: _tag);
-      
+      Logger.info(
+        'ChatViewModel: Chat\'ler yükleniyor... userId= [1m$userId [0m',
+        tag: _tag,
+      );
+
       // Minimum loading süresi için timer
       final loadingStartTime = DateTime.now();
-      
-      _chatService.getChatsStream(userId).listen(
-        (chats) {
-          Logger.info('ChatViewModel:  [1m${chats.length} [0m chat yüklendi', tag: _tag);
-          for (final chat in chats) {
-            Logger.debug('ChatViewModel: Chat ${chat.id} - tradeId=${chat.tradeId} - lastMessage: ${chat.lastMessage?.content ?? 'null'}', tag: _tag);
-          }
-          // Kullanıcı tarafından silinenleri filtrele
-          final filteredChats = chats.where((chat) => !chat.deletedBy.contains(userId)).toList();
-          _chats = filteredChats;
-          
-          // Minimum 500ms loading göster
-          final loadingDuration = DateTime.now().difference(loadingStartTime);
-          if (loadingDuration.inMilliseconds < 500) {
-            Future.delayed(Duration(milliseconds: 500 - loadingDuration.inMilliseconds), () {
+
+      _chatService
+          .getChatsStream(userId)
+          .listen(
+            (chats) {
+              Logger.info(
+                'ChatViewModel:  [1m${chats.length} [0m chat yüklendi',
+                tag: _tag,
+              );
+              for (final chat in chats) {
+                Logger.debug(
+                  'ChatViewModel: Chat ${chat.id} - tradeId=${chat.tradeId} - lastMessage: ${chat.lastMessage?.content ?? 'null'}',
+                  tag: _tag,
+                );
+              }
+              // Kullanıcı tarafından silinenleri filtrele
+              final filteredChats = chats
+                  .where((chat) => !chat.deletedBy.contains(userId))
+                  .toList();
+              _chats = filteredChats;
+
+              // Minimum 500ms loading göster
+              final loadingDuration = DateTime.now().difference(
+                loadingStartTime,
+              );
+              if (loadingDuration.inMilliseconds < 500) {
+                Future.delayed(
+                  Duration(milliseconds: 500 - loadingDuration.inMilliseconds),
+                  () {
+                    _isLoading = false;
+                    // Her chat için unread count hesapla
+                    _calculateChatUnreadCounts();
+                    notifyListeners();
+                  },
+                );
+              } else {
+                _isLoading = false;
+                // Her chat için unread count hesapla
+                _calculateChatUnreadCounts();
+                notifyListeners();
+              }
+            },
+            onError: (error) {
+              _error = error.toString();
               _isLoading = false;
-              // Her chat için unread count hesapla
-              _calculateChatUnreadCounts();
               notifyListeners();
-            });
-          } else {
-            _isLoading = false;
-            // Her chat için unread count hesapla
-            _calculateChatUnreadCounts();
-            notifyListeners();
-          }
-        },
-        onError: (error) {
-          _error = error.toString();
-          _isLoading = false;
-          notifyListeners();
-          Logger.error('ChatViewModel: Chat yükleme hatası: $error', tag: _tag);
-        },
-      );
+              Logger.error(
+                'ChatViewModel: Chat yükleme hatası: $error',
+                tag: _tag,
+              );
+            },
+          );
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -102,24 +126,26 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _chatService.getMessagesStream(chatId).listen(
-        (messages) {
-          // Yeni mesajları kontrol et ve bildirim gönder
-          _checkNewMessagesAndNotify(messages);
-          
-          _messages = messages;
-          _isLoading = false;
-          // Unread count'ları güncelle
-          _calculateChatUnreadCounts();
-          notifyListeners();
-        },
-        onError: (error) {
-          _error = error.toString();
-          _isLoading = false;
-          notifyListeners();
-          Logger.error('Mesaj yükleme hatası: $error', tag: _tag);
-        },
-      );
+      _chatService
+          .getMessagesStream(chatId)
+          .listen(
+            (messages) {
+              // Yeni mesajları kontrol et ve bildirim gönder
+              _checkNewMessagesAndNotify(messages);
+
+              _messages = messages;
+              _isLoading = false;
+              // Unread count'ları güncelle
+              _calculateChatUnreadCounts();
+              notifyListeners();
+            },
+            onError: (error) {
+              _error = error.toString();
+              _isLoading = false;
+              notifyListeners();
+              Logger.error('Mesaj yükleme hatası: $error', tag: _tag);
+            },
+          );
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -131,7 +157,7 @@ class ChatViewModel extends ChangeNotifier {
   // Yeni mesajları kontrol et ve bildirim gönder
   void _checkNewMessagesAndNotify(List<Message> newMessages) {
     if (_messages.isEmpty || newMessages.isEmpty) return;
-    
+
     // Yeni gelen mesajları bul
     final newIncomingMessages = newMessages.where((newMsg) {
       // Önceki mesajlarda yok mu kontrol et
@@ -140,7 +166,7 @@ class ChatViewModel extends ChangeNotifier {
       final isIncoming = newMsg.senderId != _currentUserId;
       // Silinmemiş mi kontrol et
       final isNotDeleted = !newMsg.isDeleted;
-      
+
       return isNew && isIncoming && isNotDeleted;
     }).toList();
 
@@ -155,7 +181,10 @@ class ChatViewModel extends ChangeNotifier {
     try {
       // Eğer chat açıksa bildirim gönderme
       if (_currentChatId == message.chatId) {
-        Logger.debug('Chat açık, bildirim gönderilmiyor: ${message.id}', tag: _tag);
+        Logger.debug(
+          'Chat açık, bildirim gönderilmiyor: ${message.id}',
+          tag: _tag,
+        );
         return;
       }
 
@@ -165,7 +194,8 @@ class ChatViewModel extends ChangeNotifier {
 
       switch (message.type) {
         case MessageType.text:
-          notificationBody = '${message.sender.name}: ${message.content.length > 50 ? '${message.content.substring(0, 50)}...' : message.content}';
+          notificationBody =
+              '${message.sender.name}: ${message.content.length > 50 ? '${message.content.substring(0, 50)}...' : message.content}';
           break;
         case MessageType.image:
           notificationBody = '${message.sender.name} bir fotoğraf gönderdi';
@@ -185,9 +215,8 @@ class ChatViewModel extends ChangeNotifier {
         senderId: message.senderId,
         messageType: message.type.name,
       );
-      
+
       Logger.info('Yeni mesaj bildirimi gönderildi: ${message.id}', tag: _tag);
-      
     } catch (e) {
       Logger.error('Mesaj bildirimi gönderme hatası: $e', tag: _tag);
     }
@@ -245,23 +274,29 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> markMessagesAsRead(String chatId, String userId) async {
     try {
       // Bu chat'teki okunmamış mesajları bul
-      final unreadMessages = _messages.where((message) => 
-        message.chatId == chatId && 
-        message.senderId != userId && 
-        !message.isRead && 
-        !message.isDeleted
-      ).toList();
-      
+      final unreadMessages = _messages
+          .where(
+            (message) =>
+                message.chatId == chatId &&
+                message.senderId != userId &&
+                !message.isRead &&
+                !message.isDeleted,
+          )
+          .toList();
+
       // Her okunmamış mesajı işaretle
       for (final message in unreadMessages) {
         await _chatService.markMessageAsRead(chatId, message.id);
       }
-      
+
       // Unread count'ları güncelle
       _calculateChatUnreadCounts();
       notifyListeners();
-      
-      Logger.info('${unreadMessages.length} mesaj okundu olarak işaretlendi', tag: _tag);
+
+      Logger.info(
+        '${unreadMessages.length} mesaj okundu olarak işaretlendi',
+        tag: _tag,
+      );
     } catch (e) {
       Logger.error('Mesaj okundu işaretleme hatası: $e', tag: _tag);
     }
@@ -271,11 +306,11 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> markMessageAsRead(String chatId, String messageId) async {
     try {
       await _chatService.markMessageAsRead(chatId, messageId);
-      
+
       // Unread count'ları güncelle
       _calculateChatUnreadCounts();
       notifyListeners();
-      
+
       Logger.info('Mesaj okundu olarak işaretlendi: $messageId', tag: _tag);
     } catch (e) {
       Logger.error('Mesaj okundu işaretleme hatası: $e', tag: _tag);
@@ -299,14 +334,20 @@ class ChatViewModel extends ChangeNotifier {
     required List<String> participantIds,
   }) async {
     try {
-      Logger.info('ChatViewModel: Chat oluşturma isteği - tradeId=$tradeId, participants=$participantIds', tag: _tag);
-      
+      Logger.info(
+        'ChatViewModel: Chat oluşturma isteği - tradeId=$tradeId, participants=$participantIds',
+        tag: _tag,
+      );
+
       final chatId = await _chatService.createChat(
         tradeId: tradeId,
         participantIds: participantIds,
       );
-      
-      Logger.info('ChatViewModel: Chat başarıyla oluşturuldu - chatId=$chatId', tag: _tag);
+
+      Logger.info(
+        'ChatViewModel: Chat başarıyla oluşturuldu - chatId=$chatId',
+        tag: _tag,
+      );
       return chatId;
     } catch (e) {
       _error = e.toString();
@@ -319,15 +360,20 @@ class ChatViewModel extends ChangeNotifier {
   // Okunmamış mesaj sayısını yükle
   void loadUnreadCount(String userId) {
     try {
-      _chatService.getUnreadCountStream(userId).listen(
-        (count) {
-          _unreadCount = count;
-          notifyListeners();
-        },
-        onError: (error) {
-          Logger.error('Okunmamış mesaj sayısı yükleme hatası: $error', tag: _tag);
-        },
-      );
+      _chatService
+          .getUnreadCountStream(userId)
+          .listen(
+            (count) {
+              _unreadCount = count;
+              notifyListeners();
+            },
+            onError: (error) {
+              Logger.error(
+                'Okunmamış mesaj sayısı yükleme hatası: $error',
+                tag: _tag,
+              );
+            },
+          );
     } catch (e) {
       Logger.error('Okunmamış mesaj sayısı yükleme hatası: $e', tag: _tag);
     }
@@ -361,10 +407,10 @@ class ChatViewModel extends ChangeNotifier {
   // Daha eski mesajları yükle (pagination)
   Future<void> loadOlderMessages() async {
     if (_isLoadingMore || !_hasMoreMessages || _messages.isEmpty) return;
-    
+
     _isLoadingMore = true;
     notifyListeners();
-    
+
     try {
       // En eski mesajın zamanını al
       final oldestMessage = _messages.first;
@@ -373,11 +419,11 @@ class ChatViewModel extends ChangeNotifier {
         oldestMessage.createdAt,
         limit: 20,
       );
-      
+
       if (olderMessages.isNotEmpty) {
         // Yeni mesajları listenin başına ekle
         _messages.insertAll(0, olderMessages);
-        
+
         // Eğer 20'den az mesaj geldiyse, daha fazla mesaj yok demektir
         if (olderMessages.length < 20) {
           _hasMoreMessages = false;
@@ -385,7 +431,7 @@ class ChatViewModel extends ChangeNotifier {
       } else {
         _hasMoreMessages = false;
       }
-      
+
       _isLoadingMore = false;
       notifyListeners();
     } catch (e) {
@@ -399,25 +445,28 @@ class ChatViewModel extends ChangeNotifier {
   // Her chat için unread count hesapla
   void _calculateChatUnreadCounts() {
     _chatUnreadCounts.clear();
-    
+
     for (final chat in _chats) {
       int unreadCount = 0;
-      
+
       // Bu chat'teki mesajları kontrol et
       for (final message in _messages) {
-        if (message.chatId == chat.id && 
-            message.senderId != _currentUserId && 
-            !message.isRead && 
+        if (message.chatId == chat.id &&
+            message.senderId != _currentUserId &&
+            !message.isRead &&
             !message.isDeleted) {
           unreadCount++;
         }
       }
-      
+
       _chatUnreadCounts[chat.id] = unreadCount;
     }
-    
+
     // Toplam unread count'u hesapla
-    _unreadCount = _chatUnreadCounts.values.fold(0, (sum, count) => sum + count);
+    _unreadCount = _chatUnreadCounts.values.fold(
+      0,
+      (sum, count) => sum + count,
+    );
   }
 
   // Chat sil (soft delete)
@@ -426,49 +475,71 @@ class ChatViewModel extends ChangeNotifier {
       // Kullanıcı ID'sini al
       final currentUserId = _currentUserId;
       if (currentUserId == null) {
-        Logger.error('ChatViewModel: currentUserId null, chat silinemez', tag: _tag);
+        Logger.error(
+          'ChatViewModel: currentUserId null, chat silinemez',
+          tag: _tag,
+        );
         return;
       }
 
-      Logger.info('ChatViewModel: Chat silme işlemi başlatılıyor - chatId=$chatId, currentUserId=$currentUserId', tag: _tag);
+      Logger.info(
+        'ChatViewModel: Chat silme işlemi başlatılıyor - chatId=$chatId, currentUserId=$currentUserId',
+        tag: _tag,
+      );
 
       // Chat'i bul
       final chatIndex = _chats.indexWhere((chat) => chat.id == chatId);
       if (chatIndex == -1) {
-        Logger.error('ChatViewModel: Chat bulunamadı - chatId=$chatId', tag: _tag);
+        Logger.error(
+          'ChatViewModel: Chat bulunamadı - chatId=$chatId',
+          tag: _tag,
+        );
         return;
       }
 
       final chat = _chats[chatIndex];
-      Logger.info('ChatViewModel: Chat bulundu - chatId=$chatId, currentDeletedBy=${chat.deletedBy}', tag: _tag);
-      
+      Logger.info(
+        'ChatViewModel: Chat bulundu - chatId=$chatId, currentDeletedBy=${chat.deletedBy}',
+        tag: _tag,
+      );
+
       // deletedBy listesine kullanıcı ID'sini ekle
-      final updatedDeletedBy = List<String>.from(chat.deletedBy)..add(currentUserId);
+      final updatedDeletedBy = List<String>.from(chat.deletedBy)
+        ..add(currentUserId);
       final updatedChat = chat.copyWith(deletedBy: updatedDeletedBy);
-      
+
       // Local listeyi güncelle - chat'i listeden kaldır
       _chats.removeAt(chatIndex);
-      
+
       // Firebase'e güncelle
       await _chatService.updateChatDeletedBy(chatId, updatedDeletedBy);
-      
+
       // Unread count'ları güncelle
       _calculateChatUnreadCounts();
-      
+
       // Güvenli şekilde notifyListeners çağır
       try {
         notifyListeners();
       } catch (e) {
-        Logger.warning('ChatViewModel: notifyListeners hatası (widget dispose edilmiş olabilir): $e', tag: _tag);
+        Logger.warning(
+          'ChatViewModel: notifyListeners hatası (widget dispose edilmiş olabilir): $e',
+          tag: _tag,
+        );
       }
-      
-      Logger.info('ChatViewModel: Chat başarıyla silindi - chatId=$chatId', tag: _tag);
+
+      Logger.info(
+        'ChatViewModel: Chat başarıyla silindi - chatId=$chatId',
+        tag: _tag,
+      );
     } catch (e) {
       _error = e.toString();
       try {
         notifyListeners();
       } catch (notifyError) {
-        Logger.warning('ChatViewModel: notifyListeners hatası (widget dispose edilmiş olabilir): $notifyError', tag: _tag);
+        Logger.warning(
+          'ChatViewModel: notifyListeners hatası (widget dispose edilmiş olabilir): $notifyError',
+          tag: _tag,
+        );
       }
       Logger.error('ChatViewModel: Chat silme hatası: $e', tag: _tag);
       rethrow;
@@ -485,7 +556,10 @@ class ChatViewModel extends ChangeNotifier {
         try {
           notifyListeners();
         } catch (e) {
-          Logger.warning('ChatViewModel: togglePinChat notifyListeners hatası: $e', tag: _tag);
+          Logger.warning(
+            'ChatViewModel: togglePinChat notifyListeners hatası: $e',
+            tag: _tag,
+          );
         }
       }
     } catch (e) {
@@ -497,20 +571,25 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> deleteEmptyChat(String chatId) async {
     try {
       // Chat'teki mesajları kontrol et
-      final chatMessages = _messages.where((message) => message.chatId == chatId).toList();
-      
+      final chatMessages = _messages
+          .where((message) => message.chatId == chatId)
+          .toList();
+
       // Eğer hiç mesaj yoksa chat'i sil
       if (chatMessages.isEmpty) {
         await _chatService.deleteChat(chatId);
-        
+
         // Local listeyi güncelle
         _chats.removeWhere((chat) => chat.id == chatId);
         try {
           notifyListeners();
         } catch (e) {
-          Logger.warning('ChatViewModel: deleteEmptyChat notifyListeners hatası: $e', tag: _tag);
+          Logger.warning(
+            'ChatViewModel: deleteEmptyChat notifyListeners hatası: $e',
+            tag: _tag,
+          );
         }
-        
+
         Logger.info('Boş chat silindi: $chatId', tag: _tag);
       }
     } catch (e) {
@@ -521,7 +600,10 @@ class ChatViewModel extends ChangeNotifier {
   // Chat'i id ile getir
   Future<Chat?> getChatById(String chatId) async {
     try {
-      Logger.info('ChatViewModel: getChatById çağrıldı - chatId=$chatId', tag: _tag);
+      Logger.info(
+        'ChatViewModel: getChatById çağrıldı - chatId=$chatId',
+        tag: _tag,
+      );
       final chat = await _chatService.getChatById(chatId);
       return chat;
     } catch (e) {
@@ -529,4 +611,4 @@ class ChatViewModel extends ChangeNotifier {
       return null;
     }
   }
-} 
+}
