@@ -6,6 +6,8 @@ import '../core/constants.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
 import '../utils/logger.dart';
+import 'package:firebase_database/firebase_database.dart';
+import '../services/notification_service.dart';
 
 class AuthService {
   final HttpClient _httpClient = HttpClient();
@@ -1274,6 +1276,9 @@ class AuthService {
           json.encode(user.toJson()),
         );
 
+        // FCM token'ı Firebase'e kaydet
+        await _saveFCMTokenToFirebase(user.id);
+
         // Kaydetme sonrası kontrol
         final savedUserId = prefs.getString(AppConstants.userIdKey);
         Logger.debug(
@@ -1286,6 +1291,28 @@ class AuthService {
       }
     } catch (e) {
       Logger.error('❌ _saveUserData - Exception: $e', error: e);
+    }
+  }
+
+  // FCM token'ı Firebase'e kaydet
+  Future<void> _saveFCMTokenToFirebase(String userId) async {
+    try {
+      // NotificationService'ten FCM token'ı al
+      final fcmToken = await NotificationService.instance.getFCMToken();
+      
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        Logger.info('FCM token Firebase\'e kaydediliyor: ${fcmToken.substring(0, 20)}...');
+        
+        // Firebase Database'e FCM token'ı kaydet
+        final database = FirebaseDatabase.instance.ref();
+        await database.child('users/$userId/fcmToken').set(fcmToken);
+        
+        Logger.info('FCM token başarıyla Firebase\'e kaydedildi');
+      } else {
+        Logger.warning('FCM token alınamadı, Firebase\'e kaydedilmedi');
+      }
+    } catch (e) {
+      Logger.error('FCM token Firebase\'e kaydetme hatası: $e', error: e);
     }
   }
 

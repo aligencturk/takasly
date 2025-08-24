@@ -3,6 +3,7 @@ import '../models/chat.dart';
 import '../models/user.dart';
 import '../models/product.dart';
 import '../services/firebase_chat_service.dart';
+import '../services/notification_service.dart';
 import '../utils/logger.dart';
 
 class ChatViewModel extends ChangeNotifier {
@@ -103,6 +104,9 @@ class ChatViewModel extends ChangeNotifier {
     try {
       _chatService.getMessagesStream(chatId).listen(
         (messages) {
+          // Yeni mesajları kontrol et ve bildirim gönder
+          _checkNewMessagesAndNotify(messages);
+          
           _messages = messages;
           _isLoading = false;
           // Unread count'ları güncelle
@@ -121,6 +125,71 @@ class ChatViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       Logger.error('Mesaj yükleme hatası: $e', tag: _tag);
+    }
+  }
+
+  // Yeni mesajları kontrol et ve bildirim gönder
+  void _checkNewMessagesAndNotify(List<Message> newMessages) {
+    if (_messages.isEmpty || newMessages.isEmpty) return;
+    
+    // Yeni gelen mesajları bul
+    final newIncomingMessages = newMessages.where((newMsg) {
+      // Önceki mesajlarda yok mu kontrol et
+      final isNew = !_messages.any((oldMsg) => oldMsg.id == newMsg.id);
+      // Kendi mesajım değil mi kontrol et
+      final isIncoming = newMsg.senderId != _currentUserId;
+      // Silinmemiş mi kontrol et
+      final isNotDeleted = !newMsg.isDeleted;
+      
+      return isNew && isIncoming && isNotDeleted;
+    }).toList();
+
+    // Yeni gelen mesajlar için bildirim gönder
+    for (final message in newIncomingMessages) {
+      _sendMessageNotification(message);
+    }
+  }
+
+  // Mesaj bildirimi gönder
+  void _sendMessageNotification(Message message) {
+    try {
+      // Eğer chat açıksa bildirim gönderme
+      if (_currentChatId == message.chatId) {
+        Logger.debug('Chat açık, bildirim gönderilmiyor: ${message.id}', tag: _tag);
+        return;
+      }
+
+      // Bildirim içeriğini hazırla
+      String notificationTitle = 'Yeni Mesaj';
+      String notificationBody = '';
+
+      switch (message.type) {
+        case MessageType.text:
+          notificationBody = '${message.sender.name}: ${message.content.length > 50 ? '${message.content.substring(0, 50)}...' : message.content}';
+          break;
+        case MessageType.image:
+          notificationBody = '${message.sender.name} bir fotoğraf gönderdi';
+          break;
+        case MessageType.product:
+          notificationBody = '${message.sender.name} bir ürün paylaştı';
+          break;
+        default:
+          notificationBody = '${message.sender.name} bir mesaj gönderdi';
+      }
+
+      // Bildirim gönder
+      NotificationService.instance.showChatNotification(
+        title: notificationTitle,
+        body: notificationBody,
+        chatId: message.chatId,
+        senderId: message.senderId,
+        messageType: message.type.name,
+      );
+      
+      Logger.info('Yeni mesaj bildirimi gönderildi: ${message.id}', tag: _tag);
+      
+    } catch (e) {
+      Logger.error('Mesaj bildirimi gönderme hatası: $e', tag: _tag);
     }
   }
 

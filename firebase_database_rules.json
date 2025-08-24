@@ -1,0 +1,54 @@
+{
+  "rules": {
+    "users": {
+      "$userId": {
+        ".read": "$userId == auth.uid || root.child('users').child(auth.uid).child('isAdmin').val() == true",
+        ".write": "$userId == auth.uid",
+        "fcmToken": {
+          ".read": "$userId == auth.uid",
+          ".write": "$userId == auth.uid"
+        },
+        "profile": {
+          ".read": true,
+          ".write": "$userId == auth.uid"
+        }
+      }
+    },
+    "chats": {
+      "$chatId": {
+        ".read": "data.child('participantIds').hasChild(auth.uid)",
+        ".write": "data.child('participantIds').hasChild(auth.uid)",
+        "participantIds": {
+          ".validate": "newData.hasChildren() && newData.val().indexOf(auth.uid) >= 0"
+        }
+      }
+    },
+    "messages": {
+      "$chatId": {
+        "$messageId": {
+          ".read": "root.child('chats').child($chatId).child('participantIds').hasChild(auth.uid)",
+          ".write": "root.child('chats').child($chatId).child('participantIds').hasChild(auth.uid)",
+          ".validate": "newData.hasChild('senderId') && newData.child('senderId').val() == auth.uid"
+        }
+      }
+    },
+    "trades": {
+      "$tradeId": {
+        ".read": "data.child('offererUserId') == auth.uid || data.child('receiverUserId') == auth.uid",
+        ".write": "data.child('offererUserId') == auth.uid || data.child('receiverUserId') == auth.uid"
+      }
+    },
+    "products": {
+      "$productId": {
+        ".read": true,
+        ".write": "data.child('ownerId') == auth.uid || !data.exists()"
+      }
+    },
+    "notifications": {
+      "$userId": {
+        ".read": "$userId == auth.uid",
+        ".write": "$userId == auth.uid"
+      }
+    }
+  }
+}
