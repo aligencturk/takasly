@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:takasly/widgets/app_network_image.dart';
+import 'package:takasly/core/http_headers.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -94,27 +96,9 @@ class _FullScreenImageViewState extends State<FullScreenImageView> {
             minScale: 0.5,
             maxScale: 3.0,
             child: Center(
-              child: CachedNetworkImage(
+              child: AppNetworkImage(
                 imageUrl: widget.images[index],
                 fit: BoxFit.contain,
-                placeholder: (context, url) => Container(
-                  color: Colors.black,
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.black,
-                  child: const Center(
-                    child: Icon(
-                      Icons.broken_image,
-                      size: 60,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
               ),
             ),
           );
@@ -687,30 +671,10 @@ class _ImageCarousel extends StatelessWidget {
                 onTap: () => _openFullScreen(context),
                 child: Stack(
                   children: [
-                    CachedNetworkImage(
+                    AppNetworkImage(
                       imageUrl: images[index],
                       fit: BoxFit.contain,
                       width: double.infinity,
-                      placeholder: (context, url) => Container(
-                        color: AppTheme.background,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppTheme.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: AppTheme.background,
-                        child: Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            size: 60,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 ),
@@ -1123,10 +1087,10 @@ class _ProductInfoState extends State<_ProductInfo> {
                     listen: false,
                   ).isLoggedIn &&
                   Provider.of<AuthViewModel>(
-                    context,
-                    listen: false,
-                  ).currentUser?.id !=
-                  widget.product.ownerId) ...[
+                        context,
+                        listen: false,
+                      ).currentUser?.id !=
+                      widget.product.ownerId) ...[
                 const SizedBox(height: 16),
                 Center(
                   child: Material(

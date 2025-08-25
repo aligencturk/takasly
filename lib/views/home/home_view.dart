@@ -8,8 +8,10 @@ import '../../viewmodels/notification_viewmodel.dart';
 import '../../viewmodels/general_viewmodel.dart';
 
 import '../../widgets/announcement_dialog.dart';
+import '../../widgets/app_network_image.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/product_list_item.dart';
+import '../../widgets/inline_banner_ad.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/filter_bottom_sheet.dart';
 import 'widgets/category_list.dart';
@@ -20,7 +22,6 @@ import '../chat/chat_list_view.dart';
 import '../home/search_view.dart';
 import '../notifications/notification_list_view.dart';
 import '../../widgets/skeletons/product_grid_skeleton.dart';
-import '../../widgets/native_ad_wide_card.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
 import '../product/product_detail_view.dart';
@@ -360,7 +361,9 @@ class _HomeViewState extends State<HomeView> {
           _buildFilterBar(),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
           const CategoryList(),
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          // Görünüm (Grid/List) toggle - "Tümü" kategorisinin hemen altında
+          _buildViewToggle(),
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           _buildProductGrid(),
           _buildLoadingIndicator(),
           // Alt navigasyon ile son kartlar arasında ferah boşluk
@@ -369,6 +372,143 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
+
+  // Grid / List görünüm anahtarı
+  Widget _buildViewToggle() {
+    return SliverToBoxAdapter(
+      child: Consumer<ProductViewModel>(
+        builder: (context, vm, child) {
+          final isListView = vm.currentFilter.viewType == 'list';
+          return Container(
+            margin: EdgeInsets.symmetric(
+              horizontal: _calculateHorizontalPadding(context),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  'Görünüm',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    if (isListView) {
+                      vm.applyFilter(
+                        vm.currentFilter.copyWith(viewType: 'grid'),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: !isListView ? Colors.grey[800] : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: !isListView
+                            ? Colors.grey[800]!
+                            : Colors.grey[300]!,
+                      ),
+                      boxShadow: !isListView
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.grid_view_rounded,
+                          size: 14,
+                          color: !isListView ? Colors.white : Colors.grey[700],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Grid',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: !isListView
+                                ? Colors.white
+                                : Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () {
+                    if (!isListView) {
+                      vm.applyFilter(
+                        vm.currentFilter.copyWith(viewType: 'list'),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isListView ? Colors.grey[800] : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isListView
+                            ? Colors.grey[800]!
+                            : Colors.grey[300]!,
+                      ),
+                      boxShadow: isListView
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.view_agenda_rounded,
+                          size: 14,
+                          color: isListView ? Colors.white : Colors.grey[700],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Liste',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isListView ? Colors.white : Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // _ViewChip top-level tanım (HomeViewState dışında)
+  // kaldırıldı: _ViewChip (yerine inline GestureDetector kullanılıyor)
 
   Widget _buildProductGrid() {
     return Consumer<ProductViewModel>(
@@ -478,14 +618,16 @@ class _HomeViewState extends State<HomeView> {
                 listen: false,
               );
               final currentUserId = authViewModel.currentUser?.id;
-              isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
+              isOwnProduct =
+                  currentUserId != null && product.ownerId == currentUserId;
             }
           } catch (e) {
             Logger.error('❌ HomeView - Error checking product ownership: $e');
             isOwnProduct = false;
           }
 
-          final uniqueHeroTag = 'home_product_${product.id}_${DateTime.now().millisecondsSinceEpoch}_$i';
+          final uniqueHeroTag =
+              'home_product_${product.id}_${DateTime.now().millisecondsSinceEpoch}_$i';
 
           // Grid öğesi
           gridItems.add(
@@ -500,16 +642,19 @@ class _HomeViewState extends State<HomeView> {
           // Liste öğesi
           listItems.add(
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 6.0,
+              ),
               child: ProductListItem(
                 product: product,
                 isOwnProduct: isOwnProduct,
                 onTap: () {
-                  // HomeView içinde ProductCard yönlendirmesiyle aynı navigasyon davranışını bekler
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ProductDetailView(productId: product.id),
+                      builder: (context) =>
+                          ProductDetailView(productId: product.id),
                     ),
                   );
                 },
@@ -517,33 +662,32 @@ class _HomeViewState extends State<HomeView> {
             ),
           );
 
-          // Her 6 ürün sonra reklam ekle
-          if ((i + 1) % 6 == 0 && (i + 1) < productCount) {
-            gridItems.add(NativeAdWideCard(key: ValueKey('ad_after_${i + 1}')));
+          // Her 5 öğede bir banner reklamı bağımsız liste item'ı olarak ekle
+          if ((i + 1) % 5 == 0) {
             listItems.add(
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
-                child: NativeAdWideCard(key: ValueKey('ad_after_${i + 1}_list')),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+                child: InlineBannerAd(),
               ),
             );
           }
+
+          // Her 6 ürün sonra reklam ekle
+          // Eski native reklam kartları kaldırıldı; banner artık ProductListItem içinde gösterilecek
         }
 
         if (isListView) {
           return SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (index < 0 || index >= listItems.length) {
-                  Logger.warning(
-                    '⚠️ HomeView - List index out of bounds: $index, length: ${listItems.length}',
-                  );
-                  return const SizedBox.shrink();
-                }
-                final item = listItems[index];
-                return item;
-              },
-              childCount: listItems.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (index < 0 || index >= listItems.length) {
+                Logger.warning(
+                  '⚠️ HomeView - List index out of bounds: $index, length: ${listItems.length}',
+                );
+                return const SizedBox.shrink();
+              }
+              final item = listItems[index];
+              return item;
+            }, childCount: listItems.length),
           );
         }
 
@@ -761,41 +905,17 @@ class HomeAppBar extends StatelessWidget {
               final logoUrl = generalViewModel.mainLogoUrl;
 
               if (logoUrl != null && logoUrl.isNotEmpty) {
-                return Image.network(
-                  logoUrl,
+                return AppNetworkImage(
+                  imageUrl: logoUrl,
                   width: screenWidth < 360 ? 100 : 120,
                   height: screenWidth < 360 ? 100 : 120,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    Logger.warning(
-                      '⚠️ HomeView - Logo yüklenemedi, fallback kullanılıyor: $error',
-                      tag: 'HomeView',
-                    );
-                    return Image.asset(
-                      'assets/icons/icontext.png',
-                      width: screenWidth < 360 ? 100 : 120,
-                      height: screenWidth < 360 ? 100 : 120,
-                    );
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      width: screenWidth < 360 ? 100 : 120,
-                      height: screenWidth < 360 ? 100 : 120,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.grey,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                  borderRadius: BorderRadius.circular(8),
+                  errorWidget: Image.asset(
+                    'assets/icons/icontext.png',
+                    width: screenWidth < 360 ? 100 : 120,
+                    height: screenWidth < 360 ? 100 : 120,
+                  ),
                 );
               } else {
                 // Logo henüz yüklenmediyse fallback kullan

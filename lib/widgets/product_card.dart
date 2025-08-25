@@ -1,4 +1,5 @@
-import 'package:cached_network_image/cached_network_image.dart';
+// import removed: cached_network_image is now wrapped by AppNetworkImage
+import 'package:takasly/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:takasly/core/app_theme.dart';
@@ -292,27 +293,20 @@ class _ProductCardState extends State<ProductCard> {
                         return _buildPlaceholderImage(screenWidth);
                       }
 
-                      return ClipRRect(
+                      return AppNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(screenWidth < 360 ? 6 : 8),
                         ),
-                        child: CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                          placeholder: (context, url) => Shimmer.fromColors(
-                            baseColor: Colors.grey[200]!,
-                            highlightColor: Colors.grey[100]!,
-                            child: Container(color: Colors.white),
-                          ),
-                          errorWidget: (context, url, error) {
-                            Logger.warning(
-                              '⚠️ ProductCard - Image load error for product ${widget.product.id}: $error',
-                            );
-                            return _buildPlaceholderImage(screenWidth);
-                          },
+                        placeholder: Shimmer.fromColors(
+                          baseColor: Colors.grey[200]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Container(color: Colors.white),
                         ),
+                        errorWidget: _buildPlaceholderImage(screenWidth),
                       );
                     },
                   ),

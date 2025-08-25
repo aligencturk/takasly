@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:takasly/widgets/app_network_image.dart';
+import 'package:takasly/core/http_headers.dart';
 import '../viewmodels/remote_config_viewmodel.dart';
 import '../core/app_theme.dart';
 import '../utils/logger.dart';
@@ -41,32 +43,12 @@ class AnnouncementDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         color: Colors.grey[100],
       ),
-      child: ClipRRect(
+      child: AppNetworkImage(
+        imageUrl: imageUrl,
+        width: width,
+        height: height,
+        fit: fit,
         borderRadius: BorderRadius.circular(8),
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          width: width,
-          height: height,
-          fit: fit,
-          placeholder: (context, url) => Container(
-            width: width,
-            height: height,
-            color: Colors.grey[200],
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          ),
-          errorWidget: (context, url, error) => Container(
-            width: width,
-            height: height,
-            color: Colors.grey[300],
-            child: const Icon(
-              Icons.image_not_supported,
-              color: Colors.grey,
-              size: 32,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -75,10 +57,10 @@ class AnnouncementDialog extends StatelessWidget {
   static Future<void> showIfNeeded(BuildContext context) async {
     try {
       final remoteConfigViewModel = context.read<RemoteConfigViewModel>();
-      
+
       // Duyuru kontrolü yap
       final shouldShow = await remoteConfigViewModel.checkForAnnouncement();
-      
+
       if (shouldShow && context.mounted) {
         Logger.info('📢 Duyuru gösteriliyor...');
         // Görsel varsa öncelik: tam ekran görsel duyuru
@@ -94,7 +76,7 @@ class AnnouncementDialog extends StatelessWidget {
               ? const FullScreenImageAnnouncementDialog()
               : const AnnouncementDialog(),
         );
-        
+
         // Dialog kapatıldıktan sonra gösterildi olarak işaretle
         remoteConfigViewModel.markAnnouncementAsShown();
         Logger.info('✅ Duyuru gösterildi olarak işaretlendi');
@@ -112,15 +94,17 @@ class AnnouncementDialog extends StatelessWidget {
         final title = remoteConfigViewModel.announcementTitle;
         final text = remoteConfigViewModel.announcementText;
         final buttonText = remoteConfigViewModel.announcementButtonText;
-        
+
         // Resim özelliklerini al
         final imageUrl = remoteConfigViewModel.announcementImageUrl;
         final imageEnabled = remoteConfigViewModel.announcementImageEnabled;
         final imagePosition = remoteConfigViewModel.announcementImagePosition;
         final imageWidth = remoteConfigViewModel.announcementImageWidth;
         final imageHeight = remoteConfigViewModel.announcementImageHeight;
-        final imageFit = _parseBoxFit(remoteConfigViewModel.announcementImageFit);
-        
+        final imageFit = _parseBoxFit(
+          remoteConfigViewModel.announcementImageFit,
+        );
+
         // Resim gösterilecek mi?
         final showImage = imageEnabled && imageUrl.isNotEmpty;
 
@@ -129,26 +113,26 @@ class AnnouncementDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(8), // Köşeli tasarım
           ),
           elevation: 8,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           child: Container(
-            constraints: const BoxConstraints(
-              maxWidth: 500,
-              maxHeight: 480,
-            ),
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 480),
             decoration: BoxDecoration(
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(8), // Köşeli tasarım
-              border: Border.all(
-                color: Colors.grey[200]!,
-                width: 1,
-              ),
+              border: Border.all(color: Colors.grey[200]!, width: 1),
               // Background image desteği
-              image: showImage && imagePosition == 'background' 
+              image: showImage && imagePosition == 'background'
                   ? DecorationImage(
-                      image: CachedNetworkImageProvider(imageUrl),
+                      image: CachedNetworkImageProvider(
+                        imageUrl,
+                        headers: HttpHeadersUtil.basicAuthHeaders(),
+                      ),
                       fit: imageFit,
                       colorFilter: ColorFilter.mode(
-                        Colors.black.withOpacity(0.3), // Metin okunabilirliği için overlay
+                        Colors.black.withOpacity(0.3),
                         BlendMode.darken,
                       ),
                     )
@@ -160,54 +144,58 @@ class AnnouncementDialog extends StatelessWidget {
                 // Header - Sade ve kurumsal
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: showImage && imagePosition == 'background' 
-                        ? Colors.black.withOpacity(0.7) // Background resim varsa koyu overlay
+                    color: showImage && imagePosition == 'background'
+                        ? Colors.black.withOpacity(
+                            0.7,
+                          ) // Background resim varsa koyu overlay
                         : Colors.grey[50],
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(8),
                     ),
                     border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey[200]!,
-                        width: 1,
-                      ),
+                      bottom: BorderSide(color: Colors.grey[200]!, width: 1),
                     ),
                   ),
                   child: Row(
                     children: [
-                                              // İkon - Sade ve köşeli
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary,
-                            borderRadius: BorderRadius.circular(4), // Köşeli
-                          ),
-                          child: const Icon(
-                            Icons.info_outline_rounded,
-                            color: Colors.white,
-                            size: 16,
-                          ),
+                      // İkon - Sade ve köşeli
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary,
+                          borderRadius: BorderRadius.circular(4), // Köşeli
                         ),
-                      
+                        child: const Icon(
+                          Icons.info_outline_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+
                       const SizedBox(width: 10),
-                      
+
                       // Başlık
                       Expanded(
                         child: Text(
                           title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: showImage && imagePosition == 'background' 
-                                ? Colors.white
-                                : AppTheme.textPrimary,
-                            letterSpacing: -0.1,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    showImage && imagePosition == 'background'
+                                    ? Colors.white
+                                    : AppTheme.textPrimary,
+                                letterSpacing: -0.1,
+                              ),
                         ),
                       ),
-                      
+
                       // Kapatma butonu - Minimal
                       Container(
                         width: 28,
@@ -218,26 +206,28 @@ class AnnouncementDialog extends StatelessWidget {
                         ),
                         child: IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                                                      icon: Icon(
-                              Icons.close,
-                              color: const Color.fromARGB(255, 255, 255, 255),
-                              size: 14,
-                            ),
+                          icon: Icon(
+                            Icons.close,
+                            color: const Color.fromARGB(255, 255, 255, 255),
+                            size: 14,
+                          ),
                           padding: EdgeInsets.zero,
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Content - Resim pozisyonuna göre layout
                 Flexible(
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
-                    decoration: showImage && imagePosition == 'background' 
+                    decoration: showImage && imagePosition == 'background'
                         ? BoxDecoration(
-                            color: Colors.black.withOpacity(0.6), // Background resim varsa koyu overlay
+                            color: Colors.black.withOpacity(
+                              0.6,
+                            ), // Background resim varsa koyu overlay
                             borderRadius: const BorderRadius.vertical(
                               bottom: Radius.circular(8),
                             ),
@@ -259,24 +249,27 @@ class AnnouncementDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                         ],
-                        
+
                         // Duyuru metni
                         Flexible(
                           child: SingleChildScrollView(
                             child: Text(
                               text,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: showImage && imagePosition == 'background' 
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
-                                height: 1.5,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 0.1,
-                              ),
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    color:
+                                        showImage &&
+                                            imagePosition == 'background'
+                                        ? Colors.white
+                                        : AppTheme.textPrimary,
+                                    height: 1.5,
+                                    fontWeight: FontWeight.w400,
+                                    letterSpacing: 0.1,
+                                  ),
                             ),
                           ),
                         ),
-                        
+
                         // Alt resim (position: bottom)
                         if (showImage && imagePosition == 'bottom') ...[
                           const SizedBox(height: 16),
@@ -289,9 +282,9 @@ class AnnouncementDialog extends StatelessWidget {
                             ),
                           ),
                         ],
-                        
+
                         const SizedBox(height: 24),
-                        
+
                         // Footer - Buton alanı
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
@@ -307,18 +300,21 @@ class AnnouncementDialog extends StatelessWidget {
                                   vertical: 10,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6), // Köşeli
+                                  borderRadius: BorderRadius.circular(
+                                    6,
+                                  ), // Köşeli
                                 ),
                                 elevation: 0,
                                 shadowColor: Colors.transparent,
                               ),
                               child: Text(
                                 buttonText,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                  letterSpacing: 0.1,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                      letterSpacing: 0.1,
+                                    ),
                               ),
                             ),
                           ],
@@ -353,16 +349,7 @@ class FullScreenImageAnnouncementDialog extends StatelessWidget {
             children: [
               // Görsel tam ekran ve kesilmeden (contain) gösterilir
               Positioned.fill(
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                  errorWidget: (context, url, error) => const Center(
-                    child: Icon(Icons.broken_image, color: Colors.white70, size: 48),
-                  ),
-                ),
+                child: AppNetworkImage(imageUrl: imageUrl, fit: BoxFit.contain),
               ),
 
               // Kapat butonu
@@ -505,20 +492,20 @@ class AnnouncementBottomSheet extends StatelessWidget {
   static Future<void> showIfNeeded(BuildContext context) async {
     try {
       final remoteConfigViewModel = context.read<RemoteConfigViewModel>();
-      
+
       // Duyuru kontrolü yap
       final shouldShow = await remoteConfigViewModel.checkForAnnouncement();
-      
+
       if (shouldShow && context.mounted) {
         Logger.info('📢 Duyuru bottom sheet gösteriliyor...');
-        
+
         await showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (BuildContext context) => const AnnouncementBottomSheet(),
         );
-        
+
         // Bottom sheet kapatıldıktan sonra gösterildi olarak işaretle
         remoteConfigViewModel.markAnnouncementAsShown();
         Logger.info('✅ Duyuru gösterildi olarak işaretlendi');
@@ -542,7 +529,9 @@ class AnnouncementBottomSheet extends StatelessWidget {
           decoration: const BoxDecoration(
             color: AppTheme.surface,
             borderRadius: BorderRadius.vertical(
-              top: Radius.circular(12), // Köşeli ama bottom sheet için biraz yumuşak
+              top: Radius.circular(
+                12,
+              ), // Köşeli ama bottom sheet için biraz yumuşak
             ),
           ),
           child: SafeArea(
@@ -559,7 +548,7 @@ class AnnouncementBottomSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                
+
                 // Content
                 Padding(
                   padding: const EdgeInsets.all(20),
@@ -586,18 +575,19 @@ class AnnouncementBottomSheet extends StatelessWidget {
                           Expanded(
                             child: Text(
                               title,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textPrimary,
-                                letterSpacing: -0.1,
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                    letterSpacing: -0.1,
+                                  ),
                             ),
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Message - Temiz tipografi
                       Text(
                         text,
@@ -607,9 +597,9 @@ class AnnouncementBottomSheet extends StatelessWidget {
                           letterSpacing: 0.1,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Button - Sade ve köşeli
                       SizedBox(
                         width: double.infinity,
@@ -626,11 +616,12 @@ class AnnouncementBottomSheet extends StatelessWidget {
                           ),
                           child: Text(
                             buttonText,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                              letterSpacing: 0.1,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                  letterSpacing: 0.1,
+                                ),
                           ),
                         ),
                       ),

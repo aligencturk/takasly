@@ -14,6 +14,15 @@ class ProductListItem extends StatelessWidget {
     this.isOwnProduct = false,
   });
 
+  String _buildLocationText(String? city, String? district) {
+    final c = (city ?? '').trim();
+    final d = (district ?? '').trim();
+    if (c.isEmpty && d.isEmpty) return 'Konum belirtilmemiş';
+    if (c.isNotEmpty && d.isEmpty) return c;
+    if (c.isEmpty && d.isNotEmpty) return d;
+    return '$c / $d';
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -42,10 +51,7 @@ class ProductListItem extends StatelessWidget {
                 width: 88,
                 height: 88,
                 child: product.images.isNotEmpty
-                    ? Image.network(
-                        product.images.first,
-                        fit: BoxFit.cover,
-                      )
+                    ? Image.network(product.images.first, fit: BoxFit.cover)
                     : Container(color: Colors.grey.shade200),
               ),
             ),
@@ -71,14 +77,20 @@ class ProductListItem extends StatelessWidget {
                       ),
                       if (product.isSponsor == true)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.amber.shade100,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
                             'Sponsor',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                     ],
@@ -97,37 +109,62 @@ class ProductListItem extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.visibility, size: 14, color: Colors.grey.shade600),
+                      Icon(
+                        Icons.visibility,
+                        size: 14,
+                        color: Colors.grey.shade600,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         (int.tryParse(product.proView ?? '0') ?? 0).toString(),
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.grey.shade600,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          product.cityTitle,
+                          _buildLocationText(
+                            product.cityTitle,
+                            product.districtTitle,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade700,
+                          ),
                         ),
                       ),
                       if (isOwnProduct)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             'Senin İlanın',
-                            style: TextStyle(fontSize: 10, color: Colors.green.shade700, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                     ],
                   ),
+                  // Reklam banner'ı buradan kaldırıldı; liste içinde ayrı bir öğe olarak eklenecek
                 ],
               ),
             ),
@@ -137,5 +174,3 @@ class ProductListItem extends StatelessWidget {
     );
   }
 }
-
-

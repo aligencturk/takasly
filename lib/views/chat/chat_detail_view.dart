@@ -1,3 +1,4 @@
+import 'package:takasly/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1578,26 +1579,12 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       );
     }
 
-    return ClipRRect(
+    return AppNetworkImage(
+      imageUrl: imageUrl,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
       borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        imageUrl,
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: width,
-            height: height,
-            color: Colors.grey[100],
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              color: Colors.grey[400],
-              size: 20,
-            ),
-          );
-        },
-      ),
     );
   }
 
@@ -1917,29 +1904,12 @@ class _MessageBubble extends StatelessWidget {
         );
       }
 
-      return ClipRRect(
+      return AppNetworkImage(
+        imageUrl: imageUrl,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
         borderRadius: BorderRadius.circular(borderRadius),
-        child: Image.network(
-          imageUrl,
-          width: width,
-          height: height,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              width: width,
-              height: height,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(borderRadius),
-              ),
-              child: Icon(
-                Icons.image_not_supported_outlined,
-                color: Colors.grey[400],
-                size: 20,
-              ),
-            );
-          },
-        ),
       );
     }
 
@@ -1971,29 +1941,12 @@ class _MessageBubble extends StatelessWidget {
             ] else if (message.type == MessageType.image) ...[
               if (message.imageUrl != null &&
                   _isValidImageUrl(message.imageUrl!))
-                ClipRRect(
+                AppNetworkImage(
+                  imageUrl: message.imageUrl!,
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.cover,
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    message.imageUrl!,
-                    width: 200,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: Colors.grey,
-                          size: 48,
-                        ),
-                      );
-                    },
-                  ),
                 ),
             ] else ...[
               // Sistem mesajları
