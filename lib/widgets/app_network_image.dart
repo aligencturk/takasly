@@ -69,6 +69,8 @@ class AppNetworkImage extends StatelessWidget {
   }
 
   Widget _wrap(Widget child) {
+    // borderRadius null ise köşeli göster (yuvarlatma yok)
+    // Eğer borderRadius verilmezse, resim tamamen köşeli olarak gösterilir
     if (borderRadius == null) return child;
     return ClipRRect(borderRadius: borderRadius!, child: child);
   }

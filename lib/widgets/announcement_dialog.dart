@@ -40,7 +40,6 @@ class AnnouncementDialog extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
         color: Colors.grey[100],
       ),
       child: AppNetworkImage(
@@ -48,7 +47,6 @@ class AnnouncementDialog extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
-        borderRadius: BorderRadius.circular(8),
       ),
     );
   }
@@ -109,8 +107,8 @@ class AnnouncementDialog extends StatelessWidget {
         final showImage = imageEnabled && imageUrl.isNotEmpty;
 
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8), // Köşeli tasarım
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero, // Tamamen köşeli
           ),
           elevation: 8,
           insetPadding: const EdgeInsets.symmetric(
@@ -121,7 +119,7 @@ class AnnouncementDialog extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 500, maxHeight: 480),
             decoration: BoxDecoration(
               color: AppTheme.surface,
-              borderRadius: BorderRadius.circular(8), // Köşeli tasarım
+              borderRadius: BorderRadius.zero, // Tamamen köşeli
               border: Border.all(color: Colors.grey[200]!, width: 1),
               // Background image desteği
               image: showImage && imagePosition == 'background'
@@ -155,7 +153,7 @@ class AnnouncementDialog extends StatelessWidget {
                           ) // Background resim varsa koyu overlay
                         : Colors.grey[50],
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(8),
+                      top: Radius.zero, // Tamamen köşeli
                     ),
                     border: Border(
                       bottom: BorderSide(color: Colors.grey[200]!, width: 1),
@@ -229,7 +227,7 @@ class AnnouncementDialog extends StatelessWidget {
                               0.6,
                             ), // Background resim varsa koyu overlay
                             borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(8),
+                              bottom: Radius.zero, // Tamamen köşeli
                             ),
                           )
                         : null,
@@ -345,11 +343,17 @@ class FullScreenImageAnnouncementDialog extends StatelessWidget {
         return Dialog(
           insetPadding: EdgeInsets.zero,
           backgroundColor: Colors.black,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero, // Tamamen köşeli
+          ),
           child: Stack(
             children: [
               // Görsel tam ekran ve kesilmeden (contain) gösterilir
               Positioned.fill(
-                child: AppNetworkImage(imageUrl: imageUrl, fit: BoxFit.contain),
+                child: AppNetworkImage(
+                  imageUrl: imageUrl, 
+                  fit: BoxFit.contain,
+                ),
               ),
 
               // Kapat butonu
@@ -414,8 +418,8 @@ class SimpleAnnouncementDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8), // Köşeli tasarım
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero, // Tamamen köşeli
       ),
       backgroundColor: AppTheme.surface,
       elevation: 6,
@@ -529,9 +533,7 @@ class AnnouncementBottomSheet extends StatelessWidget {
           decoration: const BoxDecoration(
             color: AppTheme.surface,
             borderRadius: BorderRadius.vertical(
-              top: Radius.circular(
-                12,
-              ), // Köşeli ama bottom sheet için biraz yumuşak
+              top: Radius.zero, // Tamamen köşeli
             ),
           ),
           child: SafeArea(
