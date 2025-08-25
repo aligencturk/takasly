@@ -594,7 +594,7 @@ class AuthViewModel extends ChangeNotifier {
     try {
       final response = await _authService.checkEmailVerificationCode(
         code: code,
-        codeToken: tokenToUse!,
+        codeToken: tokenToUse,
       );
 
       if (response.isSuccess && response.data == true) {

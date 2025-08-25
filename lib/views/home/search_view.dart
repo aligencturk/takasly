@@ -227,11 +227,91 @@ class _SearchViewState extends State<SearchView> {
             Expanded(
               child: Column(
                 children: [
-                  // Ana içerik: Geçmiş ve popüler kategoriler (arama yapılmamışsa)
+                  // Ana içerik: Arama yapılmıyorsa geçmiş/popüler, yazılıyorsa canlı sonuçlar
                   if (!_hasSearched)
                     Expanded(
                       child: Consumer<ProductViewModel>(
                         builder: (context, vm, _) {
+                          // Yazı varsa canlı öneriler, yoksa geçmiş + popüler
+                          if (_searchController.text.isNotEmpty) {
+                            final results = vm.liveResults;
+                            if (results.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 8,
+                              ),
+                              itemCount: results.length,
+                              separatorBuilder: (_, __) =>
+                                  Divider(height: 1, color: Colors.grey[200]),
+                              itemBuilder: (context, index) {
+                                final item = results[index];
+                                return ListTile(
+                                  leading: Icon(
+                                    (item.type == 'product' ||
+                                            item.icon == 'product')
+                                        ? Icons.shopping_bag
+                                        : Icons.category,
+                                    color: Colors.grey,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    item.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    item.subtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    if (item.type == 'product' ||
+                                        item.icon == 'product') {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/product-detail',
+                                        arguments: {
+                                          'productId': item.id.toString(),
+                                        },
+                                      );
+                                    } else {
+                                      final vm =
+                                          context.read<ProductViewModel>();
+                                      // Kategori önerisine tıklandığında arama geçmişine ekle
+                                      vm.addCategorySearchHistory(
+                                        item.title,
+                                        item.id.toString(),
+                                      );
+
+                                      final filter = vm.currentFilter.copyWith(
+                                        categoryId: item.id.toString(),
+                                        searchText: null,
+                                      );
+                                      vm.applyFilter(filter);
+                                      setState(() {
+                                        _searchController.clear();
+                                        FocusScope.of(context).unfocus();
+                                        _hasSearched = true;
+                                        _currentQuery = '';
+                                      });
+                                    }
+                                  },
+                                );
+                              },
+                            );
+                          }
+
                           return Column(
                             children: [
                               // Geçmişler bölümü - üst kısım
@@ -539,7 +619,9 @@ class _SearchViewState extends State<SearchView> {
                                   child: Container(
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(20),
-                                    child: Column(
+                                    child: SingleChildScrollView(
+                                      physics: const BouncingScrollPhysics(),
+                                      child: Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
@@ -568,6 +650,7 @@ class _SearchViewState extends State<SearchView> {
                                           textAlign: TextAlign.center,
                                         ),
                                       ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -810,89 +893,7 @@ class _SearchViewState extends State<SearchView> {
                       ),
                     ),
 
-                  // Canlı arama: Yazarken üst boşluğu kapat
-                  if (!_hasSearched && _searchController.text.isNotEmpty)
-                    Expanded(
-                      child: Consumer<ProductViewModel>(
-                        builder: (context, vm, child) {
-                          final results = vm.liveResults;
-                          if (results.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          return ListView.separated(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 0,
-                              vertical: 8,
-                            ),
-                            itemCount: results.length,
-                            separatorBuilder: (_, __) =>
-                                Divider(height: 1, color: Colors.grey[200]),
-                            itemBuilder: (context, index) {
-                              final item = results[index];
-                              return ListTile(
-                                leading: Icon(
-                                  (item.type == 'product' ||
-                                          item.icon == 'product')
-                                      ? Icons.shopping_bag
-                                      : Icons.category,
-                                  color: Colors.grey,
-                                  size: 20,
-                                ),
-                                title: Text(
-                                  item.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  item.subtitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                onTap: () {
-                                  if (item.type == 'product' ||
-                                      item.icon == 'product') {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/product-detail',
-                                      arguments: {
-                                        'productId': item.id.toString(),
-                                      },
-                                    );
-                                  } else {
-                                    final vm = context.read<ProductViewModel>();
-                                    // Kategori önerisine tıklandığında arama geçmişine ekle
-                                    vm.addCategorySearchHistory(
-                                      item.title,
-                                      item.id.toString(),
-                                    );
-
-                                    final filter = vm.currentFilter.copyWith(
-                                      categoryId: item.id.toString(),
-                                      searchText: null,
-                                    );
-                                    vm.applyFilter(filter);
-                                    setState(() {
-                                      _searchController.clear();
-                                      FocusScope.of(context).unfocus();
-                                      _hasSearched = true;
-                                      _currentQuery = '';
-                                    });
-                                  }
-                                },
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
+                  // Canlı arama bloğu kaldırıldı; yazarken içerik yukarıda geçmiş/popüler yerine gösteriliyor
                 ],
               ),
             ),
