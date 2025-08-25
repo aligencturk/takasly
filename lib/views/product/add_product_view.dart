@@ -1904,7 +1904,7 @@ class _AddProductViewState extends State<AddProductView> {
           value: validValue,
           decoration: InputDecoration(
             labelText: 'İlçe',
-            hintText: 'İlçe seçiniz (opsiyonel)',
+            hintText: 'İlçe seçiniz',
             enabled:
                 (_currentPosition != null &&
                     _selectedCityId !=
@@ -1913,14 +1913,11 @@ class _AddProductViewState extends State<AddProductView> {
                     _selectedCityId !=
                         null), // GPS konumu aktif değilse ve il seçilmişse
           ),
-          hint: const Text('İlçe seçiniz (opsiyonel)'),
+          hint: const Text('İlçe seçiniz'),
           items: [
             const DropdownMenuItem<String>(
               value: null,
-              child: Text(
-                'İlçe seçiniz (opsiyonel)',
-                style: TextStyle(color: Colors.grey),
-              ),
+              child: Text('İlçe seçiniz', style: TextStyle(color: Colors.grey)),
             ),
             ...vm.districts.map(
               (dist) =>
