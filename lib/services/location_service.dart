@@ -2,6 +2,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:takasly/utils/logger.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -201,14 +203,96 @@ class LocationService {
 
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
+
+        Logger.info('Placemark detayları:');
+        Logger.info('  administrativeArea: ${placemark.administrativeArea}');
         Logger.info(
-          'İl/ilçe bulundu: ${placemark.administrativeArea} / ${placemark.subLocality ?? placemark.locality}',
+          '  subAdministrativeArea: ${placemark.subAdministrativeArea}',
         );
+        Logger.info('  locality: ${placemark.locality}');
+        Logger.info('  subLocality: ${placemark.subLocality}');
+        Logger.info('  thoroughfare: ${placemark.thoroughfare}');
+        Logger.info('  name: ${placemark.name}');
+
+        // İl bilgisi için administrativeArea kullan
+        String? city = placemark.administrativeArea;
+
+        // İlçe bilgisi için daha gelişmiş mantık:
+        String? district;
+
+        // 1. Öncelik: subAdministrativeArea (genellikle ilçe)
+        if (placemark.subAdministrativeArea != null &&
+            placemark.subAdministrativeArea!.isNotEmpty &&
+            placemark.subAdministrativeArea != city) {
+          district = placemark.subAdministrativeArea;
+          Logger.info('İlçe subAdministrativeArea\'dan alındı: $district');
+        }
+        // 2. Öncelik: subLocality (mahalle/ilçe)
+        else if (placemark.subLocality != null &&
+            placemark.subLocality!.isNotEmpty &&
+            placemark.subLocality != city) {
+          district = placemark.subLocality;
+          Logger.info('İlçe subLocality\'den alındı: $district');
+        }
+        // 3. Öncelik: locality (mahalle/kasaba - ilçe olabilir)
+        else if (placemark.locality != null &&
+            placemark.locality!.isNotEmpty &&
+            placemark.locality != city) {
+          // locality genellikle mahalle ama bazen ilçe olabilir
+          // Eğer çok uzunsa muhtemelen ilçe
+          if (placemark.locality!.length > 3) {
+            district = placemark.locality;
+            Logger.info('İlçe locality\'den alındı: $district');
+          }
+        }
+
+        // Eğer ilçe bilgisi il ile aynıysa (genellikle il merkezi), null yap
+        if (district != null && district.isNotEmpty && district == city) {
+          Logger.info('İlçe bilgisi il ile aynı, null yapılıyor');
+          district = null;
+        }
+
+        // Eğer ilçe bilgisi çok kısa ise (2 karakterden az), muhtemelen kısaltma, null yap
+        if (district != null && district.length < 2) {
+          Logger.info('İlçe bilgisi çok kısa, null yapılıyor: $district');
+          district = null;
+        }
+
+        // Eğer ilçe bilgisi çok uzunsa (20 karakterden fazla), muhtemelen adres, null yap
+        if (district != null && district.length > 20) {
+          Logger.info('İlçe bilgisi çok uzun, null yapılıyor: $district');
+          district = null;
+        }
+
+        // Eğer ilçe bilgisi sayı içeriyorsa, muhtemelen sokak numarası, null yap
+        if (district != null && RegExp(r'\d').hasMatch(district)) {
+          Logger.info('İlçe bilgisi sayı içeriyor, null yapılıyor: $district');
+          district = null;
+        }
+
+        // Eğer Google API'den ilçe bilgisi alınamadıysa, OpenStreetMap'i dene
+        if (district == null || district.isEmpty) {
+          Logger.info(
+            'Google API\'den ilçe bilgisi alınamadı, OpenStreetMap deneniyor...',
+          );
+          final osmDistrict = await _getDistrictFromOpenStreetMap(
+            latitude,
+            longitude,
+            city,
+          );
+          if (osmDistrict != null && osmDistrict.isNotEmpty) {
+            district = osmDistrict;
+            Logger.info('İlçe OpenStreetMap\'den alındı: $district');
+          }
+        }
+
+        Logger.info('Final il/ilçe: $city / $district');
 
         return {
-          'city': placemark.administrativeArea ?? '',
-          'district': placemark.subLocality ?? placemark.locality ?? '',
+          'city': city ?? '',
+          'district': district ?? '',
           'country': placemark.country ?? '',
+          'fullAddress': placemark.toString(),
         };
       }
 
@@ -216,6 +300,71 @@ class LocationService {
       return null;
     } catch (e) {
       Logger.error('Koordinatlardan il/ilçe alınırken hata: $e');
+      return null;
+    }
+  }
+
+  /// OpenStreetMap Nominatim API'den ilçe bilgisini almaya çalışır
+  Future<String?> _getDistrictFromOpenStreetMap(
+    double latitude,
+    double longitude,
+    String? city,
+  ) async {
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?'
+        'format=json&'
+        'lat=$latitude&'
+        'lon=$longitude&'
+        'zoom=10&'
+        'accept-language=tr',
+      );
+
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'TakaslyApp/1.0'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final address = data['address'];
+
+        if (address != null) {
+          // OpenStreetMap'de ilçe bilgisi farklı alanlarda olabilir
+          String? district =
+              address['county'] ?? // İlçe
+              address['district'] ?? // İlçe (alternatif)
+              address['suburb'] ?? // Mahalle (bazen ilçe)
+              address['city_district']; // Şehir ilçesi
+
+          Logger.info('OpenStreetMap address detayları: $address');
+          Logger.info('OpenStreetMap\'den bulunan ilçe: $district');
+
+          // Eğer ilçe bilgisi il ile aynıysa null yap
+          if (district != null && district.isNotEmpty && district == city) {
+            Logger.info(
+              'OpenStreetMap ilçe bilgisi il ile aynı, null yapılıyor',
+            );
+            return null;
+          }
+
+          // Eğer ilçe bilgisi çok kısa veya uzunsa null yap
+          if (district != null &&
+              (district.length < 2 || district.length > 20)) {
+            Logger.info(
+              'OpenStreetMap ilçe bilgisi uygun değil, null yapılıyor: $district',
+            );
+            return null;
+          }
+
+          return district;
+        }
+      }
+
+      Logger.warning('OpenStreetMap\'den ilçe bilgisi alınamadı');
+      return null;
+    } catch (e) {
+      Logger.error('OpenStreetMap\'den ilçe alınırken hata: $e');
       return null;
     }
   }

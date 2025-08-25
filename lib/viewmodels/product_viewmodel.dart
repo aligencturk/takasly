@@ -2862,8 +2862,10 @@ class ProductViewModel extends ChangeNotifier {
 
       final cityName = locationInfo['city'];
       final districtName = locationInfo['district'];
+      final fullAddress = locationInfo['fullAddress'];
 
       Logger.info('Bulunan il: $cityName, ilçe: $districtName');
+      Logger.info('Tam adres: $fullAddress');
 
       // İl ID'sini bul
       String? cityId;
@@ -2880,7 +2882,7 @@ class ProductViewModel extends ChangeNotifier {
         }
       }
 
-      // İlçe ID'sini bul (eğer il bulunduysa)
+      // İlçe ID'sini bul (eğer il bulunduysa ve ilçe bilgisi varsa)
       String? districtId;
       if (cityId != null && districtName != null && districtName.isNotEmpty) {
         // İlçeler yüklenmemişse yükle
@@ -2897,21 +2899,54 @@ class ProductViewModel extends ChangeNotifier {
           Logger.info('İlçe ID bulundu: $districtId ($districtName)');
         } else {
           Logger.warning('İlçe ID bulunamadı: $districtName');
+
+          // İlçe bulunamadıysa, ilçe listesini kontrol et ve logla
+          Logger.info(
+            'Mevcut ilçeler: ${_districts.map((d) => d.name).join(', ')}',
+          );
+
+          // Alternatif arama yöntemleri dene
+          Logger.info('Alternatif ilçe arama yöntemleri deneniyor...');
+
+          // 1. Kısmi eşleşme ara (daha esnek)
+          final partialMatch = _findDistrictByPartialMatch(
+            normalizedDistrictName,
+          );
+          if (partialMatch != null) {
+            districtId = partialMatch;
+            Logger.info('İlçe kısmi eşleşme ile bulundu: $districtId');
+          }
+
+          // 2. Benzer isim ara
+          if (districtId == null) {
+            final similarMatch = _findDistrictBySimilarName(
+              normalizedDistrictName,
+            );
+            if (similarMatch != null) {
+              districtId = similarMatch;
+              Logger.info('İlçe benzer isim ile bulundu: $districtId');
+            }
+          }
         }
+      } else if (cityId != null) {
+        Logger.info('İlçe bilgisi bulunamadı veya boş, sadece il kullanılacak');
       }
 
       if (cityId != null) {
-        return {
+        final result = {
           'cityId': cityId,
           'districtId': districtId ?? '',
           'cityName': cityName ?? '',
           'districtName': districtName ?? '',
         };
+
+        Logger.info('Sonuç: $result');
+        return result;
       }
 
       return null;
     } catch (e) {
-      Logger.error('Koordinatlardan il/ilçe ID\'leri bulunurken hata: $e');
+      Logger.error('Koordinatlardan il/ilçe ID\'leri bulurken hata: $e');
       return null;
     }
   }
@@ -2990,5 +3025,89 @@ class ProductViewModel extends ChangeNotifier {
         .replaceAll('Ş', 'ş')
         .replaceAll('Ö', 'ö')
         .replaceAll('Ç', 'ç');
+  }
+
+  /// İlçe adına göre kısmi eşleşme ile ID bulur
+  String? _findDistrictByPartialMatch(String districtName) {
+    try {
+      // Daha esnek kısmi eşleşme ara
+      var district = _districts.firstWhere((district) {
+        final normalizedDistrictName = _normalizeTurkishText(
+          district.name,
+        ).toLowerCase();
+        final searchName = districtName.toLowerCase();
+
+        // Kelime bazında eşleşme ara
+        final districtWords = normalizedDistrictName.split(' ');
+        final searchWords = searchName.split(' ');
+
+        // En az bir kelime eşleşiyorsa kabul et
+        for (final searchWord in searchWords) {
+          if (searchWord.length > 2) {
+            // 2 karakterden uzun kelimeler
+            for (final districtWord in districtWords) {
+              if (districtWord.contains(searchWord) ||
+                  searchWord.contains(districtWord)) {
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
+      }, orElse: () => throw Exception('İlçe bulunamadı'));
+      return district.id;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// İlçe adına göre benzer isim ile ID bulur
+  String? _findDistrictBySimilarName(String districtName) {
+    try {
+      // Levenshtein mesafesi ile en benzer ismi bul
+      String? bestMatch;
+      double bestScore = 0.8; // Minimum benzerlik skoru
+
+      for (final district in _districts) {
+        final normalizedDistrictName = _normalizeTurkishText(
+          district.name,
+        ).toLowerCase();
+        final searchName = districtName.toLowerCase();
+
+        // Basit benzerlik hesaplama
+        final similarity = _calculateSimilarity(
+          normalizedDistrictName,
+          searchName,
+        );
+
+        if (similarity > bestScore) {
+          bestScore = similarity;
+          bestMatch = district.id;
+          Logger.info(
+            'Benzer ilçe bulundu: ${district.name} (skor: $similarity)',
+          );
+        }
+      }
+
+      return bestMatch;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// İki string arasındaki benzerliği hesaplar
+  double _calculateSimilarity(String str1, String str2) {
+    if (str1 == str2) return 1.0;
+    if (str1.isEmpty || str2.isEmpty) return 0.0;
+
+    // Basit benzerlik hesaplama (Jaccard similarity)
+    final set1 = str1.split('').toSet();
+    final set2 = str2.split('').toSet();
+
+    final intersection = set1.intersection(set2).length;
+    final union = set1.union(set2).length;
+
+    return intersection / union;
   }
 }
