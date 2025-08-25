@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/contact_viewmodel.dart';
-import '../../services/auth_service.dart';
 import '../../utils/logger.dart';
 import 'blocked_users_view.dart';
 import 'change_password_view.dart';
@@ -155,18 +154,7 @@ class _SettingsViewState extends State<SettingsView> {
               );
             },
           ),
-          _buildSettingItem(
-            icon: Icons.cloud_sync_outlined,
-            title: 'FCM Token Test',
-            subtitle: 'Firebase FCM token kaydetme testi',
-            onTap: _testFCMToken,
-          ),
-          _buildSettingItem(
-            icon: Icons.cleaning_services_outlined,
-            title: 'FCM Token Temizle',
-            subtitle: 'Tüm FCM token\'ları temizle',
-            onTap: _clearFCMTokens,
-          ),
+
           _buildSettingItem(
             icon: Icons.privacy_tip_outlined,
             title: 'Sözleşmeler',
@@ -414,111 +402,5 @@ class _SettingsViewState extends State<SettingsView> {
         ),
       ),
     );
-  }
-
-  void _testFCMToken() async {
-    try {
-      Logger.info('🧪 FCM Token Test başlatılıyor...');
-
-      // Loading göster
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 16),
-              Text('FCM Token test ediliyor...'),
-            ],
-          ),
-          duration: Duration(seconds: 5),
-        ),
-      );
-
-      // AuthService'ten FCM token testini çalıştır
-      final authService = AuthService();
-      await authService.testFCMToken();
-
-      // Başarı mesajı göster
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              '✅ FCM Token test tamamlandı! Console\'u kontrol edin.',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      Logger.error('❌ FCM Token test hatası: $e', error: e);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ FCM Token test hatası: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _clearFCMTokens() async {
-    try {
-      Logger.info('🧹 FCM Token Temizleme başlatılıyor...');
-
-      // Loading göster
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 16),
-              Text('FCM Token temizleniyor...'),
-            ],
-          ),
-          duration: Duration(seconds: 5),
-        ),
-      );
-
-      // AuthService'ten FCM token temizlemeyi çalıştır
-      final authService = AuthService();
-      await authService.clearFCMTokens();
-
-      // Başarı mesajı göster
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ FCM Token temizleme tamamlandı!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      Logger.error('❌ FCM Token temizleme hatası: $e', error: e);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ FCM Token temizleme hatası: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 }
