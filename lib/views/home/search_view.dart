@@ -3,11 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import 'dart:async';
-import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/app_theme.dart';
-import '../../widgets/product_card.dart';
-import '../../widgets/error_widget.dart' as custom_error;
-import '../../widgets/skeletons/product_grid_skeleton.dart';
+import 'widgets/search_results_section.dart';
 import '../../utils/logger.dart';
 
 class SearchView extends StatefulWidget {
@@ -663,232 +660,16 @@ class _SearchViewState extends State<SearchView> {
                   // Arama sonuçları
                   if (_hasSearched)
                     Expanded(
-                      child: Consumer<ProductViewModel>(
-                        builder: (context, vm, child) {
-                          if (vm.isLoading && vm.products.isEmpty) {
-                            return const ProductGridSkeleton();
-                          }
-
-                          if (vm.hasError && vm.products.isEmpty) {
-                            return custom_error.CustomErrorWidget(
-                              message:
-                                  vm.errorMessage ??
-                                  'Arama sonuçları yüklenemedi.',
+                      child: SearchResultsSection(
+                        currentQuery: _currentQuery,
                               onRetry: () => _performSearch(_currentQuery),
-                            );
-                          }
-
-                          if (vm.products.isEmpty) {
-                            return Column(
-                              children: [
-                                // Sonuç bulunamadı mesajı
-                                Expanded(
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.search_off,
-                                          size: 64,
-                                          color: Colors.grey[400],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Sonuç Bulunamadı',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '"$_currentQuery" için sonuç bulunamadı.\nFarklı anahtar kelimeler deneyin.',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[600],
-                                            height: 1.4,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                // Popüler Kategoriler (sonuç bulunamadığında)
-                                if (vm.popularCategories.isNotEmpty)
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border(
-                                        top: BorderSide(
-                                          color: Colors.grey[200]!,
-                                          width: 1,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Text(
-                                            'Popüler Kategoriler',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.grey[800],
-                                            ),
-                                          ),
-                                        ),
-                                        ListView.separated(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          itemCount:
-                                              vm.popularCategories.length,
-                                          separatorBuilder: (_, __) => Divider(
-                                            height: 1,
-                                            color: Colors.grey[200],
-                                          ),
-                                          itemBuilder: (context, index) {
-                                            final category =
-                                                vm.popularCategories[index];
-                                            return ListTile(
-                                              leading: const Icon(
-                                                Icons.category,
-                                                color: Colors.grey,
-                                                size: 20,
-                                              ),
-                                              title: Text(
-                                                category.catName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              subtitle: Text(
-                                                '${category.productCount} ürün',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                              onTap: () {
-                                                final vm = context
-                                                    .read<ProductViewModel>();
-                                                // Kategori tıklandığında arama geçmişine ekle
-                                                vm.addCategorySearchHistory(
-                                                  category.catName,
-                                                  category.catId.toString(),
-                                                );
-
-                                                final filter = vm.currentFilter
-                                                    .copyWith(
-                                                      categoryId: category.catId
-                                                          .toString(),
-                                                      searchText: null,
-                                                    );
-                                                vm.applyFilter(filter);
+                        onAfterFilterApplied: () {
                                                 setState(() {
                                                   _searchController.clear();
-                                                  FocusScope.of(
-                                                    context,
-                                                  ).unfocus();
+                            FocusScope.of(context).unfocus();
                                                   _hasSearched = true;
                                                   _currentQuery = '';
                                                 });
-                                              },
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            );
-                          }
-
-                          return Column(
-                            children: [
-                              // Sonuç sayısı başlığı
-                              Container(
-                                width: double.infinity,
-                                color: AppTheme.background,
-                                padding: const EdgeInsets.all(16),
-                                child: Text(
-                                  '${vm.products.length} sonuç bulundu',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[700],
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-
-                              // Ürün grid'i - Ana sayfa tarzı
-                              Expanded(
-                                child: Container(
-                                  color: AppTheme.background,
-                                  child: GridView.builder(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      16,
-                                      0,
-                                      16,
-                                      16,
-                                    ),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          crossAxisSpacing: 12.0,
-                                          mainAxisSpacing: 12.0,
-                                          childAspectRatio: 0.75,
-                                        ),
-                                    itemCount: vm.products.length,
-                                    itemBuilder: (context, index) {
-                                      final product = vm.products[index];
-
-                                      // Kullanıcının kendi ürünü olup olmadığını kontrol et
-                                      bool isOwnProduct = false;
-                                      if (vm.myProducts.isNotEmpty) {
-                                        isOwnProduct = vm.myProducts.any(
-                                          (myProduct) =>
-                                              myProduct.id == product.id,
-                                        );
-                                      } else {
-                                        // myProducts henüz yüklenmemişse, product.ownerId ile kontrol et
-                                        final authViewModel =
-                                            Provider.of<AuthViewModel>(
-                                              context,
-                                              listen: false,
-                                            );
-                                        final currentUserId =
-                                            authViewModel.currentUser?.id;
-                                        isOwnProduct =
-                                            currentUserId != null &&
-                                            product.ownerId == currentUserId;
-                                      }
-
-                                      return ProductCard(
-                                        product: product,
-                                        heroTag:
-                                            'search_product_${product.id}_$index',
-                                        hideFavoriteIcon:
-                                            isOwnProduct, // Kullanıcının kendi ürünü ise favori ikonunu gizle
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
                         },
                       ),
                     ),
