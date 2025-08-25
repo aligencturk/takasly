@@ -361,148 +361,11 @@ class _HomeViewState extends State<HomeView> {
           _buildFilterBar(),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
           const CategoryList(),
-          // Görünüm (Grid/List) toggle - "Tümü" kategorisinin hemen altında
-          _buildViewToggle(),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           _buildProductGrid(),
           _buildLoadingIndicator(),
           // Alt navigasyon ile son kartlar arasında ferah boşluk
           _buildBottomSpacer(),
         ],
-      ),
-    );
-  }
-
-  // Grid / List görünüm anahtarı
-  Widget _buildViewToggle() {
-    return SliverToBoxAdapter(
-      child: Consumer<ProductViewModel>(
-        builder: (context, vm, child) {
-          final isListView = vm.currentFilter.viewType == 'list';
-          return Container(
-            margin: EdgeInsets.symmetric(
-              horizontal: _calculateHorizontalPadding(context),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  'Görünüm',
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () {
-                    if (isListView) {
-                      vm.applyFilter(
-                        vm.currentFilter.copyWith(viewType: 'grid'),
-                      );
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: !isListView ? Colors.grey[800] : Colors.grey[50],
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: !isListView
-                            ? Colors.grey[800]!
-                            : Colors.grey[300]!,
-                      ),
-                      boxShadow: !isListView
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.grid_view_rounded,
-                          size: 14,
-                          color: !isListView ? Colors.white : Colors.grey[700],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Grid',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: !isListView
-                                ? Colors.white
-                                : Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: () {
-                    if (!isListView) {
-                      vm.applyFilter(
-                        vm.currentFilter.copyWith(viewType: 'list'),
-                      );
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isListView ? Colors.grey[800] : Colors.grey[50],
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: isListView
-                            ? Colors.grey[800]!
-                            : Colors.grey[300]!,
-                      ),
-                      boxShadow: isListView
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.view_agenda_rounded,
-                          size: 14,
-                          color: isListView ? Colors.white : Colors.grey[700],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Liste',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isListView ? Colors.white : Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }
@@ -1015,44 +878,104 @@ class HomeAppBar extends StatelessWidget {
                   padding: EdgeInsets.zero,
                 ),
               ),
-
               const SizedBox(width: 8),
 
-              // Favoriler ikonu
-              Container(
-                width: containerSize,
-                height: containerSize,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+              // Görünüm Popup Menüsü
+              Consumer<ProductViewModel>(
+                builder: (context, vm, child) {
+                  final isListView = vm.currentFilter.viewType == 'list';
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    Logger.debug('Favoriler ikonuna tıklandı');
-                    // TradeView'a favoriler sekmesi ile yönlendir
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TradeView(
-                          initialTabIndex: 1,
-                        ), // 1 = Favoriler sekmesi
+                    child: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'grid' && isListView) {
+                          vm.applyFilter(
+                            vm.currentFilter.copyWith(viewType: 'grid'),
+                          );
+                        } else if (value == 'list' && !isListView) {
+                          vm.applyFilter(
+                            vm.currentFilter.copyWith(viewType: 'list'),
+                          );
+                        }
+                      },
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    );
-                  },
-                  icon: Icon(
-                    FontAwesomeIcons.heart,
-                    size: iconSize,
-                    color: Colors.grey[700],
-                  ),
-                  padding: EdgeInsets.zero,
-                ),
+                      itemBuilder: (context) => [
+                        PopupMenuItem<String>(
+                          value: 'grid',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.grid_view_rounded,
+                                size: 16,
+                                color: Colors.grey[700],
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Izgara'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'list',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.view_agenda_rounded,
+                                size: 16,
+                                color: Colors.grey[700],
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Liste'),
+                            ],
+                          ),
+                        ),
+                      ],
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isListView
+                                  ? Icons.view_agenda_rounded
+                                  : Icons.grid_view_rounded,
+                              size: 14,
+                              color: Colors.grey[700],
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Görünüm',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 16,
+                              color: Colors.grey[700],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -1060,4 +983,51 @@ class HomeAppBar extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _smallViewChip({
+  required BuildContext context,
+  required bool selected,
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: selected ? Colors.grey[800] : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: selected ? Colors.grey[800]! : Colors.grey[300]!,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: selected ? Colors.white : Colors.grey[700],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : Colors.grey[700],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

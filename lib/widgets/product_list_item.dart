@@ -35,16 +35,38 @@ class ProductListItem extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: product.isSponsor == true
+                  ? const Color(0xFFFEFEFC)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(
+                color: product.isSponsor == true
+                    ? const Color(0xFFB8860B)
+                    : Colors.grey.shade200,
+                width: product.isSponsor == true ? 2 : 1,
+              ),
+              boxShadow: product.isSponsor == true
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFDAA520).withOpacity(0.12),
+                        spreadRadius: 0,
+                        blurRadius: 16,
+                        offset: const Offset(0, 3),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFFB8860B).withOpacity(0.08),
+                        spreadRadius: 0,
+                        blurRadius: 24,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,15 +109,50 @@ class ProductListItem extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.amber.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'Sponsor',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFFDAA520), // goldenrod
+                                    Color(0xFFB8860B), // dark goldenrod
+                                  ],
                                 ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFDAA520,
+                                    ).withOpacity(0.25),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFB8860B,
+                                    ).withOpacity(0.15),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.star,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Vitrin',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                         ],
@@ -114,21 +171,6 @@ class ProductListItem extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(
-                            Icons.visibility,
-                            size: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            (int.tryParse(product.proView ?? '0') ?? 0)
-                                .toString(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
                           Icon(
                             Icons.location_on,
                             size: 14,
