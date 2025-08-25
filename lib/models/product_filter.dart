@@ -8,6 +8,7 @@ class ProductFilter {
   final String? districtId;
   final String sortType;
   final String? searchText;
+  final String viewType; // 'grid' | 'list'
 
   const ProductFilter({
     this.categoryId,
@@ -19,6 +20,7 @@ class ProductFilter {
     this.districtId,
     this.sortType = 'default',
     this.searchText,
+    this.viewType = 'grid',
   });
 
   ProductFilter copyWith({
@@ -31,6 +33,7 @@ class ProductFilter {
     String? districtId,
     String? sortType,
     String? searchText,
+    String? viewType,
   }) {
     return ProductFilter(
       categoryId: categoryId,
@@ -42,6 +45,7 @@ class ProductFilter {
       districtId: districtId,
       sortType: sortType ?? this.sortType,
       searchText: searchText,
+      viewType: viewType ?? this.viewType,
     );
   }
 
@@ -82,7 +86,7 @@ class ProductFilter {
 
   @override
   String toString() {
-    return 'ProductFilter(categoryId: $categoryId, subCategoryId: $subCategoryId, subSubCategoryId: $subSubCategoryId, subSubSubCategoryId: $subSubSubCategoryId, conditionIds: $conditionIds, cityId: $cityId, districtId: $districtId, sortType: $sortType, searchText: $searchText)';
+    return 'ProductFilter(categoryId: $categoryId, subCategoryId: $subCategoryId, subSubCategoryId: $subSubCategoryId, subSubSubCategoryId: $subSubSubCategoryId, conditionIds: $conditionIds, cityId: $cityId, districtId: $districtId, sortType: $sortType, searchText: $searchText, viewType: $viewType)';
   }
 }
 

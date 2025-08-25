@@ -9,6 +9,7 @@ import '../../viewmodels/general_viewmodel.dart';
 
 import '../../widgets/announcement_dialog.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/product_list_item.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/filter_bottom_sheet.dart';
 import 'widgets/category_list.dart';
@@ -22,6 +23,7 @@ import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/native_ad_wide_card.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
+import '../product/product_detail_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -446,13 +448,17 @@ class _HomeViewState extends State<HomeView> {
           );
         }
 
-        // Ürünleri ve reklamları karıştırarak tek bir grid oluştur
+        // Görünüm tipine göre liste/grid öğelerini hazırla
+        final bool isListView = vm.currentFilter.viewType == 'list';
+
+        // Grid için öğeler
         final List<Widget> gridItems = [];
+        // Liste için öğeler
+        final List<Widget> listItems = [];
 
         for (int i = 0; i < productCount; i++) {
           final product = sortedProducts[i];
 
-          // Product ID kontrolü
           if (product.id.isEmpty) {
             Logger.warning(
               '⚠️ HomeView - Invalid product ID at index $i: ${product.id}',
@@ -472,18 +478,16 @@ class _HomeViewState extends State<HomeView> {
                 listen: false,
               );
               final currentUserId = authViewModel.currentUser?.id;
-              isOwnProduct =
-                  currentUserId != null && product.ownerId == currentUserId;
+              isOwnProduct = currentUserId != null && product.ownerId == currentUserId;
             }
           } catch (e) {
             Logger.error('❌ HomeView - Error checking product ownership: $e');
             isOwnProduct = false;
           }
 
-          // Unique hero tag oluştur
-          final uniqueHeroTag =
-              'home_product_${product.id}_${DateTime.now().millisecondsSinceEpoch}_$i';
+          final uniqueHeroTag = 'home_product_${product.id}_${DateTime.now().millisecondsSinceEpoch}_$i';
 
+          // Grid öğesi
           gridItems.add(
             ProductCard(
               key: ValueKey('product_${product.id}_$i'),
@@ -493,10 +497,54 @@ class _HomeViewState extends State<HomeView> {
             ),
           );
 
-          // Her 6 ürün sonra reklam ekle (sıra 6, 12, 18, 24... olduğunda)
+          // Liste öğesi
+          listItems.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+              child: ProductListItem(
+                product: product,
+                isOwnProduct: isOwnProduct,
+                onTap: () {
+                  // HomeView içinde ProductCard yönlendirmesiyle aynı navigasyon davranışını bekler
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailView(productId: product.id),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+
+          // Her 6 ürün sonra reklam ekle
           if ((i + 1) % 6 == 0 && (i + 1) < productCount) {
             gridItems.add(NativeAdWideCard(key: ValueKey('ad_after_${i + 1}')));
+            listItems.add(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+                child: NativeAdWideCard(key: ValueKey('ad_after_${i + 1}_list')),
+              ),
+            );
           }
+        }
+
+        if (isListView) {
+          return SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (index < 0 || index >= listItems.length) {
+                  Logger.warning(
+                    '⚠️ HomeView - List index out of bounds: $index, length: ${listItems.length}',
+                  );
+                  return const SizedBox.shrink();
+                }
+                final item = listItems[index];
+                return item;
+              },
+              childCount: listItems.length,
+            ),
+          );
         }
 
         return SliverPadding(
@@ -520,13 +568,6 @@ class _HomeViewState extends State<HomeView> {
               }
 
               final item = gridItems[index];
-              if (item == null) {
-                Logger.warning(
-                  '⚠️ HomeView - Grid item is null at index: $index',
-                );
-                return const SizedBox.shrink();
-              }
-
               return item;
             }, childCount: gridItems.length),
           ),

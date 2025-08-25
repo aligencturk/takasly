@@ -37,6 +37,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   bool _isConditionExpanded = false;
   bool _isLocationExpanded = false;
   bool _isSortExpanded = false;
+  bool _isViewExpanded = false;
 
   @override
   void initState() {
@@ -70,6 +71,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     if (_tempFilter.conditionIds.isNotEmpty) _isConditionExpanded = true;
     if (_tempFilter.cityId != null || _tempFilter.districtId != null) _isLocationExpanded = true;
     if (_tempFilter.sortType != 'default') _isSortExpanded = true;
+    if (_tempFilter.viewType != 'grid') _isViewExpanded = true;
   }
 
   Future<void> _loadDistricts(String cityId) async {
@@ -192,6 +194,14 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                     onToggle: () => setState(() => _isSortExpanded = !_isSortExpanded),
                     content: _buildSortFilter(),
                     hasActiveFilter: _tempFilter.sortType != 'default',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildAccordionSection(
+                    title: 'Görünüm',
+                    isExpanded: _isViewExpanded,
+                    onToggle: () => setState(() => _isViewExpanded = !_isViewExpanded),
+                    content: _buildViewTypeFilter(),
+                    hasActiveFilter: _tempFilter.viewType != 'grid',
                   ),
                 ],
               ),
@@ -938,6 +948,35 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     );
   }
 
+  Widget _buildViewTypeFilter() {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        _buildSortChip(
+          label: 'Grid',
+          value: 'grid',
+          isSelected: _tempFilter.viewType == 'grid',
+          onTap: () {
+            setState(() {
+              _tempFilter = _tempFilter.copyWith(viewType: 'grid');
+            });
+          },
+        ),
+        _buildSortChip(
+          label: 'Liste',
+          value: 'list',
+          isSelected: _tempFilter.viewType == 'list',
+          onTap: () {
+            setState(() {
+              _tempFilter = _tempFilter.copyWith(viewType: 'list');
+            });
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildSortChip({
     required String label,
     required String value,
@@ -1219,6 +1258,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       _isConditionExpanded = false;
       _isLocationExpanded = false;
       _isSortExpanded = false;
+      _isViewExpanded = false;
     });
     
     // Alt kategorileri temizle
@@ -1241,6 +1281,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     if (_tempFilter.cityId != null) count++;
     if (_tempFilter.districtId != null) count++;
     if (_tempFilter.sortType != 'default') count++;
+    if (_tempFilter.viewType != 'grid') count++;
     return count;
   }
 }
