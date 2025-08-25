@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:takasly/views/home/home_view.dart';
-import 'package:takasly/views/auth/login_view.dart';
-import 'package:takasly/viewmodels/auth_viewmodel.dart';
 import 'package:takasly/viewmodels/notification_viewmodel.dart';
 import 'package:video_player/video_player.dart';
 import 'package:takasly/utils/logger.dart';
@@ -164,7 +161,7 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
 
                       // Ekran boyutlarını al
                       final screenSize = MediaQuery.of(context).size;
-                      
+
                       Logger.info(
                         'Video boyutları: ${videoSize.width}x${videoSize.height}, Ekran boyutları: ${screenSize.width}x${screenSize.height}',
                         tag: 'SplashView',

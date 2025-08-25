@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../../viewmodels/contract_viewmodel.dart';
 import '../../core/app_theme.dart';
-import '../../widgets/loading_widget.dart';
 import '../../utils/logger.dart';
 
 class KvkkContractView extends StatefulWidget {

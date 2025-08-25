@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
-import '../models/user_block.dart';
 import '../models/blocked_user.dart';
 import '../services/user_service.dart';
 import '../core/constants.dart';

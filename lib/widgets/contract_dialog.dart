@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../core/app_theme.dart';
-import '../utils/logger.dart';
 
 class ContractDialog extends StatelessWidget {
   final String title;

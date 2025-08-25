@@ -380,7 +380,6 @@ class FirebaseChatService {
     required String recipientId,
     required String chatId,
     required String senderId,
-    Map<String, dynamic>? data,
   }) async {
     try {
       Logger.info('🚀 FCM bildirimi gönderiliyor...', tag: _tag);

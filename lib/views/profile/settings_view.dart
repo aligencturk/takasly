@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../viewmodels/user_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/contact_viewmodel.dart';
-import '../../utils/logger.dart';
 import 'blocked_users_view.dart';
 import 'change_password_view.dart';
 import 'edit_profile_view.dart';

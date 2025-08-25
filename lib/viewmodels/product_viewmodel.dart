@@ -194,12 +194,7 @@ class ProductViewModel extends ChangeNotifier {
           // Null safety kontrolü
           if (newProducts.isNotEmpty) {
             _products = newProducts
-                .where(
-                  (product) =>
-                      product != null &&
-                      product.id != null &&
-                      product.id.isNotEmpty,
-                )
+                .where((product) => product.id.isNotEmpty)
                 .toList();
             Logger.info(
               '✅ ProductViewModel.loadAllProducts - set products for first page (filtered: ${_products.length})',
@@ -213,12 +208,7 @@ class ProductViewModel extends ChangeNotifier {
         } else {
           // Null safety kontrolü ile ekleme
           final validProducts = newProducts
-              .where(
-                (product) =>
-                    product != null &&
-                    product.id != null &&
-                    product.id.isNotEmpty,
-              )
+              .where((product) => product.id.isNotEmpty)
               .toList();
           _products.addAll(validProducts);
           Logger.info(
@@ -351,12 +341,7 @@ class ProductViewModel extends ChangeNotifier {
           // Null safety kontrolü
           if (newProducts.isNotEmpty) {
             _products = newProducts
-                .where(
-                  (product) =>
-                      product != null &&
-                      product.id != null &&
-                      product.id.isNotEmpty,
-                )
+                .where((product) => product.id.isNotEmpty)
                 .toList();
             Logger.info(
               '✅ ProductViewModel.loadProducts - First page: replaced products list (filtered: ${_products.length})',
@@ -370,12 +355,7 @@ class ProductViewModel extends ChangeNotifier {
         } else {
           // Null safety kontrolü ile ekleme
           final validProducts = newProducts
-              .where(
-                (product) =>
-                    product != null &&
-                    product.id != null &&
-                    product.id.isNotEmpty,
-              )
+              .where((product) => product.id.isNotEmpty)
               .toList();
           _products.addAll(validProducts);
           Logger.info(
@@ -1263,9 +1243,9 @@ class ProductViewModel extends ChangeNotifier {
           '🏷️ Sub-sub-categories loaded: ${_subSubCategories.length} items',
         );
         _subSubCategories.forEach(
-          (cat) => print('  - ${cat.name} (${cat.id})'),
+          (cat) => Logger.debug('  - ${cat.name} (${cat.id})'),
         );
-        print('🏷️ Notifying listeners after loading sub-sub-categories');
+        Logger.info('🏷️ Notifying listeners after loading sub-sub-categories');
         notifyListeners();
       } else {
         print('🏷️ Sub-sub-categories failed: ${response.error}');
@@ -2459,12 +2439,7 @@ class ProductViewModel extends ChangeNotifier {
         // Null safety kontrolü
         if (newProducts.isNotEmpty) {
           _products = newProducts
-              .where(
-                (product) =>
-                    product != null &&
-                    product.id != null &&
-                    product.id.isNotEmpty,
-              )
+              .where((product) => product.id.isNotEmpty)
               .toList();
           Logger.info(
             '✅ ProductViewModel.applyFilter - filtered products count: ${_products.length}',

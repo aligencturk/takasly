@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
-import '../../viewmodels/contract_viewmodel.dart';
 import 'membership_contract_view.dart';
 import 'kvkk_contract_view.dart';
 import '../../utils/logger.dart';

@@ -74,11 +74,12 @@ class ProductService {
       try {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
-        print(
+        Logger.debug(
           '🔑 User token retrieved: ${userToken.isNotEmpty ? "${userToken.substring(0, 20)}..." : "empty"}',
+          tag: _tag,
         );
       } catch (e) {
-        print('⚠️ Error getting user token: $e');
+        Logger.warning('⚠️ Error getting user token: $e', tag: _tag);
       }
 
       // POST body hazırla
@@ -93,22 +94,23 @@ class ProductService {
         'sortType': 'default',
         'page': page,
       };
-      print('🌐 POST Body: $body');
+      Logger.debug('🌐 POST Body: $body', tag: _tag);
 
       final response = await _httpClient.postWithBasicAuth<PaginatedProducts>(
         ApiConstants.allProducts,
         body: body,
         useBasicAuth: true,
         fromJson: (json) {
-          print('🔍 Raw All Products API Response: $json');
-          print('🔍 Response type: ${json.runtimeType}');
-          print(
+          Logger.debug('🔍 Raw All Products API Response: $json', tag: _tag);
+          Logger.debug('🔍 Response type: ${json.runtimeType}', tag: _tag);
+          Logger.debug(
             '🔍 Response keys: ${json is Map ? json.keys.toList() : 'Not a Map'}',
+            tag: _tag,
           );
 
           // JSON yapısını kontrol et
           if (json == null) {
-            print('❌ All Products API response is null');
+            Logger.error('❌ All Products API response is null', tag: _tag);
             return PaginatedProducts(
               products: [],
               currentPage: page,
@@ -119,20 +121,30 @@ class ProductService {
           }
 
           if (json['data'] == null) {
-            print('❌ All Products API response has no data field');
-            print('🔍 Available fields: ${json.keys}');
+            Logger.warning(
+              '❌ All Products API response has no data field',
+              tag: _tag,
+            );
+            Logger.debug('🔍 Available fields: ${json.keys}', tag: _tag);
 
             // Alternatif formatları kontrol et
             if (json['products'] != null) {
-              print('🔍 Found products field directly in root');
+              Logger.info(
+                '🔍 Found products field directly in root',
+                tag: _tag,
+              );
               final productsList = json['products'] as List;
-              print(
+              Logger.info(
                 '📦 Direct products API returned ${productsList.length} products',
+                tag: _tag,
               );
               final products = productsList
                   .map((item) => _transformApiProductToModel(item))
                   .toList();
-              print('📦 Parsed ${products.length} products successfully');
+              Logger.info(
+                '📦 Parsed ${products.length} products successfully',
+                tag: _tag,
+              );
               return PaginatedProducts.fromJson({
                 'data': {
                   'products': productsList,
@@ -145,11 +157,17 @@ class ProductService {
 
             // Eğer response direkt bir liste ise
             if (json is List) {
-              print('🔍 Response is directly a list with ${json.length} items');
+              Logger.info(
+                '🔍 Response is directly a list with ${json.length} items',
+                tag: _tag,
+              );
               final products = json
                   .map((item) => _transformApiProductToModel(item))
                   .toList();
-              print('📦 Parsed ${products.length} products successfully');
+              Logger.info(
+                '📦 Parsed ${products.length} products successfully',
+                tag: _tag,
+              );
               return PaginatedProducts.fromJson({
                 'data': {
                   'products': json,
@@ -171,8 +189,14 @@ class ProductService {
           }
 
           if (json['data']['products'] == null) {
-            print('❌ All Products API response has no products field in data');
-            print('🔍 Available data fields: ${json['data'].keys}');
+            Logger.warning(
+              '❌ All Products API response has no products field in data',
+              tag: _tag,
+            );
+            Logger.debug(
+              '🔍 Available data fields: ${json['data'].keys}',
+              tag: _tag,
+            );
             return PaginatedProducts.fromJson({
               'data': {
                 'products': [],
@@ -184,7 +208,10 @@ class ProductService {
           }
 
           final productsList = json['data']['products'] as List;
-          print('📦 All Products API returned ${productsList.length} products');
+          Logger.info(
+            '📦 All Products API returned ${productsList.length} products',
+            tag: _tag,
+          );
 
           // Sayfalama bilgilerini al
           final currentPage = json['data']['page'] as int? ?? page;
@@ -193,8 +220,9 @@ class ProductService {
               json['data']['totalItems'] as int? ?? productsList.length;
           final hasMore = currentPage < totalPages;
 
-          print(
+          Logger.info(
             '📦 Pagination info: page=$currentPage, totalPages=$totalPages, totalItems=$totalItems, hasMore=$hasMore',
+            tag: _tag,
           );
 
           // İlk birkaç ürünü logla
@@ -801,79 +829,139 @@ class ProductService {
 
   // Yeni API formatını Product model formatına dönüştürür
   Product _transformNewApiProductToModel(Map<String, dynamic> apiProduct) {
-    print(
+    Logger.info(
       '🔄 Transforming new API product: ${apiProduct['productTitle']} (ID: ${apiProduct['productID']})',
+      tag: _tag,
     );
 
     // Kategori verilerini debug et
-    print('🏷️ Category debug for product ${apiProduct['productID']}:');
-    print('🏷️ categoryID: ${apiProduct['categoryID']}');
-    print('🏷️ categoryTitle: ${apiProduct['categoryTitle']}');
-    print(
+    Logger.debug(
+      '🏷️ Category debug for product ${apiProduct['productID']}:',
+      tag: _tag,
+    );
+    Logger.debug('🏷️ categoryID: ${apiProduct['categoryID']}', tag: _tag);
+    Logger.debug(
+      '🏷️ categoryTitle: ${apiProduct['categoryTitle']}',
+      tag: _tag,
+    );
+    Logger.debug(
       '🏷️ categoryTitle type: ${apiProduct['categoryTitle']?.runtimeType}',
+      tag: _tag,
     );
-    print(
+    Logger.debug(
       '🏷️ categoryTitle isEmpty: ${apiProduct['categoryTitle']?.toString().isEmpty ?? true}',
+      tag: _tag,
     );
-    print('🏷️ All category-related fields:');
+    Logger.debug('🏷️ All category-related fields:', tag: _tag);
     apiProduct.forEach((key, value) {
       if (key.toString().toLowerCase().contains('categor') ||
           key.toString().toLowerCase().contains('cat')) {
-        print('🏷️ $key: $value');
+        Logger.debug('🏷️ $key: $value', tag: _tag);
       }
     });
 
     // 3 katmanlı kategori sistemi için tüm alanları kontrol et
-    print('🏷️ 3-Layer Category System Check:');
-    print('🏷️ categoryID: ${apiProduct['categoryID']}');
-    print('🏷️ categoryTitle: ${apiProduct['categoryTitle']}');
-    print('🏷️ parentCategoryID: ${apiProduct['parentCategoryID']}');
-    print('🏷️ parentCategoryTitle: ${apiProduct['parentCategoryTitle']}');
-    print('🏷️ grandParentCategoryID: ${apiProduct['grandParentCategoryID']}');
-    print(
-      '🏷️ grandParentCategoryTitle: ${apiProduct['grandParentCategoryTitle']}',
+    Logger.debug('🏷️ 3-Layer Category System Check:', tag: _tag);
+    Logger.debug('🏷️ categoryID: ${apiProduct['categoryID']}', tag: _tag);
+    Logger.debug(
+      '🏷️ categoryTitle: ${apiProduct['categoryTitle']}',
+      tag: _tag,
     );
-    print('🏷️ mainCategoryID: ${apiProduct['mainCategoryID']}');
-    print('🏷️ mainCategoryTitle: ${apiProduct['mainCategoryTitle']}');
-    print('🏷️ subCategoryID: ${apiProduct['subCategoryID']}');
-    print('🏷️ subCategoryTitle: ${apiProduct['subCategoryTitle']}');
+    Logger.debug(
+      '🏷️ parentCategoryID: ${apiProduct['parentCategoryID']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ parentCategoryTitle: ${apiProduct['parentCategoryTitle']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ grandParentCategoryID: ${apiProduct['grandParentCategoryID']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ grandParentCategoryTitle: ${apiProduct['grandParentCategoryTitle']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ mainCategoryID: ${apiProduct['mainCategoryID']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ mainCategoryTitle: ${apiProduct['mainCategoryTitle']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ subCategoryID: ${apiProduct['subCategoryID']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ subCategoryTitle: ${apiProduct['subCategoryTitle']}',
+      tag: _tag,
+    );
 
     // categoryList alanını kontrol et
-    print('🏷️ categoryList check:');
-    print('🏷️ Raw categoryList: ${apiProduct['categoryList']}');
-    print('🏷️ categoryList type: ${apiProduct['categoryList']?.runtimeType}');
+    Logger.debug('🏷️ categoryList check:', tag: _tag);
+    Logger.debug(
+      '🏷️ Raw categoryList: ${apiProduct['categoryList']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ categoryList type: ${apiProduct['categoryList']?.runtimeType}',
+      tag: _tag,
+    );
 
     if (apiProduct['categoryList'] != null) {
       final categoryList = apiProduct['categoryList'] as List;
-      print('🏷️ categoryList length: ${categoryList.length}');
+      Logger.debug(
+        '🏷️ categoryList length: ${categoryList.length}',
+        tag: _tag,
+      );
       for (int i = 0; i < categoryList.length; i++) {
         final category = categoryList[i];
-        print('🏷️ categoryList[$i] raw: $category');
-        print('🏷️ categoryList[$i] type: ${category.runtimeType}');
+        Logger.debug('🏷️ categoryList[$i] raw: $category', tag: _tag);
+        Logger.debug(
+          '🏷️ categoryList[$i] type: ${category.runtimeType}',
+          tag: _tag,
+        );
         if (category is Map) {
-          print('🏷️ categoryList[$i] keys: ${category.keys}');
-          print(
+          Logger.debug(
+            '🏷️ categoryList[$i] keys: ${category.keys}',
+            tag: _tag,
+          );
+          Logger.debug(
             '🏷️ categoryList[$i]: catID=${category['catID']}, catName=${category['catName']}',
+            tag: _tag,
           );
         }
       }
     } else {
-      print('🏷️ categoryList is null');
+      Logger.debug('🏷️ categoryList is null', tag: _tag);
     }
 
     // Resim URL'ini debug et
     final imageUrl = apiProduct['productImage'];
-    print('🖼️ Product image URL: $imageUrl');
-    print('🖼️ Image URL type: ${imageUrl.runtimeType}');
-    print('🖼️ Image URL isEmpty: ${imageUrl?.toString().isEmpty ?? true}');
+    Logger.debug('🖼️ Product image URL: $imageUrl', tag: _tag);
+    Logger.debug('🖼️ Image URL type: ${imageUrl.runtimeType}', tag: _tag);
+    Logger.debug(
+      '🖼️ Image URL isEmpty: ${imageUrl?.toString().isEmpty ?? true}',
+      tag: _tag,
+    );
 
     // Görsel URL'lerini tam URL'e dönüştür
     final images = <String>[];
-    print(
+    Logger.info(
       '🖼️ [NEW API] Processing images for product: ${apiProduct['productTitle']}',
+      tag: _tag,
     );
-    print('🖼️ [NEW API] Raw productImage: ${apiProduct['productImage']}');
-    print('🖼️ [NEW API] Raw extraImages: ${apiProduct['extraImages']}');
+    Logger.debug(
+      '🖼️ [NEW API] Raw productImage: ${apiProduct['productImage']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🖼️ [NEW API] Raw extraImages: ${apiProduct['extraImages']}',
+      tag: _tag,
+    );
 
     // Ana resim işleme
     final productImage = apiProduct['productImage']?.toString();
@@ -891,15 +979,24 @@ class ProductService {
           ? productImage
           : '${ApiConstants.baseUrl}$productImage';
       images.add(fullImageUrl);
-      print('🖼️ [NEW API] Added productImage: $fullImageUrl');
+      Logger.debug(
+        '🖼️ [NEW API] Added productImage: $fullImageUrl',
+        tag: _tag,
+      );
     } else {
-      print('⚠️ [NEW API] Skipping invalid productImage: $productImage');
+      Logger.warning(
+        '⚠️ [NEW API] Skipping invalid productImage: $productImage',
+        tag: _tag,
+      );
     }
 
     // extraImages varsa onları da ekle
     if (apiProduct['extraImages'] != null) {
       final extraImages = apiProduct['extraImages'] as List;
-      print('🖼️ [NEW API] Processing ${extraImages.length} extra images');
+      Logger.debug(
+        '🖼️ [NEW API] Processing ${extraImages.length} extra images',
+        tag: _tag,
+      );
       for (final extraImage in extraImages) {
         final extraImageStr = extraImage?.toString();
         if (extraImageStr != null &&
@@ -915,19 +1012,29 @@ class ProductService {
               ? extraImageStr
               : '${ApiConstants.baseUrl}$extraImageStr';
           images.add(fullImageUrl);
-          print('🖼️ [NEW API] Added extraImage: $fullImageUrl');
+          Logger.debug(
+            '🖼️ [NEW API] Added extraImage: $fullImageUrl',
+            tag: _tag,
+          );
         } else {
-          print('⚠️ [NEW API] Skipping invalid extraImage: $extraImageStr');
+          Logger.warning(
+            '⚠️ [NEW API] Skipping invalid extraImage: $extraImageStr',
+            tag: _tag,
+          );
         }
       }
     }
 
-    print(
+    Logger.debug(
       '🖼️ [NEW API] Final images array for ${apiProduct['productTitle']}: $images',
+      tag: _tag,
     );
-    print('🖼️ [NEW API] Total images count: ${images.length}');
+    Logger.debug(
+      '🖼️ [NEW API] Total images count: ${images.length}',
+      tag: _tag,
+    );
 
-    print('🖼️ Final images array: $images');
+    Logger.debug('🖼️ Final images array: $images', tag: _tag);
 
     // categoryList'ten kategori bilgilerini parse et
     String? mainCategoryName;
@@ -939,28 +1046,35 @@ class ProductService {
 
     if (apiProduct['categoryList'] != null) {
       final categoryList = apiProduct['categoryList'] as List;
-      print('🏷️ Parsing categoryList with ${categoryList.length} items');
+      Logger.debug(
+        '🏷️ Parsing categoryList with ${categoryList.length} items',
+        tag: _tag,
+      );
 
       if (categoryList.length >= 1) {
         // İlk kategori ana kategori olarak kabul edilir
         final mainCat = categoryList[0];
-        print('🏷️ Main cat raw: $mainCat');
+        Logger.debug('🏷️ Main cat raw: $mainCat', tag: _tag);
         if (mainCat is Map) {
           mainCategoryId = mainCat['catID']?.toString();
           mainCategoryName = mainCat['catName']?.toString();
-          print('🏷️ Main category: $mainCategoryName (ID: $mainCategoryId)');
+          Logger.debug(
+            '🏷️ Main category: $mainCategoryName (ID: $mainCategoryId)',
+            tag: _tag,
+          );
         }
       }
 
       if (categoryList.length >= 2) {
         // İkinci kategori üst kategori olarak kabul edilir
         final parentCat = categoryList[1];
-        print('🏷️ Parent cat raw: $parentCat');
+        Logger.debug('🏷️ Parent cat raw: $parentCat', tag: _tag);
         if (parentCat is Map) {
           parentCategoryId = parentCat['catID']?.toString();
           parentCategoryName = parentCat['catName']?.toString();
-          print(
+          Logger.debug(
             '🏷️ Parent category: $parentCategoryName (ID: $parentCategoryId)',
+            tag: _tag,
           );
         }
       }
@@ -968,11 +1082,14 @@ class ProductService {
       if (categoryList.length >= 3) {
         // Üçüncü kategori alt kategori olarak kabul edilir
         final subCat = categoryList[2];
-        print('🏷️ Sub cat raw: $subCat');
+        Logger.debug('🏷️ Sub cat raw: $subCat', tag: _tag);
         if (subCat is Map) {
           subCategoryId = subCat['catID']?.toString();
           subCategoryName = subCat['catName']?.toString();
-          print('🏷️ Sub category: $subCategoryName (ID: $subCategoryId)');
+          Logger.debug(
+            '🏷️ Sub category: $subCategoryName (ID: $subCategoryId)',
+            tag: _tag,
+          );
         }
       }
 
@@ -983,8 +1100,9 @@ class ProductService {
         if (lastCategory is Map) {
           final lastCategoryId = lastCategory['catID']?.toString();
           final lastCategoryName = lastCategory['catName']?.toString();
-          print(
+          Logger.debug(
             '🏷️ Setting categoryId to last category: $lastCategoryName (ID: $lastCategoryId)',
+            tag: _tag,
           );
           // categoryId'yi güncelle (Product modelinde bu alan var)
           apiProduct['categoryID'] = lastCategoryId;
@@ -1010,12 +1128,24 @@ class ProductService {
       subCategoryId = apiProduct['subCategoryID']?.toString();
     }
 
-    print('🏷️ Final parsed categories:');
-    print('🏷️ Main: $mainCategoryName (ID: $mainCategoryId)');
-    print('🏷️ Parent: $parentCategoryName (ID: $parentCategoryId)');
-    print('🏷️ Sub: $subCategoryName (ID: $subCategoryId)');
-    print('🏷️ Final categoryId: ${apiProduct['categoryID']}');
-    print('🏷️ Final categoryTitle: ${apiProduct['categoryTitle']}');
+    Logger.debug('🏷️ Final parsed categories:', tag: _tag);
+    Logger.debug(
+      '🏷️ Main: $mainCategoryName (ID: $mainCategoryId)',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ Parent: $parentCategoryName (ID: $parentCategoryId)',
+      tag: _tag,
+    );
+    Logger.debug('🏷️ Sub: $subCategoryName (ID: $subCategoryId)', tag: _tag);
+    Logger.debug(
+      '🏷️ Final categoryId: ${apiProduct['categoryID']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🏷️ Final categoryTitle: ${apiProduct['categoryTitle']}',
+      tag: _tag,
+    );
 
     final product = Product(
       id: apiProduct['productID']?.toString() ?? '',
@@ -1077,20 +1207,29 @@ class ProductService {
       districtTitle: apiProduct['districtTitle']?.toString() ?? '',
       createdAt: _parseDate(apiProduct['createdAt']?.toString()),
       updatedAt: DateTime.now(),
+      // Sponsor bilgilerini ekle
+      isSponsor: apiProduct['isSponsor'] as bool? ?? false,
+      sponsorUntil: apiProduct['sponsorUntil']?.toString(),
     );
 
     // Adres bilgilerini debug et
-    print(
+    Logger.debug(
       '📍 [NEW API] Location debug for product ${apiProduct['productTitle']}:',
+      tag: _tag,
     );
-    print(
+    Logger.debug(
       '📍 [NEW API] cityTitle: "${apiProduct['cityTitle']?.toString() ?? ''}"',
+      tag: _tag,
     );
-    print(
+    Logger.debug(
       '📍 [NEW API] districtTitle: "${apiProduct['districtTitle']?.toString() ?? ''}"',
+      tag: _tag,
     );
-    print('📍 [NEW API] cityID: ${apiProduct['cityID']}');
-    print('📍 [NEW API] districtID: ${apiProduct['districtID']}');
+    Logger.debug('📍 [NEW API] cityID: ${apiProduct['cityID']}', tag: _tag);
+    Logger.debug(
+      '📍 [NEW API] districtID: ${apiProduct['districtID']}',
+      tag: _tag,
+    );
 
     return product;
   }
@@ -1111,7 +1250,10 @@ class ProductService {
         return DateTime(year, month, day);
       }
     } catch (e) {
-      print('⚠️ Error parsing date: $dateString, error: $e');
+      Logger.warning(
+        '⚠️ Error parsing date: $dateString, error: $e',
+        tag: _tag,
+      );
     }
 
     return DateTime.now();
@@ -1122,17 +1264,25 @@ class ProductService {
     final categoryId = apiProduct['productCatID']?.toString() ?? '';
     final categoryName = apiProduct['productCatname'] ?? '';
 
-    print(
+    Logger.info(
       '🏷️ Transforming product with category ID: $categoryId, name: $categoryName',
+      tag: _tag,
     );
 
     // Görsel URL'lerini tam URL'e dönüştür
     final images = <String>[];
-    print(
+    Logger.info(
       '🖼️ [OLD API] Processing images for product: ${apiProduct['productTitle'] ?? 'Unknown'}',
+      tag: _tag,
     );
-    print('🖼️ [OLD API] Raw productImage: ${apiProduct['productImage']}');
-    print('🖼️ [OLD API] Raw extraImages: ${apiProduct['extraImages']}');
+    Logger.debug(
+      '🖼️ [OLD API] Raw productImage: ${apiProduct['productImage']}',
+      tag: _tag,
+    );
+    Logger.debug(
+      '🖼️ [OLD API] Raw extraImages: ${apiProduct['extraImages']}',
+      tag: _tag,
+    );
 
     // Ana resim işleme
     final productImage = apiProduct['productImage']?.toString();
@@ -1149,15 +1299,24 @@ class ProductService {
           ? productImage
           : '${ApiConstants.baseUrl}$productImage';
       images.add(fullImageUrl);
-      print('🖼️ [OLD API] Added productImage: $fullImageUrl');
+      Logger.debug(
+        '🖼️ [OLD API] Added productImage: $fullImageUrl',
+        tag: _tag,
+      );
     } else {
-      print('⚠️ [OLD API] Skipping invalid productImage: $productImage');
+      Logger.warning(
+        '⚠️ [OLD API] Skipping invalid productImage: $productImage',
+        tag: _tag,
+      );
     }
 
     // extraImages varsa onları da ekle
     if (apiProduct['extraImages'] != null) {
       final extraImages = apiProduct['extraImages'] as List;
-      print('🖼️ [OLD API] Processing ${extraImages.length} extra images');
+      Logger.debug(
+        '🖼️ [OLD API] Processing ${extraImages.length} extra images',
+        tag: _tag,
+      );
       for (final extraImage in extraImages) {
         final extraImageStr = extraImage?.toString();
         if (extraImageStr != null &&
@@ -1173,26 +1332,50 @@ class ProductService {
               ? extraImageStr
               : '${ApiConstants.baseUrl}$extraImageStr';
           images.add(fullImageUrl);
-          print('🖼️ [OLD API] Added extraImage: $fullImageUrl');
+          Logger.debug(
+            '🖼️ [OLD API] Added extraImage: $fullImageUrl',
+            tag: _tag,
+          );
         } else {
-          print('⚠️ [OLD API] Skipping invalid extraImage: $extraImageStr');
+          Logger.warning(
+            '⚠️ [OLD API] Skipping invalid extraImage: $extraImageStr',
+            tag: _tag,
+          );
         }
       }
     }
 
-    print('🖼️ [OLD API] Final images array: $images');
-    print('🖼️ [OLD API] Total images count: ${images.length}');
+    Logger.debug('🖼️ [OLD API] Final images array: $images', tag: _tag);
+    Logger.debug(
+      '🖼️ [OLD API] Total images count: ${images.length}',
+      tag: _tag,
+    );
 
     // Adres bilgilerini debug et
     final cityTitle = apiProduct['cityTitle'] ?? '';
     final districtTitle = apiProduct['districtTitle'] ?? '';
-    print(
+    Logger.debug(
       '📍 [OLD API] Location debug for product ${apiProduct['productTitle']}:',
+      tag: _tag,
     );
-    print('📍 [OLD API] cityTitle: "$cityTitle"');
-    print('📍 [OLD API] districtTitle: "$districtTitle"');
-    print('📍 [OLD API] cityID: ${apiProduct['cityID']}');
-    print('📍 [OLD API] districtID: ${apiProduct['districtID']}');
+    Logger.debug('📍 [OLD API] cityTitle: "$cityTitle"', tag: _tag);
+    Logger.debug('📍 [OLD API] districtTitle: "$districtTitle"', tag: _tag);
+    Logger.debug('📍 [OLD API] cityID: ${apiProduct['cityID']}', tag: _tag);
+    Logger.debug(
+      '📍 [OLD API] districtID: ${apiProduct['districtID']}',
+      tag: _tag,
+    );
+
+    // Sponsor bilgilerini kontrol et
+    final isSponsor = apiProduct['isSponsor'] as bool? ?? false;
+    final sponsorUntil = apiProduct['sponsorUntil']?.toString();
+
+    Logger.debug(
+      '🎯 [OLD API] Sponsor info for product ${apiProduct['productTitle']}:',
+      tag: _tag,
+    );
+    Logger.debug('🎯 [OLD API] isSponsor: $isSponsor', tag: _tag);
+    Logger.debug('🎯 [OLD API] sponsorUntil: $sponsorUntil', tag: _tag);
 
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
@@ -1229,6 +1412,9 @@ class ProductService {
       districtTitle: districtTitle,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      // Sponsor bilgilerini ekle
+      isSponsor: isSponsor,
+      sponsorUntil: sponsorUntil,
     );
   }
 
@@ -2920,12 +3106,21 @@ class ProductService {
         },
       );
 
-      print('🔍 ProductService - Response isSuccess: ${response.isSuccess}');
-      print('🔍 ProductService - Response error: ${response.error}');
+      Logger.debug(
+        '🔍 ProductService - Response isSuccess: ${response.isSuccess}',
+        tag: _tag,
+      );
+      Logger.debug(
+        '🔍 ProductService - Response error: ${response.error}',
+        tag: _tag,
+      );
 
       return response;
     } catch (e) {
-      print('💥 ProductService - Exception in getUserProducts: $e');
+      Logger.error(
+        '💥 ProductService - Exception in getUserProducts: $e',
+        tag: _tag,
+      );
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }

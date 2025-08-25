@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import '../models/user.dart';
 import '../utils/logger.dart';
 
 class FirebaseAuthService {

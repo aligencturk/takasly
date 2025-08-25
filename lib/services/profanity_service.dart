@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/services.dart';
 import '../models/profanity_check_result.dart';
 import '../utils/logger.dart';
@@ -286,14 +285,11 @@ class ProfanityService {
       try {
         // Pattern'ı temizle ve Dart RegExp için uygun hale getir
         String cleanPattern = pattern['pattern'] as String;
-        
+
         // (?i) inline flag'ini kaldır (case insensitive zaten RegExp parametresi ile set ediliyor)
         cleanPattern = cleanPattern.replaceFirst(RegExp(r'^\(\?i\)'), '');
-        
-        final regex = RegExp(
-          cleanPattern,
-          caseSensitive: false,
-        );
+
+        final regex = RegExp(cleanPattern, caseSensitive: false);
         Logger.info(
           '🔍 ProfanityService - Regex pattern test ediliyor: $cleanPattern',
         );
