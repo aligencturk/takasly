@@ -39,7 +39,7 @@ class SearchResultsSection extends StatelessWidget {
         return 0.76;
       case 3:
         return 0.74;
-      default:
+      default: 
         return 0.75;
     }
   }

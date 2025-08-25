@@ -19,7 +19,8 @@ class ChatListView extends StatefulWidget {
   State<ChatListView> createState() => _ChatListViewState();
 }
 
-class _ChatListViewState extends State<ChatListView> {
+class _ChatListViewState extends State<ChatListView>
+    with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
@@ -152,6 +153,7 @@ class _ChatListViewState extends State<ChatListView> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -263,6 +265,8 @@ class _ChatListViewState extends State<ChatListView> {
                 final int totalItemCount = sortedChats.length + adCount;
 
                 return ListView.builder(
+                  key: const PageStorageKey('chat_list'),
+                  cacheExtent: 600,
                   itemCount: totalItemCount,
                   itemBuilder: (context, displayIndex) {
                     // Index güvenliği kontrolü
@@ -296,15 +300,6 @@ class _ChatListViewState extends State<ChatListView> {
                     }
 
                     final chat = sortedChats[dataIndex];
-
-                    // Chat null kontrolü
-                    if (chat == null) {
-                      Logger.warning(
-                        'ChatListView - Chat is null at dataIndex: $dataIndex',
-                        tag: 'ChatListView',
-                      );
-                      return const SizedBox.shrink();
-                    }
 
                     return Slidable(
                       key: Key(chat.id),
@@ -421,8 +416,6 @@ class _ChatListViewState extends State<ChatListView> {
                       child: _ChatListItem(
                         chat: chat,
                         currentUserId: authViewModel.currentUser?.id ?? '',
-                        unreadCount:
-                            chatViewModel.chatUnreadCounts[chat.id] ?? 0,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -445,19 +438,20 @@ class _ChatListViewState extends State<ChatListView> {
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class _ChatListItem extends StatelessWidget {
   final Chat chat;
   final String currentUserId;
-  final int unreadCount;
   final VoidCallback onTap;
   final VoidCallback onPinToggle;
 
   const _ChatListItem({
     required this.chat,
     required this.currentUserId,
-    required this.unreadCount,
     required this.onTap,
     required this.onPinToggle,
   });
@@ -476,174 +470,181 @@ class _ChatListItem extends StatelessWidget {
           bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
         ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Stack(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: AppTheme.primary,
-              child: otherParticipant?.avatar != null
-                  ? ClipOval(
-                      child: Image.network(
-                        otherParticipant!.avatar!,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Text(
-                            otherParticipant.name.isNotEmpty
-                                ? otherParticipant.name[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : Text(
-                      otherParticipant?.name.isNotEmpty == true
-                          ? otherParticipant!.name[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-            ),
-            // Sabitlenmiş sohbet için "Sabit" yazısı
-            if (chat.isPinned == true)
-              Positioned(
-                top: 0,
-                left: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white, width: 1),
-                  ),
-                  child: const Icon(
-                    FontAwesomeIcons.thumbtack,
-                    color: Colors.white,
-                    size: 12,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                otherParticipant?.name ?? 'Bilinmeyen Kullanıcı',
-                style: TextStyle(
-                  fontWeight: unreadCount > 0
-                      ? FontWeight.w700
-                      : FontWeight.w600,
-                  fontSize: 13,
-                  color: unreadCount > 0 ? Colors.black87 : Colors.black87,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              _formatTime(chat.lastMessage?.createdAt ?? chat.updatedAt),
-              style: TextStyle(
-                color: unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
-                fontSize: 10,
-                fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Row(
+      child: Selector<ChatViewModel, int>(
+        selector: (context, vm) => vm.chatUnreadCounts[chat.id] ?? 0,
+        shouldRebuild: (prev, next) => prev != next,
+        builder: (context, unreadCount, _) {
+          return ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Stack(
               children: [
-                // Mesaj tipi ikonu
-                if (chat.lastMessage != null) ...[
-                  if (chat.lastMessage!.type == MessageType.product)
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      size: 15,
-                      color: unreadCount > 0
-                          ? AppTheme.primary
-                          : Colors.grey[500],
-                    )
-                  else if (chat.lastMessage!.type == MessageType.image)
-                    Icon(
-                      Icons.image_outlined,
-                      size: 15,
-                      color: unreadCount > 0
-                          ? AppTheme.primary
-                          : Colors.grey[500],
-                    )
-                  else
-                    Icon(
-                      Icons.message_outlined,
-                      size: 15,
-                      color: unreadCount > 0
-                          ? AppTheme.primary
-                          : Colors.grey[500],
-                    ),
-                  const SizedBox(width: 4),
-                ],
-                // Son mesaj içeriği
-                Expanded(
-                  child: Text(
-                    _getLastMessageText(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: unreadCount > 0
-                          ? Colors.black87
-                          : Colors.grey[600],
-                      fontSize: 12,
-                      fontWeight: unreadCount > 0
-                          ? FontWeight.w500
-                          : FontWeight.w400,
-                    ),
-                  ),
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppTheme.primary,
+                  child: otherParticipant?.avatar != null
+                      ? ClipOval(
+                          child: Image.network(
+                            otherParticipant!.avatar!,
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Text(
+                                otherParticipant.name.isNotEmpty
+                                    ? otherParticipant.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Text(
+                          otherParticipant?.name.isNotEmpty == true
+                              ? otherParticipant!.name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                 ),
-                // Okunmamış sayısı
-                if (unreadCount > 0) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      unreadCount.toString(),
-                      style: const TextStyle(
+                if (chat.isPinned == true)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: const Icon(
+                        FontAwesomeIcons.thumbtack,
                         color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        size: 12,
                       ),
                     ),
                   ),
-                ],
               ],
             ),
-          ],
-        ),
-        onTap: onTap,
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    otherParticipant?.name ?? 'Bilinmeyen Kullanıcı',
+                    style: TextStyle(
+                      fontWeight:
+                          unreadCount > 0 ? FontWeight.w700 : FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _formatTime(
+                    chat.lastMessage?.createdAt ?? chat.updatedAt,
+                  ),
+                  style: TextStyle(
+                    color:
+                        unreadCount > 0 ? AppTheme.primary : Colors.grey[500],
+                    fontSize: 10,
+                    fontWeight: unreadCount > 0
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (chat.lastMessage != null) ...[
+                      if (chat.lastMessage!.type == MessageType.product)
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 15,
+                          color: unreadCount > 0
+                              ? AppTheme.primary
+                              : Colors.grey[500],
+                        )
+                      else if (chat.lastMessage!.type == MessageType.image)
+                        Icon(
+                          Icons.image_outlined,
+                          size: 15,
+                          color: unreadCount > 0
+                              ? AppTheme.primary
+                              : Colors.grey[500],
+                        )
+                      else
+                        Icon(
+                          Icons.message_outlined,
+                          size: 15,
+                          color: unreadCount > 0
+                              ? AppTheme.primary
+                              : Colors.grey[500],
+                        ),
+                      const SizedBox(width: 4),
+                    ],
+                    Expanded(
+                      child: Text(
+                        _getLastMessageText(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: unreadCount > 0
+                              ? Colors.black87
+                              : Colors.grey[600],
+                          fontSize: 12,
+                          fontWeight: unreadCount > 0
+                              ? FontWeight.w500
+                              : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    if (unreadCount > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+            onTap: onTap,
+          );
+        },
       ),
     );
   }
