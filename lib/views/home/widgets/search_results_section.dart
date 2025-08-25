@@ -19,6 +19,31 @@ class SearchResultsSection extends StatelessWidget {
     required this.onAfterFilterApplied,
   });
 
+  // Responsive grid sütun sayısı
+  int _calculateCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1200) return 5;
+    if (width >= 900) return 4;
+    if (width >= 600) return 3;
+    return 2;
+  }
+
+  // Kart oranı: görsel ağırlıklı, modern oran
+  double _calculateChildAspectRatio(BuildContext context) {
+    final crossAxisCount = _calculateCrossAxisCount(context);
+    // Kolon arttıkça kartı biraz daha dikey tut
+    switch (crossAxisCount) {
+      case 5:
+        return 0.78;
+      case 4:
+        return 0.76;
+      case 3:
+        return 0.74;
+      default:
+        return 0.75;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ProductViewModel>(
@@ -39,59 +64,75 @@ class SearchResultsSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.search_off,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Sonuç Bulunamadı',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[700],
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: AppTheme.borderRadius,
+                      boxShadow: AppTheme.cardShadow,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.background,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.search_off_rounded,
+                            size: 36,
+                            color: Colors.grey[500],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '"$currentQuery" için sonuç bulunamadı.\nFarklı anahtar kelimeler deneyin.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          height: 1.4,
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Sonuç Bulunamadı',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(
+                          '"$currentQuery" için sonuç bulunamadı. Farklı anahtar kelimeler deneyebilir veya filtreleri güncelleyebilirsiniz.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               if (vm.popularCategories.isNotEmpty)
                 Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      top: BorderSide(
-                        color: Colors.grey[200]!,
-                        width: 1,
-                      ),
-                    ),
+                    color: AppTheme.surface,
+                    borderRadius: AppTheme.borderRadius,
+                    boxShadow: AppTheme.cardShadow,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                         child: Text(
                           'Popüler Kategoriler',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey[800],
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                       ),
@@ -106,10 +147,14 @@ class SearchResultsSection extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final category = vm.popularCategories[index];
                           return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             leading: const Icon(
-                              Icons.category,
-                              color: Colors.grey,
-                              size: 20,
+                              Icons.category_rounded,
+                              color: AppTheme.textSecondary,
+                              size: 22,
                             ),
                             title: Text(
                               category.catName,
@@ -118,6 +163,7 @@ class SearchResultsSection extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
                               ),
                             ),
                             subtitle: Text(
@@ -128,6 +174,10 @@ class SearchResultsSection extends StatelessWidget {
                                 fontSize: 12,
                                 color: Colors.grey[600],
                               ),
+                            ),
+                            trailing: const Icon(
+                              Icons.chevron_right_rounded,
+                              color: AppTheme.textSecondary,
                             ),
                             onTap: () {
                               final vm = context.read<ProductViewModel>();
@@ -156,52 +206,88 @@ class SearchResultsSection extends StatelessWidget {
         return Column(
           children: [
             Container(
-              width: double.infinity,
-              color: AppTheme.background,
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                '${vm.products.length} sonuç bulundu',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w600,
-                ),
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: AppTheme.borderRadius,
+                boxShadow: AppTheme.cardShadow,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.background,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${vm.products.length}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      currentQuery.isNotEmpty
+                          ? '"$currentQuery" için sonuç'
+                          : 'Sonuçlar',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
               child: Container(
                 color: AppTheme.background,
-                child: GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12.0,
-                    mainAxisSpacing: 12.0,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemCount: vm.products.length,
-                  itemBuilder: (context, index) {
-                    final product = vm.products[index];
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final crossAxisCount = _calculateCrossAxisCount(context);
+                    final aspectRatio = _calculateChildAspectRatio(context);
+                    return GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 12.0,
+                        mainAxisSpacing: 12.0,
+                        childAspectRatio: aspectRatio,
+                      ),
+                      itemCount: vm.products.length,
+                      itemBuilder: (context, index) {
+                        final product = vm.products[index];
 
-                    bool isOwnProduct = false;
-                    if (vm.myProducts.isNotEmpty) {
-                      isOwnProduct = vm.myProducts.any(
-                        (myProduct) => myProduct.id == product.id,
-                      );
-                    } else {
-                      final authViewModel = Provider.of<AuthViewModel>(
-                        context,
-                        listen: false,
-                      );
-                      final currentUserId = authViewModel.currentUser?.id;
-                      isOwnProduct =
-                          currentUserId != null && product.ownerId == currentUserId;
-                    }
+                        bool isOwnProduct = false;
+                        if (vm.myProducts.isNotEmpty) {
+                          isOwnProduct = vm.myProducts.any(
+                            (myProduct) => myProduct.id == product.id,
+                          );
+                        } else {
+                          final authViewModel = Provider.of<AuthViewModel>(
+                            context,
+                            listen: false,
+                          );
+                          final currentUserId = authViewModel.currentUser?.id;
+                          isOwnProduct = currentUserId != null &&
+                              product.ownerId == currentUserId;
+                        }
 
-                    return ProductCard(
-                      product: product,
-                      heroTag: 'search_product_${product.id}_$index',
-                      hideFavoriteIcon: isOwnProduct,
+                        return ProductCard(
+                          product: product,
+                          heroTag: 'search_product_${product.id}_$index',
+                          hideFavoriteIcon: isOwnProduct,
+                        );
+                      },
                     );
                   },
                 ),
