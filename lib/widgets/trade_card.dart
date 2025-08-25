@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/trade.dart';
@@ -470,15 +469,7 @@ class TradeCard extends StatelessWidget {
     return trade.theirProduct;
   }
 
-  /// Benim ürünümün etiketini belirle
-  String _getMyProductLabel() {
-    return 'Benim Ürünüm';
-  }
-
-  /// Karşı tarafın ürününün etiketini belirle
-  String _getTheirProductLabel() {
-    return 'Karşı Tarafın Ürünü';
-  }
+  // Etiket yardımcıları kaldırıldı (liste görünümünde kullanılmıyor)
 
   @override
   Widget build(BuildContext context) {
@@ -493,18 +484,12 @@ class TradeCard extends StatelessWidget {
     return Consumer<TradeViewModel>(
       builder: (context, tradeViewModel, child) {
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          margin: EdgeInsets.zero,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
+            border: Border(
+              bottom: BorderSide(color: Colors.grey.withOpacity(0.2), width: 0.6),
+            ),
           ),
           child: Stack(
             children: [
@@ -513,127 +498,72 @@ class TradeCard extends StatelessWidget {
                 onTap: onTap,
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Üst kısım - Ürün bilgileri
-                      Row(
-                        children: [
-                          // Benim ürünüm (isConfirm'e göre belirlenir)
-                          Expanded(
-                            child: _buildProductInfo(
-                              context,
-                              _getMyProduct(),
-                              _getMyProductLabel(),
-                              Colors.blue,
+                      // Görsel kaldırıldı (performans için)
+                      // _buildListThumb(),
+                      // const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTitleRow(textTheme),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  _getStatusIcon(_getCurrentUserStatusID()),
+                                  color: _getStatusColor(_getCurrentUserStatusID()),
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    _getCurrentUserStatusTitle(),
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: _getStatusColor(_getCurrentUserStatusID()),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: onDetailTap,
+                                  icon: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                                ),
+                              ],
                             ),
-                          ),
-                          // Takas ikonu
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Icon(
-                              Icons.swap_horiz,
-                              color: AppTheme.primary,
-                              size: 20,
+                            _buildWaitingMessageWidget(context),
+                            if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true)
+                              _buildRejectionReasonWidget(context),
+                            Builder(
+                              builder: (context) {
+                                final shouldShow = _shouldShowCompleteButton();
+                                return shouldShow ? _buildCompleteTradeButton(context) : Container();
+                              },
                             ),
-                          ),
-                          // Karşı tarafın ürünü (isConfirm'e göre belirlenir)
-                          Expanded(
-                            child: _buildProductInfo(
-                              context,
-                              _getTheirProduct(),
-                              _getTheirProductLabel(),
-                              Colors.green,
+                            if (_getCurrentUserStatusID() == 1) ...[
+                              if (showButtons == true) _buildActionButtons(context) else _buildApiMessageWidget(context, tradeViewModel),
+                            ],
+                            Builder(
+                              builder: (context) {
+                                final currentStatusID = _getCurrentUserStatusID();
+                                final shouldShowReview = _shouldShowReviewButton();
+                                if ((currentStatusID == 4 || currentStatusID == 5) && shouldShowReview) {
+                                  return _buildReviewButton(context);
+                                }
+                                return Container();
+                              },
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      
-                       // Orta kısım - Takas durumu + sağda Takas detayı butonu
-                       Row(
-                         children: [
-                           Icon(
-                             _getStatusIcon(_getCurrentUserStatusID()),
-                             color: _getStatusColor(_getCurrentUserStatusID()),
-                             size: 16,
-                           ),
-                           const SizedBox(width: 6),
-                           Text(
-                             _getCurrentUserStatusTitle(),
-                             style: textTheme.bodySmall?.copyWith(
-                               color: _getStatusColor(_getCurrentUserStatusID()),
-                               fontWeight: FontWeight.w600,
-                               fontSize: 13,
-                             ),
-                           ),
-                           const Spacer(),
-                           _buildDetailTextButton(context),
-                         ],
-                       ),
-                      
-                      // Karşı tarafın takası tamamlaması bekleniyor mesajı (sadece statusID=4 olan kullanıcıya göster)
-                      _buildWaitingMessageWidget(context),
-                      
-                      // Reddetme sebebi gösterimi (statusID=3, 7 veya 8 ise)
-                      if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true) ...[
-                        Builder(
-                          builder: (context) {
-                            Logger.debug('🔍 Reddetme sebebi widget\'ı gösteriliyor', tag: 'TradeCard');
-                            Logger.debug('🔍 cancelDesc null mu?: ${_getCurrentUserCancelDesc() == null}', tag: 'TradeCard');
-                            Logger.debug('🔍 cancelDesc boş mu?: ${_getCurrentUserCancelDesc()?.isEmpty}', tag: 'TradeCard');
-                            Logger.debug('🔍 cancelDesc uzunluğu: ${_getCurrentUserCancelDesc()?.length}', tag: 'TradeCard');
-                            return _buildRejectionReasonWidget(context);
-                          },
+                          ],
                         ),
-                      ],
-                      
-                      // Alt kısım - Aksiyon butonları
-                      // YENİ MANTIK: Kullanıcının istediği şekilde düzenlendi
-                      
-                      // If "Takası Tamamla" button should be shown based on the comprehensive logic
-                      Builder(
-                        builder: (context) {
-                          final shouldShow = _shouldShowCompleteButton();
-                          Logger.debug('🔍 Trade #${trade.offerID} - ShouldShowCompleteButton: $shouldShow', tag: 'TradeCard');
-                          Logger.debug('🔍 Trade #${trade.offerID} - CurrentUserStatusID: ${_getCurrentUserStatusID()}', tag: 'TradeCard');
-                          Logger.debug('🔍 Trade #${trade.offerID} - SenderStatusID: ${trade.senderStatusID}, ReceiverStatusID: ${trade.receiverStatusID}', tag: 'TradeCard');
-                          return shouldShow ? _buildCompleteTradeButton(context) : Container();
-                        },
                       ),
-                      
-                      // StatusID=1 (Beklemede) durumunda sadece onay/red butonları veya "onay bekliyor" mesajı
-                      if (_getCurrentUserStatusID() == 1) ...[
-                        if (showButtons == true) // This showButtons comes from TradeView
-                          _buildActionButtons(context)
-                        else
-                          _buildApiMessageWidget(context, tradeViewModel) // This is the "Onay bekliyor" message
-                      ],
-                      
-                      // StatusID=4 veya 5 durumunda "Puan Ver" butonu (eğer her iki taraf da tamamladıysa)
-                      Builder(
-                        builder: (context) {
-                          final currentStatusID = _getCurrentUserStatusID();
-                          final shouldShowReview = _shouldShowReviewButton();
-                          Logger.debug('🔍 Trade #${trade.offerID} - Review button check: currentStatusID=$currentStatusID, shouldShowReview=$shouldShowReview', tag: 'TradeCard');
-                          Logger.debug('🔍 Trade #${trade.offerID} - Trade data: hasReview=${trade.hasReview}, rating=${trade.rating}, comment=${trade.comment}', tag: 'TradeCard');
-                          Logger.debug('🔍 Trade #${trade.offerID} - canGiveReview=${trade.canGiveReview}, isSenderReview=${trade.isSenderReview}, isReceiverReview=${trade.isReceiverReview}', tag: 'TradeCard');
-                          
-                          // Yorum butonu gösterilme koşulları:
-                          // 1. StatusID=4 veya 5 olmalı
-                          // 2. shouldShowReview true olmalı (yeni alanlara göre veya geri uyumlu kontrole göre)
-                          if ((currentStatusID == 4 || currentStatusID == 5) && shouldShowReview) {
-                            Logger.debug('🔍 Trade #${trade.offerID} - Review button gösteriliyor!', tag: 'TradeCard');
-                            return _buildReviewButton(context);
-                          }
-                          
-                          Logger.debug('🔍 Trade #${trade.offerID} - Review button gösterilmiyor. currentStatusID=$currentStatusID, shouldShowReview=$shouldShowReview, hasReview=${trade.hasReview}', tag: 'TradeCard');
-                          return Container();
-                        },
-                      ),
-
-                       // Detay butonu artık statü satırında hizalanıyor
                     ],
                   ),
                 ),
@@ -645,79 +575,48 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProductInfo(
-    BuildContext context,
-    TradeProduct? product,
-    String label,
-    Color color,
-  ) {
-    final textTheme = Theme.of(context).textTheme;
+  // Görsel thumbnail kaldırıldı (performans için)
 
-    return Column(
+  Widget _buildTitleRow(TextTheme textTheme) {
+    final my = _getMyProduct();
+    final their = _getTheirProduct();
+    final String myTitle = my?.productTitle ?? 'Benim Ürünüm';
+    final String theirTitle = their?.productTitle ?? 'Karşı Ürün';
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: textTheme.bodySmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 60,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: product?.productImage.isNotEmpty == true
-                ? CachedNetworkImage(
-                    imageUrl: product!.productImage,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.image_not_supported, size: 20),
-                    ),
-                  )
-                : Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported, size: 20),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          product?.productTitle ?? 'Ürün bulunamadı',
-          style: textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        if (product?.productCondition != null) ...[
-          const SizedBox(height: 2),
-          Text(
-            product!.productCondition,
-            style: textTheme.bodySmall?.copyWith(
-              color: Colors.grey[600],
-              fontSize: 10,
+        Expanded(
+          child: Text(
+            myTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
-        ],
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Icon(Icons.swap_horiz, size: 18, color: AppTheme.primary),
+        ),
+        Expanded(
+          child: Text(
+            theirTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
       ],
     );
   }
+
+  // Ürün detay kutusu kaldırıldı (grid görünümü yerine yalın liste tercih edildi)
 
   Widget _buildActionButtons(BuildContext context) {
     return Padding(
@@ -1016,29 +915,5 @@ class TradeCard extends StatelessWidget {
     }
   }
 
-  Widget _buildDetailTextButton(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onDetailTap,
-      icon: Icon(
-        Icons.info_outline,
-        size: 16,
-        color: AppTheme.primary,
-      ),
-      label: Text(
-        'Takas detayı',
-        style: TextStyle(
-          color: AppTheme.primary,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      style: TextButton.styleFrom(
-        foregroundColor: AppTheme.primary,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-  }
+  // Detay düğmesi metni kaldırıldı; sağda chevron ikon kullanılıyor
 }

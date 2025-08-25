@@ -531,7 +531,7 @@ class _TradeViewState extends State<TradeView>
                         }
                       },
                       child: ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        padding: EdgeInsets.zero,
                         itemCount: totalItemCount,
                         itemBuilder: (context, displayIndex) {
                           try {
@@ -539,8 +539,8 @@ class _TradeViewState extends State<TradeView>
                             if (displayIndex != 0 &&
                                 (displayIndex + 1) % (adInterval + 1) == 0) {
                               return Container(
-                                margin: EdgeInsets.only(bottom: 12),
-                                child: const BannerAdListTile(),
+                                margin: EdgeInsets.zero,
+                                child: BannerAdListTile(key: ValueKey('trade_list_ad_$displayIndex')),
                               );
                             }
 
@@ -708,7 +708,7 @@ class _TradeViewState extends State<TradeView>
                             );
 
                             return Container(
-                              margin: EdgeInsets.only(bottom: 12),
+                              margin: EdgeInsets.zero,
                               child: TradeCard(
                                 trade: updatedTrade,
                                 currentUserId: currentUserId.toString(),
@@ -1642,7 +1642,7 @@ class _TradeViewState extends State<TradeView>
                             (displayIndex + 1) % (adInterval + 1) == 0) {
                           return Container(
                             margin: EdgeInsets.only(bottom: 10),
-                            child: const BannerAdListTile(),
+                            child: BannerAdListTile(key: ValueKey('favorites_grid_ad_$displayIndex')),
                           );
                         }
 
