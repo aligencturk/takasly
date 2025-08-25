@@ -101,12 +101,12 @@ class _SearchViewState extends State<SearchView> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.background,
         resizeToAvoidBottomInset:
             false, // Klavye açıldığında yukarı kaymayı engelle
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.black87,
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -221,17 +221,8 @@ class _SearchViewState extends State<SearchView> {
               ),
           ],
         ),
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFF0F9F4), Color(0xFFF7F8FA), Color(0xFFFFFFFF)],
-              stops: [0.0, 0.6, 1.0],
-            ),
-          ),
-          child: Column(
-            children: [
+        body: Column(
+          children: [
             // Ana içerik alanı
             Expanded(
               child: Column(
@@ -909,7 +900,6 @@ class _SearchViewState extends State<SearchView> {
 
             // Vitrin alanı kaldırıldı
           ],
-          ),
         ),
       ),
     );
