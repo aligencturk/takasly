@@ -69,7 +69,7 @@ class AnnouncementDialog extends StatelessWidget {
         await showDialog<void>(
           context: context,
           barrierDismissible: true,
-          barrierColor: Colors.black54,
+          barrierColor: Colors.black26,
           builder: (BuildContext context) => hasImage
               ? const FullScreenImageAnnouncementDialog()
               : const AnnouncementDialog(),
@@ -341,39 +341,80 @@ class FullScreenImageAnnouncementDialog extends StatelessWidget {
         final imageUrl = rc.announcementImageUrl;
 
         return Dialog(
-          insetPadding: EdgeInsets.zero,
-          backgroundColor: Colors.black,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero, // Tamamen köşeli
+          insetPadding: const EdgeInsets.all(16),
+          backgroundColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(1),
           ),
+          elevation: 0,
           child: Stack(
             children: [
-              // Görsel tam ekran ve kesilmeden (contain) gösterilir
+              // Kapatmak için herhangi bir yere dokunulabilir
               Positioned.fill(
-                child: AppNetworkImage(
-                  imageUrl: imageUrl, 
-                  fit: BoxFit.contain,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: const SizedBox.shrink(),
                 ),
               ),
 
-              // Kapat butonu
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white24, width: 1),
+              // İçerik: Sadece görsel + çerçeve + görselin üzerinde X butonu
+              Center(
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width - 82,
+                        maxHeight: MediaQuery.of(context).size.height - 82,
                       ),
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close, color: Colors.white),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppTheme.primary, width: 4),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.transparent,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: FittedBox(
+                            fit: BoxFit.contain,
+                            child: AppNetworkImage(
+                              imageUrl: imageUrl,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    Positioned(
+                      top: -10,
+                      right: -10,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.95),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                            border: Border.all(color: AppTheme.primary, width: 1),
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 18,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
