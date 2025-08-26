@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/user_viewmodel.dart';
+import '../viewmodels/product_viewmodel.dart';
 import '../utils/logger.dart';
 
 class UserBlockDialog extends StatefulWidget {
@@ -61,7 +62,7 @@ class _UserBlockDialogState extends State<UserBlockDialog> {
             ),
           );
 
-          // Callback'i çağır
+          // Callback'i çağır (anasayfayı yenilemek için)
           widget.onUserBlocked?.call();
         }
       } else {

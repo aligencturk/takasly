@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
@@ -349,6 +350,55 @@ class CacheService {
       Logger.info('  Memory cache hits: $_memoryCacheHits ($memoryHitRate%)');
       Logger.info('  Disk cache hits: $_diskCacheHits ($diskHitRate%)');
       Logger.info('  Total hit rate: $totalHitRate%');
+    }
+  }
+
+  /// Engellenen kullanıcıları saklar
+  Future<void> saveBlockedUsers(List<Map<String, dynamic>> blockedUsers) async {
+    try {
+      if (_cacheDir == null) {
+        await initialize();
+      }
+
+      final file = File('${_cacheDir!.path}/blocked_users.json');
+      final jsonData = jsonEncode(blockedUsers);
+      await file.writeAsString(jsonData);
+      
+      Logger.info('🔒 CacheService - Saved ${blockedUsers.length} blocked users');
+    } catch (e) {
+      Logger.error('❌ CacheService - Error saving blocked users: $e', error: e);
+    }
+  }
+
+  /// Engellenen kullanıcıları döndürür
+  String? getBlockedUsers() {
+    try {
+      if (_cacheDir == null) return null;
+
+      final file = File('${_cacheDir!.path}/blocked_users.json');
+      if (!file.existsSync()) return null;
+
+      final jsonData = file.readAsStringSync();
+      Logger.info('🔒 CacheService - Retrieved blocked users from cache');
+      return jsonData;
+    } catch (e) {
+      Logger.error('❌ CacheService - Error getting blocked users: $e', error: e);
+      return null;
+    }
+  }
+
+  /// Engellenen kullanıcıları temizler
+  Future<void> clearBlockedUsers() async {
+    try {
+      if (_cacheDir == null) return;
+
+      final file = File('${_cacheDir!.path}/blocked_users.json');
+      if (await file.exists()) {
+        await file.delete();
+        Logger.info('🔒 CacheService - Cleared blocked users cache');
+      }
+    } catch (e) {
+      Logger.error('❌ CacheService - Error clearing blocked users: $e', error: e);
     }
   }
 }

@@ -25,6 +25,7 @@ class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
+  final CacheService _cacheService = CacheService();
   // Canlı arama state'i
   List<LiveSearchItem> _liveResults = [];
   bool _isLiveSearching = false;
@@ -222,6 +223,14 @@ class ProductViewModel extends ChangeNotifier {
         Logger.info(
           '✅ ProductViewModel.loadAllProducts - hasMore: $_hasMore (${paginatedData.currentPage} < ${paginatedData.totalPages}), nextPage: $_currentPage, totalProducts: ${_products.length}',
         );
+
+        // Engellenen kullanıcıların ilanlarını filtrele
+        if (_currentPage == 1) {
+          _products = _filterBlockedUsersProducts(_products);
+          Logger.info(
+            '🔒 ProductViewModel.loadAllProducts - Filtered blocked users products, final count: ${_products.length}',
+          );
+        }
       } else {
         Logger.error(
           '❌ ProductViewModel.loadAllProducts - API error: ${response.error}',
@@ -489,59 +498,26 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshProducts() async {
-    Logger.info('🔄 ProductViewModel.refreshProducts started');
-    Logger.info(
-      '🔄 ProductViewModel - Current _products.length: ${_products.length}',
-    );
-    Logger.info('🔄 ProductViewModel - Current filter: $_currentFilter');
+    Logger.info('🔄 ProductViewModel - Refreshing products and filtering blocked users');
+    
     try {
-      // Loading state'leri sıfırla ve temizle
-      _isLoading = false;
-      _isLoadingMore = false;
-      _clearError();
-
-      // Sayfa numarasını sıfırla
-      _currentPage = 1;
-      _hasMore = true;
-
-      // Kategorileri yükle (eğer yoksa)
-      await loadCategories();
-
-      // Eğer aktif filtreler varsa, mevcut filtreleri kullanarak yenile
-      if (_currentFilter.hasActiveFilters) {
-        Logger.info(
-          '🔄 ProductViewModel.refreshProducts - Using existing filters: $_currentFilter',
-        );
-        await applyFilter(_currentFilter);
-      } else {
-        // Aktif filtre yoksa, kullanıcının giriş durumuna göre varsayılan sıralama uygula
-        final authViewModel = AuthService();
-        final currentUser = await authViewModel.getCurrentUser();
-
-        if (currentUser != null) {
-          // Giriş yapmış kullanıcı için en yakın ilanları göster
-          Logger.info(
-            '🔄 ProductViewModel.refreshProducts - Logged-in user detected, applying nearest-to-me sorting',
-          );
-          final nearestFilter = _currentFilter.copyWith(sortType: 'location');
-          await applyFilter(nearestFilter);
-        } else {
-          // Giriş yapmamış kullanıcı için varsayılan sıralama
-          Logger.info(
-            '🔄 ProductViewModel.refreshProducts - No user logged in, using default sorting',
-          );
-          await loadAllProducts(refresh: true);
-        }
-      }
-
-      Logger.info('✅ ProductViewModel.refreshProducts completed');
-      Logger.info(
-        '✅ ProductViewModel - Final _products.length: ${_products.length}',
-      );
-    } catch (e) {
-      Logger.error('❌ refreshProducts error: $e');
-      _errorMessage = 'Veri yenilenirken hata oluştu: $e';
+      // Mevcut filtreleri koruyarak ürünleri yenile
+      await loadAllProducts(page: 1, refresh: true);
+      
+      // Engellenen kullanıcıların ilanlarını filtrele
+      _products = _filterBlockedUsersProducts(_products);
+      
+      // Favorileri de filtrele
+      _favoriteProducts = _filterBlockedUsersProducts(_favoriteProducts);
+      
+      // Benim ilanlarımı da filtrele
+      _myProducts = _filterBlockedUsersProducts(_myProducts);
+      
+      Logger.info('✅ ProductViewModel - Products refreshed and filtered successfully');
       notifyListeners();
+    } catch (e) {
+      Logger.error('❌ ProductViewModel - Error refreshing products: $e');
+      _setError('Ürünler yenilenirken hata oluştu');
     }
   }
 
@@ -3109,5 +3085,70 @@ class ProductViewModel extends ChangeNotifier {
     final union = set1.union(set2).length;
 
     return intersection / union;
+  }
+
+  /// Engellenen kullanıcıların ilanlarını filtreler
+  List<product_model.Product> _filterBlockedUsersProducts(List<product_model.Product> products) {
+    try {
+      // Engellenen kullanıcıların ID'lerini al
+      final blockedUserIds = _getBlockedUserIds();
+      
+      if (blockedUserIds.isEmpty) {
+        Logger.info('🔒 ProductViewModel - No blocked users, returning all products');
+        return products;
+      }
+
+      // Engellenen kullanıcıların ilanlarını filtrele
+      final filteredProducts = products.where((product) {
+        try {
+          final ownerId = int.tryParse(product.ownerId);
+          if (ownerId == null) {
+            Logger.warning('⚠️ ProductViewModel - Invalid owner ID: ${product.ownerId}');
+            return true; // Geçersiz ID'li ürünleri göster
+          }
+          
+          final isBlocked = blockedUserIds.contains(ownerId);
+          if (isBlocked) {
+            Logger.info('🚫 ProductViewModel - Filtered blocked user product: ${product.id} (owner: ${product.ownerId})');
+          }
+          
+          return !isBlocked;
+        } catch (e) {
+          Logger.error('❌ ProductViewModel - Error filtering product ${product.id}: $e');
+          return true; // Hata durumunda ürünü göster
+        }
+      }).toList();
+
+      Logger.info('🔒 ProductViewModel - Filtered ${products.length - filteredProducts.length} blocked user products');
+      return filteredProducts;
+    } catch (e) {
+      Logger.error('❌ ProductViewModel - Error in _filterBlockedUsersProducts: $e');
+      return products; // Hata durumunda tüm ürünleri göster
+    }
+  }
+
+  /// Engellenen kullanıcı ID'lerini döndürür
+  List<int> _getBlockedUserIds() {
+    try {
+      // Cache'den engellenen kullanıcıları al
+      final blockedUsersJson = _cacheService.getBlockedUsers();
+      if (blockedUsersJson == null || blockedUsersJson.isEmpty) {
+        return [];
+      }
+
+      final List<dynamic> blockedUsersList = jsonDecode(blockedUsersJson);
+      final blockedUserIds = blockedUsersList
+          .where((user) => user is Map<String, dynamic> && user.containsKey('blockedUserID'))
+          .map((user) => int.tryParse(user['blockedUserID'].toString()))
+          .where((id) => id != null)
+          .cast<int>()
+          .toList();
+
+      Logger.info('🔒 ProductViewModel - Found ${blockedUserIds.length} blocked user IDs');
+      return blockedUserIds;
+    } catch (e) {
+      Logger.error('❌ ProductViewModel - Error getting blocked user IDs: $e');
+      return [];
+    }
   }
 }
