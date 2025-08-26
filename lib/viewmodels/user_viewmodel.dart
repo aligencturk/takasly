@@ -132,7 +132,7 @@ class UserViewModel extends ChangeNotifier {
         if (response.error != null &&
             (response.error!.contains('403') ||
                 response.error!.contains('Erişim reddedildi') ||
-                response.error!.contains('Geçersiz kullanıcı token'))) {
+                response.error!.contains('Hesabınızın süresi doldu'))) {
           print(
             '🚨 403 error detected in UserViewModel.updateUserProfile - triggering global error handler',
           );
@@ -294,7 +294,7 @@ class UserViewModel extends ChangeNotifier {
         if (response.error != null &&
             (response.error!.contains('403') ||
                 response.error!.contains('Erişim reddedildi') ||
-                response.error!.contains('Geçersiz kullanıcı token'))) {
+                response.error!.contains('Hesabınızın süresi doldu'))) {
           Logger.warning(
             '403 error detected in getUserProfile - triggering global error handler',
             tag: 'UserViewModel',

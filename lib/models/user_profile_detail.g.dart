@@ -6,25 +6,6 @@ part of 'user_profile_detail.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-UserProfileDetail _$UserProfileDetailFromJson(Map<String, dynamic> json) =>
-    UserProfileDetail(
-      userID: (json['userID'] as num).toInt(),
-      userFullname: json['userFullname'] as String,
-      userImage: json['userImage'] as String?,
-      memberSince: json['memberSince'] as String,
-      averageRating: (json['averageRating'] as num).toDouble(),
-      totalReviews: (json['totalReviews'] as num).toInt(),
-      products: (json['products'] as List<dynamic>)
-          .map((e) => ProfileProduct.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      reviews: (json['reviews'] as List<dynamic>)
-          .map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      myReviews: (json['myReviews'] as List<dynamic>)
-          .map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      isApproved: json['isApproved'] as bool,
-    );
 
 Map<String, dynamic> _$UserProfileDetailToJson(UserProfileDetail instance) =>
     <String, dynamic>{
@@ -40,32 +21,6 @@ Map<String, dynamic> _$UserProfileDetailToJson(UserProfileDetail instance) =>
       'isApproved': instance.isApproved,
     };
 
-ProfileProduct _$ProfileProductFromJson(Map<String, dynamic> json) =>
-    ProfileProduct(
-      productID: (json['productID'] as num).toInt(),
-      title: json['title'] as String,
-      mainImage: json['mainImage'] as String?,
-      isFavorite: json['isFavorite'] as bool,
-      description: json['description'] as String?,
-      categoryId: json['categoryId'] as String?,
-      categoryName: json['categoryName'] as String?,
-      condition: json['condition'] as String?,
-      brand: json['brand'] as String?,
-      model: json['model'] as String?,
-      estimatedValue: (json['estimatedValue'] as num?)?.toDouble(),
-      cityTitle: json['cityTitle'] as String?,
-      districtTitle: json['districtTitle'] as String?,
-      createdAt: json['createdAt'] == null
-          ? null
-          : DateTime.parse(json['createdAt'] as String),
-      productCode: json['productCode'] as String?,
-      favoriteCount: (json['favoriteCount'] as num?)?.toInt(),
-      isTrade: json['isTrade'] as bool?,
-      isSponsor: json['isSponsor'] as bool?,
-      categoryList: (json['categoryList'] as List<dynamic>?)
-          ?.map((e) => Category.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
 
 Map<String, dynamic> _$ProfileProductToJson(ProfileProduct instance) =>
     <String, dynamic>{
@@ -89,18 +44,6 @@ Map<String, dynamic> _$ProfileProductToJson(ProfileProduct instance) =>
       'isSponsor': instance.isSponsor,
       'categoryList': instance.categoryList,
     };
-
-ProfileReview _$ProfileReviewFromJson(Map<String, dynamic> json) =>
-    ProfileReview(
-      reviewID: (json['reviewID'] as num).toInt(),
-      reviewerUserID: (json['reviewerUserID'] as num?)?.toInt(),
-      reviewerName: json['reviewerName'] as String,
-      reviewerImage: json['reviewerImage'] as String?,
-      revieweeName: json['revieweeName'] as String?,
-      rating: (json['rating'] as num).toInt(),
-      comment: json['comment'] as String,
-      reviewDate: json['reviewDate'] as String,
-    );
 
 Map<String, dynamic> _$ProfileReviewToJson(ProfileReview instance) =>
     <String, dynamic>{

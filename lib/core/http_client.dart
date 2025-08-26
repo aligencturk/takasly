@@ -368,42 +368,27 @@ class HttpClient {
       final headers = _getBasicAuthHeaders();
       final bodyString = body != null ? json.encode(body) : null;
 
-      print('🌐 DELETE Full URL: $fullUrl');
-      print('🌐 DELETE URI: $uri');
-      print('🔑 DELETE Headers: $headers');
-      print('📤 DELETE Body String: $bodyString');
 
       final response = await http
           .delete(uri, headers: headers, body: bodyString)
           .timeout(_timeout);
 
-      print('📥 DELETE Response Status: ${response.statusCode}');
-      print('📥 DELETE Response Headers: ${response.headers}');
-      print('📥 DELETE Response Body: ${response.body}');
-      print('📥 DELETE Response Body Length: ${response.body.length}');
-      print('📥 DELETE Response Body isEmpty: ${response.body.isEmpty}');
+  
 
       final apiResponse = await _handleResponse<T>(
         response,
         fromJson,
         isBasicAuth: true,
-      );
-      print(
-        '📥 DELETE _handleResponse result - isSuccess: ${apiResponse.isSuccess}',
-      );
-      print('📥 DELETE _handleResponse result - error: ${apiResponse.error}');
+        );
+       
       return apiResponse;
-    } on SocketException catch (e) {
-      print('🚫 DELETE Socket Exception: $e');
+    } on SocketException {
       return ApiResponse<T>.error(ErrorMessages.networkError);
-    } on HttpException catch (e) {
-      print('🚫 DELETE HTTP Exception: $e');
+    } on HttpException {
       return ApiResponse<T>.error(ErrorMessages.networkError);
-    } on FormatException catch (e) {
-      print('🚫 DELETE Format Exception: $e');
+    } on FormatException {
       return ApiResponse<T>.error(ErrorMessages.unknownError);
-    } catch (e) {
-      print('💥 DELETE Exception: $e');
+    } catch (_) {
       return ApiResponse<T>.error(ErrorMessages.unknownError);
     }
   }
@@ -414,19 +399,16 @@ class HttpClient {
     bool isBasicAuth = false,
   }) async {
     try {
-      print('🔍 Handling response - Status Code: ${response.statusCode}');
-      print('🔍 Response Body: ${response.body}');
+
 
       // Özel durum: 410 statusCode'u başarılı say, hata gösterme
       if (response.statusCode == ApiConstants.gone) {
-        print('✅ 410 Status - Treating as success');
-        print('✅ 410 - Response body: "${response.body}"');
-        print('✅ 410 - Response body isEmpty: ${response.body.isEmpty}');
+
 
         if (response.body.isNotEmpty && response.body.trim() != 'null') {
           try {
             final data = json.decode(response.body);
-            print('✅ 410 - Parsed data: $data');
+  
 
             if (fromJson != null) {
               final result = fromJson(data);
@@ -533,33 +515,7 @@ class HttpClient {
         return ApiResponse<T>.error(errorMessage);
       }
 
-      // Özel durum: 403 statusCode'unda kullanıcıya görünür hata mesajı ver
-      if (response.statusCode == ApiConstants.forbidden) {
-        print('❌ 403 Status - Forbidden');
-        String errorMessage = ErrorMessages.unknownError;
-        if (response.body.isNotEmpty) {
-          try {
-            final data = json.decode(response.body);
-            print('❌ 403 - Parsed error data: $data');
-
-            // error_message field'ını öncelikle kontrol et
-            if (data['error_message'] != null &&
-                data['error_message'] is String) {
-              errorMessage = data['error_message'];
-            } else if (data['message'] != null && data['message'] is String) {
-              errorMessage = data['message'];
-            } else if (data['error'] != null && data['error'] is String) {
-              errorMessage = data['error'];
-            }
-
-            print('❌ 403 - Extracted error message: "$errorMessage"');
-          } catch (e) {
-            print('⚠️ 403 - Failed to parse error JSON: $e');
-            errorMessage = response.body; // Raw response'u göster
-          }
-        }
-        return ApiResponse<T>.error(errorMessage);
-      }
+      // 403 için erken dönüş kaldırıldı; switch-case içinde global handler tetiklenecek
 
       // Başarılı durumlar (200-299)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -672,19 +628,12 @@ class HttpClient {
           }
           break;
         case ApiConstants.forbidden:
-          // 403 hatası alındığında sadece Bearer token kullanan endpoint'lerde otomatik logout
-          if (!isBasicAuth) {
-            print('🚨 403 Forbidden error detected in HTTP client');
-            await _handleForbidden();
-            // Global error handler'ı çağır (403 hatası için)
-            ErrorHandlerService.handleForbiddenError(null);
-            if (errorMessage == ErrorMessages.unknownError) {
-              errorMessage = 'Erişim reddedildi. Lütfen tekrar giriş yapın.';
-            }
-          } else {
-            if (errorMessage == ErrorMessages.unknownError) {
-              errorMessage = ErrorMessages.accessDenied;
-            }
+          // 403: Basic Auth veya Bearer fark etmeksizin her zaman global logout+yönlendirme
+          print('🚨 403 Forbidden error detected in HTTP client');
+          await _handleForbidden();
+          ErrorHandlerService.handleForbiddenError(null);
+          if (errorMessage == ErrorMessages.unknownError) {
+            errorMessage = 'Erişim reddedildi. Lütfen tekrar giriş yapın.';
           }
           break;
         case ApiConstants.notFound:
@@ -845,6 +794,11 @@ class HttpClient {
               jsonData['message']?.toString() ??
               'Unknown error';
           print('❌ Error message: $errorMessage');
+          // JSON içinde 403 sinyali varsa global handler'ı tetikle
+          if (isForbidden) {
+            await _handleForbidden();
+            ErrorHandlerService.handleForbiddenError(null);
+          }
           return ApiResponse.error(errorMessage);
         }
 

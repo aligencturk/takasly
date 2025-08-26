@@ -206,7 +206,7 @@ class SearchResultsSection extends StatelessWidget {
         return Column(
           children: [
             Container(
-              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              margin: const EdgeInsets.fromLTRB(16, 24, 16, 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
@@ -219,7 +219,7 @@ class SearchResultsSection extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppTheme.background,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${vm.products.length}',
@@ -256,7 +256,7 @@ class SearchResultsSection extends StatelessWidget {
                     final crossAxisCount = _calculateCrossAxisCount(context);
                     final aspectRatio = _calculateChildAspectRatio(context);
                     return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount,
                         crossAxisSpacing: 12.0,

@@ -6,33 +6,6 @@ part of 'user.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-User _$UserFromJson(Map<String, dynamic> json) => User(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  firstName: json['firstName'] as String?,
-  lastName: json['lastName'] as String?,
-  email: json['email'] as String,
-  phone: json['phone'] as String?,
-  avatar: json['avatar'] as String?,
-  isVerified: json['isVerified'] as bool,
-  isOnline: json['isOnline'] as bool,
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: DateTime.parse(json['updatedAt'] as String),
-  lastSeenAt: json['lastSeenAt'] == null
-      ? null
-      : DateTime.parse(json['lastSeenAt'] as String),
-  birthday: json['birthday'] as String?,
-  gender: json['gender'] as String?,
-  token: json['token'] as String?,
-  isShowContact: json['isShowContact'] as bool?,
-  myReviews:
-      (json['myReviews'] as List<dynamic>?)
-          ?.map((e) => ProfileReview.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const [],
-  totalProducts: (json['totalProducts'] as num?)?.toInt() ?? 0,
-  totalFavorites: (json['totalFavorites'] as num?)?.toInt() ?? 0,
-);
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'id': instance.id,

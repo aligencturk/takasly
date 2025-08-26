@@ -6,11 +6,6 @@ part of 'contact_subject.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-ContactSubject _$ContactSubjectFromJson(Map<String, dynamic> json) =>
-    ContactSubject(
-      subjectID: (json['subjectID'] as num).toInt(),
-      subjectTitle: json['subjectTitle'] as String,
-    );
 
 Map<String, dynamic> _$ContactSubjectToJson(ContactSubject instance) =>
     <String, dynamic>{
@@ -34,12 +29,6 @@ Map<String, dynamic> _$ContactSubjectsResponseToJson(
   'data': instance.data,
 };
 
-ContactSubjectsData _$ContactSubjectsDataFromJson(Map<String, dynamic> json) =>
-    ContactSubjectsData(
-      subjects: (json['subjects'] as List<dynamic>)
-          .map((e) => ContactSubject.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
 
 Map<String, dynamic> _$ContactSubjectsDataToJson(
   ContactSubjectsData instance,

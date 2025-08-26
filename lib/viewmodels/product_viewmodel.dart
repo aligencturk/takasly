@@ -231,7 +231,7 @@ class ProductViewModel extends ChangeNotifier {
         if (response.error != null &&
             (response.error!.contains('403') ||
                 response.error!.contains('Erişim reddedildi') ||
-                response.error!.contains('Geçersiz kullanıcı token'))) {
+                response.error!.contains('Hesabınızın süresi doldu'))) {
           Logger.warning(
             '🚨 403 error detected in ProductViewModel - triggering global error handler',
           );
@@ -375,7 +375,7 @@ class ProductViewModel extends ChangeNotifier {
         if (response.error != null &&
             (response.error!.contains('403') ||
                 response.error!.contains('Erişim reddedildi') ||
-                response.error!.contains('Geçersiz kullanıcı token'))) {
+                response.error!.contains('Hesabınızın süresi doldu'))) {
           Logger.warning(
             '🚨 403 error detected in ProductViewModel.loadProducts - triggering global error handler',
           );
@@ -946,7 +946,7 @@ class ProductViewModel extends ChangeNotifier {
         if (response.error != null &&
             (response.error!.contains('403') ||
                 response.error!.contains('Erişim reddedildi') ||
-                response.error!.contains('Geçersiz kullanıcı token'))) {
+                response.error!.contains('Hesabınızın süresi doldu'))) {
           Logger.warning(
             '🚨 403 error detected in ProductViewModel.loadProductById - triggering global error handler',
           );
@@ -2164,7 +2164,7 @@ class ProductViewModel extends ChangeNotifier {
 
         // Token hatası kontrolü
         if (response.error != null &&
-            (response.error!.contains('Geçersiz kullanıcı token') ||
+            (response.error!.contains('Hesabınızın süresi doldu') ||
                 response.error!.contains('Üye doğrulama bilgileri hatalı') ||
                 response.error!.contains('403') ||
                 response.error!.contains('Forbidden'))) {

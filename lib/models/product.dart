@@ -501,7 +501,7 @@ class Product {
       description: description ?? this.description,
       images: images ?? this.images,
       categoryId: categoryId ?? this.categoryId,
-      catname: catname ?? this.catname,
+      catname: catname,
       category: category ?? this.category,
       parentCategoryId: parentCategoryId ?? this.parentCategoryId,
       parentCategoryName: parentCategoryName ?? this.parentCategoryName,

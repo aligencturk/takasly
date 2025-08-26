@@ -411,51 +411,7 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(int statusId) {
-    switch (statusId) {
-      case 1: // Onay Bekliyor
-        return Colors.orange;
-      case 2: // Takas Başlatıldı
-        return Colors.blue;
-      case 3: // Kargoya Verildi
-        return Colors.purple;
-      case 4: // Teslim Edildi / Alındı
-        return Color(0xFF10B981);
-      case 5: // Tamamlandı
-        return Colors.green;
-      case 6: // Beklemede
-        return Colors.grey;
-      case 7: // İptal Edildi
-        return Colors.red;
-      case 8: // Reddedildi
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getStatusIcon(int statusId) {
-    switch (statusId) {
-      case 1: // Onay Bekliyor
-        return Icons.pending;
-      case 2: // Takas Başlatıldı
-        return Icons.play_arrow;
-      case 3: // Kargoya Verildi
-        return Icons.local_shipping;
-      case 4: // Teslim Edildi / Alındı
-        return Icons.done_all;
-      case 5: // Tamamlandı
-        return Icons.check_circle;
-      case 6: // Beklemede
-        return Icons.pause;
-      case 7: // İptal Edildi
-        return Icons.cancel;
-      case 8: // Reddedildi
-        return Icons.block;
-      default:
-        return Icons.help;
-    }
-  }
+  
 
   /// Benim ürünümü belirle (myProduct her zaman benim ürünüm)
   TradeProduct? _getMyProduct() {
@@ -484,91 +440,118 @@ class TradeCard extends StatelessWidget {
     return Consumer<TradeViewModel>(
       builder: (context, tradeViewModel, child) {
         return Container(
-          margin: EdgeInsets.zero,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border(
-              bottom: BorderSide(color: Colors.grey.withOpacity(0.2), width: 0.6),
-            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          child: Stack(
-            children: [
-              // Ana içerik
-              InkWell(
-                onTap: onTap,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Görsel kaldırıldı (performans için)
-                      // _buildListThumb(),
-                      // const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Başlık ve durum çipi
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildTitleRow(textTheme)),
+                        IconButton(
+                          onPressed: onDetailTap,
+                          icon: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Builder(
+                      builder: (context) {
+                        final id = _getCurrentUserStatusID();
+                        final title = _getCurrentUserStatusTitle();
+                        Color color;
+                        IconData icon;
+                        switch (id) {
+                          case 1: color = Colors.orange; icon = Icons.pending; break;
+                          case 2: color = Colors.blue; icon = Icons.play_arrow; break;
+                          case 3: color = Colors.purple; icon = Icons.local_shipping; break;
+                          case 4: color = Color(0xFF10B981); icon = Icons.done_all; break;
+                          case 5: color = Colors.green; icon = Icons.check_circle; break;
+                          case 7:
+                          case 8: color = Colors.red; icon = Icons.block; break;
+                          default: color = Colors.grey; icon = Icons.help_outline;
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            _buildTitleRow(textTheme),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  _getStatusIcon(_getCurrentUserStatusID()),
-                                  color: _getStatusColor(_getCurrentUserStatusID()),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    _getCurrentUserStatusTitle(),
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: _getStatusColor(_getCurrentUserStatusID()),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(icon, color: color, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    title,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: color,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 13,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                IconButton(
-                                  onPressed: onDetailTap,
-                                  icon: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                ),
-                              ],
-                            ),
-                            _buildWaitingMessageWidget(context),
-                            if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true)
-                              _buildRejectionReasonWidget(context),
-                            Builder(
-                              builder: (context) {
-                                final shouldShow = _shouldShowCompleteButton();
-                                return shouldShow ? _buildCompleteTradeButton(context) : Container();
-                              },
-                            ),
-                            if (_getCurrentUserStatusID() == 1) ...[
-                              if (showButtons == true) _buildActionButtons(context) else _buildApiMessageWidget(context, tradeViewModel),
-                            ],
-                            Builder(
-                              builder: (context) {
-                                final currentStatusID = _getCurrentUserStatusID();
-                                final shouldShowReview = _shouldShowReviewButton();
-                                if ((currentStatusID == 4 || currentStatusID == 5) && shouldShowReview) {
-                                  return _buildReviewButton(context);
-                                }
-                                return Container();
-                              },
+                                ],
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                    ],
-                  ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 6),
+                    // Bilgi şeritleri
+                    _buildWaitingMessageWidget(context),
+                    if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true)
+                      _buildRejectionReasonWidget(context),
+                    if (_getCurrentUserStatusID() == 1)
+                      (showButtons == true
+                          ? _buildActionButtons(context)
+                          : _buildApiMessageWidget(context, tradeViewModel)),
+                    // Ana aksiyonlar
+                    Builder(
+                      builder: (context) {
+                        final shouldShow = _shouldShowCompleteButton();
+                        return shouldShow ? _buildCompleteTradeButton(context) : Container();
+                      },
+                    ),
+                    Builder(
+                      builder: (context) {
+                        final currentStatusID = _getCurrentUserStatusID();
+                        final shouldShowReview = _shouldShowReviewButton();
+                        if ((currentStatusID == 4 || currentStatusID == 5) && shouldShowReview) {
+                          return _buildReviewButton(context);
+                        }
+                        return Container();
+                      },
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         );
       },
@@ -582,35 +565,40 @@ class TradeCard extends StatelessWidget {
     final their = _getTheirProduct();
     final String myTitle = my?.productTitle ?? 'Benim Ürünüm';
     final String theirTitle = their?.productTitle ?? 'Karşı Ürün';
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            myTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                myTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
             ),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Icon(Icons.swap_horiz, size: 18, color: AppTheme.primary),
-        ),
-        Expanded(
-          child: Text(
-            theirTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.right,
-            style: textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.swap_horiz, size: 16, color: AppTheme.primary),
             ),
-          ),
+            Expanded(
+              child: Text(
+                theirTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -629,7 +617,7 @@ class TradeCard extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
@@ -637,7 +625,7 @@ class TradeCard extends StatelessWidget {
               child: const Text(
                 'Onayla',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -650,7 +638,7 @@ class TradeCard extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
@@ -658,7 +646,7 @@ class TradeCard extends StatelessWidget {
               child: const Text(
                 'Reddet',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -684,7 +672,7 @@ class TradeCard extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primary,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -692,7 +680,7 @@ class TradeCard extends StatelessWidget {
           child: Text(
             buttonText,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -711,7 +699,7 @@ class TradeCard extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -719,7 +707,7 @@ class TradeCard extends StatelessWidget {
           child: const Text(
             'Takası Tamamla',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -917,3 +905,5 @@ class TradeCard extends StatelessWidget {
 
   // Detay düğmesi metni kaldırıldı; sağda chevron ikon kullanılıyor
 }
+
+// (Global yardımcılar kaldırıldı)

@@ -128,7 +128,7 @@ class _BannerAdListTileState extends State<BannerAdListTile>
       child: SizedBox(
         width: _bannerAd!.size.width.toDouble(),
         height: _bannerAd!.size.height.toDouble(),
-        child: AdWidget(ad: _bannerAd!),
+        child: AdWidget(key: UniqueKey(), ad: _bannerAd!),
       ),
     );
   }
