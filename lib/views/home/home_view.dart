@@ -12,6 +12,7 @@ import '../../widgets/app_network_image.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/product_list_item.dart';
 import '../../widgets/inline_banner_ad.dart';
+import '../../widgets/native_ad_wide_card.dart';
 import '../../widgets/error_widget.dart' as custom_error;
 import '../../widgets/filter_bottom_sheet.dart';
 import 'widgets/category_list.dart';
@@ -501,6 +502,11 @@ class _HomeViewState extends State<HomeView> {
               hideFavoriteIcon: isOwnProduct,
             ),
           );
+
+          // Her 5 üründe bir ürün kartına benzer reklam yerleştir
+          if ((i + 1) % 5 == 0) {
+            gridItems.add(const NativeAdWideCard());
+          }
 
           // Liste öğesi
           listItems.add(

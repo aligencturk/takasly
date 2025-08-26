@@ -285,37 +285,112 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
           return const SizedBox.shrink();
         }
 
-        // ProductCard ile aynı aspect ratio kullan (kare format)
-        final cardWidth = constraints.maxWidth;
-        final cardHeight =
-            cardWidth / 0.7; // ProductCard'daki childAspectRatio: 0.7
-
-        // Height validation
-        if (cardHeight.isInfinite || cardHeight <= 0) {
-          Logger.warning(
-            '⚠️ NativeAdWideCard - Geçersiz cardHeight: $cardHeight',
-          );
-          return const SizedBox.shrink();
-        }
-
-        // Grid height constraint kontrolü
-        if (constraints.hasBoundedHeight &&
-            constraints.maxHeight < cardHeight) {
-          Logger.warning(
-            '⚠️ NativeAdWideCard - Grid height constraint çok küçük: maxHeight=${constraints.maxHeight}, required=$cardHeight',
-          );
-          return SizedBox(
-            height: constraints.maxHeight,
-            child: const Center(
-              child: Icon(Icons.ad_units_outlined, color: Colors.grey),
-            ),
-          );
-        }
+        // Grid hücresine tam oturması için verilen kısıtları doğrudan kullan
 
         if (!_isLoaded || _bannerAd == null) {
           if (_hasError) {
-            return Container(
-              height: cardHeight,
+            return SizedBox.expand(
+              child: Container(
+                decoration: decoration,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Üst kısım - resim alanı
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(screenWidth < 360 ? 6 : 8),
+                          ),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.ad_units_outlined,
+                                color: Colors.grey[400],
+                                size: screenWidth < 360 ? 20 : 28,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Reklam yüklenemedi',
+                                style: TextStyle(
+                                  color: Colors.grey[500],
+                                  fontSize: screenWidth < 360 ? 8 : 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Alt kısım - bilgi alanı
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: EdgeInsets.all(screenWidth < 360 ? 6 : 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Reklam',
+                              style: TextStyle(
+                                fontSize: screenWidth < 360 ? 9.0 : 11.0,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Sponsorlu İçerik',
+                              style: TextStyle(
+                                fontSize: screenWidth < 360 ? 10.0 : 12.0,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const Spacer(),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: screenWidth < 360 ? 10 : 12,
+                                  color: Colors.grey[500],
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Türkiye',
+                                  style: TextStyle(
+                                    fontSize: screenWidth < 360 ? 8.0 : 10.0,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // Loading state - güvenli height ile
+          return SizedBox.expand(
+            child: Container(
               decoration: decoration,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,7 +401,7 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
+                        color: Colors.grey[100],
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(screenWidth < 360 ? 6 : 8),
                         ),
@@ -335,14 +410,19 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.ad_units_outlined,
-                              color: Colors.grey[400],
-                              size: screenWidth < 360 ? 20 : 28,
+                            SizedBox(
+                              width: screenWidth < 360 ? 20 : 28,
+                              height: screenWidth < 360 ? 20 : 28,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.grey[400]!,
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 8),
                             Text(
-                              'Reklam yüklenemedi',
+                              'Reklam yükleniyor...',
                               style: TextStyle(
                                 color: Colors.grey[500],
                                 fontSize: screenWidth < 360 ? 8 : 10,
@@ -409,213 +489,111 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
                   ),
                 ],
               ),
-            );
-          }
-
-          // Loading state - güvenli height ile
-          return Container(
-            height: cardHeight,
-            decoration: decoration,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Üst kısım - resim alanı
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(screenWidth < 360 ? 6 : 8),
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: screenWidth < 360 ? 20 : 28,
-                            height: screenWidth < 360 ? 20 : 28,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.grey[400]!,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Reklam yükleniyor...',
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: screenWidth < 360 ? 8 : 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Alt kısım - bilgi alanı
-                Expanded(
-                  flex: 2,
-                  child: Padding(
-                    padding: EdgeInsets.all(screenWidth < 360 ? 6 : 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Reklam',
-                          style: TextStyle(
-                            fontSize: screenWidth < 360 ? 9.0 : 11.0,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'Sponsorlu İçerik',
-                          style: TextStyle(
-                            fontSize: screenWidth < 360 ? 10.0 : 12.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const Spacer(),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: screenWidth < 360 ? 10 : 12,
-                              color: Colors.grey[500],
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              'Türkiye',
-                              style: TextStyle(
-                                fontSize: screenWidth < 360 ? 8.0 : 10.0,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
           );
         }
 
-        return Container(
-          height: cardHeight,
-          decoration: decoration,
-          child: _isDisposed || _bannerAd == null
-              ? Container(
-                  decoration: decoration,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Üst kısım - placeholder resim alanı
-                      Expanded(
-                        flex: 3,
-                        child: Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(screenWidth < 360 ? 6 : 8),
+        return SizedBox.expand(
+          child: Container(
+            decoration: decoration,
+            child: _isDisposed || _bannerAd == null
+                ? Container(
+                    decoration: decoration,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Üst kısım - placeholder resim alanı
+                        Expanded(
+                          flex: 3,
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(screenWidth < 360 ? 6 : 8),
+                              ),
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.ad_units_outlined,
+                                    color: Colors.grey[400],
+                                    size: screenWidth < 360 ? 20 : 28,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Reklam Alanı',
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: screenWidth < 360 ? 8 : 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          child: Center(
+                        ),
+                        // Alt kısım - bilgi alanı
+                        Expanded(
+                          flex: 2,
+                          child: Padding(
+                            padding: EdgeInsets.all(screenWidth < 360 ? 6 : 8),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Icon(
-                                  Icons.ad_units_outlined,
-                                  color: Colors.grey[400],
-                                  size: screenWidth < 360 ? 20 : 28,
-                                ),
-                                const SizedBox(height: 4),
                                 Text(
-                                  'Reklam Alanı',
+                                  'Reklam',
                                   style: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontSize: screenWidth < 360 ? 8 : 10,
+                                    fontSize: screenWidth < 360 ? 9.0 : 11.0,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  'Sponsorlu İçerik',
+                                  style: TextStyle(
+                                    fontSize: screenWidth < 360 ? 10.0 : 12.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const Spacer(),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      size: screenWidth < 360 ? 10 : 12,
+                                      color: Colors.grey[500],
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      'Türkiye',
+                                      style: TextStyle(
+                                        fontSize: screenWidth < 360 ? 8.0 : 10.0,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey[600],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
                         ),
-                      ),
-                      // Alt kısım - bilgi alanı
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: EdgeInsets.all(screenWidth < 360 ? 6 : 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Reklam',
-                                style: TextStyle(
-                                  fontSize: screenWidth < 360 ? 9.0 : 11.0,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                'Sponsorlu İçerik',
-                                style: TextStyle(
-                                  fontSize: screenWidth < 360 ? 10.0 : 12.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const Spacer(),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on_outlined,
-                                    size: screenWidth < 360 ? 10 : 12,
-                                    color: Colors.grey[500],
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    'Türkiye',
-                                    style: TextStyle(
-                                      fontSize: screenWidth < 360 ? 8.0 : 10.0,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey[600],
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : _buildAdContent(),
+                      ],
+                    ),
+                  )
+                : _buildAdContent(),
+          ),
         );
       },
     );
@@ -640,15 +618,6 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
       return const SizedBox.shrink();
     }
 
-    final cardHeight =
-        screenWidth / 0.7; // ProductCard'daki childAspectRatio: 0.7
-
-    // Card height validation
-    if (cardHeight.isInfinite || cardHeight <= 0) {
-      Logger.warning('⚠️ NativeAdWideCard - Geçersiz cardHeight: $cardHeight');
-      return const SizedBox.shrink();
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -659,43 +628,49 @@ class _NativeAdWideCardState extends State<NativeAdWideCard>
             borderRadius: BorderRadius.vertical(
               top: Radius.circular(screenWidth < 360 ? 6 : 8),
             ),
-            child: Container(
-              width: double.infinity,
-              child: Builder(
-                builder: (context) {
-                  try {
-                    if (_bannerAd != null && !_isDisposed) {
-                      return AdWidget(
-                        key: ValueKey('${_widgetId}_${_bannerAd.hashCode}'),
-                        ad: _bannerAd!,
-                      );
-                    } else {
-                      Logger.warning(
-                        '⚠️ NativeAdWideCard - AdWidget build failed: ad is null or widget disposed',
-                      );
-                      return Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(
-                            Icons.ad_units_outlined,
-                            color: Colors.grey,
-                          ),
+            child: Builder(
+              builder: (context) {
+                try {
+                  if (_bannerAd != null && !_isDisposed) {
+                    // Reklamı kendi doğal boyutunda ortaya yerleştir, hücreye taşırma
+                    final adWidth = _bannerAd!.size.width.toDouble();
+                    final adHeight = _bannerAd!.size.height.toDouble();
+                    return Center(
+                      child: SizedBox(
+                        width: adWidth,
+                        height: adHeight,
+                        child: AdWidget(
+                          key: ValueKey('${_widgetId}_${_bannerAd.hashCode}'),
+                          ad: _bannerAd!,
                         ),
-                      );
-                    }
-                  } catch (e) {
-                    Logger.error(
-                      '❌ NativeAdWideCard - AdWidget build error: $e',
+                      ),
+                    );
+                  } else {
+                    Logger.warning(
+                      '⚠️ NativeAdWideCard - AdWidget build failed: ad is null or widget disposed',
                     );
                     return Container(
                       color: Colors.grey[200],
                       child: const Center(
-                        child: Icon(Icons.error_outline, color: Colors.red),
+                        child: Icon(
+                          Icons.ad_units_outlined,
+                          color: Colors.grey,
+                        ),
                       ),
                     );
                   }
-                },
-              ),
+                } catch (e) {
+                  Logger.error(
+                    '❌ NativeAdWideCard - AdWidget build error: $e',
+                  );
+                  return Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Icon(Icons.error_outline, color: Colors.red),
+                    ),
+                  );
+                }
+              },
             ),
           ),
         ),
