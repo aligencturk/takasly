@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:takasly/views/home/home_view.dart';
 import 'package:takasly/viewmodels/notification_viewmodel.dart';
 import 'package:video_player/video_player.dart';
 import 'package:takasly/utils/logger.dart';
-import 'package:takasly/core/constants.dart';
 
 class SplashVideoPage extends StatefulWidget {
   @override
@@ -99,30 +97,7 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
     }
   }
 
-  // Hot restart durumunu kontrol et
-  Future<bool> _checkIfHotRestart() async {
-    try {
-      // SharedPreferences'dan bir flag kontrol et
-      final prefs = await SharedPreferences.getInstance();
-      final lastAppStart = prefs.getInt(AppConstants.lastAppStartKey) ?? 0;
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-
-      // Eğer son uygulama başlatma zamanı 10 saniye içindeyse hot restart olabilir
-      final isHotRestart = (currentTime - lastAppStart) < 10000; // 10 saniye
-
-      // Şimdiki zamanı kaydet
-      await prefs.setInt(AppConstants.lastAppStartKey, currentTime);
-
-      Logger.info(
-        '🔍 SplashView - Hot restart check: $isHotRestart (time diff: ${currentTime - lastAppStart}ms)',
-      );
-
-      return isHotRestart;
-    } catch (e) {
-      Logger.error('❌ SplashView - Error checking hot restart: $e', error: e);
-      return false;
-    }
-  }
+  
 
   @override
   void dispose() {

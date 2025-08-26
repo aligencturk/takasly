@@ -68,7 +68,6 @@ class _CategoryListState extends State<CategoryList> {
       child: Consumer<ProductViewModel>(
         builder: (context, vm, child) {
           if (vm.isLoading && vm.categories.isEmpty) {
-            // TODO: Skeleton loader (Shimmer) eklenecek
             return SizedBox(
               height: isSmallScreen ? 90 : 100,
               child: const Center(child: CircularProgressIndicator()),
@@ -106,8 +105,8 @@ class _CategoryListState extends State<CategoryList> {
                 return _buildCategoryItem(
                   context: context,
                   label: category.name,
-                  iconData: _getCategoryIcon(category.icon),
-                  iconUrl: _isImageUrl(category.icon) ? category.icon : null,
+                  iconData: Icons.category_sharp,
+                  iconUrl: category.icon,
                   isSelected: vm.currentFilter.categoryId == category.id,
                   onTap: () => _applyCategoryFilter(vm, category.id),
                   isSmallScreen: isSmallScreen,
@@ -122,11 +121,10 @@ class _CategoryListState extends State<CategoryList> {
 
   void _preloadCategoryIcons(List<Category> categories) {
     for (final category in categories) {
-      if (category.icon != null &&
-          _isImageUrl(category.icon) &&
+      if (_isImageUrl(category.icon) &&
           !CategoryIconCache.hasIcon(category.icon) &&
           !CategoryIconCache.isLoading(category.icon)) {
-        _loadIconToCache(category.icon!);
+        _loadIconToCache(category.icon);
       }
     }
   }
@@ -205,7 +203,7 @@ class _CategoryListState extends State<CategoryList> {
           mainAxisSize: MainAxisSize.min, // Minimum boyut kullan
           children: [
             // İkon container'ı - sabit yükseklik
-            Container(
+            SizedBox(
               height:
                   containerSize +
                   spacing +
@@ -320,171 +318,4 @@ class _CategoryListState extends State<CategoryList> {
     );
   }
 
-  // Bu ikon eşleştirme, API'den gelen string'lere göre düzenlenmeli
-  IconData _getCategoryIcon(String? iconName) {
-    if (iconName == null || iconName.isEmpty) return Icons.category_sharp;
-
-    // Eğer URL ise, fallback icon döndür
-    if (_isImageUrl(iconName)) {
-      return Icons.category_sharp;
-    }
-
-    switch (iconName.toLowerCase()) {
-      // Debug loglarından gelen kategoriler
-      case 'araba':
-        return Icons.directions_car_rounded;
-      case 'pet shop':
-        return Icons.pets_rounded;
-      case 'anne & bebek & oyuncak':
-        return Icons.child_care_rounded;
-      case 'telefon':
-        return Icons.phone_android_rounded;
-      case 'antika':
-        return Icons.collections_rounded;
-      case 'giyim & aksesuar':
-        return Icons.checkroom_rounded;
-      case 'elektronik':
-        return Icons.phone_iphone_rounded;
-      case 'hobi & kitap & müzik':
-        return Icons.music_note_rounded;
-      case 'ofis & kırtasiye':
-        return Icons.work_rounded;
-      case 'ev & yaşam':
-        return Icons.home_rounded;
-      case 'spor & outdoor':
-        return Icons.sports_soccer_rounded;
-      case 'diğer araçlar':
-        return Icons.directions_car_rounded;
-      case 'kişisel bakım & kozmetik':
-        return Icons.face_rounded;
-      case 'yapı market & bahçe':
-        return Icons.yard_rounded;
-      case 'motosiklet':
-        return Icons.motorcycle_rounded;
-
-      // Genel kategoriler
-      case 'giyim':
-        return Icons.checkroom_rounded;
-      case 'kitap':
-        return Icons.menu_book_rounded;
-      case 'ev & yaşam':
-        return Icons.chair_rounded;
-      case 'spor':
-        return Icons.sports_soccer_rounded;
-      case 'motosiklet':
-        return Icons.motorcycle_rounded;
-      case 'bisiklet':
-        return Icons.pedal_bike_rounded;
-      case 'ev eşyaları':
-        return Icons.home_rounded;
-      case 'mobilya':
-        return Icons.chair_rounded;
-      case 'dekorasyon':
-        return Icons.photo_rounded;
-      case 'bahçe':
-        return Icons.yard_rounded;
-      case 'hobi':
-        return Icons.sports_esports_rounded;
-      case 'oyuncak':
-        return Icons.toys_rounded;
-      case 'koleksiyon':
-        return Icons.collections_rounded;
-      case 'sanat':
-        return Icons.palette_rounded;
-      case 'müzik':
-        return Icons.music_note_rounded;
-      case 'film':
-        return Icons.movie_rounded;
-      case 'bilgisayar':
-        return Icons.computer_rounded;
-      case 'tablet':
-        return Icons.tablet_android_rounded;
-      case 'laptop':
-        return Icons.laptop_rounded;
-      case 'aksesuar':
-        return Icons.watch_rounded;
-      case 'saat':
-        return Icons.access_time_rounded;
-      case 'takı':
-        return Icons.diamond_rounded;
-      case 'kozmetik':
-        return Icons.face_rounded;
-      case 'sağlık':
-        return Icons.local_hospital_rounded;
-      case 'bebek':
-        return Icons.child_care_rounded;
-      case 'çocuk':
-        return Icons.child_friendly_rounded;
-      case 'kadın':
-        return Icons.person_rounded;
-      case 'erkek':
-        return Icons.person_rounded;
-      case 'unisex':
-        return Icons.person_rounded;
-      case 'ayakkabı':
-        return Icons.sports_soccer_rounded;
-      case 'çanta':
-        return Icons.work_rounded;
-      case 'gözlük':
-        return Icons.remove_red_eye_rounded;
-      case 'şapka':
-        return Icons.face_rounded;
-      case 'çorap':
-        return Icons.sports_soccer_rounded;
-      case 'iç çamaşırı':
-        return Icons.checkroom_rounded;
-      case 'mayo':
-        return Icons.beach_access_rounded;
-      case 'mont':
-        return Icons.ac_unit_rounded;
-      case 'ceket':
-        return Icons.checkroom_rounded;
-      case 'elbise':
-        return Icons.checkroom_rounded;
-      case 'pantolon':
-        return Icons.checkroom_rounded;
-      case 'etek':
-        return Icons.checkroom_rounded;
-      case 'gömlek':
-        return Icons.checkroom_rounded;
-      case 'tişört':
-        return Icons.checkroom_rounded;
-      case 'kazak':
-        return Icons.checkroom_rounded;
-      case 'hırka':
-        return Icons.checkroom_rounded;
-      case 'sweatshirt':
-        return Icons.checkroom_rounded;
-      case 'kapüşonlu':
-        return Icons.checkroom_rounded;
-      case 'bluz':
-        return Icons.checkroom_rounded;
-      case 'tunik':
-        return Icons.checkroom_rounded;
-      case 'tayt':
-        return Icons.checkroom_rounded;
-      case 'şort':
-        return Icons.beach_access_rounded;
-      case 'bermuda':
-        return Icons.beach_access_rounded;
-      case 'kargo':
-        return Icons.checkroom_rounded;
-      case 'kot':
-        return Icons.checkroom_rounded;
-      case 'deri':
-        return Icons.checkroom_rounded;
-      case 'kadife':
-        return Icons.checkroom_rounded;
-      case 'ipek':
-        return Icons.checkroom_rounded;
-      case 'keten':
-        return Icons.checkroom_rounded;
-      case 'yün':
-        return Icons.checkroom_rounded;
-      case 'polar':
-        return Icons.ac_unit_rounded;
-      default:
-        return Icons.category_sharp;
-    }
-  }
 }

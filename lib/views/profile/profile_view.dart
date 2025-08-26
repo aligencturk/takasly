@@ -579,14 +579,6 @@ class _ProfileViewState extends State<ProfileView>
 
               final product = productViewModel.myProducts[index];
 
-              // Product null kontrolü
-              if (product == null) {
-                Logger.warning(
-                  'ProfileView - Product is null at index: $index',
-                );
-                return const SizedBox.shrink();
-              }
-
               return Stack(
                 children: [
                   ProductCard(

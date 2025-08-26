@@ -4,7 +4,6 @@ import '../models/chat.dart';
 
 class ChatService {
   final HttpClient _httpClient = HttpClient();
-  static const String _tag = 'ChatService';
 
   Future<ApiResponse<List<Chat>>> getChats({
     int page = 1,

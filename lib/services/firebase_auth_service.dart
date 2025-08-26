@@ -4,7 +4,6 @@ import '../utils/logger.dart';
 class FirebaseAuthService {
   static const String _tag = 'FirebaseAuthService';
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
-  final Logger _logger = Logger();
 
   // Mevcut kullanıcıyı al
   firebase_auth.User? get currentUser => _auth.currentUser;

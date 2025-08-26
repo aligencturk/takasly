@@ -173,33 +173,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     }
   }
 
-  void _showReportDialog(BuildContext context, Product product) {
-    // Kullanıcı kendini şikayet etmeye çalışıyorsa uyarı göster
-    final authViewModel = context.read<AuthViewModel>();
-    if (authViewModel.currentUser?.id == product.ownerId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kendi ilanınızı şikayet edemezsiniz'),
-          backgroundColor: AppTheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    // Şikayet dialog'unu göster
-    showDialog(
-      context: context,
-      builder: (context) => ReportDialog(
-        reportedUserID: int.parse(product.ownerId),
-        reportedUserName:
-            product.userFullname ??
-            product.owner?.name ??
-            'Bilinmeyen Kullanıcı',
-        productID: int.tryParse(product.id),
-      ),
-    );
-  }
+ 
 
   void _shareProduct(BuildContext context, Product product) {
     // API'den gelen shareLink'i kullan, yoksa varsayılan link oluştur
@@ -333,7 +307,7 @@ Takasly uygulamasından paylaşıldı.
           '''
 ${product.title}
 
-${product.description != null && product.description!.isNotEmpty ? '${product.description!.substring(0, product.description!.length > 100 ? 100 : product.description!.length)}...' : ''}
+${product.description.isNotEmpty ? '${product.description.substring(0, product.description.length > 100 ? 100 : product.description.length)}...' : ''}
 
 $productUrl
 
@@ -761,8 +735,7 @@ class _ProductInfoState extends State<_ProductInfo> {
         reportedUserID: int.parse(product.ownerId),
         reportedUserName:
             product.userFullname ??
-            product.owner?.name ??
-            'Bilinmeyen Kullanıcı',
+            product.owner.name,
         productID: int.tryParse(product.id),
       ),
     );
@@ -893,8 +866,7 @@ class _ProductInfoState extends State<_ProductInfo> {
         const SizedBox(height: 8),
 
         // 3. Açıklama (Ürün detayı için kritik)
-        if (widget.product.description != null &&
-            widget.product.description.isNotEmpty)
+        if (widget.product.description.isNotEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -999,8 +971,7 @@ class _ProductInfoState extends State<_ProductInfo> {
               _InfoRow(
                 'Durum :',
                 widget.product.productCondition ??
-                    widget.product.condition ??
-                    'Belirtilmemiş',
+                    widget.product.condition,
               ),
               _InfoRow('Kategori :', _getCategoryDisplayName(widget.product)),
 
@@ -1157,7 +1128,7 @@ class _ProductInfoState extends State<_ProductInfo> {
     }
 
     // Sonra category objesini kontrol et
-    if (product.category != null && product.category.name.isNotEmpty) {
+    if (product.category.name.isNotEmpty) {
       return product.category.name;
     }
 
@@ -1170,8 +1141,8 @@ class _ProductInfoState extends State<_ProductInfo> {
   }
 
   String _getLocationDisplayText(Product product) {
-    final cityTitle = product.cityTitle?.trim() ?? '';
-    final districtTitle = product.districtTitle?.trim() ?? '';
+    final cityTitle = product.cityTitle.trim();
+    final districtTitle = product.districtTitle.trim();
 
     // Her iki alan da boşsa
     if (cityTitle.isEmpty && districtTitle.isEmpty) {
@@ -1490,14 +1461,15 @@ class _ProductInfoState extends State<_ProductInfo> {
       tag: 'ProductDetail',
     );
     Logger.debug(
-      'Product Detail - owner: ${owner?.id} - ${owner?.name}',
+      'Product Detail - owner: ${owner.id} - ${owner.name}',
       tag: 'ProductDetail',
     );
     Logger.debug(
-      'Product Detail - selected avatar src: ${product.profilePhoto ?? product.userImage ?? owner?.avatar}',
+      'Product Detail - selected avatar src: ${product.profilePhoto ?? product.userImage ?? owner.avatar}',
       tag: 'ProductDetail',
     );
 
+    // ignore: unnecessary_null_comparison
     if (owner == null && product.userFullname == null) {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -1636,12 +1608,12 @@ class _ProductInfoState extends State<_ProductInfo> {
                               product.profilePhoto!.isNotEmpty) ||
                           (product.userImage != null &&
                               product.userImage!.isNotEmpty) ||
-                          (owner?.avatar != null && owner!.avatar!.isNotEmpty)
+                          (owner.avatar != null && owner.avatar!.isNotEmpty)
                       ? CachedNetworkImage(
                           imageUrl:
                               product.profilePhoto ??
                               product.userImage ??
-                              owner?.avatar ??
+                              owner.avatar ??
                               '',
                           width: 32,
                           height: 32,

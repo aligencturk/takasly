@@ -1224,7 +1224,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               Container(
                 margin: const EdgeInsets.only(right: 8),
                 child: ElevatedButton(
-                  onPressed: () => _startTrade(context, chatProduct!),
+                  onPressed: () => _startTrade(context, chatProduct),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: AppTheme.primary,
@@ -1666,7 +1666,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                       _isValidImageUrl(otherParticipant!.avatar!)
                   ? ClipOval(
                       child: Image.network(
-                        otherParticipant!.avatar!,
+                        otherParticipant.avatar!,
                         width: 32,
                         height: 32,
                         fit: BoxFit.cover,
@@ -1881,38 +1881,7 @@ class _MessageBubble extends StatelessWidget {
       );
     }
 
-    // Güvenli resim widget'ı
-    Widget _buildProductImage(
-      String imageUrl,
-      double width,
-      double height, {
-      double borderRadius = 8,
-    }) {
-      if (!_isValidImageUrl(imageUrl)) {
-        return Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          child: Icon(
-            Icons.image_not_supported_outlined,
-            color: Colors.grey[400],
-            size: 20,
-          ),
-        );
-      }
-
-      return AppNetworkImage(
-        imageUrl: imageUrl,
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-        borderRadius: BorderRadius.circular(borderRadius),
-      );
-    }
-
+ 
     // Diğer mesaj tipleri için normal bubble
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,

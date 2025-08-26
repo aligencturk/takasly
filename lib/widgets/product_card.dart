@@ -193,13 +193,7 @@ class _ProductCardState extends State<ProductCard> {
   @override
   Widget build(BuildContext context) {
     // Null safety kontrolü
-    if (widget.product == null) {
-      Logger.warning('⚠️ ProductCard - Null product detected');
-      return const SizedBox.shrink();
-    }
-
-    // Product ID kontrolü
-    if (widget.product.id == null || widget.product.id.isEmpty) {
+    if (widget.product.id.isEmpty) {
       Logger.warning(
         '⚠️ ProductCard - Invalid product ID: ${widget.product.id}',
       );
@@ -275,8 +269,7 @@ class _ProductCardState extends State<ProductCard> {
                   Builder(
                     builder: (context) {
                       // Images listesi null safety kontrolü
-                      if (widget.product.images == null ||
-                          widget.product.images.isEmpty) {
+                      if (widget.product.images.isEmpty) {
                         return _buildPlaceholderImage(screenWidth);
                       }
 

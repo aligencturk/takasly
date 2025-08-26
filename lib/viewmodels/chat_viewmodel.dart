@@ -548,7 +548,7 @@ class ChatViewModel extends ChangeNotifier {
       // deletedBy listesine kullanıcı ID'sini ekle
       final updatedDeletedBy = List<String>.from(chat.deletedBy)
         ..add(currentUserId);
-      final updatedChat = chat.copyWith(deletedBy: updatedDeletedBy);
+      chat.copyWith(deletedBy: updatedDeletedBy);
 
       // Local listeyi güncelle - chat'i listeden kaldır
       _chats.removeAt(chatIndex);
