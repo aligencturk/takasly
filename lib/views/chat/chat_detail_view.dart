@@ -1301,10 +1301,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               Container(
                 margin: const EdgeInsets.only(right: 8),
                 child: ElevatedButton(
-                  onPressed: () => _startTrade(context, chatProduct),
+                  onPressed: _isMessagingBlocked ? null : () => _startTrade(context, chatProduct),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppTheme.primary,
+                    backgroundColor: _isMessagingBlocked ? Colors.grey[300] : Colors.white,
+                    foregroundColor: _isMessagingBlocked ? Colors.grey[600] : AppTheme.primary,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -1315,9 +1315,13 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                     elevation: 0,
                     minimumSize: const Size(0, 32),
                   ),
-                  child: const Text(
-                    'Takas Başlat',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  child: Text(
+                    _isMessagingBlocked ? 'Engellendi' : 'Takas Başlat',
+                    style: TextStyle(
+                      fontSize: 12, 
+                      fontWeight: FontWeight.w600,
+                      color: _isMessagingBlocked ? Colors.grey[600] : AppTheme.primary,
+                    ),
                   ),
                 ),
               ),
@@ -1336,7 +1340,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 final items = <PopupMenuItem<String>>[];
 
                 if (authViewModel.isLoggedIn) {
-                  items.addAll([
+                  // Şikayet seçeneği her zaman göster
+                  items.add(
                     PopupMenuItem<String>(
                       value: 'report',
                       child: Row(
@@ -1358,28 +1363,34 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                         ],
                       ),
                     ),
-                    PopupMenuItem<String>(
-                      value: 'block',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.block_outlined,
-                            size: 20,
-                            color: Colors.orange[600],
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Kullanıcıyı Engelle',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
+                  );
+                  
+                  // Engelleme seçeneği sadece kullanıcı henüz engellenmemişse göster
+                  if (!_isMessagingBlocked) {
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'block',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.block_outlined,
+                              size: 20,
+                              color: Colors.orange[600],
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Kullanıcıyı Engelle',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ]);
+                    );
+                  }
                 }
 
                 return items;
@@ -1532,6 +1543,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                         isMe:
                             message.senderId ==
                             context.read<AuthViewModel>().currentUser?.id,
+                        isMessagingBlocked: _isMessagingBlocked,
                       );
                     },
                   );
@@ -1547,7 +1559,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   Widget _buildChatProductCard(Product product) {
     return GestureDetector(
-      onTap: () {
+      onTap: _isMessagingBlocked ? null : () {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1557,7 +1569,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       },
       child: Container(
         padding: const EdgeInsets.all(12),
-        color: Colors.white,
+        color: _isMessagingBlocked ? Colors.grey[100] : Colors.white,
         child: Row(
           children: [
             // Sol taraf - Resim
@@ -1579,10 +1591,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 children: [
                   Text(
                     product.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: _isMessagingBlocked ? Colors.grey[500] : Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1593,7 +1605,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                       Text(
                         product.catname,
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: _isMessagingBlocked ? Colors.grey[400] : Colors.grey[600],
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1602,10 +1614,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                       if (product.estimatedValue != null)
                         Text(
                           '₺${product.estimatedValue!.toStringAsFixed(0)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: Colors.green,
+                            color: _isMessagingBlocked ? Colors.grey[500] : Colors.green,
                           ),
                         ),
                     ],
@@ -1614,8 +1626,11 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               ),
             ),
             const SizedBox(width: 8),
-            // Sağ taraf - Tıklama göstergesi
-            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 14),
+            // Sağ taraf - Tıklama göstergesi veya engelleme ikonu
+            if (_isMessagingBlocked)
+              Icon(Icons.block, color: Colors.red[400], size: 16)
+            else
+              Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 14),
           ],
         ),
       ),
@@ -1696,7 +1711,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () async {
+            onTap: _isMessagingBlocked ? null : () async {
               final prefs = await SharedPreferences.getInstance();
               final userToken = prefs.getString(AppConstants.userTokenKey);
 
@@ -1735,40 +1750,62 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 );
               }
             },
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white,
-              child:
-                  otherParticipant?.avatar != null &&
-                      _isValidImageUrl(otherParticipant!.avatar!)
-                  ? ClipOval(
-                      child: Image.network(
-                        otherParticipant.avatar!,
-                        width: 32,
-                        height: 32,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Text(
-                            otherParticipant.name.isNotEmpty
-                                ? otherParticipant.name[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          );
-                        },
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: _isMessagingBlocked ? Colors.grey[300] : Colors.white,
+                  child:
+                      otherParticipant?.avatar != null &&
+                          _isValidImageUrl(otherParticipant!.avatar!)
+                      ? ClipOval(
+                          child: Image.network(
+                            otherParticipant.avatar!,
+                            width: 32,
+                            height: 32,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Text(
+                                otherParticipant.name.isNotEmpty
+                                    ? otherParticipant.name[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  color: _isMessagingBlocked ? Colors.grey[500] : AppTheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Text(
+                          otherParticipant?.name.isNotEmpty == true
+                              ? otherParticipant!.name[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                            color: _isMessagingBlocked ? Colors.grey[500] : AppTheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+                // Engelleme göstergesi
+                if (_isMessagingBlocked)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red[400],
+                        shape: BoxShape.circle,
                       ),
-                    )
-                  : Text(
-                      otherParticipant?.name.isNotEmpty == true
-                          ? otherParticipant!.name[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: AppTheme.primary,
-                        fontWeight: FontWeight.bold,
+                      child: Icon(
+                        Icons.block,
+                        color: Colors.white,
+                        size: 10,
                       ),
                     ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -1884,8 +1921,13 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 class _MessageBubble extends StatelessWidget {
   final Message message;
   final bool isMe;
+  final bool isMessagingBlocked;
 
-  const _MessageBubble({required this.message, required this.isMe});
+  const _MessageBubble({
+    required this.message, 
+    required this.isMe,
+    required this.isMessagingBlocked,
+  });
 
   // URL validasyonu için yardımcı metod
   bool _isValidImageUrl(String url) {
@@ -2060,7 +2102,7 @@ class _MessageBubble extends StatelessWidget {
 
   Widget _buildProductCard(BuildContext context, Product product) {
     return GestureDetector(
-      onTap: () {
+      onTap: isMessagingBlocked ? null : () {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -2073,7 +2115,7 @@ class _MessageBubble extends StatelessWidget {
         height: 80,
         margin: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isMessagingBlocked ? Colors.grey[100] : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -2119,10 +2161,10 @@ class _MessageBubble extends StatelessWidget {
                     // Üst kısım - Başlık
                     Text(
                       product.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
-                        color: Colors.black87,
+                        color: isMessagingBlocked ? Colors.grey[500] : Colors.black87,
                         height: 1.2,
                       ),
                       maxLines: 1,
@@ -2138,13 +2180,15 @@ class _MessageBubble extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.08),
+                            color: isMessagingBlocked 
+                                ? Colors.grey[300] 
+                                : AppTheme.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             product.catname,
                             style: TextStyle(
-                              color: AppTheme.primary,
+                              color: isMessagingBlocked ? Colors.grey[600] : AppTheme.primary,
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.2,
@@ -2160,15 +2204,17 @@ class _MessageBubble extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.08),
+                              color: isMessagingBlocked 
+                                  ? Colors.grey[300] 
+                                  : Colors.green.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               '₺${product.estimatedValue!.toStringAsFixed(0)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 11,
-                                color: Colors.green,
+                                color: isMessagingBlocked ? Colors.grey[600] : Colors.green,
                                 letterSpacing: 0.2,
                               ),
                             ),
@@ -2179,7 +2225,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-            // Sağ kenar - Tıklama göstergesi
+            // Sağ kenar - Tıklama göstergesi veya engelleme ikonu
             Container(
               width: 32,
               height: 80,
@@ -2192,18 +2238,32 @@ class _MessageBubble extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(6),
+                  if (isMessagingBlocked)
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red[100],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.block,
+                        size: 10,
+                        color: Colors.red[600],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_ios,
+                        size: 10,
+                        color: Colors.grey[600],
+                      ),
                     ),
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      size: 10,
-                      color: Colors.grey[600],
-                    ),
-                  ),
                 ],
               ),
             ),
