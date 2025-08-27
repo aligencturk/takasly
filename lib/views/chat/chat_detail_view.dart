@@ -2,6 +2,8 @@ import 'package:takasly/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import '../../services/cache_service.dart';
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
@@ -35,6 +37,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   bool _hasMessageSent = false; // Mesaj gönderildi mi kontrolü için
   Product? _chatProduct; // Chat'e ait ürün bilgisi
   bool _isDisposed = false; // Widget dispose edildi mi kontrolü için
+  bool _isMessagingBlocked = false; // Karşı taraf engelliyse mesaj gönderimi kapalı
 
   @override
   void initState() {
@@ -45,6 +48,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadMessages();
+      _checkMessagingBlocked();
       // Sayfa açıldığında en aşağıya scroll et
       _scrollToBottom();
     });
@@ -143,6 +147,37 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     }
   }
 
+  void _checkMessagingBlocked() {
+    try {
+      final authViewModel = context.read<AuthViewModel>();
+      final otherParticipant = widget.chat.participants
+          .where((user) => user.id != authViewModel.currentUser?.id)
+          .firstOrNull;
+      if (otherParticipant == null) return;
+
+      final cacheService = CacheService();
+      final blockedJson = cacheService.getBlockedUsers();
+      if (blockedJson == null || blockedJson.isEmpty) {
+        _isMessagingBlocked = false;
+        if (!_isDisposed) setState(() {});
+        return;
+      }
+
+      final List<dynamic> blockedList = jsonDecode(blockedJson);
+      final blockedIds = blockedList
+          .where((e) => e is Map<String, dynamic> && e.containsKey('blockedUserID'))
+          .map((e) => int.tryParse(e['blockedUserID'].toString()))
+          .whereType<int>()
+          .toSet();
+
+      final otherIdInt = int.tryParse(otherParticipant.id);
+      _isMessagingBlocked = otherIdInt != null && blockedIds.contains(otherIdInt);
+      if (!_isDisposed) setState(() {});
+    } catch (e) {
+      Logger.error('ChatDetailView: _checkMessagingBlocked hatası: $e');
+    }
+  }
+
   void _loadChatProduct() async {
     if (_isDisposed) return;
 
@@ -214,6 +249,16 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _sendMessage() {
     if (_isDisposed) return;
+    if (_isMessagingBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Bu kullanıcıyı engellediniz. Mesaj gönderemezsiniz.'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
@@ -985,6 +1030,16 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _sendProductOnly(Product product) {
     if (_isDisposed) return;
+    if (_isMessagingBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Bu kullanıcıyı engellediniz. Mesaj gönderemezsiniz.'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
@@ -1018,6 +1073,16 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _sendProductWithMessage(Product product, String message) {
     if (_isDisposed) return;
+    if (_isMessagingBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Bu kullanıcıyı engellediniz. Mesaj gönderemezsiniz.'),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     final authViewModel = context.read<AuthViewModel>();
     final chatViewModel = context.read<ChatViewModel>();
@@ -1151,8 +1216,20 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
       showDialog(
         context: context,
-        builder: (context) =>
-            UserBlockDialog(userId: userId, userName: otherParticipant.name),
+        builder: (context) => UserBlockDialog(
+          userId: userId,
+          userName: otherParticipant.name,
+          onUserBlocked: () {
+            try {
+              // Ürün listesini yenile
+              final productVM = context.read<ProductViewModel>();
+              productVM.refreshProducts();
+            } catch (_) {}
+            // PlatformView yeniden yaratma hatasını önlemek için rootNavigator ile yönlendir
+            Navigator.of(context, rootNavigator: true)
+                .pushNamedAndRemoveUntil('/home', (route) => false);
+          },
+        ),
       );
     } catch (e) {
       Logger.error('ChatDetailView: _showBlockDialog hatası: $e');
@@ -1715,6 +1792,38 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   Widget _buildMessageInput() {
+    if (_isMessagingBlocked) {
+      return SafeArea(
+        bottom: true,
+        minimum: const EdgeInsets.only(bottom: 8),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.block, color: Colors.red[600], size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Bu kullanıcı engellendi. Mesaj gönderemezsiniz.',
+                  style: TextStyle(color: Colors.red[700], fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SafeArea(
       bottom: true,
       minimum: const EdgeInsets.only(bottom: 8),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/user_viewmodel.dart';
-import '../viewmodels/product_viewmodel.dart';
 import '../utils/logger.dart';
 
 class UserBlockDialog extends StatefulWidget {
@@ -52,16 +51,6 @@ class _UserBlockDialogState extends State<UserBlockDialog> {
 
         if (mounted) {
           Navigator.of(context).pop();
-
-          // Başarı mesajı göster
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${widget.userName} başarıyla engellendi'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-
           // Callback'i çağır (anasayfayı yenilemek için)
           widget.onUserBlocked?.call();
         }

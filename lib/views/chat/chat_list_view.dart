@@ -11,6 +11,8 @@ import '../../services/auth_service.dart';
 import 'chat_detail_view.dart';
 import '../../widgets/native_ad_list_tile.dart';
 import '../auth/login_view.dart';
+import '../../services/cache_service.dart';
+import 'dart:convert';
 
 class ChatListView extends StatefulWidget {
   const ChatListView({super.key});
@@ -643,10 +645,58 @@ class _ChatListItem extends StatelessWidget {
               ],
             ),
             onTap: onTap,
+            trailing: _buildBlockedBadgeIfNeeded(chat),
           );
         },
       ),
     );
+  }
+
+  Widget? _buildBlockedBadgeIfNeeded(Chat chat) {
+    try {
+      final other = chat.participants
+          .where((u) => u.id != currentUserId)
+          .firstOrNull;
+      if (other == null) return null;
+
+      final cacheService = CacheService();
+      final blockedJson = cacheService.getBlockedUsers();
+      if (blockedJson == null || blockedJson.isEmpty) return null;
+
+      final List<dynamic> blockedList = jsonDecode(blockedJson);
+      final blockedIds = blockedList
+          .where((e) => e is Map<String, dynamic> && e.containsKey('blockedUserID'))
+          .map((e) => int.tryParse(e['blockedUserID'].toString()))
+          .whereType<int>()
+          .toSet();
+
+      final otherIdInt = int.tryParse(other.id);
+      final isBlocked = otherIdInt != null && blockedIds.contains(otherIdInt);
+      if (!isBlocked) return null;
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.withOpacity(0.2)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.block, color: Colors.red, size: 14),
+            SizedBox(width: 4),
+            Text(
+              'Engelli',
+              style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      Logger.error('ChatListItem: blocked badge error: $e');
+      return null;
+    }
   }
 
   String _getLastMessageText() {

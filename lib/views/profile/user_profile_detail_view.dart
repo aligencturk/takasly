@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/user_profile_detail_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/user_viewmodel.dart';
+import '../../viewmodels/product_viewmodel.dart';
 import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
@@ -154,6 +155,16 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
         userId: widget.userId,
         userName:
             _viewModel.profileDetail?.userFullname ?? 'Bilinmeyen Kullanıcı',
+        onUserBlocked: () {
+          try {
+            // Ürün listesini yenile
+            final productVM = context.read<ProductViewModel>();
+            productVM.refreshProducts();
+          } catch (_) {}
+          // Root navigator ile güvenli yönlendirme
+          Navigator.of(context, rootNavigator: true)
+              .pushNamedAndRemoveUntil('/home', (route) => false);
+        },
       ),
     );
   }
