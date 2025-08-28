@@ -14,6 +14,7 @@
     
     <!-- Depolama izinleri - Scoped Storage kullanılıyor -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     
     <!-- AdMob için gerekli izinler -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -68,6 +69,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            
+        <!-- Image Cropper için gerekli activity -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/UCropStyle"/>
             
         <!-- AdMob için gerekli meta-data -->
         <meta-data

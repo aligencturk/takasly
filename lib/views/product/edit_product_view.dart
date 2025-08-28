@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +11,7 @@ import 'package:takasly/models/district.dart';
 import 'package:takasly/models/product.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/services/image_optimization_service.dart';
+import 'package:takasly/services/pick_crop_service.dart';
 import 'package:takasly/services/admob_service.dart';
 import 'package:takasly/services/auth_service.dart';
 import 'package:takasly/utils/logger.dart';
@@ -1318,6 +1320,7 @@ class _EditProductViewState extends State<EditProductView> {
   Widget _buildExistingImageItem(String imageUrl) {
     return Container(
       width: 100,
+      height: 100, // Yüksekliği normal boyuta döndürdüm
       margin: const EdgeInsets.only(right: 8),
       child: Stack(
         children: [
@@ -1361,6 +1364,25 @@ class _EditProductViewState extends State<EditProductView> {
               },
             ),
           ),
+
+          // Düzenleme butonu (sol üst köşe, sarı ikon)
+          Positioned(
+            top: 2,
+            left: 2,
+            child: GestureDetector(
+              onTap: () => _editExistingImage(imageUrl),
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  color: Colors.yellow,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.edit, color: Colors.black87, size: 12),
+              ),
+            ),
+          ),
+
+          // Silme butonu (sağ üst köşe)
           Positioned(
             top: 2,
             right: 2,
@@ -1384,6 +1406,7 @@ class _EditProductViewState extends State<EditProductView> {
   Widget _buildNewImageItem(File imageFile) {
     return Container(
       width: 100,
+      height: 100, // Yüksekliği normal boyuta döndürdüm
       margin: const EdgeInsets.only(right: 8),
       child: Stack(
         children: [
@@ -1396,6 +1419,25 @@ class _EditProductViewState extends State<EditProductView> {
               fit: BoxFit.cover,
             ),
           ),
+
+          // Düzenleme butonu (sol üst köşe, sarı ikon)
+          Positioned(
+            top: 2,
+            left: 2,
+            child: GestureDetector(
+              onTap: () => _editNewImage(imageFile),
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  color: Colors.yellow,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.edit, color: Colors.black87, size: 12),
+              ),
+            ),
+          ),
+
+          // Silme butonu (sağ üst köşe)
           Positioned(
             top: 2,
             right: 2,
@@ -1474,6 +1516,21 @@ class _EditProductViewState extends State<EditProductView> {
               backgroundColor: Colors.green,
             ),
           );
+
+          // 3 saniye sonra düzenleme bilgisi göster
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Mavi düzenle butonuna tıklayarak fotoğrafları düzenleyebilirsiniz',
+                  ),
+                  backgroundColor: Colors.blue,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          });
         }
 
         if (pickedFiles.length > remainingSlots) {
@@ -1503,10 +1560,135 @@ class _EditProductViewState extends State<EditProductView> {
     });
   }
 
+  /// Mevcut fotoğrafı düzenle
+  Future<void> _editExistingImage(String imageUrl) async {
+    try {
+      Logger.info(
+        '🖼️ EditProductView - Mevcut fotoğraf düzenleniyor: $imageUrl',
+      );
+
+      // URL'den dosya oluştur
+      final httpClient = HttpClient();
+      final request = await httpClient.getUrl(Uri.parse(imageUrl));
+      final response = await request.close();
+      final bytes = await _consolidateHttpClientResponseBytes(response);
+
+      // Geçici dosya oluştur
+      final tempDir = Directory.systemTemp;
+      final tempFile = File(
+        '${tempDir.path}/temp_edit_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      await tempFile.writeAsBytes(bytes);
+
+      // Düzenleme ekranını aç
+      final croppedFile = await PickCropService.cropExistingImage(
+        imagePath: tempFile.path,
+      );
+
+      if (croppedFile != null) {
+        // Düzenlenen dosyayı File'a çevir
+        final editedFile = File(croppedFile.path);
+
+        // Mevcut URL'i kaldır ve yeni dosyayı ekle
+        setState(() {
+          _existingImages.remove(imageUrl);
+          _newImages.add(editedFile);
+        });
+
+        // Geçici dosyayı sil
+        await tempFile.delete();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fotoğraf başarıyla düzenlendi!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        Logger.info('✅ EditProductView - Fotoğraf başarıyla düzenlendi');
+      } else {
+        // Geçici dosyayı sil
+        await tempFile.delete();
+        Logger.info('ℹ️ EditProductView - Fotoğraf düzenleme iptal edildi');
+      }
+    } catch (e) {
+      Logger.error('❌ EditProductView - Fotoğraf düzenleme hatası: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fotoğraf düzenlenirken hata oluştu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// HTTP response'dan bytes'ları birleştir
+  Future<Uint8List> _consolidateHttpClientResponseBytes(
+    HttpClientResponse response,
+  ) async {
+    final List<int> bytes = [];
+    await for (final chunk in response) {
+      bytes.addAll(chunk);
+    }
+    return Uint8List.fromList(bytes);
+  }
+
   void _removeNewImage(File imageFile) {
     setState(() {
       _newImages.remove(imageFile);
     });
+  }
+
+  /// Yeni fotoğrafı düzenle
+  Future<void> _editNewImage(File imageFile) async {
+    try {
+      Logger.info(
+        '🖼️ EditProductView - Yeni fotoğraf düzenleniyor: ${imageFile.path}',
+      );
+
+      // Düzenleme ekranını aç
+      final croppedFile = await PickCropService.cropExistingImage(
+        imagePath: imageFile.path,
+      );
+
+      if (croppedFile != null) {
+        // Düzenlenen dosyayı File'a çevir
+        final editedFile = File(croppedFile.path);
+
+        // Eski dosyayı kaldır ve yeni dosyayı ekle
+        setState(() {
+          _newImages.remove(imageFile);
+          _newImages.add(editedFile);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fotoğraf başarıyla düzenlendi!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        Logger.info('✅ EditProductView - Yeni fotoğraf başarıyla düzenlendi');
+      } else {
+        Logger.info('ℹ️ EditProductView - Fotoğraf düzenleme iptal edildi');
+      }
+    } catch (e) {
+      Logger.error('❌ EditProductView - Yeni fotoğraf düzenleme hatası: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fotoğraf düzenlenirken hata oluştu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildContactSettingsSection() {

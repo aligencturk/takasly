@@ -81,4 +81,38 @@ class ImageOptimizationService {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
   }
+
+  /// Uint8List'i File'a dönüştürür
+  /// [imageBytes] - Dönüştürülecek görsel bytes
+  /// [fileName] - Dosya adı
+  /// Returns: File
+  static Future<File> convertUint8ListToFile(
+    List<int> imageBytes,
+    String fileName,
+  ) async {
+    try {
+      Logger.debug(
+        '🖼️ ImageOptimizationService - Converting Uint8List to File: $fileName',
+      );
+
+      // Geçici dosya yolu oluştur
+      final Directory tempDir = Directory.systemTemp;
+      final String filePath = '${tempDir.path}/$fileName';
+
+      // Dosyayı oluştur ve yaz
+      final File file = File(filePath);
+      await file.writeAsBytes(imageBytes);
+
+      Logger.debug(
+        '🖼️ ImageOptimizationService - File created: ${file.path} (${imageBytes.length} bytes)',
+      );
+
+      return file;
+    } catch (e) {
+      Logger.error(
+        '🖼️ ImageOptimizationService - Error converting Uint8List to File: $e',
+      );
+      rethrow;
+    }
+  }
 }

@@ -1,10 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
-import '../models/user_profile_detail.dart';
-import '../models/user_block.dart';
 import '../models/blocked_user.dart';
 import '../services/user_service.dart';
-import '../services/auth_service.dart';
 import '../services/cache_service.dart';
 import '../services/error_handler_service.dart';
 import '../core/constants.dart';
@@ -563,10 +560,10 @@ class UserViewModel extends ChangeNotifier {
           'User blocked successfully: ${response.data!.message}',
           tag: 'UserViewModel',
         );
-        
+
         // Engellenen kullanıcıyı cache'e kaydet
         await _saveBlockedUserToCache(blockedUserID, reason);
-        
+
         _setLoading(false);
         return true;
       } else {
@@ -610,10 +607,10 @@ class UserViewModel extends ChangeNotifier {
           'User unblocked successfully: ${response.data!.message}',
           tag: 'UserViewModel',
         );
-        
+
         // Engellenen kullanıcıyı cache'den kaldır
         await _removeBlockedUserFromCache(blockedUserID);
-        
+
         _setLoading(false);
         return true;
       } else {
@@ -634,41 +631,58 @@ class UserViewModel extends ChangeNotifier {
   }
 
   /// Engellenen kullanıcıyı cache'e kaydeder
-  Future<void> _saveBlockedUserToCache(int blockedUserID, String? reason) async {
+  Future<void> _saveBlockedUserToCache(
+    int blockedUserID,
+    String? reason,
+  ) async {
     try {
       final cacheService = CacheService();
-      
+
       // Mevcut engellenen kullanıcıları al
       final existingBlockedUsersJson = cacheService.getBlockedUsers();
       List<Map<String, dynamic>> blockedUsers = [];
-      
-      if (existingBlockedUsersJson != null && existingBlockedUsersJson.isNotEmpty) {
+
+      if (existingBlockedUsersJson != null &&
+          existingBlockedUsersJson.isNotEmpty) {
         try {
-          final List<dynamic> existingList = jsonDecode(existingBlockedUsersJson);
+          final List<dynamic> existingList = jsonDecode(
+            existingBlockedUsersJson,
+          );
           blockedUsers = existingList
               .where((user) => user is Map<String, dynamic>)
               .map((user) => Map<String, dynamic>.from(user))
               .toList();
         } catch (e) {
-          Logger.error('Error parsing existing blocked users: $e', tag: 'UserViewModel');
+          Logger.error(
+            'Error parsing existing blocked users: $e',
+            tag: 'UserViewModel',
+          );
         }
       }
-      
+
       // Yeni engellenen kullanıcıyı ekle (eğer yoksa)
-      final existingUser = blockedUsers.any((user) => user['blockedUserID'] == blockedUserID);
+      final existingUser = blockedUsers.any(
+        (user) => user['blockedUserID'] == blockedUserID,
+      );
       if (!existingUser) {
         blockedUsers.add({
           'blockedUserID': blockedUserID,
           'reason': reason,
           'blockedAt': DateTime.now().toIso8601String(),
         });
-        
+
         // Cache'e kaydet
         await cacheService.saveBlockedUsers(blockedUsers);
-        Logger.info('🔒 UserViewModel - Saved blocked user $blockedUserID to cache', tag: 'UserViewModel');
+        Logger.info(
+          '🔒 UserViewModel - Saved blocked user $blockedUserID to cache',
+          tag: 'UserViewModel',
+        );
       }
     } catch (e) {
-      Logger.error('Error saving blocked user to cache: $e', tag: 'UserViewModel');
+      Logger.error(
+        'Error saving blocked user to cache: $e',
+        tag: 'UserViewModel',
+      );
     }
   }
 
@@ -676,13 +690,14 @@ class UserViewModel extends ChangeNotifier {
   Future<void> _removeBlockedUserFromCache(int blockedUserID) async {
     try {
       final cacheService = CacheService();
-      
+
       // Mevcut engellenen kullanıcıları al
       final existingBlockedUsersJson = cacheService.getBlockedUsers();
-      if (existingBlockedUsersJson == null || existingBlockedUsersJson.isEmpty) {
+      if (existingBlockedUsersJson == null ||
+          existingBlockedUsersJson.isEmpty) {
         return;
       }
-      
+
       try {
         final List<dynamic> existingList = jsonDecode(existingBlockedUsersJson);
         final blockedUsers = existingList
@@ -690,15 +705,24 @@ class UserViewModel extends ChangeNotifier {
             .map((user) => Map<String, dynamic>.from(user))
             .where((user) => user['blockedUserID'] != blockedUserID)
             .toList();
-        
+
         // Güncellenmiş listeyi cache'e kaydet
         await cacheService.saveBlockedUsers(blockedUsers);
-        Logger.info('🔒 UserViewModel - Removed blocked user $blockedUserID from cache', tag: 'UserViewModel');
+        Logger.info(
+          '🔒 UserViewModel - Removed blocked user $blockedUserID from cache',
+          tag: 'UserViewModel',
+        );
       } catch (e) {
-        Logger.error('Error parsing existing blocked users: $e', tag: 'UserViewModel');
+        Logger.error(
+          'Error parsing existing blocked users: $e',
+          tag: 'UserViewModel',
+        );
       }
     } catch (e) {
-      Logger.error('Error removing blocked user from cache: $e', tag: 'UserViewModel');
+      Logger.error(
+        'Error removing blocked user from cache: $e',
+        tag: 'UserViewModel',
+      );
     }
   }
 

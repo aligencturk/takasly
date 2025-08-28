@@ -5,6 +5,8 @@ import 'package:takasly/viewmodels/user_viewmodel.dart';
 import 'package:takasly/widgets/loading_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:takasly/services/image_optimization_service.dart';
+import 'package:takasly/services/pick_crop_service.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:takasly/utils/phone_formatter.dart';
 import 'package:takasly/utils/logger.dart';
 import 'dart:io';
@@ -135,25 +137,53 @@ class _EditProfileViewState extends State<EditProfileView> {
         final File convertedFile =
             await ImageOptimizationService.convertSingleXFileToFile(image);
 
-        setState(() {
-          _selectedImage = convertedFile;
-        });
-
-        // Kullanıcıya dönüşüm tamamlandığını bildir
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profil fotoğrafı seçildi'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-
+        // Resim düzenleme ekranını aç
         Logger.debug(
-          'Profile image converted and selected: ${convertedFile.path}',
+          'Opening image editor for profile photo...',
           tag: 'EditProfile',
         );
+
+        final CroppedFile? editedFile = await PickCropService.cropExistingImage(
+          imagePath: convertedFile.path,
+          aspectRatio: 1.0, // Kare format (profil fotoğrafı için)
+        );
+
+        if (editedFile != null) {
+          // Düzenlenen dosyayı File olarak al
+          final File editedImageFile = File(editedFile.path);
+
+          setState(() {
+            _selectedImage = editedImageFile;
+          });
+
+          // Kullanıcıya düzenleme tamamlandığını bildir
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profil fotoğrafı düzenlendi ve seçildi'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+
+          Logger.debug(
+            'Profile image edited and selected: ${editedImageFile.path}',
+            tag: 'EditProfile',
+          );
+        } else {
+          // Düzenleme iptal edildi
+          Logger.debug('Image editing cancelled by user', tag: 'EditProfile');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profil fotoğrafı düzenleme iptal edildi'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
       }
     } catch (e) {
       Logger.error(

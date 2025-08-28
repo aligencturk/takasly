@@ -1,11 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/services/location_service.dart';
 import 'package:takasly/services/image_optimization_service.dart';
+import 'package:takasly/services/pick_crop_service.dart';
 import 'package:takasly/services/admob_service.dart';
 import 'package:takasly/services/auth_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -35,7 +38,6 @@ class _AddProductViewState extends State<AddProductView> {
   String? _selectedDistrictId;
   List<File> _selectedImages = [];
   int _coverImageIndex = 0; // Kapak fotoğrafı indeksi
-  final ImagePicker _imagePicker = ImagePicker();
   bool _isShowContact = true; // İletişim bilgilerinin görünürlüğü
 
   // Konum servisi
@@ -2379,131 +2381,194 @@ class _AddProductViewState extends State<AddProductView> {
 
     return Container(
       width: 100,
-      height: 100,
+      height: 120, // Yüksekliği artırdım düzenle butonu için
       margin: const EdgeInsets.only(right: 12),
-      child: Stack(
+      child: Column(
         children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isCoverImage ? AppTheme.primary : Colors.grey.shade300,
-                width: isCoverImage ? 2 : 1,
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(isCoverImage ? 10 : 11),
-              child: Image.file(
-                image,
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  Logger.error('❌ Resim yükleme hatası: $error');
-                  return Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(
-                        isCoverImage ? 10 : 11,
-                      ),
+          // Düzenleme butonu (kutucuğun üstünde, sol taraf)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              child: GestureDetector(
+                onTap: () => _editImage(index),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isCoverImage
+                        ? AppTheme.primary
+                        : Colors.grey.shade300,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.broken_image,
-                          color: Colors.grey.shade400,
-                          size: 24,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Resim\nYüklenemedi',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                    border: Border.all(
+                      color: isCoverImage
+                          ? AppTheme.primary
+                          : Colors.grey.shade300,
+                      width: 1,
                     ),
-                  );
-                },
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded) {
-                    return child;
-                  }
-                  return AnimatedOpacity(
-                    opacity: frame == null ? 0 : 1,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: child,
-                  );
-                },
+                  ),
+                  child: Text(
+                    'Düzenle',
+                    style: TextStyle(
+                      color: isCoverImage ? Colors.white : Colors.grey.shade700,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
 
-          // Kapak resmi göstergesi
-          if (isCoverImage)
-            Positioned(
-              top: 4,
-              left: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'Kapak',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-
-          // Kapak resmi yapma butonu (kapak resmi değilse)
-          if (!isCoverImage)
-            Positioned(
-              top: 4,
-              left: 4,
-              child: GestureDetector(
-                onTap: () => _setCoverImage(index),
-                child: Container(
-                  width: 24,
-                  height: 24,
+          // Ana resim kutucuğu
+          Expanded(
+            child: Stack(
+              children: [
+                Container(
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isCoverImage
+                          ? AppTheme.primary
+                          : Colors.grey.shade300,
+                      width: isCoverImage ? 2 : 1,
+                    ),
                   ),
-                  child: const Icon(Icons.star, color: Colors.white, size: 14),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(isCoverImage ? 10 : 11),
+                    child: Center(
+                      child: Image.file(
+                        image,
+                        width: 92,
+                        height: 92,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          Logger.error('❌ Resim yükleme hatası: $error');
+                          return Container(
+                            width: 92,
+                            height: 92,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(
+                                isCoverImage ? 10 : 11,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey.shade400,
+                                  size: 24,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Resim\nYüklenemedi',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade500,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        frameBuilder:
+                            (context, child, frame, wasSynchronouslyLoaded) {
+                              if (wasSynchronouslyLoaded) {
+                                return child;
+                              }
+                              return AnimatedOpacity(
+                                opacity: frame == null ? 0 : 1,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                child: child,
+                              );
+                            },
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
 
-          // Silme butonu
-          Positioned(
-            top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: () => _removeImage(index),
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
+                // Kapak resmi göstergesi
+                if (isCoverImage)
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Kapak',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Kapak resmi yapma butonu (sol üst köşe, kapak resmi değilse)
+                if (!isCoverImage)
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: GestureDetector(
+                      onTap: () => _setCoverImage(index),
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.star,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Silme butonu (sağ üst köşe)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: GestureDetector(
+                    onTap: () => _removeImage(index),
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 16),
-              ),
+              ],
             ),
           ),
         ],
@@ -2554,7 +2619,7 @@ class _AddProductViewState extends State<AddProductView> {
                   child: Icon(Icons.camera_alt, color: AppTheme.primary),
                 ),
                 title: const Text('Kamera'),
-                subtitle: const Text('Fotoğraf çek'),
+                subtitle: const Text('Fotoğraf çek ve düzenle'),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
@@ -2572,10 +2637,12 @@ class _AddProductViewState extends State<AddProductView> {
                   child: Icon(Icons.photo_library, color: AppTheme.primary),
                 ),
                 title: const Text('Galeri'),
-                subtitle: const Text('Birden fazla fotoğraf seç'),
+                subtitle: const Text(
+                  'Tek fotoğraf seç ve düzenle veya çoklu seç',
+                ),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickMultipleImages();
+                  _showGalleryOptions();
                 },
               ),
 
@@ -2589,13 +2656,18 @@ class _AddProductViewState extends State<AddProductView> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? pickedFile = await _imagePicker.pickImage(
-        source: source,
-        // Backend optimizasyon yapacağı için yüksek kalite seçiliyor
-        imageQuality: 100,
+      Logger.debug(
+        '🖼️ AddProductView - Starting image pick and crop process for source: $source',
       );
 
-      if (pickedFile != null) {
+      // PickCropService ile fotoğraf seç ve otomatik crop ekranını aç
+      final Uint8List? imageBytes = await PickCropService.pickAndCropImage(
+        source: source,
+        aspectRatio: null, // Serbest aspect ratio
+        compressQuality: 85,
+      );
+
+      if (imageBytes != null) {
         // Yükleniyor mesajını göster
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2611,7 +2683,7 @@ class _AddProductViewState extends State<AddProductView> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text('Fotoğraf yükleniyor...'),
+                  const Text('Fotoğraf işleniyor...'),
                 ],
               ),
               backgroundColor: AppTheme.primary,
@@ -2624,10 +2696,13 @@ class _AddProductViewState extends State<AddProductView> {
           );
         }
 
-        // Seçilen görseli dönüştür
-        Logger.debug('🖼️ AddProductView - Converting selected image...');
+        // Uint8List'i File'a dönüştür
+        Logger.debug('🖼️ AddProductView - Converting Uint8List to File...');
         final File convertedFile =
-            await ImageOptimizationService.convertSingleXFileToFile(pickedFile);
+            await ImageOptimizationService.convertUint8ListToFile(
+              imageBytes,
+              'product_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            );
 
         // Dosya varlığını ve boyutunu kontrol et
         if (!await convertedFile.exists()) {
@@ -2652,11 +2727,57 @@ class _AddProductViewState extends State<AddProductView> {
         });
 
         // Kullanıcıya bilgi ver
-        // Sessiz: sadece log
-        Logger.info('Fotoğraf dönüştürülerek eklendi');
+        Logger.info('✅ Fotoğraf düzenlenerek eklendi');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  const Text('Fotoğraf düzenlenerek başarıyla eklendi'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      } else {
+        Logger.debug(
+          '🖼️ AddProductView - No image selected or crop cancelled',
+        );
+
+        // Kullanıcıya bilgi ver
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  const Text('Fotoğraf seçimi iptal edildi veya hata oluştu'),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
       }
-    } catch (e) {
-      Logger.error('❌ Error picking image: $e');
+    } catch (e, stackTrace) {
+      Logger.error('❌ Error picking and cropping image: $e');
+      Logger.error('❌ Stack trace: $stackTrace');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2666,7 +2787,7 @@ class _AddProductViewState extends State<AddProductView> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Fotoğraf seçilirken hata oluştu: ${e.toString().contains('Exception:') ? e.toString().split('Exception: ').last : 'Bilinmeyen hata'}',
+                    'Fotoğraf işlenirken hata oluştu: ${e.toString().contains('Exception:') ? e.toString().split('Exception: ').last : 'Bilinmeyen hata'}. Lütfen tekrar deneyin.',
                   ),
                 ),
               ],
@@ -2693,12 +2814,18 @@ class _AddProductViewState extends State<AddProductView> {
         return;
       }
 
-      final List<XFile> pickedFiles = await _imagePicker.pickMultiImage(
-        // Backend optimizasyon yapacağı için yüksek kalite seçiliyor
-        imageQuality: 100,
+      Logger.debug(
+        '🖼️ AddProductView - Starting multiple image pick and crop process...',
       );
 
-      if (pickedFiles.isNotEmpty) {
+      // PickCropService ile birden fazla fotoğraf seç (crop olmadan)
+      final List<Uint8List> imageBytesList =
+          await PickCropService.pickMultipleImages(
+            maxImages: remainingSlots,
+            compressQuality: 85,
+          );
+
+      if (imageBytesList.isNotEmpty) {
         // Yükleniyor mesajını göster
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2714,7 +2841,7 @@ class _AddProductViewState extends State<AddProductView> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text('Fotoğraflar yükleniyor...'),
+                  Text('${imageBytesList.length} fotoğraf işleniyor...'),
                 ],
               ),
               backgroundColor: AppTheme.primary,
@@ -2727,40 +2854,37 @@ class _AddProductViewState extends State<AddProductView> {
           );
         }
 
-        final List<XFile> filesToAdd = pickedFiles
-            .take(remainingSlots)
-            .toList();
-
-        // Sessiz: sadece log
-        Logger.info('Fotoğraflar dönüştürülüyor...');
-
-        // Seçilen görselleri dönüştür
-        Logger.debug(
-          '🖼️ AddProductView - Converting ${filesToAdd.length} selected images...',
+        Logger.info(
+          '🖼️ AddProductView - Converting ${imageBytesList.length} images to Files...',
         );
-        final List<File> convertedFiles =
-            await ImageOptimizationService.convertXFilesToFiles(
-              filesToAdd,
-              maxImages: remainingSlots,
-            );
 
-        // Dönüştürülen dosyaları kontrol et
+        // Uint8List'leri File'lara dönüştür
         final List<File> validFiles = [];
-        for (final file in convertedFiles) {
+        for (int i = 0; i < imageBytesList.length; i++) {
           try {
-            if (await file.exists()) {
-              final fileSize = await file.length();
+            final File convertedFile =
+                await ImageOptimizationService.convertUint8ListToFile(
+                  imageBytesList[i],
+                  'product_image_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
+                );
+
+            if (await convertedFile.exists()) {
+              final fileSize = await convertedFile.length();
               if (fileSize > 0) {
-                validFiles.add(file);
-                Logger.info('✅ File validated: ${fileSize} bytes');
+                validFiles.add(convertedFile);
+                Logger.info('✅ File ${i + 1} converted: ${fileSize} bytes');
               } else {
-                Logger.warning('⚠️ File is empty: ${file.path}');
+                Logger.warning(
+                  '⚠️ File ${i + 1} is empty: ${convertedFile.path}',
+                );
               }
             } else {
-              Logger.warning('⚠️ File does not exist: ${file.path}');
+              Logger.warning(
+                '⚠️ File ${i + 1} does not exist: ${convertedFile.path}',
+              );
             }
           } catch (e) {
-            Logger.error('❌ Error validating file: $e');
+            Logger.error('❌ Error converting file ${i + 1}: $e');
           }
         }
 
@@ -2769,7 +2893,7 @@ class _AddProductViewState extends State<AddProductView> {
         }
 
         Logger.info(
-          '✅ ${validFiles.length}/${convertedFiles.length} dosya başarıyla dönüştürüldü',
+          '✅ ${validFiles.length}/${imageBytesList.length} dosya başarıyla dönüştürüldü',
         );
 
         setState(() {
@@ -2780,27 +2904,91 @@ class _AddProductViewState extends State<AddProductView> {
           }
         });
 
-        // Sessiz: sadece log
-        Logger.info('${convertedFiles.length} fotoğraf dönüştürülerek eklendi');
+        Logger.info('✅ ${validFiles.length} fotoğraf başarıyla eklendi');
 
-        if (pickedFiles.length > remainingSlots) {
+        // Başarı mesajı göster
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  Text('${validFiles.length} fotoğraf başarıyla eklendi'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+
+          // Çoklu fotoğraf seçiminde düzenleme bilgisi ver
+          if (validFiles.length > 1) {
+            Future.delayed(const Duration(seconds: 3), () {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.edit, color: Colors.white, size: 20),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Fotoğrafları düzenlemek için mavi düzenleme ikonuna tıklayın',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.blue.shade600,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
+              }
+            });
+          }
+        }
+
+        if (imageBytesList.length > remainingSlots) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${pickedFiles.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 5 resim)',
+                '${imageBytesList.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 5 resim)',
               ),
               backgroundColor: Colors.orange,
             ),
           );
         }
+      } else {
+        Logger.debug('🖼️ AddProductView - No images selected');
       }
     } catch (e) {
-      Logger.error('❌ Error picking multiple images: $e');
+      Logger.error('❌ Error picking and processing multiple images: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Fotoğraflar seçilirken hata oluştu'),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Fotoğraflar işlenirken hata oluştu: ${e.toString().contains('Exception:') ? e.toString().split('Exception: ').last : 'Bilinmeyen hata'}',
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -3166,6 +3354,202 @@ class _AddProductViewState extends State<AddProductView> {
       }
     } catch (e) {
       Logger.error('İlçe konumu alınırken hata: $e');
+    }
+  }
+
+  /// Galeri seçeneklerini göster
+  void _showGalleryOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              Text(
+                'Galeri Seçenekleri',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+
+              const SizedBox(height: 20),
+
+              ListTile(
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.photo, color: AppTheme.primary),
+                ),
+                title: const Text('Tek Fotoğraf'),
+                subtitle: const Text('Seç ve düzenle'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+
+              ListTile(
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.photo_library, color: AppTheme.primary),
+                ),
+                title: const Text('Çoklu Fotoğraf'),
+                subtitle: const Text(
+                  'Birden fazla seç (mavi düzenle butonu ile düzenle)',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickMultipleImages();
+                },
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Seçili fotoğrafı düzenle
+  Future<void> _editImage(int index) async {
+    try {
+      Logger.debug('🖼️ AddProductView - Editing image at index: $index');
+
+      // Mevcut fotoğrafı al
+      final currentImage = _selectedImages[index];
+
+      // Düzenleme ekranını aç
+      final CroppedFile? croppedFile = await PickCropService.cropExistingImage(
+        imagePath: currentImage.path,
+        aspectRatio: null, // Serbest aspect ratio
+      );
+
+      if (croppedFile != null) {
+        // Yükleniyor mesajını göster
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Fotoğraf düzenleniyor...'),
+                ],
+              ),
+              backgroundColor: AppTheme.primary,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+
+        // Cropped dosyayı File olarak kullan
+        final File editedFile = File(croppedFile.path);
+
+        // Dosya varlığını ve boyutunu kontrol et
+        if (!await editedFile.exists()) {
+          Logger.error('❌ Edited file does not exist');
+          throw Exception('Düzenlenen dosya bulunamadı');
+        }
+
+        final fileSize = await editedFile.length();
+        if (fileSize == 0) {
+          Logger.error('❌ Edited file is empty (0 bytes)');
+          throw Exception('Düzenlenen dosya boş');
+        }
+
+        Logger.info('✅ Edited file created successfully: ${fileSize} bytes');
+
+        // Mevcut fotoğrafı güncelle
+        setState(() {
+          _selectedImages[index] = editedFile;
+        });
+
+        // Kullanıcıya bilgi ver
+        Logger.info('✅ Fotoğraf başarıyla düzenlendi');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  const Text('Fotoğraf başarıyla düzenlendi'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      } else {
+        Logger.debug('🖼️ AddProductView - Image editing cancelled');
+      }
+    } catch (e, stackTrace) {
+      Logger.error('❌ Error editing image: $e');
+      Logger.error('❌ Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Fotoğraf düzenlenirken hata oluştu: ${e.toString().contains('Exception:') ? e.toString().split('Exception: ').last : 'Bilinmeyen hata'}. Lütfen tekrar deneyin.',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 }

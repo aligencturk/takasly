@@ -94,9 +94,17 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Takasly, ürün fotoğrafları çekebilmek için kamera erişimine ihtiyaç duyar.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Takasly, ürün fotoğraflarını seçebilmek için fotoğraf galerisine erişim izni gerektirir.</string>
+	<string>Takasly, ürün fotoğraflarını seçebilmek ve düzenleyebilmek için fotoğraf galerisine erişim izni gerektirir.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Takasly, çekilen fotoğrafları galeriye kaydetmek için izin gerektirir.</string>
+	
+	<!-- Image Cropper için gerekli izinler -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Takasly, fotoğrafları düzenleyebilmek için fotoğraf galerisine erişim izni gerektirir.</string>
+	
+	<!-- Image Cropper için gerekli izinler -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Takasly, fotoğrafları düzenleyebilmek için fotoğraf galerisine erişim izni gerektirir.</string>
 	
 	<key>SKAdNetworkItems</key>
 	<array>
