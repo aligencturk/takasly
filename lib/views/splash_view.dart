@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:takasly/views/home/home_view.dart';
+import 'package:takasly/views/onboarding_view.dart';
 import 'package:takasly/viewmodels/notification_viewmodel.dart';
+import 'package:takasly/services/cache_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:takasly/utils/logger.dart';
 
@@ -61,9 +63,7 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
 
   Future<void> _checkAuthAndNavigate() async {
     try {
-      Logger.info(
-        '🔍 SplashView - Navigating directly to home (no auth check required)...',
-      );
+      Logger.info('🔍 SplashView - Onboarding kontrolü yapılıyor...');
 
       // Widget'ın hala aktif olup olmadığını kontrol et
       if (!mounted) {
@@ -73,12 +73,25 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         return;
       }
 
-      // Direkt ana sayfaya yönlendir (artık auth kontrolü yapılmıyor)
-      Logger.info('🏠 SplashView - Navigating to home page directly');
+      // Onboarding tamamlanmış mı kontrol et
+      final isOnboardingCompleted =
+          await CacheService().isOnboardingCompleted() ?? false;
 
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
+      if (isOnboardingCompleted) {
+        Logger.info(
+          '🏠 SplashView - Onboarding tamamlanmış, ana sayfaya yönlendiriliyor',
+        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
+      } else {
+        Logger.info(
+          '🎯 SplashView - Onboarding tamamlanmamış, onboarding sayfasına yönlendiriliyor',
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const OnboardingView()),
+        );
+      }
     } catch (e) {
       Logger.error('❌ SplashView - Error during navigation: $e', error: e);
 
@@ -90,14 +103,12 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         return;
       }
 
-      // Hata durumunda da ana sayfaya yönlendir
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
+      // Hata durumunda onboarding sayfasına yönlendir
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const OnboardingView()),
+      );
     }
   }
-
-  
 
   @override
   void dispose() {

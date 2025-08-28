@@ -363,8 +363,10 @@ class CacheService {
       final file = File('${_cacheDir!.path}/blocked_users.json');
       final jsonData = jsonEncode(blockedUsers);
       await file.writeAsString(jsonData);
-      
-      Logger.info('🔒 CacheService - Saved ${blockedUsers.length} blocked users');
+
+      Logger.info(
+        '🔒 CacheService - Saved ${blockedUsers.length} blocked users',
+      );
     } catch (e) {
       Logger.error('❌ CacheService - Error saving blocked users: $e', error: e);
     }
@@ -382,7 +384,10 @@ class CacheService {
       Logger.info('🔒 CacheService - Retrieved blocked users from cache');
       return jsonData;
     } catch (e) {
-      Logger.error('❌ CacheService - Error getting blocked users: $e', error: e);
+      Logger.error(
+        '❌ CacheService - Error getting blocked users: $e',
+        error: e,
+      );
       return null;
     }
   }
@@ -398,7 +403,59 @@ class CacheService {
         Logger.info('🔒 CacheService - Cleared blocked users cache');
       }
     } catch (e) {
-      Logger.error('❌ CacheService - Error clearing blocked users: $e', error: e);
+      Logger.error(
+        '❌ CacheService - Error clearing blocked users: $e',
+        error: e,
+      );
+    }
+  }
+
+  /// Onboarding durumunu kaydeder
+  Future<void> setOnboardingCompleted(bool completed) async {
+    try {
+      if (_cacheDir == null) {
+        await initialize();
+      }
+
+      final file = File('${_cacheDir!.path}/onboarding_completed.json');
+      final jsonData = jsonEncode({
+        'completed': completed,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      await file.writeAsString(jsonData);
+
+      Logger.info('🎯 CacheService - Onboarding durumu kaydedildi: $completed');
+    } catch (e) {
+      Logger.error(
+        '❌ CacheService - Onboarding durumu kaydetme hatası: $e',
+        error: e,
+      );
+    }
+  }
+
+  /// Onboarding durumunu döndürür
+  Future<bool?> isOnboardingCompleted() async {
+    try {
+      if (_cacheDir == null) {
+        await initialize();
+      }
+
+      final file = File('${_cacheDir!.path}/onboarding_completed.json');
+      if (!await file.exists()) return null;
+
+      final jsonData = await file.readAsString();
+      final data = jsonDecode(jsonData) as Map<String, dynamic>;
+
+      Logger.info(
+        '🎯 CacheService - Onboarding durumu alındı: ${data['completed']}',
+      );
+      return data['completed'] as bool?;
+    } catch (e) {
+      Logger.error(
+        '❌ CacheService - Onboarding durumu alma hatası: $e',
+        error: e,
+      );
+      return null;
     }
   }
 }

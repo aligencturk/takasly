@@ -23,6 +23,7 @@ import 'viewmodels/notification_viewmodel.dart';
 import 'viewmodels/general_viewmodel.dart';
 import 'viewmodels/contract_viewmodel.dart';
 import 'viewmodels/remote_config_viewmodel.dart';
+import 'viewmodels/onboarding_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/home/home_view.dart';
 import 'views/auth/login_view.dart';
@@ -215,7 +216,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -245,6 +246,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
         ChangeNotifierProvider(create: (_) => GeneralViewModel()),
         ChangeNotifierProvider(create: (_) => ContractViewModel()),
+        ChangeNotifierProvider(create: (_) => OnboardingViewModel()),
         ChangeNotifierProvider(
           create: (context) {
             final remoteConfigViewModel = RemoteConfigViewModel();
