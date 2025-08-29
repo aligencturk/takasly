@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -1475,6 +1474,96 @@ class _EditProductViewState extends State<EditProductView> {
         return;
       }
 
+      // Galeri seçeneklerini göster
+      _showGalleryOptions();
+    } catch (e) {
+      Logger.error('❌ EditProductView - Error showing gallery options: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Galeri seçenekleri gösterilirken hata oluştu: $e'),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Galeri seçeneklerini göster
+  void _showGalleryOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              Text(
+                'Galeri',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+
+              const SizedBox(height: 20),
+
+              ListTile(
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.photo_library, color: AppTheme.primary),
+                ),
+                title: const Text('Fotoğraf Seç'),
+                subtitle: const Text('Tek veya çoklu fotoğraf seçimi yapın'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImagesFromGallery();
+                },
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Galeriden fotoğraf seç
+  Future<void> _pickImagesFromGallery() async {
+    try {
+      final int totalExistingImages =
+          _existingImages.length + _newImages.length;
+      final int remainingSlots = 5 - totalExistingImages;
+
+      if (remainingSlots <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maksimum 5 fotoğraf olabilir'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       final List<XFile> pickedFiles = await _imagePicker.pickMultipleMedia(
         // Backend optimizasyon yapacağı için yüksek kalite seçiliyor
         imageQuality: 100,
@@ -1546,7 +1635,7 @@ class _EditProductViewState extends State<EditProductView> {
         }
       }
     } catch (e) {
-      Logger.error('❌ EditProductView - Error picking images: $e');
+      Logger.error('❌ EditProductView - Error picking images from gallery: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Resim seçilirken hata oluştu: $e')),

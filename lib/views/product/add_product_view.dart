@@ -2310,7 +2310,7 @@ class _AddProductViewState extends State<AddProductView> {
 
         if (_selectedImages.isNotEmpty) ...[
           SizedBox(
-            height: 120,
+            height: 100, // Fotoğraf ekle kutucuğu ile aynı yükseklik
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _selectedImages.length + 1,
@@ -2381,194 +2381,138 @@ class _AddProductViewState extends State<AddProductView> {
 
     return Container(
       width: 100,
-      height: 120, // Yüksekliği artırdım düzenle butonu için
+      height: 100, // Fotoğraf ekle kutucuğu ile aynı yükseklik
       margin: const EdgeInsets.only(right: 12),
-      child: Column(
+      child: Stack(
         children: [
-          // Düzenleme butonu (kutucuğun üstünde, sol taraf)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 4),
-              child: GestureDetector(
-                onTap: () => _editImage(index),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isCoverImage
-                        ? AppTheme.primary
-                        : Colors.grey.shade300,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                    border: Border.all(
-                      color: isCoverImage
-                          ? AppTheme.primary
-                          : Colors.grey.shade300,
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    'Düzenle',
-                    style: TextStyle(
-                      color: isCoverImage ? Colors.white : Colors.grey.shade700,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
+          // Ana resim kutucuğu
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isCoverImage ? AppTheme.primary : Colors.grey.shade300,
+                width: isCoverImage ? 2 : 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(isCoverImage ? 10 : 11),
+              child: Center(
+                child: Image.file(
+                  image,
+                  width: 92,
+                  height: 92,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    Logger.error('❌ Resim yükleme hatası: $error');
+                    return Container(
+                      width: 92,
+                      height: 92,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(
+                          isCoverImage ? 10 : 11,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.broken_image,
+                            color: Colors.grey.shade400,
+                            size: 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Resim\nYüklenemedi',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  frameBuilder:
+                      (context, child, frame, wasSynchronouslyLoaded) {
+                        if (wasSynchronouslyLoaded) {
+                          return child;
+                        }
+                        return AnimatedOpacity(
+                          opacity: frame == null ? 0 : 1,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          child: child,
+                        );
+                      },
+                ),
+              ),
+            ),
+          ),
+
+          // Kapak yazısı (sol üst köşe)
+          Positioned(
+            top: 4,
+            left: 4,
+            child: GestureDetector(
+              onTap: () => _setCoverImage(index),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isCoverImage
+                      ? AppTheme.primary
+                      : Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  isCoverImage ? 'KAPAK' : 'KAPAK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
           ),
 
-          // Ana resim kutucuğu
-          Expanded(
-            child: Stack(
-              children: [
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isCoverImage
-                          ? AppTheme.primary
-                          : Colors.grey.shade300,
-                      width: isCoverImage ? 2 : 1,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(isCoverImage ? 10 : 11),
-                    child: Center(
-                      child: Image.file(
-                        image,
-                        width: 92,
-                        height: 92,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          Logger.error('❌ Resim yükleme hatası: $error');
-                          return Container(
-                            width: 92,
-                            height: 92,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(
-                                isCoverImage ? 10 : 11,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.broken_image,
-                                  color: Colors.grey.shade400,
-                                  size: 24,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Resim\nYüklenemedi',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey.shade500,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        frameBuilder:
-                            (context, child, frame, wasSynchronouslyLoaded) {
-                              if (wasSynchronouslyLoaded) {
-                                return child;
-                              }
-                              return AnimatedOpacity(
-                                opacity: frame == null ? 0 : 1,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                                child: child,
-                              );
-                            },
-                      ),
-                    ),
-                  ),
+          // Düzenleme butonu (sol alt köşe)
+          Positioned(
+            bottom: 4,
+            left: 4,
+            child: GestureDetector(
+              onTap: () => _editImage(index),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  color: Colors.yellow,
+                  shape: BoxShape.circle,
                 ),
+                child: const Icon(Icons.edit, color: Colors.black87, size: 14),
+              ),
+            ),
+          ),
 
-                // Kapak resmi göstergesi
-                if (isCoverImage)
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Kapak',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Kapak resmi yapma butonu (sol üst köşe, kapak resmi değilse)
-                if (!isCoverImage)
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    child: GestureDetector(
-                      onTap: () => _setCoverImage(index),
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.star,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Silme butonu (sağ üst köşe)
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: GestureDetector(
-                    onTap: () => _removeImage(index),
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
+          // Silme butonu (sağ üst köşe)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () => _removeImage(index),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
                 ),
-              ],
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
+              ),
             ),
           ),
         ],
