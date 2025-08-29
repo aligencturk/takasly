@@ -139,11 +139,12 @@ class _OnboardingViewState extends State<OnboardingView>
                             opacity: _buttonFadeAnimation!,
                             child: ScaleTransition(
                               scale: _buttonScaleAnimation!,
-                              child: _buildButtons(viewModel),
+                              child: _buildButtons(context, viewModel),
                             ),
                           ),
                         )
                       : _buildButtons(
+                          context,
                           viewModel,
                         ), // Animasyonlar hazır değilse normal göster
                 ),
@@ -189,10 +190,12 @@ class _OnboardingViewState extends State<OnboardingView>
     );
   }
 
-  Widget _buildButtons(OnboardingViewModel viewModel) {
+  Widget _buildButtons(BuildContext context, OnboardingViewModel viewModel) {
     // 2. ve 3. sayfa için farklı padding ve boyutlar
     final isSecondOrThirdPage =
         viewModel.currentPage == 1 || viewModel.currentPage == 2;
+    final isLastPage =
+        viewModel.currentPage == viewModel.onboardingPages.length - 1;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -202,43 +205,58 @@ class _OnboardingViewState extends State<OnboardingView>
         right: isSecondOrThirdPage ? 40.0 : 24.0,
         bottom: isSecondOrThirdPage ? 20.0 : 0.0, // Alt kısımda da biraz azalt
       ),
-      child: Row(
-        children: [
-          // Atlama butonu (ilk iki sayfada)
-          if (viewModel.currentPage < viewModel.onboardingPages.length - 1)
-            Expanded(
-              flex: 1, // Her zaman eşit uzunluk
-              child: _buildButton(
-                text: 'Atla',
-                onPressed: () => _handleCompleteOnboarding(context, viewModel),
-                isOutlined: true,
-                isSmall: isSecondOrThirdPage, // Küçük boyut için flag
-              ),
-            ),
+      child: isLastPage
+          ? // 3. sayfa için tek buton ve tam orta hizalama
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 150.0, // Son sayfa için normal genişlik
+                  child: _buildButton(
+                    text: 'Başla',
+                    onPressed: () =>
+                        _handleCompleteOnboarding(context, viewModel),
+                    isSmall: false, // Son sayfa için normal boyut
+                  ),
+                ),
+              ],
+            )
+          : // 1. ve 2. sayfa için iki buton
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Atlama butonu (ilk iki sayfada)
+                SizedBox(
+                  width: isSecondOrThirdPage
+                      ? 120.0
+                      : 150.0, // 2. ve 3. sayfa için daha dar
+                  child: _buildButton(
+                    text: 'Atla',
+                    onPressed: () =>
+                        _handleCompleteOnboarding(context, viewModel),
+                    isOutlined: true,
+                    isSmall: isSecondOrThirdPage, // Küçük boyut için flag
+                  ),
+                ),
 
-          if (viewModel.currentPage < viewModel.onboardingPages.length - 1)
-            SizedBox(
-              width: isSecondOrThirdPage
-                  ? 12.0
-                  : 16.0, // 2. ve 3. sayfada daha az boşluk
-            ), // Daha az boşluk
-          // İleri/Tamamla butonu
-          Expanded(
-            flex: 1, // Her zaman eşit uzunluk
-            child: _buildButton(
-              text:
-                  viewModel.currentPage == viewModel.onboardingPages.length - 1
-                  ? 'Başla'
-                  : 'İleri',
-              onPressed:
-                  viewModel.currentPage == viewModel.onboardingPages.length - 1
-                  ? () => _handleCompleteOnboarding(context, viewModel)
-                  : viewModel.nextPage,
-              isSmall: isSecondOrThirdPage, // Küçük boyut için flag
+                SizedBox(
+                  width: isSecondOrThirdPage
+                      ? 12.0
+                      : 16.0, // 2. ve 3. sayfada daha az boşluk
+                ), // Daha az boşluk
+                // İleri butonu
+                SizedBox(
+                  width: isSecondOrThirdPage
+                      ? 120.0
+                      : 150.0, // 2. ve 3. sayfa için daha dar
+                  child: _buildButton(
+                    text: 'İleri',
+                    onPressed: viewModel.nextPage,
+                    isSmall: isSecondOrThirdPage, // Küçük boyut için flag
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
