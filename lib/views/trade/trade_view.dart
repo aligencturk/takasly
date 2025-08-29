@@ -409,6 +409,7 @@ class _TradeViewState extends State<TradeView>
                         gradient: LinearGradient(
                           colors: [
                             Color(0xFF10B981).withOpacity(0.1),
+                            // ignore: deprecated_member_use
                             Color(0xFF059669).withOpacity(0.1),
                           ],
                         ),
@@ -539,7 +540,10 @@ class _TradeViewState extends State<TradeView>
                             if (displayIndex != 0 &&
                                 (displayIndex + 1) % (adInterval + 1) == 0) {
                               return Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                                 child: BannerAdListTile(key: UniqueKey()),
                               );
                             }
@@ -1642,7 +1646,9 @@ class _TradeViewState extends State<TradeView>
                             (displayIndex + 1) % (adInterval + 1) == 0) {
                           return Container(
                             margin: EdgeInsets.only(bottom: 10),
-                            child: BannerAdListTile(key: ValueKey('favorites_grid_ad_$displayIndex')),
+                            child: BannerAdListTile(
+                              key: ValueKey('favorites_grid_ad_$displayIndex'),
+                            ),
                           );
                         }
 

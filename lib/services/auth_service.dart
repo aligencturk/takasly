@@ -1341,7 +1341,6 @@ class AuthService {
         // Kaydedilen token'ı kontrol et
         final savedToken = await database.child(path).get();
         if (savedToken.value != null) {
-          final savedValue = savedToken.value.toString();
           Logger.info(
             '✅ FCM token başarıyla Firebase\'e kaydedildi ve doğrulandı: ${fcmToken.substring(0, 20)}...',
           );

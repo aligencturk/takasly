@@ -2178,12 +2178,6 @@ class _EditProductViewState extends State<EditProductView> {
     }
   }
 
-  /// Sponsor timer'ını durdur
-  void _stopSponsorTimer() {
-    _sponsorTimer?.cancel();
-    _sponsorTimer = null;
-  }
-
   /// Sponsor işlemini yönet - ürün düzenleme için
   Future<void> _handleSponsorProcess() async {
     try {

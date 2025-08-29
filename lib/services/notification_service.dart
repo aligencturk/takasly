@@ -1054,7 +1054,6 @@ class NotificationService {
       if (type == 'chat_message') {
         final chatId = data['chatId'] as String?;
         final senderId = data['senderId'] as String?;
-        final messageType = data['messageType'] as String?;
 
         Logger.info(
           'Chat mesajı alındı: chatId=$chatId, senderId=$senderId',

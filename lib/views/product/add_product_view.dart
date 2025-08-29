@@ -48,7 +48,7 @@ class _AddProductViewState extends State<AddProductView> {
   // Sponsor ile ilgili değişkenler
   final AdMobService _adMobService = AdMobService();
   bool _sponsorProduct = false; // Kullanıcının sponsor seçimi
-  bool _isProcessingSponsor = false; // Sponsor işlemi devam ediyor mu
+
   String? _addedProductId; // Eklenen ürünün ID'si (sponsor için)
 
   // Step management
@@ -594,9 +594,7 @@ class _AddProductViewState extends State<AddProductView> {
   /// Sponsor işlemini yönet
   Future<void> _handleSponsorProcess() async {
     try {
-      setState(() {
-        _isProcessingSponsor = true;
-      });
+      setState(() {});
 
       Logger.info('🎁 AddProductView - Sponsor işlemi başlatılıyor...');
 
@@ -672,10 +670,6 @@ class _AddProductViewState extends State<AddProductView> {
       Logger.error('❌ AddProductView - Sponsor işlemi hatası: $e');
       _showSponsorErrorMessage();
     } finally {
-      setState(() {
-        _isProcessingSponsor = false;
-      });
-
       // Her durumda ana sayfaya dön
       _finishAddProduct(true);
     }
