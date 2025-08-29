@@ -188,20 +188,29 @@ class PickCropService {
         '🖼️ PickCropService - Starting crop for existing image: $imagePath',
       );
 
+      // Dosya varlığını kontrol et
+      final File originalFile = File(imagePath);
+      if (!await originalFile.exists()) {
+        Logger.error(
+          '🖼️ PickCropService - Source image file does not exist: $imagePath',
+        );
+        return null;
+      }
+
+      // Crop ekranını aç
       final CroppedFile? croppedFile = await _openCropScreen(
         imagePath,
         aspectRatio: aspectRatio,
       );
 
-      if (croppedFile == null) {
-        Logger.debug('🖼️ PickCropService - Crop cancelled for existing image');
-        return null;
+      if (croppedFile != null) {
+        Logger.debug(
+          '🖼️ PickCropService - Existing image cropped: ${croppedFile.path}',
+        );
+        return croppedFile;
       }
 
-      Logger.debug(
-        '🖼️ PickCropService - Existing image cropped: ${croppedFile.path}',
-      );
-      return croppedFile;
+      return null;
     } catch (e) {
       Logger.error('🖼️ PickCropService - Error cropping existing image: $e');
       return null;

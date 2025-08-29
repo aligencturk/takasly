@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -1495,7 +1496,7 @@ class _EditProductViewState extends State<EditProductView> {
         }
 
         Logger.debug(
-          '🖼️ EditProductView - Converting ${filesToAdd.length} selected images...',
+          '🖼️ EditProductView - Converting ${filesToAdd.length} selected images with orientation fix...',
         );
         final List<File> convertedFiles =
             await ImageOptimizationService.convertXFilesToFiles(

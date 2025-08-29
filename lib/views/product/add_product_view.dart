@@ -2696,8 +2696,10 @@ class _AddProductViewState extends State<AddProductView> {
           );
         }
 
-        // Uint8List'i File'a dönüştür
-        Logger.debug('🖼️ AddProductView - Converting Uint8List to File...');
+        // Uint8List'i File'a dönüştür (orientation düzeltilmiş)
+        Logger.debug(
+          '🖼️ AddProductView - Converting Uint8List to File with orientation fix...',
+        );
         final File convertedFile =
             await ImageOptimizationService.convertUint8ListToFile(
               imageBytes,
