@@ -1600,7 +1600,7 @@ class _AddProductViewState extends State<AddProductView> {
           ProfanityCheckTextField(
             controller: _tradeForController,
             labelText: 'Ne ile takas etmek istersin?',
-            hintText: 'Örn: MacBook Pro, para, başka bir telefon...',
+            hintText: 'Örn: İhtiyacınız olan veya istediğiniz bir ürün...',
             maxLines: 4,
             textCapitalization: TextCapitalization.sentences,
             sensitivity: 'medium',
