@@ -39,9 +39,7 @@ class AnnouncementDialog extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-      ),
+      decoration: BoxDecoration(color: Colors.grey[100]),
       child: AppNetworkImage(
         imageUrl: imageUrl,
         width: width,
@@ -343,9 +341,7 @@ class FullScreenImageAnnouncementDialog extends StatelessWidget {
         return Dialog(
           insetPadding: const EdgeInsets.all(16),
           backgroundColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(1),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(1)),
           elevation: 0,
           child: Stack(
             children: [
@@ -404,7 +400,10 @@ class FullScreenImageAnnouncementDialog extends StatelessWidget {
                                 offset: const Offset(0, 2),
                               ),
                             ],
-                            border: Border.all(color: AppTheme.primary, width: 1),
+                            border: Border.all(
+                              color: AppTheme.primary,
+                              width: 1,
+                            ),
                           ),
                           child: const Icon(
                             Icons.close,
@@ -555,7 +554,7 @@ class AnnouncementBottomSheet extends StatelessWidget {
         remoteConfigViewModel.markAnnouncementAsShown();
         Logger.info('✅ Duyuru gösterildi olarak işaretlendi');
       } else {
-        Logger.debug('ℹ️ Gösterilecek duyuru yok');
+        Logger.debug('ℹ️ Gösterilecek duyuru yok veya kullanıcı zaten görmüş');
       }
     } catch (e) {
       Logger.error('❌ Duyuru bottom sheet gösterme hatası: $e', error: e);
