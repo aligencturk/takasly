@@ -78,6 +78,42 @@ class _SearchViewState extends State<SearchView> {
     productViewModel.clearFilters();
   }
 
+  /// Navigation stack'i güvenli bir şekilde kontrol eder ve gerekirse ana sayfaya yönlendirir
+  void _safeNavigateBack() {
+    if (!mounted || !context.mounted) {
+      Logger.warning('⚠️ SearchView - Widget or context not mounted, cannot navigate');
+      return;
+    }
+
+    try {
+      // Navigation stack'i kontrol et
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+        Logger.info('✅ SearchView - Successfully popped navigation stack');
+      } else {
+        // Pop yapılamıyorsa ana sayfaya yönlendir
+        Logger.warning('⚠️ SearchView - Cannot pop, navigating to home');
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+        );
+        Logger.info('✅ SearchView - Successfully navigated to home');
+      }
+    } catch (e) {
+      Logger.error('❌ SearchView - Navigation error: $e', error: e);
+      // Hata durumunda ana sayfaya yönlendir
+      try {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+        );
+        Logger.info('✅ SearchView - Fallback navigation to home successful');
+      } catch (e2) {
+        Logger.error('❌ SearchView - Fallback navigation error: $e2', error: e2);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -106,16 +142,7 @@ class _SearchViewState extends State<SearchView> {
               // Pop yapılamıyorsa ana sayfaya yönlendir
               Logger.warning('⚠️ SearchView - WillPopScope: Cannot pop, navigating to home');
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && context.mounted) {
-                  try {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/home',
-                      (route) => false,
-                    );
-                  } catch (e) {
-                    Logger.error('❌ SearchView - WillPopScope fallback navigation error: $e', error: e);
-                  }
-                }
+                _safeNavigateBack();
               });
               return false; // WillPopScope'u engelle
             }
@@ -151,33 +178,8 @@ class _SearchViewState extends State<SearchView> {
                 }
               }
 
-              // Widget hala mounted mı kontrol et ve güvenli navigation yap
-              if (mounted && context.mounted) {
-                try {
-                  // Navigation stack'i kontrol et
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  } else {
-                    // Eğer pop yapılamıyorsa ana sayfaya yönlendir
-                    Logger.warning('⚠️ SearchView - Geri butonu: Cannot pop, navigating to home');
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/home',
-                      (route) => false,
-                    );
-                  }
-                } catch (e) {
-                  Logger.error('❌ SearchView - Geri butonu navigation error: $e', error: e);
-                  // Hata durumunda ana sayfaya yönlendir
-                  try {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/home',
-                      (route) => false,
-                    );
-                  } catch (e2) {
-                    Logger.error('❌ SearchView - Geri butonu fallback navigation error: $e2', error: e2);
-                  }
-                }
-              }
+              // Güvenli navigation kullan
+              _safeNavigateBack();
             },
           ),
           title: Container(
