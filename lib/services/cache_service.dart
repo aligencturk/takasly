@@ -458,4 +458,16 @@ class CacheService {
       return null;
     }
   }
+
+  /// TEST İÇİN: Onboarding durumunu sıfırlar (her girişte gösterir)
+  Future<void> resetOnboardingForTesting() async {
+    try {
+      await setOnboardingCompleted(false);
+      Logger.info(
+        '🧪 TEST MODU: Onboarding durumu sıfırlandı - Her girişte gösterilecek',
+      );
+    } catch (e) {
+      Logger.error('❌ TEST MODU: Onboarding sıfırlama hatası: $e', error: e);
+    }
+  }
 }

@@ -16,21 +16,22 @@ class OnboardingViewModel extends ChangeNotifier {
   // Onboarding sayfaları
   final List<OnboardingModel> onboardingPages = [
     const OnboardingModel(
-      title: 'Takasly\'e Hoş Geldin',
-      description: 'Eşyalarını takas et, yeni değerler keşfet!',
-      imagePath: 'assets/logo/takasly image.png',
+      title: 'Takasly\'e Hoşgeldiniz!',
+      description:
+          'Takasly, eşyalarınızı tamamen ücretsiz ve komisyonsuz şekilde takas edebileceğiniz güvenilir bir platformdur.',
+      imagePath: 'assets/images/1.png',
     ),
     const OnboardingModel(
-      title: 'Takasly Nedir?',
+      title: 'Takas Teklifleri Anında!',
       description:
-          'Takasly, eşyalarını başkalarıyla takas etmeni sağlayan güvenli ve kolay bir platformdur. Artık kullanmadığın eşyalarını değerlendir, ihtiyacın olan şeyleri ücretsiz elde et!',
-      imagePath: 'assets/images/takasly splash image.png',
+          'Eşyanı ilan olarak ekle, Kullanıcıların tekliflerini gör, Beğendiğin teklifi kabul et, kolayca takas yap!',
+      imagePath: 'assets/images/2.png',
     ),
     const OnboardingModel(
-      title: 'Hazır mısın?',
+      title: 'Komisyon Yok, Masraf Yok!',
       description:
-          'Takas dünyasına adım atmaya hazır mısın? Hemen başla ve eşyalarını takas etmeye başla!',
-      imagePath: 'assets/logo/takasly image.png',
+          'Tüm ilanlar ücretsiz! Kolay arama ve kategori filtreleriyle ihtiyacını hemen bul! Şimdi başlayarak ilk takasını yap!',
+      imagePath: 'assets/images/3.png',
       isLastPage: true,
     ),
   ];
@@ -91,7 +92,14 @@ class OnboardingViewModel extends ChangeNotifier {
   // Onboarding tamamlanmış mı kontrol et
   Future<bool> isOnboardingCompleted() async {
     try {
-      return await CacheService().isOnboardingCompleted() ?? false;
+      // TEST MODU: Her zaman false döndür (onboarding her girişte gösterilsin)
+      Logger.info(
+        '🧪 TEST MODU: Onboarding durumu her zaman false döndürülüyor',
+      );
+      return false;
+
+      // Normal mod için aşağıdaki kodu kullan:
+      // return await CacheService().isOnboardingCompleted() ?? false;
     } catch (e) {
       Logger.error('Onboarding durumu kontrol hatası: $e', error: e);
       return false;

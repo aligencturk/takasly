@@ -73,7 +73,10 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         return;
       }
 
-      // Onboarding tamamlanmış mı kontrol et
+      // TEST MODU: Her girişte onboarding'i sıfırla
+      await CacheService().resetOnboardingForTesting();
+
+      // Onboarding tamamlanmış mı kontrol et (her zaman false olacak)
       final isOnboardingCompleted =
           await CacheService().isOnboardingCompleted() ?? false;
 
@@ -86,7 +89,7 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
       } else {
         Logger.info(
-          '🎯 SplashView - Onboarding tamamlanmamış, onboarding sayfasına yönlendiriliyor',
+          '🎯 SplashView - TEST MODU: Onboarding her zaman gösteriliyor',
         );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const OnboardingView()),

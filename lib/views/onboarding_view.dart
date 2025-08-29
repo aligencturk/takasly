@@ -4,7 +4,7 @@ import '../viewmodels/onboarding_viewmodel.dart';
 import '../models/onboarding_model.dart';
 import '../core/app_theme.dart';
 import '../utils/logger.dart';
-import 'auth/login_view.dart';
+
 import 'home/home_view.dart';
 
 class OnboardingView extends StatefulWidget {
@@ -14,11 +14,81 @@ class OnboardingView extends StatefulWidget {
   State<OnboardingView> createState() => _OnboardingViewState();
 }
 
-class _OnboardingViewState extends State<OnboardingView> {
+class _OnboardingViewState extends State<OnboardingView>
+    with TickerProviderStateMixin {
+  AnimationController? _buttonAnimationController;
+  Animation<Offset>? _buttonSlideAnimation;
+  Animation<double>? _buttonFadeAnimation;
+  Animation<double>? _buttonScaleAnimation;
+
   @override
   void initState() {
     super.initState();
     Logger.info('🎯 OnboardingView başlatıldı');
+
+    // Animasyon controller'ı başlat
+    _buttonAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600), // Daha hızlı ve responsive
+      vsync: this,
+    );
+
+    // Animasyonları hemen başlat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializeAnimations();
+        _startButtonAnimation();
+      }
+    });
+  }
+
+  void _initializeAnimations() {
+    if (!mounted) return;
+    if (_buttonAnimationController == null) return;
+
+    // Slide animasyonu (arkadan yukarı)
+    _buttonSlideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, 0.8), // Daha yakından başla
+          end: Offset.zero, // Normal pozisyon
+        ).animate(
+          CurvedAnimation(
+            parent: _buttonAnimationController!,
+            curve: Curves.easeOutCubic, // Daha yumuşak ve kurumsal
+          ),
+        );
+
+    // Fade animasyonu
+    _buttonFadeAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _buttonAnimationController!,
+        curve: Curves.easeOut, // Daha yumuşak fade
+      ),
+    );
+
+    // Scale animasyonu
+    _buttonScaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _buttonAnimationController!,
+        curve: Curves.easeOutCubic, // Daha yumuşak ve kurumsal
+      ),
+    );
+  }
+
+  void _startButtonAnimation() {
+    if (!mounted) return;
+    if (_buttonAnimationController == null) return;
+
+    // Animasyonu sıfırla
+    _buttonAnimationController!.reset();
+
+    // Hemen başlat
+    _buttonAnimationController!.forward();
+  }
+
+  @override
+  void dispose() {
+    _buttonAnimationController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -28,27 +98,56 @@ class _OnboardingViewState extends State<OnboardingView> {
       child: Consumer<OnboardingViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
-            backgroundColor: AppTheme.background,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  // PageView
-                  Expanded(
-                    child: PageView.builder(
-                      controller: viewModel.pageController,
-                      onPageChanged: viewModel.onPageChanged,
-                      itemCount: viewModel.onboardingPages.length,
-                      itemBuilder: (context, index) {
-                        final page = viewModel.onboardingPages[index];
-                        return _OnboardingPage(page: page);
-                      },
-                    ),
-                  ),
+            body: Stack(
+              children: [
+                // Tam ekran resim
+                PageView.builder(
+                  controller: viewModel.pageController,
+                  onPageChanged: (page) {
+                    viewModel.onPageChanged(page);
+                    // Sayfa değişiminde buton animasyonlarını tekrar başlat
+                    _startButtonAnimation();
+                  },
+                  itemCount: viewModel.onboardingPages.length,
+                  itemBuilder: (context, index) {
+                    final page = viewModel.onboardingPages[index];
+                    return _OnboardingPage(page: page);
+                  },
+                ),
 
-                  // Alt kısım - Butonlar ve indicator
-                  _buildBottomSection(context, viewModel),
-                ],
-              ),
+                // Sayfa indicator'ları (üst kısımda)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 20,
+                  left: 0,
+                  right: 0,
+                  child: _buildPageIndicators(viewModel),
+                ),
+
+                // Butonlar (alt kısımda) - Animasyonlu
+                Positioned(
+                  bottom: MediaQuery.of(context).padding.bottom + 40,
+                  left: 0,
+                  right: 0,
+                  child:
+                      _buttonSlideAnimation != null &&
+                          _buttonFadeAnimation != null &&
+                          _buttonScaleAnimation != null &&
+                          _buttonAnimationController != null
+                      ? SlideTransition(
+                          position: _buttonSlideAnimation!,
+                          child: FadeTransition(
+                            opacity: _buttonFadeAnimation!,
+                            child: ScaleTransition(
+                              scale: _buttonScaleAnimation!,
+                              child: _buildButtons(viewModel),
+                            ),
+                          ),
+                        )
+                      : _buildButtons(
+                          viewModel,
+                        ), // Animasyonlar hazır değilse normal göster
+                ),
+              ],
             ),
           );
         },
@@ -56,89 +155,89 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 
-  Widget _buildBottomSection(
-    BuildContext context,
-    OnboardingViewModel viewModel,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          // Sayfa indicator'ları
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              viewModel.onboardingPages.length,
-              (index) => _buildPageIndicator(
-                index: index,
-                isActive: index == viewModel.currentPage,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Butonlar
-          Row(
-            children: [
-              // Geri butonu (ilk sayfada gizli)
-              if (viewModel.currentPage > 0)
-                Expanded(
-                  child: _buildButton(
-                    text: 'Geri',
-                    onPressed: viewModel.previousPage,
-                    isOutlined: true,
-                  ),
-                ),
-
-              if (viewModel.currentPage > 0) const SizedBox(width: 16),
-
-              // İleri/Tamamla butonu
-              Expanded(
-                flex: viewModel.currentPage > 0 ? 1 : 1,
-                child: _buildButton(
-                  text:
-                      viewModel.currentPage ==
-                          viewModel.onboardingPages.length - 1
-                      ? 'Başla'
-                      : 'İleri',
-                  onPressed:
-                      viewModel.currentPage ==
-                          viewModel.onboardingPages.length - 1
-                      ? () => _handleCompleteOnboarding(context, viewModel)
-                      : viewModel.nextPage,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Giriş yap butonu (son sayfada)
-          if (viewModel.currentPage == viewModel.onboardingPages.length - 1)
-            SizedBox(
-              width: double.infinity,
-              child: _buildButton(
-                text: 'Giriş Yap',
-                onPressed: () => _navigateToLogin(context),
-                isOutlined: true,
-              ),
-            ),
-        ],
+  Widget _buildPageIndicators(OnboardingViewModel viewModel) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        viewModel.onboardingPages.length,
+        (index) => _buildPageIndicator(
+          index: index,
+          isActive: index == viewModel.currentPage,
+        ),
       ),
     );
   }
 
   Widget _buildPageIndicator({required int index, required bool isActive}) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: isActive ? 24 : 8,
-      height: 8,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      width: isActive ? 32 : 12,
+      height: 12,
       decoration: BoxDecoration(
-        color: isActive
-            ? AppTheme.primary
-            : AppTheme.textSecondary.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(4),
+        color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildButtons(OnboardingViewModel viewModel) {
+    // 2. ve 3. sayfa için farklı padding ve boyutlar
+    final isSecondOrThirdPage =
+        viewModel.currentPage == 1 || viewModel.currentPage == 2;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isSecondOrThirdPage
+            ? 10.0
+            : 24.0, // 2. ve 3. sayfada sola yaklaştır
+        right: isSecondOrThirdPage ? 40.0 : 24.0,
+        bottom: isSecondOrThirdPage ? 20.0 : 0.0, // Alt kısımda da biraz azalt
+      ),
+      child: Row(
+        children: [
+          // Atlama butonu (ilk iki sayfada)
+          if (viewModel.currentPage < viewModel.onboardingPages.length - 1)
+            Expanded(
+              flex: 1, // Her zaman eşit uzunluk
+              child: _buildButton(
+                text: 'Atla',
+                onPressed: () => _handleCompleteOnboarding(context, viewModel),
+                isOutlined: true,
+                isSmall: isSecondOrThirdPage, // Küçük boyut için flag
+              ),
+            ),
+
+          if (viewModel.currentPage < viewModel.onboardingPages.length - 1)
+            SizedBox(
+              width: isSecondOrThirdPage
+                  ? 12.0
+                  : 16.0, // 2. ve 3. sayfada daha az boşluk
+            ), // Daha az boşluk
+          // İleri/Tamamla butonu
+          Expanded(
+            flex: 1, // Her zaman eşit uzunluk
+            child: _buildButton(
+              text:
+                  viewModel.currentPage == viewModel.onboardingPages.length - 1
+                  ? 'Başla'
+                  : 'İleri',
+              onPressed:
+                  viewModel.currentPage == viewModel.onboardingPages.length - 1
+                  ? () => _handleCompleteOnboarding(context, viewModel)
+                  : viewModel.nextPage,
+              isSmall: isSecondOrThirdPage, // Küçük boyut için flag
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -147,24 +246,33 @@ class _OnboardingViewState extends State<OnboardingView> {
     required String text,
     required VoidCallback onPressed,
     bool isOutlined = false,
+    bool isSmall = false,
   }) {
     return SizedBox(
-      height: 50,
+      height: isSmall ? 50 : 50, // 2. ve 3. sayfa için daha küçük
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: isOutlined ? Colors.transparent : AppTheme.primary,
           foregroundColor: isOutlined ? AppTheme.primary : Colors.white,
           side: isOutlined
-              ? BorderSide(color: AppTheme.primary, width: 2)
+              ? BorderSide(color: AppTheme.primary, width: isSmall ? 1.0 : 2)
               : null,
-          shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadius),
-          elevation: isOutlined ? 0 : 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: isSmall
+                ? BorderRadius.circular(
+                    8,
+                  ) // Küçük butonlar için daha az rounded
+                : AppTheme.borderRadius,
+          ),
+          elevation: isOutlined ? 0 : (isSmall ? 1 : 2),
         ),
         child: Text(
           text,
           style: AppTheme.lightTheme.textTheme.labelLarge?.copyWith(
             color: isOutlined ? AppTheme.primary : Colors.white,
+            fontSize: isSmall ? 13 : 16, // 2. ve 3. sayfa için daha küçük font
+            fontWeight: FontWeight.w600, // Daha kalın font
           ),
         ),
       ),
@@ -196,12 +304,6 @@ class _OnboardingViewState extends State<OnboardingView> {
       }
     }
   }
-
-  void _navigateToLogin(BuildContext context) {
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginView()));
-  }
 }
 
 class _OnboardingPage extends StatelessWidget {
@@ -211,67 +313,25 @@ class _OnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Resim
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              child: Image.asset(
-                page.imagePath,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  Logger.error(
-                    'Onboarding resim yükleme hatası: $error',
-                    error: error,
-                  );
-                  return Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: AppTheme.borderRadius,
-                      boxShadow: AppTheme.cardShadow,
-                    ),
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: AppTheme.textSecondary,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 40),
-
-          // Başlık
-          Text(
-            page.title,
-            style: AppTheme.lightTheme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 16),
-
-          // Açıklama
-          Text(
-            page.description,
-            style: AppTheme.lightTheme.textTheme.bodyLarge?.copyWith(
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      child: Image.asset(
+        page.imagePath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          Logger.error('Onboarding resim yükleme hatası: $error', error: error);
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: AppTheme.surface,
+            child: Icon(
+              Icons.image_not_supported,
+              size: 80,
               color: AppTheme.textSecondary,
-              height: 1.5,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          );
+        },
       ),
     );
   }
