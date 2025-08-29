@@ -110,7 +110,6 @@ dependencies:
   package_info_plus: ^8.0.2
   
   # Dynamic App Icon
-  flutter_launcher_icons: ^0.13.1
   in_app_review: ^2.0.10
 
 dev_dependencies:
