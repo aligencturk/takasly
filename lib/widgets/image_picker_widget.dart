@@ -181,9 +181,8 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
 
       Logger.debug('🖼️ ImagePickerWidget - Starting image pick from $source');
 
-      final Uint8List? imageBytes = await PickCropService.pickAndCropImage(
+      final Uint8List? imageBytes = await PickCropService.pickSingleImage(
         source: source,
-        aspectRatio: widget.aspectRatio,
         compressQuality: 85,
       );
 

@@ -6,148 +6,20 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:takasly/utils/logger.dart';
 
 /// Fotoğraf seçme ve düzenleme servisi
-/// Galeriden veya kameradan fotoğraf seçer, crop ekranında düzenleme yapar
+/// Galeriden veya kameradan fotoğraf seçer, kullanıcı istediğinde crop ekranında düzenleme yapar
 class PickCropService {
   static final ImagePicker _picker = ImagePicker();
 
-  /// Fotoğraf seçme ve düzenleme işlemi
+  /// Tekli fotoğraf seçme (düzenleme olmadan)
   /// [source] - Fotoğraf kaynağı (galeri veya kamera)
-  /// [aspectRatio] - Crop ekranında kullanılacak aspect ratio (null = serbest)
   /// [compressQuality] - Sıkıştırma kalitesi (0.0 - 1.0)
-  /// [initialImage] - Başlangıç olarak kullanılacak fotoğraf (opsiyonel)
-  /// Returns: Düzenlenmiş fotoğraf Uint8List olarak
-  static Future<Uint8List?> pickAndCropImage({
-    ImageSource source = ImageSource.gallery,
-    double? aspectRatio,
-    int compressQuality = 85,
-    File? initialImage,
-  }) async {
-    try {
-      Logger.debug(
-        '🖼️ PickCropService - Starting image pick and crop process',
-      );
-
-      // 1. Fotoğraf seç veya mevcut fotoğrafı kullan
-      File imageFile;
-      String imagePath;
-
-      if (initialImage != null && await initialImage.exists()) {
-        // Mevcut fotoğrafı kullan
-        imageFile = initialImage;
-        imagePath = initialImage.path;
-        Logger.debug('🖼️ PickCropService - Using existing image: $imagePath');
-      } else {
-        // Yeni fotoğraf seç
-        final XFile? pickedFile = await _picker.pickImage(
-          source: source,
-          imageQuality: compressQuality,
-          maxWidth: 1920,
-          maxHeight: 1920,
-        );
-
-        if (pickedFile == null) {
-          Logger.debug('🖼️ PickCropService - No image selected');
-          return null;
-        }
-
-        Logger.debug(
-          '🖼️ PickCropService - Image selected: ${pickedFile.path}',
-        );
-        imageFile = File(pickedFile.path);
-        imagePath = pickedFile.path;
-      }
-
-      // Dosya varlığını kontrol et
-      if (!await imageFile.exists()) {
-        Logger.error(
-          '🖼️ PickCropService - Image file does not exist: $imagePath',
-        );
-        return null;
-      }
-
-      // 2. Crop ekranını aç
-      final CroppedFile? croppedFile = await _openCropScreen(
-        imagePath,
-        aspectRatio: aspectRatio,
-      );
-
-      if (croppedFile == null) {
-        Logger.debug('🖼️ PickCropService - Crop cancelled');
-        return null;
-      }
-
-      Logger.debug('🖼️ PickCropService - Image cropped: ${croppedFile.path}');
-
-      // Cropped dosya varlığını kontrol et
-      final File croppedImageFile = File(croppedFile.path);
-      if (!await croppedImageFile.exists()) {
-        Logger.error(
-          '🖼️ PickCropService - Cropped file does not exist: ${croppedFile.path}',
-        );
-        return null;
-      }
-
-      // 3. Uint8List'e dönüştür
-      final Uint8List imageBytes = await croppedFile.readAsBytes();
-      Logger.debug(
-        '🖼️ PickCropService - Image converted to bytes: ${imageBytes.length} bytes',
-      );
-
-      return imageBytes;
-    } catch (e, stackTrace) {
-      Logger.error('🖼️ PickCropService - Error in pick and crop process: $e');
-      Logger.error('🖼️ PickCropService - Stack trace: $stackTrace');
-
-      // Hata durumunda fallback: mevcut fotoğrafı veya yeni seçilen fotoğrafı döndür
-      try {
-        Logger.info(
-          '🖼️ PickCropService - Attempting fallback: returning original image without crop',
-        );
-
-        if (initialImage != null && await initialImage.exists()) {
-          // Mevcut fotoğrafı döndür
-          final Uint8List fallbackBytes = await initialImage.readAsBytes();
-          Logger.info(
-            '🖼️ PickCropService - Fallback successful with existing image: ${fallbackBytes.length} bytes',
-          );
-          return fallbackBytes;
-        } else {
-          // Yeni fotoğraf seç
-          final XFile? fallbackFile = await _picker.pickImage(
-            source: source,
-            imageQuality: compressQuality,
-            maxWidth: 1920,
-            maxHeight: 1920,
-          );
-
-          if (fallbackFile != null) {
-            final Uint8List fallbackBytes = await fallbackFile.readAsBytes();
-            Logger.info(
-              '🖼️ PickCropService - Fallback successful with new image: ${fallbackBytes.length} bytes',
-            );
-            return fallbackBytes;
-          }
-        }
-      } catch (fallbackError) {
-        Logger.error(
-          '🖼️ PickCropService - Fallback also failed: $fallbackError',
-        );
-      }
-
-      return null;
-    }
-  }
-
-  /// Sadece fotoğraf seçme (crop olmadan)
-  /// [source] - Fotoğraf kaynağı
-  /// [compressQuality] - Sıkıştırma kalitesi
   /// Returns: Seçilen fotoğraf Uint8List olarak
-  static Future<Uint8List?> pickImageOnly({
+  static Future<Uint8List?> pickSingleImage({
     ImageSource source = ImageSource.gallery,
     int compressQuality = 85,
   }) async {
     try {
-      Logger.debug('🖼️ PickCropService - Starting image pick only process');
+      Logger.debug('🖼️ PickCropService - Starting single image pick process');
 
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
@@ -170,22 +42,145 @@ class PickCropService {
 
       return imageBytes;
     } catch (e) {
-      Logger.error('🖼️ PickCropService - Error in pick image process: $e');
+      Logger.error(
+        '🖼️ PickCropService - Error in single image pick process: $e',
+      );
       return null;
     }
   }
 
-  /// Mevcut dosyayı crop ekranında aç
+  /// Çoklu fotoğraf seçme (düzenleme olmadan)
+  /// [maxImages] - Maksimum seçilebilecek fotoğraf sayısı
+  /// [compressQuality] - Sıkıştırma kalitesi
+  /// Returns: Seçilen fotoğraflar Uint8List listesi olarak
+  static Future<List<Uint8List>> pickMultipleImages({
+    int maxImages = 5,
+    int compressQuality = 85,
+  }) async {
+    try {
+      Logger.debug(
+        '🖼️ PickCropService - Starting multiple image pick process',
+      );
+
+      final List<XFile> pickedFiles = await _picker.pickMultiImage(
+        imageQuality: compressQuality,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      if (pickedFiles.isEmpty) {
+        Logger.debug('🖼️ PickCropService - No images selected');
+        return [];
+      }
+
+      Logger.debug(
+        '🖼️ PickCropService - ${pickedFiles.length} images selected',
+      );
+
+      final List<Uint8List> imageBytesList = [];
+
+      for (int i = 0; i < pickedFiles.length && i < maxImages; i++) {
+        try {
+          final Uint8List imageBytes = await pickedFiles[i].readAsBytes();
+          imageBytesList.add(imageBytes);
+          Logger.debug(
+            '🖼️ PickCropService - Image ${i + 1} converted: ${imageBytes.length} bytes',
+          );
+        } catch (e) {
+          Logger.error(
+            '🖼️ PickCropService - Error converting image ${i + 1}: $e',
+          );
+        }
+      }
+
+      Logger.debug(
+        '🖼️ PickCropService - Multiple images processed: ${imageBytesList.length} images',
+      );
+      return imageBytesList;
+    } catch (e) {
+      Logger.error(
+        '🖼️ PickCropService - Error in multiple image pick process: $e',
+      );
+      return [];
+    }
+  }
+
+  /// Mevcut fotoğrafı düzenleme ekranında aç
+  /// [imageBytes] - Düzenlenecek görsel bytes
+  /// [aspectRatio] - Aspect ratio (null = serbest)
+  /// Returns: Düzenlenmiş görsel Uint8List olarak
+  static Future<Uint8List?> editExistingImage({
+    required Uint8List imageBytes,
+    double? aspectRatio,
+  }) async {
+    try {
+      Logger.debug(
+        '🖼️ PickCropService - Starting edit for existing image: ${imageBytes.length} bytes',
+      );
+
+      // Geçici dosya oluştur
+      final Directory tempDir = Directory.systemTemp;
+      final String tempFileName =
+          'temp_edit_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String tempFilePath = '${tempDir.path}/$tempFileName';
+
+      final File tempFile = File(tempFilePath);
+      await tempFile.writeAsBytes(imageBytes);
+
+      // Crop ekranını aç
+      final CroppedFile? croppedFile = await _openCropScreen(
+        tempFilePath,
+        aspectRatio: aspectRatio,
+      );
+
+      // Geçici dosyayı temizle
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+
+      if (croppedFile == null) {
+        Logger.debug('🖼️ PickCropService - Edit cancelled');
+        return null;
+      }
+
+      Logger.debug('🖼️ PickCropService - Image edited: ${croppedFile.path}');
+
+      // Cropped dosya varlığını kontrol et
+      final File croppedImageFile = File(croppedFile.path);
+      if (!await croppedImageFile.exists()) {
+        Logger.error(
+          '🖼️ PickCropService - Cropped file does not exist: ${croppedFile.path}',
+        );
+        return null;
+      }
+
+      // Uint8List'e dönüştür
+      final Uint8List editedBytes = await croppedFile.readAsBytes();
+      Logger.debug(
+        '🖼️ PickCropService - Edited image converted to bytes: ${editedBytes.length} bytes',
+      );
+
+      return editedBytes;
+    } catch (e, stackTrace) {
+      Logger.error(
+        '🖼️ PickCropService - Error in edit existing image process: $e',
+      );
+      Logger.error('🖼️ PickCropService - Stack trace: $stackTrace');
+      return null;
+    }
+  }
+
+  /// Mevcut dosyayı düzenleme ekranında aç
   /// [imagePath] - Düzenlenecek görsel yolu
   /// [aspectRatio] - Aspect ratio
   /// Returns: Düzenlenmiş dosya
-  static Future<CroppedFile?> cropExistingImage({
+  static Future<CroppedFile?> editImageFromPath({
     required String imagePath,
     double? aspectRatio,
   }) async {
     try {
       Logger.debug(
-        '🖼️ PickCropService - Starting crop for existing image: $imagePath',
+        '🖼️ PickCropService - Starting edit for image from path: $imagePath',
       );
 
       // Dosya varlığını kontrol et
@@ -205,19 +200,19 @@ class PickCropService {
 
       if (croppedFile != null) {
         Logger.debug(
-          '🖼️ PickCropService - Existing image cropped: ${croppedFile.path}',
+          '🖼️ PickCropService - Image edited from path: ${croppedFile.path}',
         );
         return croppedFile;
       }
 
       return null;
     } catch (e) {
-      Logger.error('🖼️ PickCropService - Error cropping existing image: $e');
+      Logger.error('🖼️ PickCropService - Error editing image from path: $e');
       return null;
     }
   }
 
-  /// Crop ekranını açar
+  /// Düzenleme ekranını açar
   /// [imagePath] - Düzenlenecek görsel yolu
   /// [aspectRatio] - Aspect ratio
   /// Returns: Düzenlenmiş dosya
@@ -226,7 +221,7 @@ class PickCropService {
     double? aspectRatio,
   }) async {
     try {
-      Logger.debug('🖼️ PickCropService - Opening crop screen for: $imagePath');
+      Logger.debug('🖼️ PickCropService - Opening edit screen for: $imagePath');
 
       // Dosya varlığını kontrol et
       final File imageFile = File(imagePath);
@@ -295,20 +290,19 @@ class PickCropService {
         Logger.error(
           '🖼️ PickCropService - ImageCropper.cropImage failed: $cropError',
         );
-        // Crop hatası durumunda null döndür, ana metod fallback'i deneyecek
         return null;
       }
 
       if (croppedFile != null) {
         Logger.debug(
-          '🖼️ PickCropService - Crop completed successfully: ${croppedFile.path}',
+          '🖼️ PickCropService - Edit completed successfully: ${croppedFile.path}',
         );
 
         // Cropped dosya varlığını kontrol et
         final File croppedFileCheck = File(croppedFile.path);
         if (!await croppedFileCheck.exists()) {
           Logger.error(
-            '🖼️ PickCropService - Cropped file does not exist after crop: ${croppedFile.path}',
+            '🖼️ PickCropService - Cropped file does not exist after edit: ${croppedFile.path}',
           );
           return null;
         }
@@ -322,73 +316,17 @@ class PickCropService {
         }
 
         Logger.debug(
-          '🖼️ PickCropService - Cropped file size: $croppedFileSize bytes',
+          '🖼️ PickCropService - Edited file size: $croppedFileSize bytes',
         );
       } else {
-        Logger.debug('🖼️ PickCropService - Crop cancelled by user');
+        Logger.debug('🖼️ PickCropService - Edit cancelled by user');
       }
 
       return croppedFile;
     } catch (e, stackTrace) {
-      Logger.error('🖼️ PickCropService - Error opening crop screen: $e');
+      Logger.error('🖼️ PickCropService - Error opening edit screen: $e');
       Logger.error('🖼️ PickCropService - Stack trace: $stackTrace');
       return null;
-    }
-  }
-
-  /// Birden fazla fotoğraf seçme (crop olmadan)
-  /// [maxImages] - Maksimum seçilebilecek fotoğraf sayısı
-  /// [compressQuality] - Sıkıştırma kalitesi
-  /// Returns: Seçilen fotoğraflar Uint8List listesi olarak
-  static Future<List<Uint8List>> pickMultipleImages({
-    int maxImages = 5,
-    int compressQuality = 85,
-  }) async {
-    try {
-      Logger.debug(
-        '🖼️ PickCropService - Starting multiple image pick process',
-      );
-
-      final List<XFile> pickedFiles = await _picker.pickMultiImage(
-        imageQuality: compressQuality,
-        maxWidth: 1920,
-        maxHeight: 1920,
-      );
-
-      if (pickedFiles.isEmpty) {
-        Logger.debug('🖼️ PickCropService - No images selected');
-        return [];
-      }
-
-      Logger.debug(
-        '🖼️ PickCropService - ${pickedFiles.length} images selected',
-      );
-
-      final List<Uint8List> imageBytesList = [];
-
-      for (int i = 0; i < pickedFiles.length && i < maxImages; i++) {
-        try {
-          final Uint8List imageBytes = await pickedFiles[i].readAsBytes();
-          imageBytesList.add(imageBytes);
-          Logger.debug(
-            '🖼️ PickCropService - Image ${i + 1} converted: ${imageBytes.length} bytes',
-          );
-        } catch (e) {
-          Logger.error(
-            '🖼️ PickCropService - Error converting image ${i + 1}: $e',
-          );
-        }
-      }
-
-      Logger.debug(
-        '🖼️ PickCropService - Multiple images processed: ${imageBytesList.length} images',
-      );
-      return imageBytesList;
-    } catch (e) {
-      Logger.error(
-        '🖼️ PickCropService - Error in multiple image pick process: $e',
-      );
-      return [];
     }
   }
 

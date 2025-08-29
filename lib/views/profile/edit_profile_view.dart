@@ -143,7 +143,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           tag: 'EditProfile',
         );
 
-        final CroppedFile? editedFile = await PickCropService.cropExistingImage(
+        final CroppedFile? editedFile = await PickCropService.editImageFromPath(
           imagePath: convertedFile.path,
           aspectRatio: 1.0, // Kare format (profil fotoğrafı için)
         );

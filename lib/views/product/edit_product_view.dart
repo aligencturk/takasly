@@ -1582,7 +1582,7 @@ class _EditProductViewState extends State<EditProductView> {
       await tempFile.writeAsBytes(bytes);
 
       // Düzenleme ekranını aç
-      final croppedFile = await PickCropService.cropExistingImage(
+      final croppedFile = await PickCropService.editImageFromPath(
         imagePath: tempFile.path,
       );
 
@@ -1652,7 +1652,7 @@ class _EditProductViewState extends State<EditProductView> {
       );
 
       // Düzenleme ekranını aç
-      final croppedFile = await PickCropService.cropExistingImage(
+      final croppedFile = await PickCropService.editImageFromPath(
         imagePath: imageFile.path,
       );
 

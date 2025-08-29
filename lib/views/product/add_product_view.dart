@@ -2637,9 +2637,7 @@ class _AddProductViewState extends State<AddProductView> {
                   child: Icon(Icons.photo_library, color: AppTheme.primary),
                 ),
                 title: const Text('Galeri'),
-                subtitle: const Text(
-                  'Tek fotoğraf seç ve düzenle veya çoklu seç',
-                ),
+                subtitle: const Text('Fotoğraf seç ve düzenle'),
                 onTap: () {
                   Navigator.pop(context);
                   _showGalleryOptions();
@@ -2657,13 +2655,12 @@ class _AddProductViewState extends State<AddProductView> {
   Future<void> _pickImage(ImageSource source) async {
     try {
       Logger.debug(
-        '🖼️ AddProductView - Starting image pick and crop process for source: $source',
+        '🖼️ AddProductView - Starting image pick process for source: $source',
       );
 
-      // PickCropService ile fotoğraf seç ve otomatik crop ekranını aç
-      final Uint8List? imageBytes = await PickCropService.pickAndCropImage(
+      // PickCropService ile sadece fotoğraf seç (düzenleme olmadan)
+      final Uint8List? imageBytes = await PickCropService.pickSingleImage(
         source: source,
-        aspectRatio: null, // Serbest aspect ratio
         compressQuality: 85,
       );
 
@@ -2817,10 +2814,10 @@ class _AddProductViewState extends State<AddProductView> {
       }
 
       Logger.debug(
-        '🖼️ AddProductView - Starting multiple image pick and crop process...',
+        '🖼️ AddProductView - Starting gallery image pick process...',
       );
 
-      // PickCropService ile birden fazla fotoğraf seç (crop olmadan)
+      // PickCropService ile fotoğraf seç (tek veya çoklu)
       final List<Uint8List> imageBytesList =
           await PickCropService.pickMultipleImages(
             maxImages: remainingSlots,
@@ -2973,7 +2970,7 @@ class _AddProductViewState extends State<AddProductView> {
         Logger.debug('🖼️ AddProductView - No images selected');
       }
     } catch (e) {
-      Logger.error('❌ Error picking and processing multiple images: $e');
+      Logger.error('❌ Error picking and processing gallery images: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -3384,7 +3381,7 @@ class _AddProductViewState extends State<AddProductView> {
               ),
 
               Text(
-                'Galeri Seçenekleri',
+                'Galeri',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
@@ -3400,30 +3397,10 @@ class _AddProductViewState extends State<AddProductView> {
                     color: AppTheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.photo, color: AppTheme.primary),
-                ),
-                title: const Text('Tek Fotoğraf'),
-                subtitle: const Text('Seç ve düzenle'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-
-              ListTile(
-                leading: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                   child: Icon(Icons.photo_library, color: AppTheme.primary),
                 ),
-                title: const Text('Çoklu Fotoğraf'),
-                subtitle: const Text(
-                  'Birden fazla seç (mavi düzenle butonu ile düzenle)',
-                ),
+                title: const Text('Fotoğraf Seç'),
+                subtitle: const Text('Tek veya çoklu fotoğraf seçimi yapın'),
                 onTap: () {
                   Navigator.pop(context);
                   _pickMultipleImages();
@@ -3447,7 +3424,7 @@ class _AddProductViewState extends State<AddProductView> {
       final currentImage = _selectedImages[index];
 
       // Düzenleme ekranını aç
-      final CroppedFile? croppedFile = await PickCropService.cropExistingImage(
+      final CroppedFile? croppedFile = await PickCropService.editImageFromPath(
         imagePath: currentImage.path,
         aspectRatio: null, // Serbest aspect ratio
       );
