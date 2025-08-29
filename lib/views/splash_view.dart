@@ -6,6 +6,7 @@ import 'package:takasly/viewmodels/notification_viewmodel.dart';
 import 'package:takasly/services/cache_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:takasly/utils/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashVideoPage extends StatefulWidget {
   @override
@@ -73,12 +74,16 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         return;
       }
 
-      // TEST MODU: Her girişte onboarding'i sıfırla
-      await CacheService().resetOnboardingForTesting();
-
-      // Onboarding tamamlanmış mı kontrol et (her zaman false olacak)
-      final isOnboardingCompleted =
+      // Onboarding tamamlanmış mı kontrol et (CacheService ve SharedPreferences)
+      final cacheOnboardingCompleted =
           await CacheService().isOnboardingCompleted() ?? false;
+
+      final prefs = await SharedPreferences.getInstance();
+      final prefsOnboardingCompleted =
+          prefs.getBool('onboarding_completed') ?? false;
+
+      final isOnboardingCompleted =
+          cacheOnboardingCompleted || prefsOnboardingCompleted;
 
       if (isOnboardingCompleted) {
         Logger.info(
@@ -89,7 +94,7 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
       } else {
         Logger.info(
-          '🎯 SplashView - TEST MODU: Onboarding her zaman gösteriliyor',
+          '🎯 SplashView - Onboarding tamamlanmamış, onboarding sayfasına yönlendiriliyor',
         );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const OnboardingView()),

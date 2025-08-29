@@ -92,14 +92,8 @@ class OnboardingViewModel extends ChangeNotifier {
   // Onboarding tamamlanmış mı kontrol et
   Future<bool> isOnboardingCompleted() async {
     try {
-      // TEST MODU: Her zaman false döndür (onboarding her girişte gösterilsin)
-      Logger.info(
-        '🧪 TEST MODU: Onboarding durumu her zaman false döndürülüyor',
-      );
-      return false;
-
-      // Normal mod için aşağıdaki kodu kullan:
-      // return await CacheService().isOnboardingCompleted() ?? false;
+      // CacheService'den onboarding durumunu al
+      return await CacheService().isOnboardingCompleted() ?? false;
     } catch (e) {
       Logger.error('Onboarding durumu kontrol hatası: $e', error: e);
       return false;

@@ -6,6 +6,7 @@ import '../core/app_theme.dart';
 import '../utils/logger.dart';
 
 import 'home/home_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -302,7 +303,14 @@ class _OnboardingViewState extends State<OnboardingView>
     OnboardingViewModel viewModel,
   ) async {
     try {
+      // Onboarding'i tamamla
       await viewModel.completeOnboarding();
+
+      // SharedPreferences'a onboarding tamamlandı flag'ini kaydet
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', true);
+
+      Logger.info('✅ Onboarding tamamlandı ve kaydedildi');
 
       if (mounted) {
         // Ana sayfaya yönlendir
