@@ -2454,22 +2454,19 @@ class _AddProductViewState extends State<AddProductView> {
             ),
           ),
 
-          // Kapak yazısı (sol üst köşe)
-          Positioned(
-            top: 4,
-            left: 4,
-            child: GestureDetector(
-              onTap: () => _setCoverImage(index),
+          // Kapak resmi göstergesi (kapak resmi ise)
+          if (isCoverImage)
+            Positioned(
+              top: 4,
+              left: 4,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isCoverImage
-                      ? AppTheme.primary
-                      : Colors.black.withOpacity(0.7),
+                  color: AppTheme.primary,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
-                  isCoverImage ? 'KAPAK' : 'KAPAK',
+                child: const Text(
+                  'KAPAK',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -2478,7 +2475,29 @@ class _AddProductViewState extends State<AddProductView> {
                 ),
               ),
             ),
-          ),
+
+          // Kapak resmi yapma butonu (kapak resmi değilse)
+          if (!isCoverImage)
+            Positioned(
+              top: 4,
+              left: 4,
+              child: GestureDetector(
+                onTap: () => _setCoverImage(index),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.star_border,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ),
 
           // Düzenleme butonu (sol alt köşe)
           Positioned(
@@ -2581,10 +2600,10 @@ class _AddProductViewState extends State<AddProductView> {
                   child: Icon(Icons.photo_library, color: AppTheme.primary),
                 ),
                 title: const Text('Galeri'),
-                subtitle: const Text('Fotoğraf seç ve düzenle'),
+                subtitle: const Text('Tek veya çoklu fotoğraf seçimi yapın'),
                 onTap: () {
                   Navigator.pop(context);
-                  _showGalleryOptions();
+                  _pickMultipleImages();
                 },
               ),
 
@@ -3298,65 +3317,6 @@ class _AddProductViewState extends State<AddProductView> {
     } catch (e) {
       Logger.error('İlçe konumu alınırken hata: $e');
     }
-  }
-
-  /// Galeri seçeneklerini göster
-  void _showGalleryOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(top: 12, bottom: 20),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-
-              Text(
-                'Galeri',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-              ),
-
-              const SizedBox(height: 20),
-
-              ListTile(
-                leading: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.photo_library, color: AppTheme.primary),
-                ),
-                title: const Text('Fotoğraf Seç'),
-                subtitle: const Text('Tek veya çoklu fotoğraf seçimi yapın'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickMultipleImages();
-                },
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   /// Seçili fotoğrafı düzenle
