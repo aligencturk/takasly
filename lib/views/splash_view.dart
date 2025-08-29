@@ -74,6 +74,14 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         return;
       }
 
+      // Context'in mounted olduğundan emin ol
+      if (!context.mounted) {
+        Logger.warning(
+          '⚠️ SplashView - Context is not mounted, aborting navigation',
+        );
+        return;
+      }
+
       // Onboarding tamamlanmış mı kontrol et (CacheService ve SharedPreferences)
       final cacheOnboardingCompleted =
           await CacheService().isOnboardingCompleted() ?? false;
@@ -89,24 +97,32 @@ class _SplashVideoPageState extends State<SplashVideoPage> {
         Logger.info(
           '🏠 SplashView - Onboarding tamamlanmış, ana sayfaya yönlendiriliyor',
         );
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
+        
+        // Navigation öncesi tekrar mounted kontrolü
+        if (mounted && context.mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomeView())
+          );
+        }
       } else {
         Logger.info(
           '🎯 SplashView - Onboarding tamamlanmamış, onboarding sayfasına yönlendiriliyor',
         );
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const OnboardingView()),
-        );
+        
+        // Navigation öncesi tekrar mounted kontrolü
+        if (mounted && context.mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const OnboardingView()),
+          );
+        }
       }
     } catch (e) {
       Logger.error('❌ SplashView - Error during navigation: $e', error: e);
 
       // Hata durumunda da mounted kontrolü yap
-      if (!mounted) {
+      if (!mounted || !context.mounted) {
         Logger.warning(
-          '⚠️ SplashView - Widget is no longer mounted during error handling, aborting navigation',
+          '⚠️ SplashView - Widget or context is no longer mounted during error handling, aborting navigation',
         );
         return;
       }

@@ -142,50 +142,54 @@ class _HomeViewState extends State<HomeView> {
     );
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
-    // Kullanıcı giriş yaptıysa varsayılan olarak konuma göre en yakın ilanları göster
-    if (authViewModel.currentUser != null) {
-      final currentFilter = productViewModel.currentFilter;
+    // Kullanıcı giriş yapmadıysa filtre uygulama
+    if (authViewModel.currentUser == null) {
+      Logger.info('📍 HomeView - Kullanıcı giriş yapmamış, location filter atlanıyor');
+      return;
+    }
 
+    // Ürünler henüz yüklenmemişse bekle
+    if (productViewModel.products.isEmpty && productViewModel.isLoading) {
+      Logger.info('📍 HomeView - Ürünler henüz yükleniyor, location filter bekleniyor');
+      return;
+    }
+
+    final currentFilter = productViewModel.currentFilter;
+
+    Logger.info(
+      '📍 HomeView - Location filter kontrol ediliyor: sortType=${currentFilter.sortType}, hasActiveFilters=${currentFilter.hasActiveFilters}',
+    );
+
+    // Eğer filtreler temizlenmişse veya varsayılan filtre varsa, en yakın filtresini uygula
+    if (currentFilter.sortType == 'default' && !currentFilter.hasActiveFilters) {
       Logger.info(
-        '📍 HomeView - Checking location filter: sortType=${currentFilter.sortType}, hasActiveFilters=${currentFilter.hasActiveFilters}',
+        '📍 HomeView - Giriş yapmış kullanıcı tespit edildi, en yakın sıralama uygulanıyor',
       );
-
-      // Eğer filtreler temizlenmişse veya varsayılan filtre varsa, en yakın filtresini uygula
-      if (currentFilter.sortType == 'default' &&
-          !currentFilter.hasActiveFilters) {
-        Logger.info(
-          '📍 HomeView - Logged-in user detected, applying nearest-to-me sorting',
-        );
-        await productViewModel.applyFilter(
-          currentFilter.copyWith(sortType: 'location'),
-        );
-      } else if (currentFilter.sortType != 'location' &&
-          !currentFilter.hasActiveFilters) {
-        // Eğer sortType location değilse ve aktif filtre yoksa, en yakın filtresini uygula
-        Logger.info(
-          '📍 HomeView - Filter reset detected, applying nearest-to-me sorting',
-        );
-        await productViewModel.applyFilter(
-          currentFilter.copyWith(sortType: 'location'),
-        );
-      } else if (currentFilter.sortType == 'location') {
-        // Zaten location filtresi uygulanmışsa, sadece log yaz
-        Logger.info(
-          '📍 HomeView - Location filter already applied, no action needed',
-        );
-      } else if (currentFilter.sortType == 'location' &&
-          currentFilter.hasActiveFilters) {
-        // Location filtresi var ama başka filtreler de var, sadece log yaz
-        Logger.info(
-          '📍 HomeView - Location filter with other filters, no action needed',
-        );
-      } else {
-        Logger.info(
-          '📍 HomeView - Other filters active, not applying location filter',
-        );
-      }
+      await productViewModel.applyFilter(
+        currentFilter.copyWith(sortType: 'location'),
+      );
+    } else if (currentFilter.sortType != 'location' && !currentFilter.hasActiveFilters) {
+      // Eğer sortType location değilse ve aktif filtre yoksa, en yakın filtresini uygula
+      Logger.info(
+        '📍 HomeView - Filtre sıfırlandı tespit edildi, en yakın sıralama uygulanıyor',
+      );
+      await productViewModel.applyFilter(
+        currentFilter.copyWith(sortType: 'location'),
+      );
+    } else if (currentFilter.sortType == 'location') {
+      // Zaten location filtresi uygulanmışsa, sadece log yaz
+      Logger.info(
+        '📍 HomeView - Location filtresi zaten uygulanmış, işlem gerekmiyor',
+      );
+    } else if (currentFilter.sortType == 'location' && currentFilter.hasActiveFilters) {
+      // Location filtresi var ama başka filtreler de var, sadece log yaz
+      Logger.info(
+        '📍 HomeView - Location filtresi diğer filtrelerle birlikte aktif, işlem gerekmiyor',
+      );
     } else {
-      Logger.info('📍 HomeView - No logged-in user, skipping location filter');
+      Logger.info(
+        '📍 HomeView - Diğer filtreler aktif, location filtresi uygulanmıyor',
+      );
     }
   }
 

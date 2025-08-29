@@ -95,6 +95,35 @@ class _SearchViewState extends State<SearchView> {
             Logger.error('❌ SearchView - WillPopScope clearFilters hatası: $e');
           }
         }
+        
+        // Navigation stack'i güvenli bir şekilde kontrol et
+        try {
+          if (mounted && context.mounted) {
+            // Eğer pop yapılabiliyorsa true döndür
+            if (Navigator.canPop(context)) {
+              return true;
+            } else {
+              // Pop yapılamıyorsa ana sayfaya yönlendir
+              Logger.warning('⚠️ SearchView - WillPopScope: Cannot pop, navigating to home');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && context.mounted) {
+                  try {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/home',
+                      (route) => false,
+                    );
+                  } catch (e) {
+                    Logger.error('❌ SearchView - WillPopScope fallback navigation error: $e', error: e);
+                  }
+                }
+              });
+              return false; // WillPopScope'u engelle
+            }
+          }
+        } catch (e) {
+          Logger.error('❌ SearchView - WillPopScope navigation check error: $e', error: e);
+        }
+        
         return true;
       },
       child: Scaffold(
@@ -122,9 +151,32 @@ class _SearchViewState extends State<SearchView> {
                 }
               }
 
-              // Widget hala mounted mı kontrol et
+              // Widget hala mounted mı kontrol et ve güvenli navigation yap
               if (mounted && context.mounted) {
-                Navigator.pop(context);
+                try {
+                  // Navigation stack'i kontrol et
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    // Eğer pop yapılamıyorsa ana sayfaya yönlendir
+                    Logger.warning('⚠️ SearchView - Geri butonu: Cannot pop, navigating to home');
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/home',
+                      (route) => false,
+                    );
+                  }
+                } catch (e) {
+                  Logger.error('❌ SearchView - Geri butonu navigation error: $e', error: e);
+                  // Hata durumunda ana sayfaya yönlendir
+                  try {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/home',
+                      (route) => false,
+                    );
+                  } catch (e2) {
+                    Logger.error('❌ SearchView - Geri butonu fallback navigation error: $e2', error: e2);
+                  }
+                }
               }
             },
           ),

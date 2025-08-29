@@ -42,38 +42,22 @@ class ErrorHandlerService {
         }
       } else {
         // Context yoksa navigator key'den context almaya çalış
-        if (navigatorKey.currentState != null) {
+        if (navigatorKey.currentState != null && navigatorKey.currentState!.mounted) {
           try {
-            final context = navigatorKey.currentState!.context;
-            final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-            authViewModel.handleForbiddenError();
-            Logger.info('✅ AuthViewModel updated for 403 error via navigator context');
+            final navigatorContext = navigatorKey.currentState!.context;
+            if (navigatorContext.mounted) {
+              final authViewModel = Provider.of<AuthViewModel>(navigatorContext, listen: false);
+              authViewModel.handleForbiddenError();
+              Logger.info('✅ AuthViewModel updated for 403 error via navigator context');
+            }
           } catch (e) {
             Logger.error('❌ Error updating AuthViewModel via navigator context: $e', error: e);
           }
         }
       }
 
-      // Navigator key ile login'e yönlendir
-      if (navigatorKey.currentState != null) {
-        Logger.info('🔄 Navigating to login due to 403 error');
-        
-        // Önce mevcut route'u kontrol et
-        final currentRoute = navigatorKey.currentState!.widget.initialRoute;
-        Logger.info('🔄 Current route: $currentRoute');
-        
-        // Eğer zaten login sayfasında değilse yönlendir
-        if (currentRoute != '/login') {
-          navigatorKey.currentState!.pushNamedAndRemoveUntil(
-            '/login',
-            (route) => false, // Tüm route'ları temizle
-          );
-        } else {
-          Logger.info('🔄 Already on login page, no navigation needed');
-        }
-      } else {
-        Logger.warning('⚠️ Navigator key is null, cannot navigate');
-      }
+      // Navigator key ile login'e yönlendir - güvenli navigation
+      _safeNavigateToLogin();
     } catch (e) {
       Logger.error('❌ Error in global 403 handler: $e', error: e);
     } finally {
@@ -95,6 +79,45 @@ class ErrorHandlerService {
       Logger.info('✅ User data cleared in global error handler');
     } catch (e) {
       Logger.error('❌ Error clearing user data in global error handler: $e', error: e);
+    }
+  }
+
+  // Güvenli navigation metodu
+  static void _safeNavigateToLogin() {
+    try {
+      if (navigatorKey.currentState != null && navigatorKey.currentState!.mounted) {
+        Logger.info('🔄 Navigating to login due to error');
+        
+        // Mevcut route'u güvenli bir şekilde kontrol et
+        final currentRoute = ModalRoute.of(navigatorKey.currentState!.context);
+        final currentRouteName = currentRoute?.settings.name;
+        
+        Logger.info('🔄 Current route: $currentRouteName');
+        
+        // Eğer zaten login sayfasında değilse yönlendir
+        if (currentRouteName != '/login') {
+          // Navigation'ı güvenli bir şekilde yap
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (navigatorKey.currentState != null && navigatorKey.currentState!.mounted) {
+              try {
+                navigatorKey.currentState!.pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false, // Tüm route'ları temizle
+                );
+                Logger.info('✅ Successfully navigated to login');
+              } catch (e) {
+                Logger.error('❌ Navigation error: $e', error: e);
+              }
+            }
+          });
+        } else {
+          Logger.info('🔄 Already on login page, no navigation needed');
+        }
+      } else {
+        Logger.warning('⚠️ Navigator key is null or not mounted, cannot navigate');
+      }
+    } catch (e) {
+      Logger.error('❌ Error in safe navigation: $e', error: e);
     }
   }
 
@@ -121,16 +144,8 @@ class ErrorHandlerService {
         }
       }
 
-      // Navigator key ile login'e yönlendir
-      if (navigatorKey.currentState != null) {
-        Logger.info('🔄 Navigating to login due to 401 error');
-        navigatorKey.currentState!.pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false, // Tüm route'ları temizle
-        );
-      } else {
-        Logger.warning('⚠️ Navigator key is null, cannot navigate');
-      }
+      // Güvenli navigation kullan
+      _safeNavigateToLogin();
     } catch (e) {
       Logger.error('❌ Error in global 401 handler: $e', error: e);
     } finally {

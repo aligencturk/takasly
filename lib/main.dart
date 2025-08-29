@@ -272,6 +272,12 @@ class MyApp extends StatelessWidget {
             // ViewModel'ler arasında bağlantı kur
             WidgetsBinding.instance.addPostFrameCallback((_) {
               try {
+                // Context'in mounted olduğundan emin ol
+                if (!context.mounted) {
+                  Logger.warning('⚠️ Context is not mounted, skipping provider setup');
+                  return;
+                }
+                
                 final authViewModel = Provider.of<AuthViewModel>(
                   context,
                   listen: false,
