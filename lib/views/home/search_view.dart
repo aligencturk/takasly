@@ -20,6 +20,7 @@ class _SearchViewState extends State<SearchView> {
   bool _hasSearched = false;
   String _currentQuery = '';
   Timer? _debounce;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -80,37 +81,64 @@ class _SearchViewState extends State<SearchView> {
 
   /// Navigation stack'i güvenli bir şekilde kontrol eder ve gerekirse ana sayfaya yönlendirir
   void _safeNavigateBack() {
-    if (!mounted || !context.mounted) {
-      Logger.warning('⚠️ SearchView - Widget or context not mounted, cannot navigate');
+    // Eğer zaten navigation yapılıyorsa çık
+    if (_isNavigating) {
+      Logger.warning(
+        '⚠️ SearchView - Navigation already in progress, skipping...',
+      );
       return;
     }
 
+    if (!mounted || !context.mounted) {
+      Logger.warning(
+        '⚠️ SearchView - Widget or context not mounted, cannot navigate',
+      );
+      return;
+    }
+
+    _isNavigating = true;
+    Logger.info('🔍 SearchView - Starting navigation process...');
+
     try {
+      // Navigation stack debug bilgisi
+      final navigator = Navigator.of(context);
+      final canPop = navigator.canPop();
+      Logger.info(
+        '🔍 SearchView - Navigation debug: canPop=$canPop, mounted=$mounted, context.mounted=${context.mounted}',
+      );
+
       // Navigation stack'i kontrol et
-      if (Navigator.canPop(context)) {
+      if (canPop) {
         Navigator.pop(context);
         Logger.info('✅ SearchView - Successfully popped navigation stack');
       } else {
         // Pop yapılamıyorsa ana sayfaya yönlendir
         Logger.warning('⚠️ SearchView - Cannot pop, navigating to home');
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/home',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/home', (route) => false);
         Logger.info('✅ SearchView - Successfully navigated to home');
       }
     } catch (e) {
       Logger.error('❌ SearchView - Navigation error: $e', error: e);
       // Hata durumunda ana sayfaya yönlendir
       try {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/home',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/home', (route) => false);
         Logger.info('✅ SearchView - Fallback navigation to home successful');
       } catch (e2) {
-        Logger.error('❌ SearchView - Fallback navigation error: $e2', error: e2);
+        Logger.error(
+          '❌ SearchView - Fallback navigation error: $e2',
+          error: e2,
+        );
       }
+    } finally {
+      // Navigation tamamlandıktan sonra flag'i sıfırla
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _isNavigating = false;
+        Logger.info('✅ SearchView - Navigation flag reset');
+      });
     }
   }
 
@@ -131,7 +159,7 @@ class _SearchViewState extends State<SearchView> {
             Logger.error('❌ SearchView - WillPopScope clearFilters hatası: $e');
           }
         }
-        
+
         // Navigation stack'i güvenli bir şekilde kontrol et
         try {
           if (mounted && context.mounted) {
@@ -140,17 +168,24 @@ class _SearchViewState extends State<SearchView> {
               return true;
             } else {
               // Pop yapılamıyorsa ana sayfaya yönlendir
-              Logger.warning('⚠️ SearchView - WillPopScope: Cannot pop, navigating to home');
+              Logger.warning(
+                '⚠️ SearchView - WillPopScope: Cannot pop, navigating to home',
+              );
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                _safeNavigateBack();
+                if (!_isNavigating) {
+                  _safeNavigateBack();
+                }
               });
               return false; // WillPopScope'u engelle
             }
           }
         } catch (e) {
-          Logger.error('❌ SearchView - WillPopScope navigation check error: $e', error: e);
+          Logger.error(
+            '❌ SearchView - WillPopScope navigation check error: $e',
+            error: e,
+          );
         }
-        
+
         return true;
       },
       child: Scaffold(
@@ -337,8 +372,8 @@ class _SearchViewState extends State<SearchView> {
                                         },
                                       );
                                     } else {
-                                      final vm =
-                                          context.read<ProductViewModel>();
+                                      final vm = context
+                                          .read<ProductViewModel>();
                                       // Kategori önerisine tıklandığında arama geçmişine ekle
                                       vm.addCategorySearchHistory(
                                         item.title,
@@ -673,34 +708,34 @@ class _SearchViewState extends State<SearchView> {
                                     child: SingleChildScrollView(
                                       physics: const BouncingScrollPhysics(),
                                       child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.search,
-                                          size: 64,
-                                          color: Colors.grey[400],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Ürün Arama',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.grey[700],
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.search,
+                                            size: 64,
+                                            color: Colors.grey[400],
                                           ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'En az 2 karakter yazarak\nürün aramaya başlayın',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[600],
-                                            height: 1.4,
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Ürün Arama',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey[700],
+                                            ),
                                           ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'En az 2 karakter yazarak\nürün aramaya başlayın',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
+                                              height: 1.4,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -716,14 +751,14 @@ class _SearchViewState extends State<SearchView> {
                     Expanded(
                       child: SearchResultsSection(
                         currentQuery: _currentQuery,
-                              onRetry: () => _performSearch(_currentQuery),
+                        onRetry: () => _performSearch(_currentQuery),
                         onAfterFilterApplied: () {
-                                                setState(() {
-                                                  _searchController.clear();
+                          setState(() {
+                            _searchController.clear();
                             FocusScope.of(context).unfocus();
-                                                  _hasSearched = true;
-                                                  _currentQuery = '';
-                                                });
+                            _hasSearched = true;
+                            _currentQuery = '';
+                          });
                         },
                       ),
                     ),
