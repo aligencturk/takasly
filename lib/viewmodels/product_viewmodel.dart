@@ -115,7 +115,46 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadInitialData() async {
-    await Future.wait([loadAllProducts(), loadCategories(), loadConditions()]);
+    await Future.wait([loadCategories(), loadConditions()]);
+
+    // İlk girişte konum bazlı filtreleme yap
+    Logger.info(
+      '📍 ProductViewModel - İlk giriş, konum bazlı filtreleme kontrol ediliyor',
+    );
+
+    try {
+      // Konum servislerini kontrol et
+      final locationService = LocationService();
+      final hasPermission = await locationService.checkLocationPermission();
+
+      if (hasPermission) {
+        final isLocationEnabled = await locationService
+            .isLocationServiceEnabled();
+        if (isLocationEnabled) {
+          Logger.info(
+            '📍 ProductViewModel - Konum servisleri aktif, location filtresi uygulanıyor',
+          );
+
+          // Konum bazlı filtreleme ile ürünleri yükle
+          final locationFilter = _currentFilter.copyWith(sortType: 'location');
+          await applyFilter(locationFilter);
+        } else {
+          Logger.warning(
+            '⚠️ ProductViewModel - GPS servisi kapalı, varsayılan sıralama kullanılıyor',
+          );
+          await loadAllProducts();
+        }
+      } else {
+        Logger.warning(
+          '⚠️ ProductViewModel - Konum izni verilmedi, varsayılan sıralama kullanılıyor',
+        );
+        await loadAllProducts();
+      }
+    } catch (e) {
+      Logger.error('❌ ProductViewModel - Konum kontrolü sırasında hata: $e');
+      // Hata durumunda varsayılan yükleme yap
+      await loadAllProducts();
+    }
   }
 
   Future<void> loadAllProducts({

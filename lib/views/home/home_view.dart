@@ -26,6 +26,7 @@ import '../../widgets/skeletons/product_grid_skeleton.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
 import '../product/product_detail_view.dart';
+import '../../services/location_service.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -90,9 +91,12 @@ class _HomeViewState extends State<HomeView> {
       context,
       listen: false,
     );
-    productViewModel.loadInitialData();
 
-    // En yakın filtresini uygula
+    // İlk girişte konum bazlı filtreleme yap
+    Logger.info('📍 HomeView - İlk giriş, konum bazlı filtreleme başlatılıyor');
+    await productViewModel.loadInitialData();
+
+    // Konum filtreleme kontrolü
     await _checkAndApplyLocationFilter();
 
     // Favorileri arka planda yükle (UI'ı bloklamasın)
@@ -164,15 +168,41 @@ class _HomeViewState extends State<HomeView> {
       '📍 HomeView - Location filter kontrol ediliyor: sortType=${currentFilter.sortType}, hasActiveFilters=${currentFilter.hasActiveFilters}',
     );
 
-    // Eğer filtreler temizlenmişse veya varsayılan filtre varsa, en yakın filtresini uygula
+    // İlk girişte veya filtreler temizlenmişse, en yakın filtresini uygula
     if (currentFilter.sortType == 'default' &&
         !currentFilter.hasActiveFilters) {
       Logger.info(
-        '📍 HomeView - Giriş yapmış kullanıcı tespit edildi, en yakın sıralama uygulanıyor',
+        '📍 HomeView - İlk giriş tespit edildi, en yakın sıralama uygulanıyor',
       );
-      await productViewModel.applyFilter(
-        currentFilter.copyWith(sortType: 'location'),
-      );
+
+      // Konum izinlerini kontrol et ve gerekirse iste
+      final locationService = LocationService();
+      final hasPermission = await locationService.checkLocationPermission();
+
+      if (hasPermission) {
+        final isLocationEnabled = await locationService
+            .isLocationServiceEnabled();
+        if (isLocationEnabled) {
+          Logger.info(
+            '📍 HomeView - Konum servisleri aktif, location filtresi uygulanıyor',
+          );
+          await productViewModel.applyFilter(
+            currentFilter.copyWith(sortType: 'location'),
+          );
+        } else {
+          Logger.warning(
+            '⚠️ HomeView - GPS servisi kapalı, varsayılan sıralama kullanılıyor',
+          );
+          // GPS kapalıysa kullanıcıya bilgi ver
+          _showLocationServiceDialog();
+        }
+      } else {
+        Logger.warning(
+          '⚠️ HomeView - Konum izni verilmedi, varsayılan sıralama kullanılıyor',
+        );
+        // Konum izni verilmediyse kullanıcıya bilgi ver
+        _showLocationPermissionDialog();
+      }
     } else if (currentFilter.sortType != 'location' &&
         !currentFilter.hasActiveFilters) {
       // Eğer sortType location değilse ve aktif filtre yoksa, en yakın filtresini uygula
@@ -372,8 +402,7 @@ class _HomeViewState extends State<HomeView> {
           _buildFilterBar(),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
           const CategoryList(),
-          // Konum filtresi aktif banner'ı
-          _buildLocationFilterBanner(),
+
           _buildProductGrid(),
           _buildLoadingIndicator(),
           // Alt navigasyon ile son kartlar arasında ferah boşluk
@@ -756,63 +785,74 @@ class _HomeViewState extends State<HomeView> {
     return const SliverToBoxAdapter(child: SizedBox(height: extra));
   }
 
-  Widget _buildLocationFilterBanner() {
-    return SliverToBoxAdapter(
-      child: Consumer<ProductViewModel>(
-        builder: (context, vm, child) {
-          final isLocationFilterActive = vm.currentFilter.sortType == 'location';
-          final isListView = vm.currentFilter.viewType == 'list';
+  // Konum izni dialog'u
+  void _showLocationPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.location_on, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Konum İzni Gerekli'),
+          ],
+        ),
+        content: Text(
+          'Size en yakın ilanları gösterebilmek için konum izninize ihtiyacımız var. '
+          'Konum izni vermek ister misiniz?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Hayır'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final locationService = LocationService();
+              await locationService.openLocationSettings();
+            },
+            child: Text('Ayarlara Git'),
+          ),
+        ],
+      ),
+    );
+  }
 
-          if (!isLocationFilterActive) {
-            return const SizedBox.shrink();
-          }
-
-          return Container(
-            margin: EdgeInsets.symmetric(
-              horizontal: _calculateHorizontalPadding(context),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  FontAwesomeIcons.locationDot,
-                  color: Colors.grey[700],
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Konum filtresi aktif. En yakın ürünleri görüyorsunuz.',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
-                ),
-                const Spacer(),
-                if (isListView)
-                  IconButton(
-                    onPressed: () {
-                      final productViewModel = Provider.of<ProductViewModel>(
-                        context,
-                        listen: false,
-                      );
-                      productViewModel.applyFilter(
-                        productViewModel.currentFilter.copyWith(
-                          sortType: 'default',
-                        ),
-                      );
-                    },
-                    icon: Icon(
-                      FontAwesomeIcons.xmark,
-                      color: Colors.grey[700],
-                      size: 18,
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
+  // GPS servisi dialog'u
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.gps_fixed, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('GPS Servisi Kapalı'),
+          ],
+        ),
+        content: Text(
+          'Size en yakın ilanları gösterebilmek için GPS servisinin açık olması gerekiyor. '
+          'GPS\'i açmak ister misiniz?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Hayır'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final locationService = LocationService();
+              await locationService.openGPSSettings();
+            },
+            child: Text('GPS\'i Aç'),
+          ),
+        ],
       ),
     );
   }
