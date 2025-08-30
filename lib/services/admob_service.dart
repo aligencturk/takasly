@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:takasly/utils/logger.dart';
 
 class AdMobService {
   static final AdMobService _instance = AdMobService._internal();
@@ -40,6 +41,9 @@ class AdMobService {
   // Thread güvenliği için mutex
   final Completer<void> _initCompleter = Completer<void>();
   bool _isInitializing = false;
+
+  // Ödüllü reklam otomatik yükleme kontrolü
+  bool _autoReloadRewardedAd = true;
 
   /// AdMob'u başlat
   Future<void> initialize() async {
@@ -448,7 +452,7 @@ class AdMobService {
   /// Ödüllü reklamı göster
   Future<bool> showRewardedAd() async {
     if (!_isRewardedAdLoaded || _rewardedAd == null) {
-     
+      Logger.warning('⚠️ AdMobService - Ödüllü reklam yüklenmemiş');
       return false;
     }
 
@@ -456,14 +460,15 @@ class AdMobService {
     final completer = Completer<bool>();
 
     try {
-    
+      Logger.info('🎬 AdMobService - Ödüllü reklam gösteriliyor...');
 
       _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdShowedFullScreenContent: (RewardedAd ad) {
-        
+          Logger.info('🎬 AdMobService - Ödüllü reklam tam ekran gösterildi');
         },
         onAdDismissedFullScreenContent: (RewardedAd ad) {
-        
+          Logger.info('🎬 AdMobService - Ödüllü reklam kapatıldı, ödül: $rewardEarned');
+          
           ad.dispose();
           _rewardedAd = null;
           _isRewardedAdLoaded = false;
@@ -473,11 +478,17 @@ class AdMobService {
             completer.complete(rewardEarned);
           }
 
-          // Yeni reklam yükle (arka planda)
-          Future.microtask(() => loadRewardedAd());
+          // Sadece ödül kazanıldıysa otomatik yeni reklam yükle
+          if (_autoReloadRewardedAd && rewardEarned) {
+            Logger.info('🔄 AdMobService - Ödül kazanıldı, yeni reklam yükleniyor...');
+            Future.microtask(() => loadRewardedAd());
+          } else {
+            Logger.info('⏸️ AdMobService - Ödül kazanılmadı, otomatik reklam yükleme durduruldu');
+          }
         },
         onAdFailedToShowFullScreenContent: (RewardedAd ad, AdError error) {
-        
+          Logger.error('❌ AdMobService - Ödüllü reklam gösterilemedi: ${error.message}');
+          
           ad.dispose();
           _rewardedAd = null;
           _isRewardedAdLoaded = false;
@@ -490,12 +501,12 @@ class AdMobService {
 
       await _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-        
+          Logger.info('🎉 AdMobService - Ödül kazanıldı: ${reward.amount} ${reward.type}');
           rewardEarned = true;
         },
       );
     } catch (e) {
-    
+      Logger.error('❌ AdMobService - Ödüllü reklam gösterme hatası: $e');
       if (!completer.isCompleted) {
         completer.complete(false);
       }
@@ -546,4 +557,19 @@ class AdMobService {
 
   /// Yükleme durumunu kontrol et
   bool get isLoading => _isLoading;
+
+  /// Ödüllü reklam otomatik yükleme durumunu kontrol et
+  bool get autoReloadRewardedAd => _autoReloadRewardedAd;
+  
+  /// Ödüllü reklam otomatik yükleme durumunu ayarla
+  void setAutoReloadRewardedAd(bool enabled) {
+    _autoReloadRewardedAd = enabled;
+    Logger.info('🔄 AdMobService - Ödüllü reklam otomatik yükleme: ${enabled ? "açık" : "kapalı"}');
+  }
+  
+  /// Ödüllü reklamı manuel olarak yeniden yükle
+  Future<void> reloadRewardedAd() async {
+    Logger.info('🔄 AdMobService - Ödüllü reklam manuel olarak yeniden yükleniyor...');
+    await loadRewardedAd();
+  }
 }

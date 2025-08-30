@@ -2249,7 +2249,11 @@ class _EditProductViewState extends State<EditProductView> {
         Logger.warning(
           '⚠️ EditProductView - Ödül kazanılmadı, sponsor işlemi iptal edildi',
         );
-        _showSponsorCancelledMessage();
+        
+        // Ödüllü reklam iptal edildikten sonra otomatik yükleme durdur
+        _adMobService.setAutoReloadRewardedAd(false);
+        
+        _showSponsorRetryMessage();
       }
     } catch (e) {
       Logger.error('❌ EditProductView - Sponsor işlemi hatası: $e');
@@ -2385,18 +2389,18 @@ class _EditProductViewState extends State<EditProductView> {
     }
   }
 
-  /// Sponsor iptal mesajı
-  void _showSponsorCancelledMessage() {
+  /// Sponsor yeniden deneme mesajı
+  void _showSponsorRetryMessage() {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.info_outline, color: Colors.white, size: 20),
+              const Icon(Icons.refresh, color: Colors.white, size: 20),
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'Öne çıkarma işlemi iptal edildi.',
+                  'Öne çıkarma işlemi tamamlanamadı. Tekrar denemek için butona tıklayın.',
                   style: TextStyle(fontSize: 16),
                 ),
               ),
@@ -2409,6 +2413,16 @@ class _EditProductViewState extends State<EditProductView> {
           ),
           margin: const EdgeInsets.all(16),
           duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Tekrar Dene',
+            textColor: Colors.white,
+            onPressed: () {
+              // Kullanıcı tekrar denemek istediğinde otomatik reklam yüklemeyi aç
+              _adMobService.setAutoReloadRewardedAd(true);
+              // Sponsor işlemini tekrar başlat
+              _handleSponsorProcess();
+            },
+          ),
         ),
       );
     }
