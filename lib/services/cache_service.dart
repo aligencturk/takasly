@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import '../utils/logger.dart';
 
 class CacheService {
   static final CacheService _instance = CacheService._internal();
@@ -36,10 +35,8 @@ class CacheService {
       if (!await _cacheDir!.exists()) {
         await _cacheDir!.create(recursive: true);
       }
-
-      Logger.info('Cache service initialized: ${_cacheDir!.path}');
     } catch (e) {
-      Logger.error('Cache service initialization failed', error: e);
+      // Cache service initialization failed
     }
   }
 
@@ -53,7 +50,6 @@ class CacheService {
         if (timestamp != null &&
             DateTime.now().difference(timestamp) < _cacheExpiry) {
           _memoryCacheHits++;
-          Logger.info('Icon loaded from memory cache: $url');
           return _memoryCache[url];
         } else {
           // Expired cache'i temizle
@@ -78,7 +74,6 @@ class CacheService {
           _memoryCache[url] = bytes;
           _cacheTimestamps[url] = DateTime.now();
           _diskCacheHits++;
-          Logger.info('Icon loaded from disk cache: $url');
           return bytes;
         } else {
           // Expired file'ı sil
@@ -88,7 +83,6 @@ class CacheService {
 
       return null;
     } catch (e) {
-      Logger.error('Error getting cached icon: $url', error: e);
       return null;
     }
   }
@@ -115,10 +109,8 @@ class CacheService {
 
       // Disk cache boyutunu kontrol et
       await _checkDiskCacheSize();
-
-      Logger.info('Icon cached successfully: $url');
     } catch (e) {
-      Logger.error('Error caching icon: $url', error: e);
+      // Error caching icon
     }
   }
 
@@ -129,7 +121,7 @@ class CacheService {
         await _cleanupDiskCache();
       }
     } catch (e) {
-      Logger.error('Error checking disk cache size', error: e);
+      // Error checking disk cache size
     }
   }
 
@@ -162,10 +154,8 @@ class CacheService {
         await entry.key.delete();
         deletedSize += fileSize;
       }
-
-      Logger.info('Disk cache cleaned up, freed ${deletedSize ~/ 1024}KB');
     } catch (e) {
-      Logger.error('Error cleaning up disk cache', error: e);
+      // Error cleaning up disk cache
     }
   }
 
@@ -182,14 +172,11 @@ class CacheService {
       _memoryCache.remove(key);
       _cacheTimestamps.remove(key);
     }
-
-    Logger.info('Memory cache cleaned up, removed $itemsToRemove items');
   }
 
   Future<Uint8List?> downloadAndCacheIcon(String url) async {
     // Eğer aynı URL için zaten bir download işlemi varsa, onu bekle
     if (_loadingFutures.containsKey(url)) {
-      Logger.info('Waiting for existing download: $url');
       return await _loadingFutures[url]!;
     }
 
@@ -220,13 +207,9 @@ class CacheService {
         await cacheIcon(url, bytes);
         return bytes;
       } else {
-        Logger.error(
-          'Failed to download icon: $url, status: ${response.statusCode}',
-        );
         return null;
       }
     } catch (e) {
-      Logger.error('Error downloading icon: $url', error: e);
       return null;
     }
   }
@@ -264,10 +247,8 @@ class CacheService {
         await _cacheDir!.delete(recursive: true);
         await _cacheDir!.create();
       }
-
-      Logger.info('Cache cleared successfully');
     } catch (e) {
-      Logger.error('Error clearing cache', error: e);
+      // Error clearing cache
     }
   }
 
@@ -298,10 +279,8 @@ class CacheService {
           }
         }
       }
-
-      Logger.info('Expired cache cleared');
     } catch (e) {
-      Logger.error('Error clearing expired cache', error: e);
+      // Error clearing expired cache
     }
   }
 
@@ -320,37 +299,12 @@ class CacheService {
 
       return totalSize;
     } catch (e) {
-      Logger.error('Error getting cache size', error: e);
       return 0;
     }
   }
 
   Future<void> logCacheStats() async {
-    Logger.info('Cache Stats:');
-    Logger.info('  Memory cache items: ${_memoryCache.length}');
-    Logger.info('  Memory cache timestamps: ${_cacheTimestamps.length}');
-    Logger.info('  Loading futures: ${_loadingFutures.length}');
-    Logger.info('  Cache directory: ${_cacheDir?.path ?? 'Not initialized'}');
-
-    if (_cacheDir != null) {
-      final diskSize = await getCacheSize();
-      Logger.info('  Disk cache size: ${diskSize ~/ 1024}KB');
-    }
-
-    if (_totalRequests > 0) {
-      final memoryHitRate = (_memoryCacheHits / _totalRequests * 100)
-          .toStringAsFixed(1);
-      final diskHitRate = (_diskCacheHits / _totalRequests * 100)
-          .toStringAsFixed(1);
-      final totalHitRate =
-          ((_memoryCacheHits + _diskCacheHits) / _totalRequests * 100)
-              .toStringAsFixed(1);
-
-      Logger.info('  Total requests: $_totalRequests');
-      Logger.info('  Memory cache hits: $_memoryCacheHits ($memoryHitRate%)');
-      Logger.info('  Disk cache hits: $_diskCacheHits ($diskHitRate%)');
-      Logger.info('  Total hit rate: $totalHitRate%');
-    }
+    // Cache Stats logging removed
   }
 
   /// Engellenen kullanıcıları saklar
@@ -363,12 +317,8 @@ class CacheService {
       final file = File('${_cacheDir!.path}/blocked_users.json');
       final jsonData = jsonEncode(blockedUsers);
       await file.writeAsString(jsonData);
-
-      Logger.info(
-        '🔒 CacheService - Saved ${blockedUsers.length} blocked users',
-      );
     } catch (e) {
-      Logger.error('❌ CacheService - Error saving blocked users: $e', error: e);
+      // Error saving blocked users
     }
   }
 
@@ -381,13 +331,8 @@ class CacheService {
       if (!file.existsSync()) return null;
 
       final jsonData = file.readAsStringSync();
-      Logger.info('🔒 CacheService - Retrieved blocked users from cache');
       return jsonData;
     } catch (e) {
-      Logger.error(
-        '❌ CacheService - Error getting blocked users: $e',
-        error: e,
-      );
       return null;
     }
   }
@@ -400,13 +345,9 @@ class CacheService {
       final file = File('${_cacheDir!.path}/blocked_users.json');
       if (await file.exists()) {
         await file.delete();
-        Logger.info('🔒 CacheService - Cleared blocked users cache');
       }
     } catch (e) {
-      Logger.error(
-        '❌ CacheService - Error clearing blocked users: $e',
-        error: e,
-      );
+      // Error clearing blocked users
     }
   }
 
@@ -423,13 +364,8 @@ class CacheService {
         'timestamp': DateTime.now().toIso8601String(),
       });
       await file.writeAsString(jsonData);
-
-      Logger.info('🎯 CacheService - Onboarding durumu kaydedildi: $completed');
     } catch (e) {
-      Logger.error(
-        '❌ CacheService - Onboarding durumu kaydetme hatası: $e',
-        error: e,
-      );
+      // Error saving onboarding status
     }
   }
 
@@ -446,15 +382,8 @@ class CacheService {
       final jsonData = await file.readAsString();
       final data = jsonDecode(jsonData) as Map<String, dynamic>;
 
-      Logger.info(
-        '🎯 CacheService - Onboarding durumu alındı: ${data['completed']}',
-      );
       return data['completed'] as bool?;
     } catch (e) {
-      Logger.error(
-        '❌ CacheService - Onboarding durumu alma hatası: $e',
-        error: e,
-      );
       return null;
     }
   }
@@ -463,11 +392,8 @@ class CacheService {
   Future<void> resetOnboardingForTesting() async {
     try {
       await setOnboardingCompleted(false);
-      Logger.info(
-        '🧪 TEST MODU: Onboarding durumu sıfırlandı - Her girişte gösterilecek',
-      );
     } catch (e) {
-      Logger.error('❌ TEST MODU: Onboarding sıfırlama hatası: $e', error: e);
+      // Error resetting onboarding for testing
     }
   }
 }
