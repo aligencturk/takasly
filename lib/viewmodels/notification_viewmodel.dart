@@ -198,8 +198,7 @@ class NotificationViewModel extends ChangeNotifier {
     try {
       // Platform kontrolü
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-        Logger.warning('iOS platform tespit edildi', tag: _tag);
-        Logger.warning('iOS Simülatörde PUSH BİLDİRİMLER ÇALIŞMAZ!', tag: _tag);
+ 
       }
       
       // İzin iste
