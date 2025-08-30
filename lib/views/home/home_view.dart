@@ -144,13 +144,17 @@ class _HomeViewState extends State<HomeView> {
 
     // Kullanıcı giriş yapmadıysa filtre uygulama
     if (authViewModel.currentUser == null) {
-      Logger.info('📍 HomeView - Kullanıcı giriş yapmamış, location filter atlanıyor');
+      Logger.info(
+        '📍 HomeView - Kullanıcı giriş yapmamış, location filter atlanıyor',
+      );
       return;
     }
 
     // Ürünler henüz yüklenmemişse bekle
     if (productViewModel.products.isEmpty && productViewModel.isLoading) {
-      Logger.info('📍 HomeView - Ürünler henüz yükleniyor, location filter bekleniyor');
+      Logger.info(
+        '📍 HomeView - Ürünler henüz yükleniyor, location filter bekleniyor',
+      );
       return;
     }
 
@@ -161,14 +165,16 @@ class _HomeViewState extends State<HomeView> {
     );
 
     // Eğer filtreler temizlenmişse veya varsayılan filtre varsa, en yakın filtresini uygula
-    if (currentFilter.sortType == 'default' && !currentFilter.hasActiveFilters) {
+    if (currentFilter.sortType == 'default' &&
+        !currentFilter.hasActiveFilters) {
       Logger.info(
         '📍 HomeView - Giriş yapmış kullanıcı tespit edildi, en yakın sıralama uygulanıyor',
       );
       await productViewModel.applyFilter(
         currentFilter.copyWith(sortType: 'location'),
       );
-    } else if (currentFilter.sortType != 'location' && !currentFilter.hasActiveFilters) {
+    } else if (currentFilter.sortType != 'location' &&
+        !currentFilter.hasActiveFilters) {
       // Eğer sortType location değilse ve aktif filtre yoksa, en yakın filtresini uygula
       Logger.info(
         '📍 HomeView - Filtre sıfırlandı tespit edildi, en yakın sıralama uygulanıyor',
@@ -181,7 +187,8 @@ class _HomeViewState extends State<HomeView> {
       Logger.info(
         '📍 HomeView - Location filtresi zaten uygulanmış, işlem gerekmiyor',
       );
-    } else if (currentFilter.sortType == 'location' && currentFilter.hasActiveFilters) {
+    } else if (currentFilter.sortType == 'location' &&
+        currentFilter.hasActiveFilters) {
       // Location filtresi var ama başka filtreler de var, sadece log yaz
       Logger.info(
         '📍 HomeView - Location filtresi diğer filtrelerle birlikte aktif, işlem gerekmiyor',
@@ -362,10 +369,11 @@ class _HomeViewState extends State<HomeView> {
         controller: _scrollController,
         slivers: [
           const HomeAppBar(),
-          const SliverToBoxAdapter(),
           _buildFilterBar(),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
           const CategoryList(),
+          // Konum filtresi aktif banner'ı
+          _buildLocationFilterBanner(),
           _buildProductGrid(),
           _buildLoadingIndicator(),
           // Alt navigasyon ile son kartlar arasında ferah boşluk
@@ -746,6 +754,67 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildBottomSpacer() {
     const double extra = 24.0; // bir tık artırılmış boşluk
     return const SliverToBoxAdapter(child: SizedBox(height: extra));
+  }
+
+  Widget _buildLocationFilterBanner() {
+    return SliverToBoxAdapter(
+      child: Consumer<ProductViewModel>(
+        builder: (context, vm, child) {
+          final isLocationFilterActive = vm.currentFilter.sortType == 'location';
+          final isListView = vm.currentFilter.viewType == 'list';
+
+          if (!isLocationFilterActive) {
+            return const SizedBox.shrink();
+          }
+
+          return Container(
+            margin: EdgeInsets.symmetric(
+              horizontal: _calculateHorizontalPadding(context),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  FontAwesomeIcons.locationDot,
+                  color: Colors.grey[700],
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Konum filtresi aktif. En yakın ürünleri görüyorsunuz.',
+                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                ),
+                const Spacer(),
+                if (isListView)
+                  IconButton(
+                    onPressed: () {
+                      final productViewModel = Provider.of<ProductViewModel>(
+                        context,
+                        listen: false,
+                      );
+                      productViewModel.applyFilter(
+                        productViewModel.currentFilter.copyWith(
+                          sortType: 'default',
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      FontAwesomeIcons.xmark,
+                      color: Colors.grey[700],
+                      size: 18,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 

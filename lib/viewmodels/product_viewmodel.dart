@@ -498,22 +498,26 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshProducts() async {
-    Logger.info('🔄 ProductViewModel - Refreshing products and filtering blocked users');
-    
+    Logger.info(
+      '🔄 ProductViewModel - Refreshing products and filtering blocked users',
+    );
+
     try {
       // Mevcut filtreleri koruyarak ürünleri yenile
       await loadAllProducts(page: 1, refresh: true);
-      
+
       // Engellenen kullanıcıların ilanlarını filtrele
       _products = _filterBlockedUsersProducts(_products);
-      
+
       // Favorileri de filtrele
       _favoriteProducts = _filterBlockedUsersProducts(_favoriteProducts);
-      
+
       // Benim ilanlarımı da filtrele
       _myProducts = _filterBlockedUsersProducts(_myProducts);
-      
-      Logger.info('✅ ProductViewModel - Products refreshed and filtered successfully');
+
+      Logger.info(
+        '✅ ProductViewModel - Products refreshed and filtered successfully',
+      );
       notifyListeners();
     } catch (e) {
       Logger.error('❌ ProductViewModel - Error refreshing products: $e');
@@ -2486,13 +2490,51 @@ class ProductViewModel extends ChangeNotifier {
 
     await loadAllProducts(refresh: true);
 
-    // Eğer kullanıcı giriş yapmışsa, otomatik olarak "en yakın" filtresini uygula
+    // Letgo gibi: Kullanıcı giriş yapmışsa otomatik olarak "en yakın" filtresini uygula
     final currentUser = await _authService.getCurrentUser();
     if (currentUser != null) {
       Logger.info(
-        '📍 ProductViewModel.clearFilters - Auto-applying nearest-to-me filter for logged-in user',
+        '📍 ProductViewModel.clearFilters - Letgo style: Auto-applying nearest-to-me filter for logged-in user',
       );
-      await applyFilter(_currentFilter.copyWith(sortType: 'location'));
+
+      try {
+        // Konum bazlı filtreleme uygula
+        final locationFilter = _currentFilter.copyWith(sortType: 'location');
+        Logger.info(
+          '📍 ProductViewModel.clearFilters - Applying location filter: $locationFilter',
+        );
+
+        await applyFilter(locationFilter);
+
+        Logger.info(
+          '✅ ProductViewModel.clearFilters - Location filter applied successfully, products count: ${_products.length}',
+        );
+      } catch (e) {
+        Logger.error(
+          '❌ ProductViewModel.clearFilters - Error applying location filter: $e',
+          error: e,
+        );
+        // Hata durumunda varsayılan sıralamaya geri dön
+        Logger.info(
+          '🔄 ProductViewModel.clearFilters - Falling back to default sorting due to location filter error',
+        );
+
+        try {
+          await applyFilter(_currentFilter.copyWith(sortType: 'default'));
+          Logger.info(
+            '✅ ProductViewModel.clearFilters - Default sorting applied successfully after location filter failure',
+          );
+        } catch (e2) {
+          Logger.error(
+            '❌ ProductViewModel.clearFilters - Error applying default sorting: $e2',
+            error: e2,
+          );
+        }
+      }
+    } else {
+      Logger.info(
+        'ℹ️ ProductViewModel.clearFilters - User not logged in, keeping default sorting',
+      );
     }
 
     Logger.info(
@@ -3088,13 +3130,17 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   /// Engellenen kullanıcıların ilanlarını filtreler
-  List<product_model.Product> _filterBlockedUsersProducts(List<product_model.Product> products) {
+  List<product_model.Product> _filterBlockedUsersProducts(
+    List<product_model.Product> products,
+  ) {
     try {
       // Engellenen kullanıcıların ID'lerini al
       final blockedUserIds = _getBlockedUserIds();
-      
+
       if (blockedUserIds.isEmpty) {
-        Logger.info('🔒 ProductViewModel - No blocked users, returning all products');
+        Logger.info(
+          '🔒 ProductViewModel - No blocked users, returning all products',
+        );
         return products;
       }
 
@@ -3103,26 +3149,36 @@ class ProductViewModel extends ChangeNotifier {
         try {
           final ownerId = int.tryParse(product.ownerId);
           if (ownerId == null) {
-            Logger.warning('⚠️ ProductViewModel - Invalid owner ID: ${product.ownerId}');
+            Logger.warning(
+              '⚠️ ProductViewModel - Invalid owner ID: ${product.ownerId}',
+            );
             return true; // Geçersiz ID'li ürünleri göster
           }
-          
+
           final isBlocked = blockedUserIds.contains(ownerId);
           if (isBlocked) {
-            Logger.info('🚫 ProductViewModel - Filtered blocked user product: ${product.id} (owner: ${product.ownerId})');
+            Logger.info(
+              '🚫 ProductViewModel - Filtered blocked user product: ${product.id} (owner: ${product.ownerId})',
+            );
           }
-          
+
           return !isBlocked;
         } catch (e) {
-          Logger.error('❌ ProductViewModel - Error filtering product ${product.id}: $e');
+          Logger.error(
+            '❌ ProductViewModel - Error filtering product ${product.id}: $e',
+          );
           return true; // Hata durumunda ürünü göster
         }
       }).toList();
 
-      Logger.info('🔒 ProductViewModel - Filtered ${products.length - filteredProducts.length} blocked user products');
+      Logger.info(
+        '🔒 ProductViewModel - Filtered ${products.length - filteredProducts.length} blocked user products',
+      );
       return filteredProducts;
     } catch (e) {
-      Logger.error('❌ ProductViewModel - Error in _filterBlockedUsersProducts: $e');
+      Logger.error(
+        '❌ ProductViewModel - Error in _filterBlockedUsersProducts: $e',
+      );
       return products; // Hata durumunda tüm ürünleri göster
     }
   }
@@ -3138,13 +3194,19 @@ class ProductViewModel extends ChangeNotifier {
 
       final List<dynamic> blockedUsersList = jsonDecode(blockedUsersJson);
       final blockedUserIds = blockedUsersList
-          .where((user) => user is Map<String, dynamic> && user.containsKey('blockedUserID'))
+          .where(
+            (user) =>
+                user is Map<String, dynamic> &&
+                user.containsKey('blockedUserID'),
+          )
           .map((user) => int.tryParse(user['blockedUserID'].toString()))
           .where((id) => id != null)
           .cast<int>()
           .toList();
 
-      Logger.info('🔒 ProductViewModel - Found ${blockedUserIds.length} blocked user IDs');
+      Logger.info(
+        '🔒 ProductViewModel - Found ${blockedUserIds.length} blocked user IDs',
+      );
       return blockedUserIds;
     } catch (e) {
       Logger.error('❌ ProductViewModel - Error getting blocked user IDs: $e');

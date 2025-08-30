@@ -299,16 +299,36 @@ class ProductService {
       if (filter.sortType == 'location') {
         print('📍 Location sorting requested, getting user location...');
         final locationService = LocationService();
-        final locationData = await locationService
-            .getCurrentLocationAsStrings();
 
-        if (locationData != null) {
-          userLat = locationData['latitude'];
-          userLong = locationData['longitude'];
-          print('📍 Location obtained: $userLat, $userLong');
-        } else {
-          print('❌ Could not get user location, using default sorting');
-          // Konum alınamazsa varsayılan sıralamaya geç
+        try {
+          // Önce konum izinlerini kontrol et
+          final hasPermission = await locationService.checkLocationPermission();
+          if (!hasPermission) {
+            print('❌ Location permission denied, using default sorting');
+            filter = filter.copyWith(sortType: 'default');
+          } else {
+            // GPS servisinin açık olup olmadığını kontrol et
+            final isLocationEnabled = await locationService
+                .isLocationServiceEnabled();
+            if (!isLocationEnabled) {
+              print('❌ Location service disabled, using default sorting');
+              filter = filter.copyWith(sortType: 'default');
+            } else {
+              // Konumu al
+              final locationData = await locationService
+                  .getCurrentLocationAsStrings();
+              if (locationData != null) {
+                userLat = locationData['latitude'];
+                userLong = locationData['longitude'];
+                print('📍 Location obtained successfully: $userLat, $userLong');
+              } else {
+                print('❌ Could not get user location, using default sorting');
+                filter = filter.copyWith(sortType: 'default');
+              }
+            }
+          }
+        } catch (e) {
+          print('❌ Error getting location: $e, using default sorting');
           filter = filter.copyWith(sortType: 'default');
         }
       }

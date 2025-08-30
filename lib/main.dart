@@ -274,10 +274,12 @@ class MyApp extends StatelessWidget {
               try {
                 // Context'in mounted olduğundan emin ol
                 if (!context.mounted) {
-                  Logger.warning('⚠️ Context is not mounted, skipping provider setup');
+                  Logger.warning(
+                    '⚠️ Context is not mounted, skipping provider setup',
+                  );
                   return;
                 }
-                
+
                 final authViewModel = Provider.of<AuthViewModel>(
                   context,
                   listen: false,
