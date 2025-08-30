@@ -573,12 +573,14 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     if (profile.products.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.all(40.0),
+        padding: const EdgeInsets.all(20.0),
         color: Colors.white,
-        child: _buildEmptyTab(
-          icon: Icons.inventory_2_outlined,
-          title: 'Henüz İlan Eklenmemiş',
-          subtitle: 'Bu kullanıcının henüz ilanı bulunmuyor.',
+        child: SingleChildScrollView(
+          child: _buildEmptyTab(
+            icon: Icons.inventory_2_outlined,
+            title: 'Henüz İlan Eklenmemiş',
+            subtitle: 'Bu kullanıcının henüz ilanı bulunmuyor.',
+          ),
         ),
       );
     }
@@ -623,12 +625,14 @@ class _UserProfileDetailViewState extends State<UserProfileDetailView>
     if (profile.reviews.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.all(40.0),
+        padding: const EdgeInsets.all(20.0),
         color: Colors.white,
-        child: _buildEmptyTab(
-          icon: Icons.rate_review_outlined,
-          title: 'Henüz Yorum Yok',
-          subtitle: 'Bu kullanıcı için henüz yorum yapılmamış.',
+        child: SingleChildScrollView(
+          child: _buildEmptyTab(
+            icon: Icons.rate_review_outlined,
+            title: 'Henüz Yorum Yok',
+            subtitle: 'Bu kullanıcı için henüz yorum yapılmamış.',
+          ),
         ),
       );
     }

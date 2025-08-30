@@ -520,32 +520,34 @@ class _ProfileViewState extends State<ProfileView>
         if (productViewModel.myProducts.isEmpty) {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(40.0),
+            padding: const EdgeInsets.all(20.0),
             color: Colors.white,
-            child: _buildEmptyTab(
-              icon: Icons.inventory_2_outlined,
-              title: 'Henüz İlan Eklenmemiş',
-              subtitle: 'İlk ilanınızı ekleyerek takasa başlayabilirsiniz.',
-              actionButton: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/add-product');
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+            child: SingleChildScrollView(
+              child: _buildEmptyTab(
+                icon: Icons.inventory_2_outlined,
+                title: 'Henüz İlan Eklenmemiş',
+                subtitle: 'İlk ilanınızı ekleyerek takasa başlayabilirsiniz.',
+                actionButton: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'İlan Ekle',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/add-product');
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'İlan Ekle',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
                   ),
                 ),
               ),
@@ -724,12 +726,14 @@ class _ProfileViewState extends State<ProfileView>
         if (!profileDetailVm.hasData || profileDetailVm.profileDetail == null) {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(40.0),
+            padding: const EdgeInsets.all(20.0),
             color: Colors.white,
-            child: _buildEmptyTab(
-              icon: Icons.rate_review_outlined,
-              title: 'Henüz Değerlendirme Yok',
-              subtitle: 'Henüz hiç değerlendirme almamışsınız.',
+            child: SingleChildScrollView(
+              child: _buildEmptyTab(
+                icon: Icons.rate_review_outlined,
+                title: 'Henüz Değerlendirme Yok',
+                subtitle: 'Henüz hiç değerlendirme almamışsınız.',
+              ),
             ),
           );
         }
@@ -781,12 +785,14 @@ class _ProfileViewState extends State<ProfileView>
               else
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(40.0),
+                  padding: const EdgeInsets.all(20.0),
                   color: Colors.white,
-                  child: _buildEmptyTab(
-                    icon: Icons.rate_review_outlined,
-                    title: 'Henüz Yorum Yok',
-                    subtitle: 'Henüz hiç yorum almamışsınız.',
+                  child: SingleChildScrollView(
+                    child: _buildEmptyTab(
+                      icon: Icons.rate_review_outlined,
+                      title: 'Henüz Yorum Yok',
+                      subtitle: 'Henüz hiç yorum almamışsınız.',
+                    ),
                   ),
                 ),
             ],
@@ -1013,12 +1019,14 @@ class _ProfileViewState extends State<ProfileView>
           );
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(40.0),
+            padding: const EdgeInsets.all(20.0),
             color: Colors.white,
-            child: _buildEmptyTab(
-              icon: Icons.rate_review_outlined,
-              title: 'Henüz Değerlendirme Yapmamışsınız',
-              subtitle: 'Henüz hiç değerlendirme yapmamışsınız.',
+            child: SingleChildScrollView(
+              child: _buildEmptyTab(
+                icon: Icons.rate_review_outlined,
+                title: 'Henüz Değerlendirme Yapmamışsınız',
+                subtitle: 'Henüz hiç değerlendirme yapmamışsınız.',
+              ),
             ),
           );
         }
@@ -1078,12 +1086,14 @@ class _ProfileViewState extends State<ProfileView>
           else
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.all(40.0),
+              padding: const EdgeInsets.all(20.0),
               color: Colors.white,
-              child: _buildEmptyTab(
-                icon: Icons.rate_review_outlined,
-                title: 'Henüz Değerlendirme Yapmamışsınız',
-                subtitle: 'Henüz hiç değerlendirme yapmamışsınız.',
+              child: SingleChildScrollView(
+                child: _buildEmptyTab(
+                  icon: Icons.rate_review_outlined,
+                  title: 'Henüz Değerlendirme Yapmamışsınız',
+                  subtitle: 'Henüz hiç değerlendirme yapmamışsınız.',
+                ),
               ),
             ),
         ],

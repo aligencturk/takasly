@@ -12,8 +12,7 @@ class FixedBottomBannerAd extends StatefulWidget {
   State<FixedBottomBannerAd> createState() => _FixedBottomBannerAdState();
 }
 
-class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
-    with AutomaticKeepAliveClientMixin {
+class _FixedBottomBannerAdState extends State<FixedBottomBannerAd> {
   final AdMobService _adMobService = AdMobService();
   BannerAd? _bannerAd;
   bool _isLoaded = false;
@@ -22,10 +21,16 @@ class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
   bool _hasError = false;
   int _retryCount = 0;
   static const int _maxRetries = 2;
+  
+  // Her instance için benzersiz ID
+  late final String _instanceId;
 
   @override
   void initState() {
     super.initState();
+    _instanceId = 'banner_${DateTime.now().millisecondsSinceEpoch}_${hashCode}';
+    Logger.info('🚀 FixedBottomBannerAd[$_instanceId] - Widget başlatıldı');
+    
     // Platform view/surface hazır olmadan yükleme yapmamak için ilk frame sonra başlat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isDisposed) {
@@ -36,23 +41,43 @@ class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
 
   @override
   void dispose() {
+    Logger.info('🗑️ FixedBottomBannerAd[$_instanceId] - Widget dispose edildi');
     _isDisposed = true;
-    try {
-      _bannerAd?.dispose();
-    } catch (_) {}
+    
+    // Reklamı güvenli şekilde temizle
+    _disposeAd();
+    
     super.dispose();
   }
 
+  void _disposeAd() {
+    try {
+      if (_bannerAd != null) {
+        _bannerAd!.dispose();
+        _bannerAd = null;
+        Logger.info('🧹 FixedBottomBannerAd[$_instanceId] - Reklam temizlendi');
+      }
+    } catch (e) {
+      Logger.error('❌ FixedBottomBannerAd[$_instanceId] - Reklam temizleme hatası: $e');
+    }
+  }
+
   Future<void> _loadAd() async {
-    if (_isLoading || _isDisposed) return;
+    if (_isLoading || _isDisposed) {
+      Logger.info('⏸️ FixedBottomBannerAd[$_instanceId] - Yükleme atlandı');
+      return;
+    }
+    
     _isLoading = true;
+    Logger.info('📥 FixedBottomBannerAd[$_instanceId] - Reklam yükleniyor...');
+    
     try {
       await _adMobService.initialize();
 
-      try {
-        _bannerAd?.dispose();
-      } catch (_) {}
+      // Önceki reklamı temizle
+      _disposeAd();
       
+      // Her instance için TAMAMEN YENİ reklam objesi oluştur
       _bannerAd = BannerAd(
         size: AdSize.banner,
         adUnitId: _adMobService.bannerAdUnitId,
@@ -60,21 +85,27 @@ class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
         listener: BannerAdListener(
           onAdLoaded: (ad) {
             if (_isDisposed) {
+              Logger.info('⚠️ FixedBottomBannerAd[$_instanceId] - Widget dispose edildi, reklam temizleniyor');
               ad.dispose();
               return;
             }
+            
             _isLoaded = true;
             _hasError = false;
+            _retryCount = 0;
+            
             if (mounted) setState(() {});
-            Logger.info('✅ FixedBottomBannerAd - Reklam yüklendi');
+            Logger.info('✅ FixedBottomBannerAd[$_instanceId] - Reklam başarıyla yüklendi');
           },
           onAdFailedToLoad: (ad, error) {
             Logger.error(
-              '❌ FixedBottomBannerAd - Yükleme hatası: ${error.code} ${error.message}',
+              '❌ FixedBottomBannerAd[$_instanceId] - Yükleme hatası: ${error.code} ${error.message}',
             );
+            
             try {
               ad.dispose();
             } catch (_) {}
+            
             _isLoaded = false;
             _hasError = true;
             if (mounted) setState(() {});
@@ -82,6 +113,8 @@ class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
             // Retry logic
             if (!_isDisposed && _retryCount < _maxRetries) {
               _retryCount++;
+              Logger.info('🔄 FixedBottomBannerAd[$_instanceId] - Tekrar deneniyor...');
+              
               Timer(const Duration(seconds: 3), () {
                 if (mounted && !_isDisposed) {
                   _loadAd();
@@ -90,17 +123,19 @@ class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
             }
           },
           onAdClicked: (ad) {
-            Logger.info('👆 FixedBottomBannerAd - Reklam tıklandı');
+            Logger.info('👆 FixedBottomBannerAd[$_instanceId] - Reklam tıklandı');
           },
           onAdImpression: (ad) {
-            Logger.info('👁️ FixedBottomBannerAd - Reklam gösterildi');
+            Logger.info('👁️ FixedBottomBannerAd[$_instanceId] - Reklam gösterildi');
           },
         ),
       );
 
       await _bannerAd!.load();
+      Logger.info('📤 FixedBottomBannerAd[$_instanceId] - Reklam yükleme isteği gönderildi');
+      
     } catch (e) {
-      Logger.error('❌ FixedBottomBannerAd load error: $e');
+      Logger.error('❌ FixedBottomBannerAd[$_instanceId] - Beklenmeyen hata: $e');
       _hasError = true;
       if (mounted) setState(() {});
     } finally {
@@ -110,8 +145,6 @@ class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    
     // Reklam yüklenmemişse veya hata varsa widget gösterme
     if (!_isLoaded || _bannerAd == null || _hasError) {
       return const SizedBox.shrink();
@@ -134,12 +167,13 @@ class _FixedBottomBannerAdState extends State<FixedBottomBannerAd>
         child: SizedBox(
           width: _bannerAd!.size.width.toDouble(),
           height: _bannerAd!.size.height.toDouble(),
-          child: AdWidget(key: UniqueKey(), ad: _bannerAd!),
+          child: AdWidget(
+            // Her instance için benzersiz key kullan
+            key: ValueKey(_instanceId),
+            ad: _bannerAd!,
+          ),
         ),
       ),
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }

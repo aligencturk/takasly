@@ -33,8 +33,10 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        
+        // Dinamik sürüm yönetimi - Flutter'dan bağımsız
+        versionCode = 31  // Her build'de artırılacak
+        versionName = "1.0.0"  // Semantic version
     }
 
     // Load keystore properties if present (android/key.properties)
