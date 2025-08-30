@@ -7,7 +7,6 @@ import '../../models/notification.dart' as app_notification;
 import '../../core/app_theme.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom_error;
-import '../../utils/logger.dart';
 
 class NotificationListView extends StatefulWidget {
   const NotificationListView({Key? key}) : super(key: key);
@@ -22,8 +21,7 @@ class _NotificationListViewState extends State<NotificationListView> {
   @override
   void initState() {
     super.initState();
-    Logger.debug('NotificationListView initialized', tag: _tag);
-    
+
     // Widget oluşturulduktan sonra bildirimleri yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
@@ -377,7 +375,6 @@ class _NotificationListViewState extends State<NotificationListView> {
   }
 
   void _onNotificationTap(app_notification.Notification notification) {
-    Logger.debug('Notification tapped: ${notification.id} - ${notification.type}', tag: _tag);
     
     // Bildirim tipine göre yönlendirme
     switch (notification.type) {
@@ -403,7 +400,6 @@ class _NotificationListViewState extends State<NotificationListView> {
         break;
       default:
         // Varsayılan olarak hiçbir şey yapma
-        Logger.debug('Unknown notification type: ${notification.type}', tag: _tag);
     }
   }
 } 

@@ -41,18 +41,19 @@ class _LoginViewState extends State<LoginView> {
             final screenHeight = MediaQuery.of(context).size.height;
             final screenWidth = MediaQuery.of(context).size.width;
 
-            // Ekran boyutuna göre responsive değerler
+            // Ekran boyutuna göre responsive değerler - küçük telefonlar için optimize edildi
             final isLargeScreen = screenHeight > 800;
             final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
+            final isSmallScreen = screenHeight <= 700; // iPhone 7 gibi küçük ekranlar
 
             // Background görselinin kompozisyonuna göre form alanlarını daha aşağıda konumlandır
-            // Büyük ekranlarda daha fazla üst boşluk, küçük ekranlarda daha az
+            // Küçük ekranlarda daha az üst boşluk, daha fazla alt boşluk
             final topSpacing = isLargeScreen
-                ? 0.40
-                : (isMediumScreen ? 0.35 : 0.30); // Daha fazla üst boşluk
+                ? 0.35
+                : (isMediumScreen ? 0.30 : 0.25); // Küçük ekranlarda daha az üst boşluk
             final bottomSpacing = isLargeScreen
                 ? 0.01
-                : (isMediumScreen ? 0.01 : 0.15);
+                : (isMediumScreen ? 0.05 : 0.10); // Küçük ekranlarda daha fazla alt boşluk
 
             return Transform.translate(
               offset: const Offset(0, 0),
@@ -68,9 +69,7 @@ class _LoginViewState extends State<LoginView> {
                     SafeArea(
                       child: Padding(
                         padding: EdgeInsets.symmetric(
-                          horizontal:
-                              screenWidth *
-                              0.07, // Ekran genişliğine göre padding
+                          horizontal: screenWidth * 0.06, // Küçük ekranlarda daha az padding
                         ),
                         child: Column(
                           children: [
@@ -138,17 +137,24 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Ekran boyutuna göre responsive değerler
+    // Ekran boyutuna göre responsive değerler - küçük telefonlar için optimize edildi
     final isLargeScreen = screenHeight > 800;
     final isMediumScreen = screenHeight > 700 && screenHeight <= 800;
+    final isSmallScreen = screenHeight <= 700; // iPhone 7 gibi küçük ekranlar
 
-    // Input field yüksekliği ekran boyutuna göre ayarlanır - daha küçük boyutlar
-    final inputHeight = isLargeScreen ? 50.0 : (isMediumScreen ? 46.0 : 42.0);
-    final fontSize = isLargeScreen ? 16.0 : (isMediumScreen ? 15.0 : 14.0);
-    final borderRadius = isLargeScreen ? 12.0 : (isMediumScreen ? 10.0 : 8.0);
+    // Input field yüksekliği ekran boyutuna göre ayarlanır - küçük ekranlar için daha da küçültüldü
+    final inputHeight = isLargeScreen 
+        ? 50.0 
+        : (isMediumScreen ? 44.0 : 38.0); // Küçük ekranlarda daha küçük input
+    final fontSize = isLargeScreen 
+        ? 16.0 
+        : (isMediumScreen ? 14.5 : 13.0); // Küçük ekranlarda daha küçük font
+    final borderRadius = isLargeScreen 
+        ? 12.0 
+        : (isMediumScreen ? 10.0 : 8.0);
     final verticalSpacing = isLargeScreen
         ? 8.0
-        : (isMediumScreen ? 6.0 : 4.0); // Daha küçük spacing
+        : (isMediumScreen ? 5.0 : 3.0); // Küçük ekranlarda çok daha az spacing
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -177,12 +183,12 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
               labelText: 'E-posta',
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.05,
-                vertical: inputHeight * 0.3,
+                horizontal: screenWidth * 0.04, // Küçük ekranlarda daha az padding
+                vertical: inputHeight * 0.25, // Küçük ekranlarda daha az dikey padding
               ),
               labelStyle: TextStyle(
                 color: Colors.grey,
-                fontSize: fontSize * 0.9,
+                fontSize: fontSize * 0.85, // Küçük ekranlarda daha küçük label
               ),
             ),
           ),
@@ -213,12 +219,12 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
               labelText: 'Şifre',
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.05,
-                vertical: inputHeight * 0.3,
+                horizontal: screenWidth * 0.04, // Küçük ekranlarda daha az padding
+                vertical: inputHeight * 0.25, // Küçük ekranlarda daha az dikey padding
               ),
               labelStyle: TextStyle(
                 color: Colors.grey,
-                fontSize: fontSize * 0.9,
+                fontSize: fontSize * 0.85, // Küçük ekranlarda daha küçük label
               ),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -226,7 +232,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   color: Colors.grey,
-                  size: fontSize * 1.2,
+                  size: fontSize * 1.1, // Küçük ekranlarda daha küçük icon
                 ),
                 onPressed: () {
                   setState(() {
@@ -252,7 +258,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                 'Şifremi Unuttum',
                 style: TextStyle(
                   color: AppTheme.primary,
-                  fontSize: fontSize * 0.85,
+                  fontSize: fontSize * 0.8, // Küçük ekranlarda daha küçük font
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -265,7 +271,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                 'Kayıt Ol',
                 style: TextStyle(
                   color: AppTheme.primary,
-                  fontSize: fontSize * 0.85,
+                  fontSize: fontSize * 0.8, // Küçük ekranlarda daha küçük font
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -273,7 +279,8 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ],
         ),
 
-        SizedBox(height: verticalSpacing * 1.5), // Giriş butonu öncesi spacing
+        SizedBox(height: verticalSpacing * 1.2), // Giriş butonu öncesi spacing - küçültüldü
+        
         // Giriş Yap butonu
         ElevatedButton(
           onPressed: () => _submitLogin(context),
@@ -281,7 +288,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
             backgroundColor: AppTheme.primary,
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(
-              vertical: isLargeScreen ? 14 : (isMediumScreen ? 12 : 10),
+              vertical: isLargeScreen ? 14 : (isMediumScreen ? 11 : 8), // Küçük ekranlarda daha az padding
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
@@ -290,7 +297,10 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
           ),
           child: Text(
             'Giriş Yap',
-            style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: fontSize * 0.95, // Küçük ekranlarda daha küçük font
+              fontWeight: FontWeight.w600
+            ),
           ),
         ),
 
@@ -308,7 +318,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                 'veya',
                 style: TextStyle(
                   color: AppTheme.primary,
-                  fontSize: fontSize * 0.9,
+                  fontSize: fontSize * 0.85, // Küçük ekranlarda daha küçük font
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -346,13 +356,13 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                 children: [
                   Image.asset(
                     'assets/icons/google_icon.png',
-                    width: fontSize * 1.2,
-                    height: fontSize * 1.2,
+                    width: fontSize * 1.1, // Küçük ekranlarda daha küçük icon
+                    height: fontSize * 1.1,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return SizedBox(
-                        width: fontSize * 1.2,
-                        height: fontSize * 1.2,
+                        width: fontSize * 1.1,
+                        height: fontSize * 1.1,
                       );
                     },
                   ),
@@ -360,7 +370,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                   Text(
                     'Google ile Giriş',
                     style: TextStyle(
-                      fontSize: fontSize * 0.9,
+                      fontSize: fontSize * 0.85, // Küçük ekranlarda daha küçük font
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
@@ -398,14 +408,14 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                   children: [
                     Icon(
                       Icons.apple,
-                      size: fontSize * 1.2,
+                      size: fontSize * 1.1, // Küçük ekranlarda daha küçük icon
                       color: Colors.white,
                     ),
                     SizedBox(width: verticalSpacing),
                     Text(
                       'Apple ile Giriş',
                       style: TextStyle(
-                        fontSize: fontSize * 0.9,
+                        fontSize: fontSize * 0.85, // Küçük ekranlarda daha küçük font
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),

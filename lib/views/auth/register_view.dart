@@ -375,14 +375,15 @@ class _RegisterFormState extends State<_RegisterForm> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Ad Soyad
-          SizedBox(height: 280),
+          // Ad Soyad - klavye açıldığında daha az üst boşluk
+          SizedBox(height: isKeyboardOpen ? 120 : 280),
           Row(
             children: [
               Expanded(
@@ -634,6 +635,9 @@ class _RegisterFormState extends State<_RegisterForm> {
               );
             },
           ),
+          
+          // Klavye açıldığında alt boşluk ekle
+          if (isKeyboardOpen) SizedBox(height: 20),
         ],
       ),
     );

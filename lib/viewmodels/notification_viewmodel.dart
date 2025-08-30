@@ -3,7 +3,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/notification.dart' as AppNotification;
 import '../services/notification_service.dart';
 import '../services/user_service.dart';
-import '../utils/logger.dart';
 
 class NotificationViewModel extends ChangeNotifier {
   final NotificationService _notificationService = NotificationService.instance;
@@ -77,7 +76,6 @@ class NotificationViewModel extends ChangeNotifier {
         _setError(response.error ?? 'Bildirimler yüklenemedi');
       }
     } catch (e) {
-      Logger.error('Error loading notifications: $e', tag: _tag);
       _setError('Bildirimler yüklenirken hata oluştu');
     } finally {
       _setLoading(false);
@@ -124,7 +122,7 @@ class NotificationViewModel extends ChangeNotifier {
         _setError(response.error ?? 'Bildirimler yenilenemedi');
       }
     } catch (e) {
-      Logger.error('Error refreshing notifications: $e', tag: _tag);
+     
       _setError('Bildirimler yenilenirken hata oluştu');
     } finally {
       _setRefreshing(false);
@@ -210,7 +208,7 @@ class NotificationViewModel extends ChangeNotifier {
         try {
           await _notificationService.init();
         } catch (e) {
-          Logger.warning('NotificationService.init() hatası: $e', tag: _tag);
+       
         }
 
         // iOS foreground bildirim gösterimi için sunum seçeneklerini ayarla
@@ -234,20 +232,16 @@ class NotificationViewModel extends ChangeNotifier {
         
         // iOS için ek bilgilendirme
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-          Logger.info('iOS bildirim test rehberi:', tag: _tag);
-          Logger.info('1. Gerçek iOS cihazı kullanın (simülatör değil)', tag: _tag);
-          Logger.info('2. Firebase Console\'da APNs sertifikası ekleyin', tag: _tag);
-          Logger.info('3. Development/Production entitlements doğru ayarlayın', tag: _tag);
-          Logger.info('4. App Store Connect\'te Bundle ID tanımlayın', tag: _tag);
+
+    
+         
         }
       } else {
-        Logger.warning('FCM izinleri verilmediği için başlatılamadı', tag: _tag);
-        Logger.info('İzinleri manuel olarak Ayarlar > Bildirimler\'den verebilirsiniz', tag: _tag);
-      }
+        }
       
       notifyListeners();
     } catch (e) {
-      Logger.error('FCM başlatma hatası: $e', tag: _tag);
+   
       _setError('Bildirim servisi başlatılamadı');
     }
   }
@@ -258,7 +252,7 @@ class NotificationViewModel extends ChangeNotifier {
       final token = await _notificationService.getFCMToken();
       _fcmToken = token;
     } catch (e) {
-      Logger.error('FCM Token yenileme hatası: $e', tag: _tag);
+     
     }
   }
   
@@ -277,10 +271,10 @@ class NotificationViewModel extends ChangeNotifier {
             if (success) {
               return;
             } else {
-              Logger.warning('Topic aboneliği başarısız, deneme $attempt/$maxAttempts', tag: _tag);
+              
             }
           } catch (e) {
-            Logger.warning('Topic aboneliği hatası (deneme $attempt/$maxAttempts): $e', tag: _tag);
+           
           }
           
           if (attempt < maxAttempts) {
@@ -288,10 +282,10 @@ class NotificationViewModel extends ChangeNotifier {
           }
         }
         
-        Logger.error('Kullanıcı topic\'ine abone olunamadı: ${currentUser!.id}', tag: _tag);
+  
       }
     } catch (e) {
-      Logger.error('Kullanıcı topic abone olma hatası: $e', tag: _tag);
+    
     }
   }
   
@@ -316,7 +310,7 @@ class NotificationViewModel extends ChangeNotifier {
       final success = await _notificationService.subscribeToTopic(topic);
       return success;
     } catch (e) {
-      Logger.error('Topic abone olma hatası: $e', tag: _tag);
+     
       return false;
     }
   }
@@ -327,7 +321,7 @@ class NotificationViewModel extends ChangeNotifier {
       final success = await _notificationService.unsubscribeFromTopic(topic);
       return success;
     } catch (e) {
-      Logger.error('Topic abonelik iptali hatası: $e', tag: _tag);
+     
       return false;
     }
   }
@@ -353,7 +347,7 @@ class NotificationViewModel extends ChangeNotifier {
       
       return success;
     } catch (e) {
-      Logger.error('FCM mesaj gönderme hatası: $e', tag: _tag);
+     
       return false;
     }
   }
@@ -364,7 +358,7 @@ class NotificationViewModel extends ChangeNotifier {
       final success = await _notificationService.sendTestNotification();
       return success;
     } catch (e) {
-      Logger.error('Test bildirimi gönderme hatası: $e', tag: _tag);
+     
       return false;
     }
   }
@@ -376,7 +370,7 @@ class NotificationViewModel extends ChangeNotifier {
   }) async {
     try {
       if (bearer.trim().isEmpty) {
-        Logger.warning('Boş bearer token', tag: _tag);
+   
         return false;
       }
       
@@ -385,7 +379,7 @@ class NotificationViewModel extends ChangeNotifier {
       // Kullanıcı ID topic'ini al ve garanti abonelik
       final user = await _userService.getCurrentUser();
       if (user == null || user.id.isEmpty) {
-        Logger.warning('Kullanıcı bulunamadı, topic belirlenemedi', tag: _tag);
+
         return false;
       }
       
@@ -393,12 +387,9 @@ class NotificationViewModel extends ChangeNotifier {
       try {
         final subscribed = await _notificationService.subscribeToTopic(user.id);
         if (subscribed) {
-          Logger.debug('Topic aboneliği başarılı: ${user.id}', tag: _tag);
         } else {
-          Logger.warning('Topic aboneliği başarısız: ${user.id}', tag: _tag);
         }
       } catch (e) {
-        Logger.warning('Topic aboneliği hatası: $e', tag: _tag);
       }
 
       String? token;
@@ -406,7 +397,6 @@ class NotificationViewModel extends ChangeNotifier {
       if (toDevice) {
         token = await _notificationService.getFCMToken();
         if (token == null || token.isEmpty) {
-          Logger.error('FCM token alınamadı, token ile gönderilemedi', tag: _tag);
           return false;
         }
       } else {
@@ -428,14 +418,11 @@ class NotificationViewModel extends ChangeNotifier {
       );
       
       if (success) {
-        Logger.debug('Bearer test bildirimi gönderildi', tag: _tag);
       } else {
-        Logger.error('Bearer test bildirimi gönderilemedi', tag: _tag);
       }
       
       return success;
     } catch (e) {
-      Logger.error('Bearer ile test bildirim hatası: $e', tag: _tag);
       return false;
     }
   }
