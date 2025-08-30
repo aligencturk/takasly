@@ -55,17 +55,14 @@ class RemoteConfigViewModel extends ChangeNotifier {
           (_announcementImageEnabled && _announcementImageUrl.isNotEmpty));
 
   RemoteConfigViewModel() {
-    Logger.info('🚀 RemoteConfigViewModel constructor called');
   }
 
   /// Remote Config'i başlatır
   Future<void> initialize() async {
     if (_isInitialized) {
-      Logger.debug('🔄 RemoteConfigViewModel zaten başlatılmış');
       return;
     }
 
-    Logger.info('🔐 RemoteConfigViewModel başlatılıyor...');
     _setLoading(true);
     _clearError();
 
@@ -77,12 +74,8 @@ class RemoteConfigViewModel extends ChangeNotifier {
       await _updateCachedValues();
 
       _isInitialized = true;
-      Logger.info('✅ RemoteConfigViewModel başarıyla başlatıldı');
-
-      // Debug bilgileri
-      _debugPrintValues();
     } catch (e) {
-      Logger.error('❌ RemoteConfigViewModel başlatma hatası: $e', error: e);
+      Logger.error('RemoteConfigViewModel başlatma hatası: $e', error: e);
       _setError('Remote Config başlatılamadı');
     } finally {
       _setLoading(false);
@@ -91,7 +84,6 @@ class RemoteConfigViewModel extends ChangeNotifier {
 
   /// Remote Config değerlerini yeniler
   Future<void> refresh() async {
-    Logger.info('🔄 Remote Config değerleri yenileniyor...');
     _setLoading(true);
     _clearError();
 
@@ -100,18 +92,11 @@ class RemoteConfigViewModel extends ChangeNotifier {
       final updated = await _remoteConfigService.refresh();
 
       if (updated) {
-        Logger.info('✅ Remote Config değerleri güncellendi');
-
         // Cache'i güncelle
         await _updateCachedValues();
-
-        // Debug bilgileri
-        _debugPrintValues();
-      } else {
-        Logger.debug('ℹ️ Remote Config değerleri zaten güncel');
       }
     } catch (e) {
-      Logger.error('❌ Remote Config yenileme hatası: $e', error: e);
+      Logger.error('Remote Config yenileme hatası: $e', error: e);
       _setError('Veriler yenilenemedi');
     } finally {
       _setLoading(false);
@@ -140,22 +125,14 @@ class RemoteConfigViewModel extends ChangeNotifier {
           .getAnnouncementImageHeight();
       _announcementImageFit = _remoteConfigService.getAnnouncementImageFit();
 
-      Logger.debug(
-        '📋 Cache güncellendi - Duyuru aktif: $_announcementEnabled, Metin uzunluğu: ${_announcementText.length}',
-      );
-      Logger.debug(
-        '🖼️ Cache güncellendi - Resim aktif: $_announcementImageEnabled, URL: ${_announcementImageUrl.isNotEmpty ? "Mevcut" : "Boş"}',
-      );
-
       notifyListeners();
     } catch (e) {
-      Logger.error('❌ Cache güncelleme hatası: $e', error: e);
+      Logger.error('Cache güncelleme hatası: $e', error: e);
     }
   }
 
   /// Duyuruyu gösterildi olarak işaretler
   void markAnnouncementAsShown() {
-    Logger.info('✅ Duyuru gösterildi olarak işaretlendi');
     _isAnnouncementShown = true;
 
     // Service'e de işaretle
@@ -167,7 +144,6 @@ class RemoteConfigViewModel extends ChangeNotifier {
 
   /// Duyuru gösterilme durumunu sıfırlar (yeni duyuru için)
   void resetAnnouncementShown() {
-    Logger.info('🔄 Duyuru gösterilme durumu sıfırlandı');
     _isAnnouncementShown = false;
 
     // Service'te de sıfırla
@@ -180,13 +156,12 @@ class RemoteConfigViewModel extends ChangeNotifier {
   String getString(String key, {String defaultValue = ''}) {
     try {
       if (!_isInitialized) {
-        Logger.warning('⚠️ RemoteConfigViewModel henüz başlatılmamış');
         return defaultValue;
       }
 
       return _remoteConfigService.getString(key, defaultValue: defaultValue);
     } catch (e) {
-      Logger.error('❌ String değer alma hatası [$key]: $e', error: e);
+      Logger.error('String değer alma hatası [$key]: $e', error: e);
       return defaultValue;
     }
   }
@@ -195,13 +170,12 @@ class RemoteConfigViewModel extends ChangeNotifier {
   bool getBool(String key, {bool defaultValue = false}) {
     try {
       if (!_isInitialized) {
-        Logger.warning('⚠️ RemoteConfigViewModel henüz başlatılmamış');
         return defaultValue;
       }
 
       return _remoteConfigService.getBool(key, defaultValue: defaultValue);
     } catch (e) {
-      Logger.error('❌ Boolean değer alma hatası [$key]: $e', error: e);
+      Logger.error('Boolean değer alma hatası [$key]: $e', error: e);
       return defaultValue;
     }
   }
@@ -210,13 +184,12 @@ class RemoteConfigViewModel extends ChangeNotifier {
   int getInt(String key, {int defaultValue = 0}) {
     try {
       if (!_isInitialized) {
-        Logger.warning('⚠️ RemoteConfigViewModel henüz başlatılmamış');
         return defaultValue;
       }
 
       return _remoteConfigService.getInt(key, defaultValue: defaultValue);
     } catch (e) {
-      Logger.error('❌ Int değer alma hatası [$key]: $e', error: e);
+      Logger.error('Int değer alma hatası [$key]: $e', error: e);
       return defaultValue;
     }
   }
@@ -225,13 +198,12 @@ class RemoteConfigViewModel extends ChangeNotifier {
   double getDouble(String key, {double defaultValue = 0.0}) {
     try {
       if (!_isInitialized) {
-        Logger.warning('⚠️ RemoteConfigViewModel henüz başlatılmamış');
         return defaultValue;
       }
 
       return _remoteConfigService.getDouble(key, defaultValue: defaultValue);
     } catch (e) {
-      Logger.error('❌ Double değer alma hatası [$key]: $e', error: e);
+      Logger.error('Double değer alma hatası [$key]: $e', error: e);
       return defaultValue;
     }
   }
@@ -239,12 +211,7 @@ class RemoteConfigViewModel extends ChangeNotifier {
   /// Manuel olarak duyuru kontrolü yapar
   Future<bool> checkForAnnouncement() async {
     try {
-      Logger.info('📢 Duyuru kontrolü yapılıyor...');
-
       if (!_isInitialized) {
-        Logger.warning(
-          '⚠️ RemoteConfigViewModel henüz başlatılmamış, başlatılıyor...',
-        );
         await initialize();
       }
 
@@ -253,13 +220,10 @@ class RemoteConfigViewModel extends ChangeNotifier {
 
       // Service'den güncel kontrol yap
       final shouldShow = await _remoteConfigService.shouldShowAnnouncement();
-      Logger.info(
-        '📢 Duyuru kontrolü sonucu: ${shouldShow ? "Gösterilecek" : "Gösterilmeyecek"}',
-      );
 
       return shouldShow;
     } catch (e) {
-      Logger.error('❌ Duyuru kontrolü hatası: $e', error: e);
+      Logger.error('Duyuru kontrolü hatası: $e', error: e);
       return false;
     }
   }
@@ -274,52 +238,28 @@ class RemoteConfigViewModel extends ChangeNotifier {
     _setError(error);
   }
 
-  /// Debug için tüm değerleri yazdırır
-  void _debugPrintValues() {
-    if (_announcementEnabled) {
-      Logger.debug(
-        '📢 Duyuru aktif: "$_announcementTitle" - ${_announcementText.length} karakter',
-      );
-    }
-  }
-
   /// Test için duyuru durumunu sıfırlar
   Future<void> resetForTesting() async {
-    Logger.info('🔄 Test için duyuru durumu sıfırlanıyor...');
-
     // Local state'i sıfırla
     _isAnnouncementShown = false;
 
     // Service'te de sıfırla
     await _remoteConfigService.resetAnnouncementSeenStatus();
 
-    Logger.info('✅ Test için duyuru durumu sıfırlandı');
     notifyListeners();
   }
 
   /// Debug için kullanıcı durumunu gösterir
   Future<void> debugPrintUserAnnouncementStatus() async {
     try {
-      Logger.debug('📊 === Kullanıcı Duyuru Durumu Debug ===');
-
       final hasSeenText = await _remoteConfigService.hasUserSeenAnnouncement();
       final hasSeenImage = await _remoteConfigService
           .hasUserSeenAnnouncementImage();
       final isNewText = await _remoteConfigService.isNewAnnouncement();
       final isNewImage = await _remoteConfigService.isNewAnnouncementImage();
       final shouldShow = await _remoteConfigService.shouldShowAnnouncement();
-
-      Logger.debug('📊 Metin duyuru görülmüş: $hasSeenText');
-      Logger.debug('📊 Resim duyuru görülmüş: $hasSeenImage');
-      Logger.debug('📊 Yeni metin duyuru: $isNewText');
-      Logger.debug('📊 Yeni resim duyuru: $isNewImage');
-      Logger.debug('📊 Gösterilmeli: $shouldShow');
-      Logger.debug(
-        '📊 Local state - isAnnouncementShown: $_isAnnouncementShown',
-      );
-      Logger.debug('📊 ====================================');
     } catch (e) {
-      Logger.error('❌ Debug print hatası: $e', error: e);
+      Logger.error('Debug print hatası: $e', error: e);
     }
   }
 
@@ -343,7 +283,6 @@ class RemoteConfigViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    Logger.debug('🗑️ RemoteConfigViewModel dispose called');
     super.dispose();
   }
 }

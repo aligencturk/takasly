@@ -34,7 +34,6 @@ class _ProductCardState extends State<ProductCard> {
   @override
   void dispose() {
     // Widget dispose edildiğinde temizlik yap
-    Logger.debug('🧹 ProductCard - Disposing product: ${widget.product.id}');
     super.dispose();
   }
 
@@ -71,37 +70,10 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   String _getCategoryDisplayName(Product product, BuildContext context) {
-    // Debug: Kategori bilgilerini logla
-    Logger.debug(
-      '🔍 ProductCard._getCategoryDisplayName - Product: ${product.title}',
-      tag: 'ProductCard',
-    );
-    Logger.debug(
-      '🔍 ProductCard._getCategoryDisplayName - categoryId: ${product.categoryId}',
-      tag: 'ProductCard',
-    );
-    Logger.debug(
-      '🔍 ProductCard._getCategoryDisplayName - catname: ${product.catname}',
-      tag: 'ProductCard',
-    );
-    Logger.debug(
-      '🔍 ProductCard._getCategoryDisplayName - category.name: ${product.category.name}',
-      tag: 'ProductCard',
-    );
-
     // API'den gelen categoryList alanını kontrol et
     if (product.categoryList != null && product.categoryList!.isNotEmpty) {
-      Logger.debug(
-        '🔍 ProductCard._getCategoryDisplayName - categoryList found with ${product.categoryList!.length} items',
-        tag: 'ProductCard',
-      );
-
       // categoryList'ten en spesifik kategoriyi al (son eleman)
       final mostSpecificCategory = product.categoryList!.last;
-      Logger.debug(
-        '🔍 ProductCard._getCategoryDisplayName - Using categoryList most specific: ${mostSpecificCategory.name}',
-        tag: 'ProductCard',
-      );
       return mostSpecificCategory.name;
     }
 
@@ -112,10 +84,6 @@ class _ProductCardState extends State<ProductCard> {
         product.mainCategoryName != 'null' &&
         product.mainCategoryName != 'Kategori' &&
         product.mainCategoryName != 'Kategori Yok') {
-      Logger.debug(
-        '🔍 ProductCard._getCategoryDisplayName - Using mainCategoryName: ${product.mainCategoryName}',
-        tag: 'ProductCard',
-      );
       return product.mainCategoryName!;
     }
 
@@ -125,10 +93,6 @@ class _ProductCardState extends State<ProductCard> {
         product.parentCategoryName != 'null' &&
         product.parentCategoryName != 'Kategori' &&
         product.parentCategoryName != 'Kategori Yok') {
-      Logger.debug(
-        '🔍 ProductCard._getCategoryDisplayName - Using parentCategoryName: ${product.parentCategoryName}',
-        tag: 'ProductCard',
-      );
       return product.parentCategoryName!;
     }
 
@@ -138,10 +102,6 @@ class _ProductCardState extends State<ProductCard> {
         product.subCategoryName != 'null' &&
         product.subCategoryName != 'Kategori' &&
         product.subCategoryName != 'Kategori Yok') {
-      Logger.debug(
-        '🔍 ProductCard._getCategoryDisplayName - Using subCategoryName: ${product.subCategoryName}',
-        tag: 'ProductCard',
-      );
       return product.subCategoryName!;
     }
 
@@ -149,10 +109,6 @@ class _ProductCardState extends State<ProductCard> {
     if (product.catname.isNotEmpty &&
         product.catname != 'null' &&
         product.catname != 'Kategori') {
-      Logger.debug(
-        '🔍 ProductCard._getCategoryDisplayName - Using catname: ${product.catname}',
-        tag: 'ProductCard',
-      );
       return product.catname;
     }
 
@@ -160,10 +116,6 @@ class _ProductCardState extends State<ProductCard> {
     if (product.category.name.isNotEmpty &&
         product.category.name != 'Kategori' &&
         product.category.name != 'Kategori Yok') {
-      Logger.debug(
-        '🔍 ProductCard._getCategoryDisplayName - Using category.name: ${product.category.name}',
-        tag: 'ProductCard',
-      );
       return product.category.name;
     }
 
@@ -176,18 +128,10 @@ class _ProductCardState extends State<ProductCard> {
       product.categoryId,
     );
     if (categoryName != 'Kategori Yok') {
-      Logger.debug(
-        '🔍 ProductCard._getCategoryDisplayName - Using ProductViewModel category: $categoryName',
-        tag: 'ProductCard',
-      );
       return categoryName;
     }
 
     // 7. Eğer hiçbir kategori bulunamazsa, en azından "Kategori" yazısını göster
-    Logger.debug(
-      '🔍 ProductCard._getCategoryDisplayName - No valid category found, using default: Kategori',
-      tag: 'ProductCard',
-    );
     return 'Kategori';
   }
 
@@ -195,9 +139,6 @@ class _ProductCardState extends State<ProductCard> {
   Widget build(BuildContext context) {
     // Null safety kontrolü
     if (widget.product.id.isEmpty) {
-      Logger.warning(
-        '⚠️ ProductCard - Invalid product ID: ${widget.product.id}',
-      );
       return const SizedBox.shrink();
     }
 
@@ -441,18 +382,12 @@ class _ProductCardState extends State<ProductCard> {
                     // Constraint güvenliği kontrolü
                     if (constraints.maxHeight.isInfinite ||
                         constraints.maxHeight <= 0) {
-                      Logger.warning(
-                        '⚠️ ProductCard - Geçersiz constraint: maxHeight=${constraints.maxHeight}',
-                      );
                       return const SizedBox.shrink();
                     }
 
                     // Grid constraint kontrolü - grid içinde kullanıldığında maxHeight sınırlı olmalı
                     if (constraints.hasBoundedHeight &&
                         constraints.maxHeight > 1000) {
-                      Logger.warning(
-                        '⚠️ ProductCard - Grid dışı constraint: maxHeight=${constraints.maxHeight}',
-                      );
                       return const SizedBox.shrink();
                     }
 

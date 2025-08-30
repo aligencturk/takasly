@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:takasly/core/app_theme.dart';
 import 'package:takasly/models/product.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
-import 'package:takasly/utils/logger.dart';
 import 'package:takasly/services/cache_service.dart';
 
 // Global cache - widget yeniden oluşturulsa bile korunur
@@ -159,13 +158,11 @@ class _CategoryListState extends State<CategoryList> {
                   }
                 })
                 .catchError((error) {
-                  Logger.error('Icon yükleme hatası: $iconUrl', error: error);
                   CategoryIconCache.setLoading(iconUrl, false);
                 });
           }
         })
         .catchError((error) {
-          Logger.error('Cache kontrol hatası: $iconUrl', error: error);
           CategoryIconCache.setLoading(iconUrl, false);
         });
   }
@@ -299,7 +296,6 @@ class _CategoryListState extends State<CategoryList> {
         final svgString = String.fromCharCodes(bytes);
         return SvgPicture.string(svgString, width: iconSize, height: iconSize);
       } catch (e) {
-        Logger.error('SVG parse hatası: $iconUrl', error: e);
         return Icon(fallbackIcon, color: color, size: iconSize);
       }
     }
@@ -312,7 +308,6 @@ class _CategoryListState extends State<CategoryList> {
       fit: BoxFit.contain,
       color: color,
       errorBuilder: (context, error, stackTrace) {
-        Logger.error('Memory image yüklenemedi: $iconUrl', error: error);
         return Icon(fallbackIcon, color: color, size: iconSize);
       },
     );
