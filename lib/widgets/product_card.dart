@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:takasly/viewmodels/product_viewmodel.dart';
 import 'package:takasly/utils/logger.dart';
 import '../../views/product/product_detail_view.dart';
+import 'package:takasly/viewmodels/auth_viewmodel.dart';
 
 class ProductCard extends StatefulWidget {
   final Product product;
@@ -348,8 +349,13 @@ class _ProductCardState extends State<ProductCard> {
                     ),
                   // Favori kalp ikonu - sadece hideFavoriteIcon false ise göster
                   if (!widget.hideFavoriteIcon)
-                    Consumer<ProductViewModel>(
-                      builder: (context, productViewModel, child) {
+                    Consumer2<ProductViewModel, AuthViewModel>(
+                      builder: (context, productViewModel, authViewModel, child) {
+                        // Kullanıcı giriş yapmamışsa favori gösterme
+                        if (authViewModel.currentUser == null) {
+                          return const SizedBox.shrink();
+                        }
+
                         final isFavorite = productViewModel.isFavorite(
                           widget.product.id,
                         );

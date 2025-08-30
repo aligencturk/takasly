@@ -1028,6 +1028,19 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadFavoriteProducts() async {
+    // Kullanıcı giriş yapmamışsa favorileri yükleme
+    final currentUser = await _authService.getCurrentUser();
+    if (currentUser == null) {
+      Logger.info(
+        '❌ ProductViewModel.loadFavoriteProducts - Kullanıcı giriş yapmamış, favoriler yüklenmiyor',
+        tag: 'ProductViewModel',
+      );
+      // Favorileri temizle
+      _favoriteProducts.clear();
+      notifyListeners();
+      return;
+    }
+
     // Eğer favoriler zaten yüklüyse ve loading değilse, tekrar yükleme
     if (_favoriteProducts.isNotEmpty && !_isLoadingFavorites) {
       Logger.info(

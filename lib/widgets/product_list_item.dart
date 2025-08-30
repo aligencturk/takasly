@@ -4,6 +4,7 @@ import '../core/app_theme.dart';
 import '../models/product.dart';
 import '../utils/logger.dart';
 import '../viewmodels/product_viewmodel.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 class ProductListItem extends StatelessWidget {
   final Product product;
@@ -225,8 +226,13 @@ class ProductListItem extends StatelessWidget {
           Positioned(
             top: 6,
             right: 6,
-            child: Consumer<ProductViewModel>(
-              builder: (context, vm, child) {
+            child: Consumer2<ProductViewModel, AuthViewModel>(
+              builder: (context, vm, authViewModel, child) {
+                // Kullanıcı giriş yapmamışsa favori gösterme
+                if (authViewModel.currentUser == null) {
+                  return const SizedBox.shrink();
+                }
+
                 final bool isFavorite = vm.isFavorite(product.id);
                 return GestureDetector(
                   onTap: () async {

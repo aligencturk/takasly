@@ -99,10 +99,18 @@ class _HomeViewState extends State<HomeView> {
     // Konum filtreleme kontrolü
     await _checkAndApplyLocationFilter();
 
-    // Favorileri arka planda yükle (UI'ı bloklamasın)
-    Future.microtask(() {
-      productViewModel.loadFavoriteProducts();
-    });
+    // Favorileri sadece kullanıcı giriş yapmışsa yükle
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    if (authViewModel.currentUser != null) {
+      Logger.info('❤️ HomeView - Kullanıcı giriş yapmış, favoriler yükleniyor');
+      Future.microtask(() {
+        productViewModel.loadFavoriteProducts();
+      });
+    } else {
+      Logger.info(
+        '❌ HomeView - Kullanıcı giriş yapmamış, favoriler yüklenmiyor',
+      );
+    }
     // Kategorilerin yüklendiğinden emin ol
     if (productViewModel.categories.isEmpty) {
       productViewModel.loadCategories();
