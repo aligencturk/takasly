@@ -15,22 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Background message handler - uygulama kapalıyken gelen mesajları işler
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  Logger.info(
-    'Background message received: ${message.messageId}',
-    tag: 'BackgroundHandler',
-  );
-
-  // Chat bildirimi kontrolü
-  if (message.data['type'] == 'chat_message') {
-    // Chat bildirimi için özel işlem
-    Logger.info(
-      'Chat bildirimi background\'da işleniyor',
-      tag: 'BackgroundHandler',
-    );
-
-    // Gerekirse local notification göster
-    // Not: Background'da Flutter Local Notifications çalışmayabilir
-  }
+  // Background message handling
 }
 
 class NotificationService {
@@ -122,30 +107,14 @@ class NotificationService {
     try {
       final fcmToken = await _fcm.getToken();
       if (fcmToken != null && fcmToken.isNotEmpty) {
-        Logger.info(
-          '✅ NotificationService init - FCM token alındı: ${fcmToken.substring(0, 20)}...',
-          tag: _tag,
-        );
-
         // Token'ı SharedPreferences'a kaydet
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('fcmToken', fcmToken);
-        Logger.info(
-          '✅ NotificationService init - FCM token SharedPreferences\'a kaydedildi',
-          tag: _tag,
-        );
       } else {
-        Logger.warning(
-          '⚠️ NotificationService init - FCM token alınamadı',
-          tag: _tag,
-        );
+        Logger.warning('FCM token alınamadı', tag: _tag);
       }
     } catch (e) {
-      Logger.error(
-        '❌ NotificationService init - FCM token alma hatası: $e',
-        tag: _tag,
-        error: e,
-      );
+      Logger.error('FCM token alma hatası: $e', tag: _tag, error: e);
     }
 
     // Foreground: mesaj geldiğinde notification handling
@@ -155,13 +124,6 @@ class NotificationService {
         _handleChatMessage(m);
         return;
       }
-
-      // Foreground'da gelen mesajları sadece log'la,
-      // duplicate notification'ı önlemek için local notification gösterme
-      Logger.debug(
-        'Foreground FCM message received: ${m.notification?.title}',
-        tag: _tag,
-      );
 
       // İsteğe bağlı: Sadece data-only mesajlar için local notification göster
       if (m.notification == null && m.data.isNotEmpty) {
@@ -248,8 +210,6 @@ class NotificationService {
       ),
       payload: payload,
     );
-
-    Logger.debug('Foreground notification shown: $title', tag: _tag);
   }
 
   // Tıklamada yönlendirme
@@ -274,8 +234,6 @@ class NotificationService {
 
   /// Bildirim türüne göre yönlendirme yapar
   void _navigateBasedOnType(String type, String id) {
-    Logger.debug('Navigating based on type: $type, id: $id', tag: _tag);
-
     // Eğer custom navigation callback varsa önce onu kullan
     if (onNavigate != null) {
       onNavigate!(type, id);
@@ -309,7 +267,6 @@ class NotificationService {
         break;
 
       default:
-        Logger.debug('Unknown notification type: $type', tag: _tag);
         // Varsayılan olarak bildirimler sayfasına git
         _navigateToNotifications();
         break;
@@ -326,7 +283,6 @@ class NotificationService {
           '/trade-detail',
           arguments: {'offerID': int.tryParse(offerId) ?? 0},
         );
-        Logger.debug('Navigated to trade detail: $offerId', tag: _tag);
       }
     } catch (e) {
       Logger.error('Navigation to trade detail failed: $e', tag: _tag);
@@ -343,7 +299,6 @@ class NotificationService {
           '/chat-detail',
           arguments: {'chatId': chatId},
         );
-        Logger.debug('Navigated to chat detail: $chatId', tag: _tag);
       }
     } catch (e) {
       Logger.error('Navigation to chat detail failed: $e', tag: _tag);
@@ -358,10 +313,6 @@ class NotificationService {
       if (_lastNavigatedProductId == productId &&
           _lastNavigationTime != null &&
           now.difference(_lastNavigationTime!) < _navigationCooldown) {
-        Logger.debug(
-          'Navigation blocked - too soon after last navigation: $productId',
-          tag: _tag,
-        );
         return;
       }
 
@@ -375,7 +326,6 @@ class NotificationService {
           '/edit-product',
           arguments: {'productId': productId},
         );
-        Logger.debug('Navigated to edit product: $productId', tag: _tag);
       }
     } catch (e) {
       Logger.error('Navigation to edit product failed: $e', tag: _tag);
@@ -388,7 +338,6 @@ class NotificationService {
       final context = _getCurrentContext();
       if (context != null) {
         Navigator.pushNamed(context, '/notifications');
-        Logger.debug('Navigated to notifications', tag: _tag);
       }
     } catch (e) {
       Logger.error('Navigation to notifications failed: $e', tag: _tag);
@@ -479,13 +428,9 @@ class NotificationService {
     required int userId,
   }) async {
     try {
-      Logger.debug('Loading notifications for user: $userId', tag: _tag);
-
       final response = await _httpClient.getWithBasicAuth(
         '/service/user/account/$userId/notifications',
         fromJson: (json) {
-          Logger.debug('Notifications fromJson - Raw data: $json', tag: _tag);
-
           if (json is Map<String, dynamic>) {
             // Yeni API formatı: { "error": false, "success": true, "data": { "notifications": [...] } }
             if (json.containsKey('data') &&
@@ -496,10 +441,6 @@ class NotificationService {
               if (dataField.containsKey('notifications') &&
                   dataField['notifications'] is List) {
                 final notificationsList = dataField['notifications'] as List;
-                Logger.debug(
-                  'Found ${notificationsList.length} notifications in data.notifications',
-                  tag: _tag,
-                );
                 return notificationsList
                     .map(
                       (notificationJson) =>
@@ -513,24 +454,15 @@ class NotificationService {
               // Eğer data field'ı direkt notification listesi içeriyorsa
               if (dataField.containsKey('id') ||
                   dataField.containsKey('title')) {
-                Logger.debug(
-                  'Found single notification in data field',
-                  tag: _tag,
-                );
                 return [AppNotification.Notification.fromJson(dataField)];
               }
 
-              Logger.debug('No notifications found in data field', tag: _tag);
               return <AppNotification.Notification>[];
             }
             // Eski format: direkt notifications field'ı
             else if (json.containsKey('notifications') &&
                 json['notifications'] is List) {
               final notificationsList = json['notifications'] as List;
-              Logger.debug(
-                'Found ${notificationsList.length} notifications in notifications field',
-                tag: _tag,
-              );
               return notificationsList
                   .map(
                     (notificationJson) =>
@@ -540,10 +472,6 @@ class NotificationService {
             }
             // Eğer direkt liste gelirse
             else if (json is List) {
-              Logger.debug(
-                'Found ${json.length} notifications in direct list',
-                tag: _tag,
-              );
               return (json as List)
                   .map(
                     (notificationJson) =>
@@ -567,10 +495,6 @@ class NotificationService {
         },
       );
 
-      Logger.debug(
-        'Notifications response: success=${response.isSuccess}',
-        tag: _tag,
-      );
       return response;
     } catch (e) {
       Logger.error('Get notifications error: $e', tag: _tag);
@@ -583,8 +507,6 @@ class NotificationService {
   /// FCM için bildirim izinleri ister
   Future<bool> requestNotificationPermissions() async {
     try {
-      Logger.debug('Requesting FCM permissions...', tag: _tag);
-
       // iOS için daha kapsamlı izinler
       final settings = await _fcm.requestPermission(
         alert: true,
@@ -600,12 +522,6 @@ class NotificationService {
           settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
 
-      Logger.debug(
-        'FCM permission status: ${settings.authorizationStatus}',
-        tag: _tag,
-      );
-      Logger.debug('FCM permission granted: $granted', tag: _tag);
-
       if (granted) {
         // iOS foreground notification presentation options
         await _fcm.setForegroundNotificationPresentationOptions(
@@ -613,7 +529,6 @@ class NotificationService {
           badge: true,
           sound: true,
         );
-        Logger.debug('Foreground notification options set', tag: _tag);
       }
 
       return granted;
@@ -631,10 +546,6 @@ class NotificationService {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         // iOS badge count API Firebase Messaging üzerinden yapılacak
         // await FirebaseMessaging.instance.setBadgeCount(count); // Bu method mevcut değil
-        Logger.debug(
-          'Badge count setting attempted for iOS: $count',
-          tag: _tag,
-        );
       }
     } catch (e) {
       Logger.error('Set badge count error: $e', tag: _tag);
@@ -644,84 +555,47 @@ class NotificationService {
   /// FCM Token'ını alır
   Future<String?> getFCMToken() async {
     try {
-      Logger.debug('🔄 FCM token alınıyor...', tag: _tag);
-
       // Firebase Messaging'in hazır olup olmadığını kontrol et
       if (!_isInitialized) {
-        Logger.warning(
-          '⚠️ NotificationService henüz initialize edilmemiş, initialize ediliyor...',
-          tag: _tag,
-        );
         await init();
       }
 
       final token = await _fcm.getToken();
 
       if (token != null && token.isNotEmpty) {
-        Logger.info(
-          '✅ FCM token başarıyla alındı: ${token.substring(0, 20)}...',
-          tag: _tag,
-        );
-
         // Token'ı SharedPreferences'a kaydet
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('fcmToken', token);
-          Logger.debug(
-            '✅ FCM token SharedPreferences\'a kaydedildi',
-            tag: _tag,
-          );
         } catch (e) {
-          Logger.warning(
-            '⚠️ FCM token SharedPreferences\'a kaydedilemedi: $e',
-            tag: _tag,
-          );
+          Logger.warning('FCM token SharedPreferences\'a kaydedilemedi: $e', tag: _tag);
         }
 
         return token;
       } else {
-        Logger.warning('⚠️ FCM token null veya boş', tag: _tag);
-
         // Token alınamadıysa tekrar deneme
         await Future.delayed(Duration(seconds: 2));
-        Logger.debug('🔄 FCM token retry deneniyor...', tag: _tag);
 
         final retryToken = await _fcm.getToken();
         if (retryToken != null && retryToken.isNotEmpty) {
-          Logger.info(
-            '✅ FCM token retry ile alındı: ${retryToken.substring(0, 20)}...',
-            tag: _tag,
-          );
           return retryToken;
         }
 
         return null;
       }
     } catch (e) {
-      Logger.error('❌ FCM token alma hatası: $e', tag: _tag, error: e);
+      Logger.error('FCM token alma hatası: $e', tag: _tag, error: e);
 
       // Hata durumunda tekrar deneme
       try {
         await Future.delayed(Duration(seconds: 3));
-        Logger.debug(
-          '🔄 FCM token alma hatası sonrası retry deneniyor...',
-          tag: _tag,
-        );
 
         final retryToken = await _fcm.getToken();
         if (retryToken != null && retryToken.isNotEmpty) {
-          Logger.info(
-            '✅ FCM token retry ile alındı: ${retryToken.substring(0, 20)}...',
-            tag: _tag,
-          );
           return retryToken;
         }
       } catch (retryError) {
-        Logger.error(
-          '❌ FCM token retry hatası: $retryError',
-          tag: _tag,
-          error: retryError,
-        );
+        Logger.error('FCM token retry hatası: $retryError', tag: _tag, error: retryError);
       }
 
       return null;
@@ -731,9 +605,7 @@ class NotificationService {
   /// Belirli bir topic'e abone ol
   Future<bool> subscribeToTopic(String topic) async {
     try {
-      Logger.debug('Subscribing to topic: $topic', tag: _tag);
       await _fcm.subscribeToTopic(topic);
-      Logger.debug('Successfully subscribed to topic: $topic', tag: _tag);
       return true;
     } catch (e) {
       Logger.error('Subscribe to topic error: $e', tag: _tag);
@@ -744,9 +616,7 @@ class NotificationService {
   /// Belirli bir topic aboneliğini iptal et
   Future<bool> unsubscribeFromTopic(String topic) async {
     try {
-      Logger.debug('Unsubscribing from topic: $topic', tag: _tag);
       await _fcm.unsubscribeFromTopic(topic);
-      Logger.debug('Successfully unsubscribed from topic: $topic', tag: _tag);
       return true;
     } catch (e) {
       Logger.error('Unsubscribe from topic error: $e', tag: _tag);
@@ -779,58 +649,31 @@ class NotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      Logger.debug('Sending FCM message...', tag: _tag);
-
-      // Firebase Project ID'yi buradan alabilirsiniz
-
       final url =
           'https://fcm.googleapis.com/v1/projects/takasla-b2aa5/messages:send';
 
       // Data mapping için debug log - güvenli mapping
       Map<String, String>? mappedData;
       if (data != null) {
-        Logger.debug('Original data: $data', tag: _tag);
-        Logger.debug('Original data type: ${data.runtimeType}', tag: _tag);
-
         mappedData = <String, String>{};
         data.forEach((key, value) {
-          Logger.debug(
-            'Processing key: $key, value: $value (${value.runtimeType})',
-            tag: _tag,
-          );
           mappedData![key] = value.toString();
         });
-
-        Logger.debug('Mapped data: $mappedData', tag: _tag);
       }
 
       // Message yapısını adım adım oluştur
-      Logger.debug('Building message structure...', tag: _tag);
-
       Map<String, dynamic> messageContent = {};
 
       // Notification kısmını ekle
       messageContent['notification'] = {'title': title, 'body': body};
-      Logger.debug(
-        'Notification added: ${messageContent['notification']}',
-        tag: _tag,
-      );
 
       // Data kısmını ekle - geçici olarak boş bırakılıyor
       try {
-        Logger.debug('Attempting to add data...', tag: _tag);
         if (mappedData != null && mappedData.isNotEmpty) {
-          Logger.debug('MappedData is not null and not empty', tag: _tag);
           messageContent['data'] = mappedData;
-          Logger.debug('Data added successfully', tag: _tag);
         } else {
-          Logger.debug(
-            'MappedData is null or empty, using empty map',
-            tag: _tag,
-          );
           messageContent['data'] = <String, String>{};
         }
-        Logger.debug('Data section completed', tag: _tag);
       } catch (e) {
         Logger.error('Error adding data: $e', tag: _tag);
         // Data olmadan devam et
@@ -838,20 +681,12 @@ class NotificationService {
 
       // Topic veya token hedef belirle
       if (topic != null) {
-        Logger.debug('Adding topic: $topic', tag: _tag);
         messageContent['topic'] = topic;
       } else if (token != null) {
-        Logger.debug('Adding token: $token', tag: _tag);
         messageContent['token'] = token;
       } else {
         Logger.error('Either topic or token must be provided', tag: _tag);
         return false;
-      }
-
-      try {
-        Logger.debug('Message content complete: $messageContent', tag: _tag);
-      } catch (e) {
-        Logger.error('Error logging message content: $e', tag: _tag);
       }
 
       // Final message wrapper
@@ -877,19 +712,10 @@ class NotificationService {
       Map<String, dynamic> message = {
         'message': {...messageContent, 'apns': apnsOverride},
       };
-      Logger.debug('Final message wrapper created', tag: _tag);
-
-      try {
-        Logger.debug('Final message structure: $message', tag: _tag);
-      } catch (e) {
-        Logger.error('Error logging final message: $e', tag: _tag);
-        Logger.debug('Message keys: ${message.keys.toList()}', tag: _tag);
-      }
 
       String jsonBody;
       try {
         jsonBody = jsonEncode(message);
-        Logger.debug('JSON encoded successfully', tag: _tag);
       } catch (e) {
         Logger.error('JSON encoding error: $e', tag: _tag);
         return false;
@@ -904,12 +730,9 @@ class NotificationService {
         body: jsonBody,
       );
 
-      Logger.debug('FCM message response: ${response.statusCode}', tag: _tag);
-      Logger.debug('FCM message response body: ${response.body}', tag: _tag);
-
       if (response.statusCode == 401) {
         Logger.error(
-          'FCM yetkilendirme hatası (401). APNs/FCM yapılandırmasını kontrol edin. "THIRD_PARTY_AUTH_ERROR" genellikle Firebase projesine APNs Auth Key (.p8) yüklenmediğinde, TeamID/KeyID hatalı olduğunda veya bundleId eşleşmediğinde görülür.',
+          'FCM yetkilendirme hatası (401). APNs/FCM yapılandırmasını kontrol edin.',
           tag: _tag,
         );
       }
@@ -922,10 +745,7 @@ class NotificationService {
             trimmedBody.contains('geçersiz') ||
             trimmedBody.contains('invalid') ||
             trimmedBody.contains('error')) {
-          Logger.warning(
-            'FCM message failed with error: $trimmedBody',
-            tag: _tag,
-          );
+          Logger.warning('FCM message failed with error: $trimmedBody', tag: _tag);
           return false;
         }
         return true;
@@ -941,8 +761,6 @@ class NotificationService {
   /// Test bildirimi gönder
   Future<bool> sendTestNotification({String? type, String? id}) async {
     try {
-      Logger.debug('Sending test notification...', tag: _tag);
-
       // NotificationService init edilmemişse init et
       await _ensureInitialized();
 
@@ -970,7 +788,7 @@ class NotificationService {
           body = 'Takas teklifiniz reddedildi. Başka fırsatları keşfedin! 🔍';
           break;
         case 'trade_completed':
-          title = 'Takas Tamamlandı 🎊';
+          title = 'Takas Tamamlandı ��';
           body =
               'Takasınız başarıyla tamamlandı! Yeni bir takas yapmaya ne dersiniz? 🚀';
           break;
@@ -983,11 +801,6 @@ class NotificationService {
 
       // iOS için özel test bildirimi
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        Logger.debug(
-          'iOS platform detected, sending iOS-specific test notification',
-          tag: _tag,
-        );
-
         await _fln.show(
           999,
           title,
@@ -1037,7 +850,6 @@ class NotificationService {
         );
       }
 
-      Logger.debug('Test notification sent successfully: $testType', tag: _tag);
       return true;
     } catch (e) {
       Logger.error('Send test notification error: $e', tag: _tag);
@@ -1054,11 +866,6 @@ class NotificationService {
       if (type == 'chat_message') {
         final chatId = data['chatId'] as String?;
         final senderId = data['senderId'] as String?;
-
-        Logger.info(
-          'Chat mesajı alındı: chatId=$chatId, senderId=$senderId',
-          tag: _tag,
-        );
 
         // Chat bildirimi için özel işlem
         if (message.notification != null) {
@@ -1090,8 +897,6 @@ class NotificationService {
         senderId: senderId,
         messageType: messageType,
       );
-
-      Logger.info('FCM chat bildirimi local olarak gösterildi', tag: _tag);
     } catch (e) {
       Logger.error('FCM chat bildirimi gösterme hatası: $e', tag: _tag);
     }
@@ -1101,10 +906,6 @@ class NotificationService {
   Future<String?> refreshFCMToken() async {
     try {
       final token = await _fcm.getToken(vapidKey: 'YOUR_VAPID_KEY'); // Web için
-      Logger.info(
-        'FCM token yenilendi: ${token?.substring(0, 20)}...',
-        tag: _tag,
-      );
       return token;
     } catch (e) {
       Logger.error('FCM token yenileme hatası: $e', tag: _tag);
@@ -1178,8 +979,6 @@ class NotificationService {
         ),
         payload: payload,
       );
-
-      Logger.info('Chat bildirimi gösterildi: $chatId', tag: _tag);
     } catch (e) {
       Logger.error('Chat bildirimi gösterme hatası: $e', tag: _tag);
     }

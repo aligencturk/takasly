@@ -65,10 +65,9 @@ Future<void> _createNotificationChannel() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       // Android için notification channel oluştur
       // Bu işlem Android manifest'te tanımlanan channel ID ile uyumlu olmalı
-      Logger.info('✅ Android notification channel manifest\'te tanımlı');
     }
   } catch (e) {
-    Logger.error('❌ Notification channel oluşturma hatası: $e');
+    Logger.error('Notification channel oluşturma hatası: $e');
   }
 }
 
@@ -97,14 +96,11 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    Logger.info('✅ Firebase başarıyla başlatıldı');
-
     // FCM Background Message Handler'ı sadece desteklenen platformlarda ayarla (Android/iOS)
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS)) {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-      Logger.info('✅ FCM Background Handler ayarlandı');
 
       // FCM'i başlat
       try {
@@ -122,38 +118,26 @@ void main() async {
         );
 
         if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-          Logger.info('✅ FCM izinleri verildi');
-
           // iOS için optimize edilmiş başlatma
           if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
             try {
               await messaging.setAutoInitEnabled(true);
-              Logger.info('✅ iOS FCM auto-init etkinleştirildi');
             } catch (e) {
-              Logger.warning('⚠️ iOS FCM auto-init hatası: $e');
+              Logger.warning('iOS FCM auto-init hatası: $e');
             }
           }
 
           // FCM token'ı al
           String? token = await messaging.getToken();
-          if (token != null) {
-            Logger.info('✅ FCM Token alındı: $token');
-          }
 
           // Foreground message listener'ı başlat
           FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-            Logger.info(
-              '🔔 Foreground FCM Message alındı: ${message.notification?.title}',
-            );
-
             if (message.notification != null) {
-              Logger.info(
-                '📱 Notification: ${message.notification!.title} - ${message.notification!.body}',
-              );
+              // Foreground notification handling
             }
 
             if (message.data.isNotEmpty) {
-              Logger.info('📊 Data: ${message.data}');
+              // Data message handling
             }
           });
 
@@ -161,54 +145,45 @@ void main() async {
           if (defaultTargetPlatform == TargetPlatform.android) {
             await _createNotificationChannel();
           }
-
-          Logger.info('✅ FCM başarıyla başlatıldı');
         } else {
           Logger.warning(
-            '⚠️ FCM izinleri reddedildi: ${settings.authorizationStatus}',
+            'FCM izinleri reddedildi: ${settings.authorizationStatus}',
           );
         }
 
         // ProfanityService'i başlat
         try {
           await ProfanityService.instance.initialize();
-          Logger.info('✅ ProfanityService başarıyla başlatıldı');
         } catch (e) {
-          Logger.error('❌ ProfanityService başlatma hatası: $e');
+          Logger.error('ProfanityService başlatma hatası: $e');
         }
 
         // NotificationService'i başlat
         try {
           await NotificationService.instance.init();
-          Logger.info('✅ NotificationService başarıyla başlatıldı');
         } catch (e) {
-          Logger.error('❌ NotificationService başlatma hatası: $e');
+          Logger.error('NotificationService başlatma hatası: $e');
         }
       } catch (e) {
-        Logger.error('❌ FCM başlatılırken hata: $e');
+        Logger.error('FCM başlatılırken hata: $e');
       }
-    } else {
-      Logger.info('ℹ️ FCM Background Handler bu platformda desteklenmiyor');
     }
   } catch (e) {
-    Logger.error('❌ Firebase başlatılırken hata: $e');
+    Logger.error('Firebase başlatılırken hata: $e');
   }
 
   // Cache servisini başlat
   try {
     await CacheService().initialize();
-    Logger.info('✅ Cache servisi başarıyla başlatıldı');
   } catch (e) {
-    Logger.error('❌ Cache servisi başlatılırken hata: $e');
+    Logger.error('Cache servisi başlatılırken hata: $e');
   }
 
   // AdMob'u başlat (WidgetsFlutterBinding.ensureInitialized() sonrası)
   try {
-    Logger.info('🚀 AdMob başlatılıyor...');
     await MobileAds.instance.initialize();
-    Logger.info('✅ AdMob başarıyla başlatıldı');
   } catch (e) {
-    Logger.error('❌ AdMob başlatılırken hata: $e');
+    Logger.error('AdMob başlatılırken hata: $e');
     // AdMob başlatılamasa bile uygulama çalışmaya devam etsin
   }
 
@@ -275,7 +250,7 @@ class MyApp extends StatelessWidget {
                 // Context'in mounted olduğundan emin ol
                 if (!context.mounted) {
                   Logger.warning(
-                    '⚠️ Context is not mounted, skipping provider setup',
+                    'Context is not mounted, skipping provider setup',
                   );
                   return;
                 }
@@ -314,8 +289,6 @@ class MyApp extends StatelessWidget {
           '/notifications': (context) => const NotificationListView(),
         },
         onGenerateRoute: (settings) {
-          Logger.info('🔄 Route oluşturuluyor: ${settings.name}');
-
           switch (settings.name) {
             case '/email-verification':
               final args = settings.arguments as Map<String, dynamic>?;
@@ -400,7 +373,7 @@ class MyApp extends StatelessWidget {
           }
         },
         onUnknownRoute: (settings) {
-          Logger.warning('🚨 Bilinmeyen route: ${settings.name}');
+          Logger.warning('Bilinmeyen route: ${settings.name}');
           return MaterialPageRoute(builder: (context) => const HomeView());
         },
         builder: (context, child) {
