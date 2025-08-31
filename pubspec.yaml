@@ -115,6 +115,9 @@ dependencies:
   # Dynamic App Icon
   in_app_review: ^2.0.10
 
+  # Deep Links
+  app_links: ^3.5.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

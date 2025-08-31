@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Takasly - Ürün Detayı</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-dynamic-links-compat.js"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: #667eea;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 28px;
+        }
+        
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .app-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .app-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s;
+        }
+        
+        .app-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .android-button {
+            background: #3ddc84;
+            color: white;
+        }
+        
+        .ios-button {
+            background: #007aff;
+            color: white;
+        }
+        
+        .web-button {
+            background: #667eea;
+            color: white;
+        }
+        
+        .fallback-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .fallback-info h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .fallback-info p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">T</div>
+        <h1>Takasly Uygulamasını Açın</h1>
+        <p class="description">
+            Bu ürünü görüntülemek için Takasly mobil uygulamasını kullanmanız önerilir. 
+            Daha iyi deneyim için uygulamayı indirin veya açın.
+        </p>
+        
+        <div class="app-buttons">
+            <a href="#" class="app-button android-button" id="androidButton">
+                <span>📱</span>
+                Android'de Aç
+            </a>
+            <a href="#" class="app-button ios-button" id="iosButton">
+                <span>🍎</span>
+                iOS'ta Aç
+            </a>
+            <a href="#" class="app-button web-button" id="webButton">
+                <span>🌐</span>
+                Web'de Görüntüle
+            </a>
+        </div>
+        
+        <div class="fallback-info">
+            <h3>Uygulama yüklü değil mi?</h3>
+            <p>
+                Takasly uygulamasını App Store veya Google Play'den indirebilirsiniz. 
+                Uygulama yüklendikten sonra bu link otomatik olarak uygulamada açılacaktır.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Firebase konfigürasyonu
+        const firebaseConfig = {
+            // Firebase console'dan alınan config bilgileri buraya eklenecek
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Firebase'i başlat
+        firebase.initializeApp(firebaseConfig);
+
+        // URL'den product ID'yi al
+        function getProductIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('productId') || 'unknown';
+        }
+
+        // Deep link oluştur
+        function createDeepLink() {
+            const productId = getProductIdFromUrl();
+            const dynamicLinkDomain = 'YOUR_DYNAMIC_LINK_DOMAIN';
+            
+            const link = `https://www.takasly.tr/ilan/${productId}`;
+            
+            const dynamicLinkParams = {
+                link: link,
+                domainUriPrefix: `https://${dynamicLinkDomain}`,
+                android: {
+                    packageName: 'com.rivorya.takaslyapp',
+                    fallbackUrl: link
+                },
+                ios: {
+                    bundleId: 'com.rivorya.takaslyapp',
+                    appStoreId: '6749484217',
+                    fallbackUrl: link
+                },
+                social: {
+                    title: 'Takasly - Ürün Detayı',
+                    descriptionText: 'Bu ürünü Takasly uygulamasında görüntüleyin',
+                    imageUrl: 'https://www.takasly.tr/logo/takasly-image.png'
+                }
+            };
+
+            return firebase.dynamicLinks().buildLink(dynamicLinkParams);
+        }
+
+        // Button click handlers
+        document.getElementById('androidButton').addEventListener('click', function(e) {
+            e.preventDefault();
+            const deepLink = createDeepLink();
+            window.location.href = deepLink;
+        });
+
+        document.getElementById('iosButton').addEventListener('click', function(e) {
+            e.preventDefault();
+            const deepLink = createDeepLink();
+            window.location.href = deepLink;
+        });
+
+        document.getElementById('webButton').addEventListener('click', function(e) {
+            e.preventDefault();
+            const productId = getProductIdFromUrl();
+            window.location.href = `https://www.takasly.tr/ilan/${productId}`;
+        });
+
+        // Sayfa yüklendiğinde deep link'i kontrol et
+        window.addEventListener('load', function() {
+            const productId = getProductIdFromUrl();
+            if (productId && productId !== 'unknown') {
+                // Ürün ID varsa deep link'i oluştur ve yönlendirmeyi dene
+                const deepLink = createDeepLink();
+                
+                // Mobil cihaz kontrolü
+                if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    // Mobil cihazda deep link'i aç
+                    window.location.href = deepLink;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

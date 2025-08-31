@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:takasly/widgets/deep_link_handler.dart';
 import 'package:upgrader/upgrader.dart';
 import 'firebase_options.dart';
 import 'core/upgrader_messages.dart';
@@ -26,6 +27,7 @@ import 'viewmodels/general_viewmodel.dart';
 import 'viewmodels/contract_viewmodel.dart';
 import 'viewmodels/remote_config_viewmodel.dart';
 import 'viewmodels/onboarding_viewmodel.dart';
+import 'viewmodels/deep_link_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/home/home_view.dart';
 import 'views/auth/login_view.dart';
@@ -224,6 +226,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GeneralViewModel()),
         ChangeNotifierProvider(create: (_) => ContractViewModel()),
         ChangeNotifierProvider(create: (_) => OnboardingViewModel()),
+        ChangeNotifierProvider(create: (_) => DeepLinkViewModel()),
         ChangeNotifierProvider(
           create: (context) {
             final remoteConfigViewModel = RemoteConfigViewModel();
@@ -248,38 +251,40 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           navigatorKey: ErrorHandlerService.navigatorKey, // Navigator key ekle
-        home: Builder(
-          builder: (context) {
-            // ViewModel'ler arasında bağlantı kur
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              try {
-                // Context'in mounted olduğundan emin ol
-                if (!context.mounted) {
-                  Logger.warning(
-                    'Context is not mounted, skipping provider setup',
-                  );
-                  return;
-                }
+        home: DeepLinkHandler(
+          child: Builder(
+            builder: (context) {
+              // ViewModel'ler arasında bağlantı kur
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                try {
+                  // Context'in mounted olduğundan emin ol
+                  if (!context.mounted) {
+                    Logger.warning(
+                      'Context is not mounted, skipping provider setup',
+                    );
+                    return;
+                  }
 
-                final authViewModel = Provider.of<AuthViewModel>(
-                  context,
-                  listen: false,
-                );
-                final notificationViewModel =
-                    Provider.of<NotificationViewModel>(context, listen: false);
-                authViewModel.setNotificationViewModel(notificationViewModel);
-                // Uygulama açılışında iOS/Android fark etmeksizin FCM'i başlatmayı dene
-                // Kullanıcı login ise, topic aboneliği ve izin akışı kurulacak
-                // Login değilse, izinler ve token yine alınır; login sonrası topic'e abone olunur
-                if (!notificationViewModel.fcmInitialized) {
-                  notificationViewModel.initializeFCM();
+                  final authViewModel = Provider.of<AuthViewModel>(
+                    context,
+                    listen: false,
+                  );
+                  final notificationViewModel =
+                      Provider.of<NotificationViewModel>(context, listen: false);
+                  authViewModel.setNotificationViewModel(notificationViewModel);
+                  // Uygulama açılışında iOS/Android fark etmeksizin FCM'i başlatmayı dene
+                  // Kullanıcı login ise, topic aboneliği ve izin akışı kurulacak
+                  // Login değilse, izinler ve token yine alınır; login sonrası topic'e abone olunur
+                  if (!notificationViewModel.fcmInitialized) {
+                    notificationViewModel.initializeFCM();
+                  }
+                } catch (e) {
+                  Logger.error('Provider bağlantı hatası: $e');
                 }
-              } catch (e) {
-                Logger.error('Provider bağlantı hatası: $e');
-              }
-            });
-            return SplashVideoPage();
-          },
+              });
+              return SplashVideoPage();
+            },
+          ),
         ),
         routes: {
           '/home': (context) => const HomeView(),

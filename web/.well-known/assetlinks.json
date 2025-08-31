@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.rivorya.takaslyapp",
+      "sha256_cert_fingerprints": [
+        "32:93:fb:42:af:54:c2:e9:bd:9f:9d:e5:a4:09:d2:2f:d3:cb:75:14:39:8c:8b:17:5d:9d:73:bf:be:fb:8e:63"
+      ]
+    }
+  }
+]
