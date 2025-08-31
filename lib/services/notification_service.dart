@@ -519,12 +519,11 @@ class NotificationService {
     try {
       Logger.info('Tüm bildirimler siliniyor...', tag: _tag);
       
-      final response = await _httpClient.postWithBasicAuth(
+      final response = await _httpClient.deleteWithBasicAuth(
         ApiConstants.deleteAllNotifications,
         body: {
           'userToken': userToken,
         },
-        useBasicAuth: true,
         fromJson: (json) {
           if (json is Map<String, dynamic>) {
             // API response kontrolü
@@ -570,13 +569,12 @@ class NotificationService {
     try {
       Logger.info('Bildirim siliniyor: $notificationId', tag: _tag);
       
-      final response = await _httpClient.postWithBasicAuth(
+      final response = await _httpClient.deleteWithBasicAuth(
         ApiConstants.deleteNotification,
         body: {
           'userToken': userToken,
           'notID': notificationId,
         },
-        useBasicAuth: true,
         fromJson: (json) {
           if (json is Map<String, dynamic>) {
             // API response kontrolü
@@ -1024,9 +1022,6 @@ class NotificationService {
           return;
         }
 
-        final chatId = data['chatId'] as String?;
-        final senderId = data['senderId'] as String?;
-
         // Chat bildirimi için özel işlem
         if (message.notification != null) {
           // Foreground'da local notification göster
@@ -1047,28 +1042,6 @@ class NotificationService {
       return prefs.getBool('notification_chat') ?? true;
     } catch (e) {
       Logger.error('Chat bildirim ayarı kontrol edilirken hata: $e', tag: _tag);
-      return true; // Hata durumunda varsayılan olarak açık
-    }
-  }
-
-  /// Takas bildirimleri açık mı kontrol eder
-  Future<bool> _isTradeNotificationsEnabled() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool('notification_trade') ?? true;
-    } catch (e) {
-      Logger.error('Takas bildirim ayarı kontrol edilirken hata: $e', tag: _tag);
-      return true; // Hata durumunda varsayılan olarak açık
-    }
-  }
-
-  /// Sistem bildirimleri açık mı kontrol eder
-  Future<bool> _isSystemNotificationsEnabled() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool('notification_system') ?? true;
-    } catch (e) {
-      Logger.error('Sistem bildirim ayarı kontrol edilirken hata: $e', tag: _tag);
       return true; // Hata durumunda varsayılan olarak açık
     }
   }
