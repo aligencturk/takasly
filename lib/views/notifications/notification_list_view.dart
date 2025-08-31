@@ -32,123 +32,98 @@ class _NotificationListViewState extends State<NotificationListView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         title: Text(
           'Bildirimler',
           style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
             color: AppTheme.textPrimary,
-            letterSpacing: -0.3,
+            letterSpacing: -0.2,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.surface,
         elevation: 0,
-        scrolledUnderElevation: 1,
-        surfaceTintColor: Colors.white,
-        shadowColor: Colors.black.withOpacity(0.05),
-        iconTheme: const IconThemeData(color: AppTheme.textPrimary),
+        scrolledUnderElevation: 0,
+        surfaceTintColor: AppTheme.surface,
+        iconTheme: const IconThemeData(color: AppTheme.textPrimary, size: 20),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
         actions: [
           // Tümünü Sil butonu
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.red[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red[200]!),
+          IconButton(
+            icon: Icon(
+              Icons.delete_sweep_outlined,
+              size: 18,
+              color: AppTheme.error,
             ),
-            child: IconButton(
-              icon: Icon(
-                Icons.delete_sweep_rounded,
-                size: 20,
-                color: Colors.red[600],
-              ),
-              onPressed: () async {
-                // Onay dialog'u göster
-                final shouldDelete = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text('Tüm Bildirimleri Sil'),
-                    content: Text('Tüm bildirimleri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: Text('İptal'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
-                        child: Text('Sil'),
-                      ),
-                    ],
-                  ),
-                );
+            onPressed: () async {
+              // Onay dialog'u göster
+              final shouldDelete = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('Tüm Bildirimleri Sil'),
+                  content: Text('Tüm bildirimleri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text('İptal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+                      child: Text('Sil'),
+                    ),
+                  ],
+                ),
+              );
 
-                if (shouldDelete == true) {
-                  final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
-                  await viewModel.deleteAllNotifications();
-                }
-              },
-              tooltip: 'Tümünü Sil',
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(
-                minWidth: 36,
-                minHeight: 36,
-              ),
+              if (shouldDelete == true) {
+                final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
+                await viewModel.deleteAllNotifications();
+              }
+            },
+            tooltip: 'Tümünü Sil',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
             ),
           ),
           // Tümünü Okundu İşaretle butonu
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[200]!),
+          IconButton(
+            icon: Icon(
+              Icons.mark_email_read_outlined,
+              size: 18,
+              color: AppTheme.primary,
             ),
-            child: IconButton(
-              icon: Icon(
-                Icons.mark_email_read_rounded,
-                size: 20,
-                color: Colors.grey[600],
-              ),
-              onPressed: () async {
-                final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
-                await viewModel.markAllAsRead();
-              },
-              tooltip: 'Tümünü Okundu İşaretle',
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(
-                minWidth: 36,
-                minHeight: 36,
-              ),
+            onPressed: () async {
+              final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
+              await viewModel.markAllAsRead();
+            },
+            tooltip: 'Tümünü Okundu İşaretle',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
             ),
           ),
           // Yenile butonu
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[200]!),
+          IconButton(
+            icon: Icon(
+              Icons.refresh_outlined,
+              size: 18,
+              color: AppTheme.textSecondary,
             ),
-            child: IconButton(
-              icon: Icon(
-                Icons.refresh_rounded,
-                size: 20,
-                color: Colors.grey[600],
-              ),
-              onPressed: () {
-                final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
-                viewModel.refreshNotifications();
-              },
-              tooltip: 'Yenile',
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(
-                minWidth: 36,
-                minHeight: 36,
-              ),
+            onPressed: () {
+              final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
+              viewModel.refreshNotifications();
+            },
+            tooltip: 'Yenile',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
             ),
           ),
         ],
@@ -176,11 +151,11 @@ class _NotificationListViewState extends State<NotificationListView> {
           // Bildirim listesi
           return RefreshIndicator(
             onRefresh: viewModel.refreshNotifications,
-            color: const Color(0xFF2563EB),
-            backgroundColor: Colors.white,
+            color: AppTheme.primary,
+            backgroundColor: AppTheme.surface,
             strokeWidth: 2,
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: viewModel.notifications.length,
               itemBuilder: (context, index) {
                 final notification = viewModel.notifications[index];
@@ -196,51 +171,51 @@ class _NotificationListViewState extends State<NotificationListView> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Minimalist icon
+            // Minimal icon
             Container(
-              width: 80,
-              height: 80,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
+                color: AppTheme.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                Icons.notifications_none_rounded,
-                size: 32,
-                color: Colors.grey[400],
+                Icons.notifications_none_outlined,
+                size: 24,
+                color: AppTheme.primary,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             
             // Title
             Text(
               'Henüz bildiriminiz yok',
               style: GoogleFonts.inter(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.textPrimary,
-                letterSpacing: -0.2,
+                letterSpacing: -0.1,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             
             // Subtitle
             Text(
               'Yeni takas teklifleri ve güncellemeler burada görünecek',
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w400,
-                color: Colors.grey[500],
-                height: 1.4,
+                color: AppTheme.textSecondary,
+                height: 1.3,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             
             // Minimal refresh button
             TextButton.icon(
@@ -249,24 +224,23 @@ class _NotificationListViewState extends State<NotificationListView> {
                 viewModel.refreshNotifications();
               },
               icon: Icon(
-                Icons.refresh_rounded,
-                size: 16,
-                color: Colors.grey[600],
+                Icons.refresh_outlined,
+                size: 14,
+                color: AppTheme.primary,
               ),
               label: Text(
                 'Yenile',
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[600],
+                  color: AppTheme.primary,
                 ),
               ),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                backgroundColor: Colors.grey[50],
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                backgroundColor: AppTheme.primary.withOpacity(0.08),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey[200]!),
                 ),
               ),
             ),
@@ -278,18 +252,11 @@ class _NotificationListViewState extends State<NotificationListView> {
 
   Widget _buildNotificationCard(app_notification.Notification notification) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[100]!, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        border: Border.all(color: Colors.grey[100]!, width: 0.5),
       ),
       child: Material(
         color: Colors.transparent,
@@ -297,148 +264,113 @@ class _NotificationListViewState extends State<NotificationListView> {
           onTap: () => _onNotificationTap(notification),
           borderRadius: BorderRadius.circular(8),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Sol taraf - Icon ve indicator
+                // Sol taraf - Icon
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
                     color: _getNotificationColor(notification.type).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     _getNotificationIcon(notification.type),
-                    size: 18,
+                    size: 16,
                     color: _getNotificationColor(notification.type),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 
                 // Orta kısım - İçerik
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Başlık ve tarih
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              notification.title,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.textPrimary,
-                                height: 1.3,
-                                letterSpacing: -0.1,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            notification.createDate,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                        ],
+                      // Başlık
+                      Text(
+                        notification.title,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textPrimary,
+                          height: 1.2,
+                          letterSpacing: -0.1,
+                        ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       
                       // İçerik
                       Text(
                         notification.body,
                         style: GoogleFonts.inter(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w400,
-                          color: Colors.grey[600],
-                          height: 1.4,
+                          color: AppTheme.textSecondary,
+                          height: 1.3,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       
-                      // Alt kısım - Tip badge
-                      _buildMinimalistBadge(notification.type),
+                      // Alt kısım - Tip ve tarih
+                      Row(
+                        children: [
+                          _buildMinimalBadge(notification.type),
+                          const SizedBox(width: 8),
+                          Text(
+                            notification.createDate,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w400,
+                              color: AppTheme.textSecondary.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
                 
-                // Sağ taraf - Silme butonu ve Arrow
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Silme butonu
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.red[50],
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.red[200]!, width: 1),
+                // Sağ taraf - Silme butonu
+                IconButton(
+                  onPressed: () async {
+                    // Onay dialog'u göster
+                    final shouldDelete = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text('Bildirimi Sil'),
+                        content: Text('Bu bildirimi silmek istediğinizden emin misiniz?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: Text('İptal'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+                            child: Text('Sil'),
+                          ),
+                        ],
                       ),
-                      child: IconButton(
-                        onPressed: () async {
-                          // Onay dialog'u göster
-                          final shouldDelete = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text('Bildirimi Sil'),
-                              content: Text('Bu bildirimi silmek istediğinizden emin misiniz?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
-                                  child: Text('İptal'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(true),
-                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                  child: Text('Sil'),
-                                ),
-                              ],
-                            ),
-                          );
+                    );
 
-                          if (shouldDelete == true) {
-                            final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
-                            await viewModel.deleteNotification(notification.id);
-                          }
-                        },
-                        icon: Icon(
-                          Icons.delete_outline_rounded,
-                          size: 14,
-                          color: Colors.red[600],
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 24,
-                          minHeight: 24,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Arrow
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        Icons.chevron_right_rounded,
-                        size: 16,
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                  ],
+                    if (shouldDelete == true) {
+                      final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
+                      await viewModel.deleteNotification(notification.id);
+                    }
+                  },
+                  icon: Icon(
+                    Icons.close,
+                    size: 14,
+                    color: AppTheme.textSecondary.withOpacity(0.6),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 24,
+                    minHeight: 24,
+                  ),
                 ),
               ],
             ),
@@ -448,24 +380,23 @@ class _NotificationListViewState extends State<NotificationListView> {
     );
   }
 
-  Widget _buildMinimalistBadge(String type) {
+  Widget _buildMinimalBadge(String type) {
     final color = _getNotificationColor(type);
     final text = _getNotificationTypeText(type);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.15), width: 0.5),
       ),
       child: Text(
         text,
         style: GoogleFonts.inter(
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: FontWeight.w500,
           color: color,
-          letterSpacing: 0.2,
+          letterSpacing: 0.1,
         ),
       ),
     );
@@ -474,22 +405,22 @@ class _NotificationListViewState extends State<NotificationListView> {
   Color _getNotificationColor(String type) {
     switch (type) {
       case 'new_trade_offer':
-        return const Color(0xFF2563EB); // Blue
+        return AppTheme.primary; // App tema primary rengi
       case 'trade_completed':
-        return const Color(0xFF059669); // Green
+        return AppTheme.success; // App tema success rengi
       default:
-        return Colors.grey[600]!;
+        return AppTheme.textSecondary; // App tema text secondary rengi
     }
   }
 
   IconData _getNotificationIcon(String type) {
     switch (type) {
       case 'new_trade_offer':
-        return Icons.swap_horiz_rounded;
+        return Icons.swap_horiz_outlined;
       case 'trade_completed':
-        return Icons.check_circle_rounded;
+        return Icons.check_circle_outlined;
       default:
-        return Icons.notifications_rounded;
+        return Icons.notifications_outlined;
     }
   }
 
