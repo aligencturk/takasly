@@ -36,15 +36,15 @@ class ProductFilter {
     String? viewType,
   }) {
     return ProductFilter(
-      categoryId: categoryId,
-      subCategoryId: subCategoryId,
-      subSubCategoryId: subSubCategoryId,
-      subSubSubCategoryId: subSubSubCategoryId,
+      categoryId: categoryId ?? this.categoryId,
+      subCategoryId: subCategoryId ?? this.subCategoryId,
+      subSubCategoryId: subSubCategoryId ?? this.subSubCategoryId,
+      subSubSubCategoryId: subSubSubCategoryId ?? this.subSubSubCategoryId,
       conditionIds: conditionIds ?? this.conditionIds,
-      cityId: cityId,
-      districtId: districtId,
+      cityId: cityId ?? this.cityId,
+      districtId: districtId ?? this.districtId,
       sortType: sortType ?? this.sortType,
-      searchText: searchText,
+      searchText: searchText ?? this.searchText,
       viewType: viewType ?? this.viewType,
     );
   }
