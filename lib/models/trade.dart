@@ -546,6 +546,7 @@ class UserTrade {
   final bool? canGiveReview; // Puan verilebilir mi
   final bool? isSenderReview; // Yeni: Gönderen kullanıcı değerlendirme yapmış mı
   final bool? isReceiverReview; // Yeni: Alıcı kullanıcı değerlendirme yapmış mı
+  final bool isTradeRejected; // Herhangi bir taraf reddettiyse true döner
 
   const UserTrade({
     required this.offerID,
@@ -573,6 +574,7 @@ class UserTrade {
     this.canGiveReview,
     this.isSenderReview,
     this.isReceiverReview,
+    required this.isTradeRejected,
   });
 
   factory UserTrade.fromJson(Map<String, dynamic> json) {
@@ -605,6 +607,9 @@ class UserTrade {
        final canGiveReview = json['canGiveReview'] as bool?;
       final isSenderReview = json['isSenderReview'] as bool?;
       final isReceiverReview = json['isReceiverReview'] as bool?;
+      
+      // isTradeRejected: Herhangi bir taraf durumu 7 ise (reddedildi) true döner
+      final isTradeRejected = (senderStatusID == 7 || receiverStatusID == 7);
        
        // myProduct güvenli parse
       TradeProduct? myProduct;
@@ -654,6 +659,7 @@ class UserTrade {
          canGiveReview: canGiveReview,
          isSenderReview: isSenderReview,
          isReceiverReview: isReceiverReview,
+         isTradeRejected: isTradeRejected,
       );
       
       print('✅ UserTrade.fromJson - Successfully created: offerID=$offerID, senderStatusID=$senderStatusID, receiverStatusID=$receiverStatusID');
@@ -688,6 +694,7 @@ class UserTrade {
          canGiveReview: json['canGiveReview'] as bool?,
          isSenderReview: json['isSenderReview'] as bool?,
          isReceiverReview: json['isReceiverReview'] as bool?,
+         isTradeRejected: ((json['senderStatusID'] as int? ?? 0) == 7 || (json['receiverStatusID'] as int? ?? 0) == 7),
       );
     }
   }
@@ -718,6 +725,7 @@ class UserTrade {
      if (canGiveReview != null) 'canGiveReview': canGiveReview,
      if (isSenderReview != null) 'isSenderReview': isSenderReview,
      if (isReceiverReview != null) 'isReceiverReview': isReceiverReview,
+     'isTradeRejected': isTradeRejected,
   };
 
   @override

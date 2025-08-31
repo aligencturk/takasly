@@ -47,6 +47,11 @@ class TradeCard extends StatelessWidget {
 
   /// Mevcut kullanıcının durum başlığını belirle
   String _getCurrentUserStatusTitle() {
+    // Takas reddedildiyse özel başlık göster
+    if (trade.isTradeRejected) {
+      return 'Reddedildi';
+    }
+    
     final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
     
     if (currentUserId == trade.senderUserID) {
@@ -80,6 +85,11 @@ class TradeCard extends StatelessWidget {
 
   /// "Puan Ver" butonunun gösterilip gösterilmeyeceğini belirle
   bool _shouldShowReviewButton() {
+    // Takas reddedildiyse puan verme butonu gösterilmez
+    if (trade.isTradeRejected) {
+      return false;
+    }
+    
     final currentUserStatusID = _getCurrentUserStatusID();
     Logger.debug('🔍 Trade #${trade.offerID} - Review button check (Yeni Mantık):', tag: 'TradeCard');
     Logger.debug('  • currentUserStatusID: $currentUserStatusID', tag: 'TradeCard');
@@ -140,6 +150,11 @@ class TradeCard extends StatelessWidget {
 
   /// "Takası Tamamla" butonunun gösterilip gösterilmeyeceğini belirle
   bool _shouldShowCompleteButton() {
+    // Takas reddedildiyse hiçbir buton gösterilmez
+    if (trade.isTradeRejected) {
+      return false;
+    }
+    
     final currentUserId = int.tryParse(this.currentUserId ?? '0') ?? 0;
     final currentUserStatusID = _getCurrentUserStatusID();
     
@@ -259,6 +274,56 @@ class TradeCard extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Takas reddedilme durumu için özel mesaj widget'ı
+  Widget _buildTradeRejectedWidget(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.red.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.cancel,
+              color: Colors.red[600],
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Takas Reddedildi',
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Bu takas teklifi reddedildi.',
+                    style: TextStyle(
+                      color: Colors.red[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -481,15 +546,22 @@ class TradeCard extends StatelessWidget {
                         final title = _getCurrentUserStatusTitle();
                         Color color;
                         IconData icon;
-                        switch (id) {
-                          case 1: color = Colors.orange; icon = Icons.pending; break;
-                          case 2: color = Colors.blue; icon = Icons.play_arrow; break;
-                          case 3: color = Colors.purple; icon = Icons.local_shipping; break;
-                          case 4: color = Color(0xFF10B981); icon = Icons.done_all; break;
-                          case 5: color = Colors.green; icon = Icons.check_circle; break;
-                          case 7:
-                          case 8: color = Colors.red; icon = Icons.block; break;
-                          default: color = Colors.grey; icon = Icons.help_outline;
+                        
+                        // Takas reddedildiyse özel renk ve ikon
+                        if (trade.isTradeRejected) {
+                          color = Colors.red;
+                          icon = Icons.cancel;
+                        } else {
+                          switch (id) {
+                            case 1: color = Colors.orange; icon = Icons.pending; break;
+                            case 2: color = Colors.blue; icon = Icons.play_arrow; break;
+                            case 3: color = Colors.purple; icon = Icons.local_shipping; break;
+                            case 4: color = Color(0xFF10B981); icon = Icons.done_all; break;
+                            case 5: color = Colors.green; icon = Icons.check_circle; break;
+                            case 7:
+                            case 8: color = Colors.red; icon = Icons.block; break;
+                            default: color = Colors.grey; icon = Icons.help_outline;
+                          }
                         }
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -523,6 +595,9 @@ class TradeCard extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 6),
+                    // Reddedilme durumu için özel mesaj
+                    if (trade.isTradeRejected)
+                      _buildTradeRejectedWidget(context),
                     // Bilgi şeritleri
                     _buildWaitingMessageWidget(context),
                     if ((_getCurrentUserStatusID() == 3 || _getCurrentUserStatusID() == 7 || _getCurrentUserStatusID() == 8) && _getCurrentUserCancelDesc()?.isNotEmpty == true)
