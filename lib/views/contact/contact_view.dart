@@ -57,6 +57,7 @@ class _ContactViewState extends State<ContactView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         elevation: 0,
@@ -76,32 +77,38 @@ class _ContactViewState extends State<ContactView> {
         ),
         centerTitle: true,
       ),
-      body: Consumer<ContactViewModel>(
-        builder: (context, contactViewModel, child) {
-          if (contactViewModel.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
-              ),
-            );
-          }
+      body: GestureDetector(
+        onTap: () {
+          // Boş alana tıklandığında klavyeyi kapat
+          FocusScope.of(context).unfocus();
+        },
+        child: Consumer<ContactViewModel>(
+          builder: (context, contactViewModel, child) {
+            if (contactViewModel.isLoading) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                ),
+              );
+            }
 
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 16),
-                    _buildContactForm(contactViewModel),
-                  ],
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 16),
+                      _buildContactForm(contactViewModel),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -309,6 +316,10 @@ class _ContactViewState extends State<ContactView> {
             }
             return null;
           },
+          onSubmitted: (_) {
+            // Enter'a basıldığında klavyeyi kapat
+            FocusScope.of(context).unfocus();
+          },
         ),
       ],
     );
@@ -330,6 +341,10 @@ class _ContactViewState extends State<ContactView> {
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
+          onFieldSubmitted: (_) {
+            // Enter'a basıldığında klavyeyi kapat
+            FocusScope.of(context).unfocus();
+          },
           decoration: InputDecoration(
             hintText: 'E-posta adresinizi giriniz',
             hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
@@ -394,6 +409,10 @@ class _ContactViewState extends State<ContactView> {
               return 'Mesaj en az 10 karakter olmalıdır';
             }
             return null;
+          },
+          onSubmitted: (_) {
+            // Enter'a basıldığında klavyeyi kapat
+            FocusScope.of(context).unfocus();
           },
         ),
       ],

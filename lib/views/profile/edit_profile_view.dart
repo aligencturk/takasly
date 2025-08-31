@@ -468,96 +468,103 @@ class _EditProfileViewState extends State<EditProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Profili Düzenle'),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Consumer<UserViewModel>(
-        builder: (context, userViewModel, child) {
-          return _isLoading || userViewModel.isLoading
-              ? const LoadingWidget()
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        _buildProfileImageSection(),
-                        const SizedBox(height: 24),
-                        _buildTextFormField(
-                          controller: _firstNameController,
-                          label: 'Ad',
-                          icon: Icons.person,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Ad alanı boş bırakılamaz';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextFormField(
-                          controller: _lastNameController,
-                          label: 'Soyad',
-                          icon: Icons.person_outline,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Soyad alanı boş bırakılamaz';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextFormField(
-                          controller: _emailController,
-                          label: 'E-posta',
-                          icon: Icons.email,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'E-posta alanı boş bırakılamaz';
-                            }
-                            if (!RegExp(
-                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                            ).hasMatch(value)) {
-                              return 'Geçerli bir e-posta adresi girin';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextFormField(
-                          controller: _phoneController,
-                          label: 'Telefon',
-                          icon: Icons.phone,
-                          keyboardType: TextInputType.phone,
-                        ),
-                        const SizedBox(height: 16),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: InkWell(
-                            onTap: _isLoading ? null : _showDeleteAccountDialog,
-                            child: Text(
-                              'Hesabı Sil',
-                              style: TextStyle(
-                                color: Colors.red[700],
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                decoration: TextDecoration.underline,
+      body: GestureDetector(
+        onTap: () {
+          // Boş alana tıklandığında klavyeyi kapat
+          FocusScope.of(context).unfocus();
+        },
+        child: Consumer<UserViewModel>(
+          builder: (context, userViewModel, child) {
+            return _isLoading || userViewModel.isLoading
+                ? const LoadingWidget()
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          _buildProfileImageSection(),
+                          const SizedBox(height: 24),
+                          _buildTextFormField(
+                            controller: _firstNameController,
+                            label: 'Ad',
+                            icon: Icons.person,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Ad alanı boş bırakılamaz';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextFormField(
+                            controller: _lastNameController,
+                            label: 'Soyad',
+                            icon: Icons.person_outline,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Soyad alanı boş bırakılamaz';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextFormField(
+                            controller: _emailController,
+                            label: 'E-posta',
+                            icon: Icons.email,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'E-posta alanı boş bırakılamaz';
+                              }
+                              if (!RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              ).hasMatch(value)) {
+                                return 'Geçerli bir e-posta adresi girin';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextFormField(
+                            controller: _phoneController,
+                            label: 'Telefon',
+                            icon: Icons.phone,
+                            keyboardType: TextInputType.phone,
+                          ),
+                          const SizedBox(height: 16),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: InkWell(
+                              onTap: _isLoading ? null : _showDeleteAccountDialog,
+                              child: Text(
+                                'Hesabı Sil',
+                                style: TextStyle(
+                                  color: Colors.red[700],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  decoration: TextDecoration.underline,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        _buildUpdateButton(),
-                      ],
+                          const SizedBox(height: 24),
+                          _buildUpdateButton(),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-        },
+                  );
+          },
+        ),
       ),
     );
   }
@@ -621,6 +628,10 @@ class _EditProfileViewState extends State<EditProfileView> {
         keyboardType: keyboardType,
         textCapitalization: TextCapitalization.none,
         inputFormatters: const [],
+        onFieldSubmitted: (_) {
+          // Enter'a basıldığında klavyeyi kapat
+          FocusScope.of(context).unfocus();
+        },
         validator:
             validator ??
             (value) {
@@ -650,6 +661,10 @@ class _EditProfileViewState extends State<EditProfileView> {
         controller: controller,
         keyboardType: keyboardType,
         textCapitalization: TextCapitalization.none,
+        onFieldSubmitted: (_) {
+          // Enter'a basıldığında klavyeyi kapat
+          FocusScope.of(context).unfocus();
+        },
         validator: validator,
         decoration: InputDecoration(
           labelText: label,
@@ -671,6 +686,10 @@ class _EditProfileViewState extends State<EditProfileView> {
       textCapitalization: TextCapitalization.words,
       sensitivity: 'medium',
       validator: validator,
+      onSubmitted: (_) {
+        // Enter'a basıldığında klavyeyi kapat
+        FocusScope.of(context).unfocus();
+      },
     );
   }
 

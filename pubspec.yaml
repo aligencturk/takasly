@@ -4,7 +4,7 @@ description: "Takas uygulaması - E-ticaret mantığında ürün takası platfor
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-# version: 1.0.0+31  # Sürüm artık platform bazlı yönetiliyor
+version: 1.0.0+1
 
 environment:
   sdk: ^3.8.1
@@ -98,6 +98,9 @@ dependencies:
   
   # Social Login
   google_sign_in: ^6.2.1
+  
+  # App Update
+  upgrader: ^11.5.0
   sign_in_with_apple: ^6.1.0
   
   # WebView

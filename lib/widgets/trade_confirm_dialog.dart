@@ -244,6 +244,10 @@ class _TradeConfirmDialogState extends State<TradeConfirmDialog> {
                   // Sadece reddetme durumunda zorunlu
                   return null;
                 },
+                onFieldSubmitted: (_) {
+                  // Enter'a basıldığında klavyeyi kapat
+                  FocusScope.of(context).unfocus();
+                },
               ),
               
               const SizedBox(height: AppConstants.defaultPadding),

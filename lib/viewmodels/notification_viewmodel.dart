@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/notification.dart' as AppNotification;
 import '../services/notification_service.dart';
 import '../services/user_service.dart';
+import '../utils/logger.dart';
 
 class NotificationViewModel extends ChangeNotifier {
   final NotificationService _notificationService = NotificationService.instance;
@@ -11,6 +13,8 @@ class NotificationViewModel extends ChangeNotifier {
 
   // State variables
   List<AppNotification.Notification> _notifications = [];
+  // Okundu olarak işaretlenen bildirim ID'lerini takip et
+  Set<int> _readNotificationIds = {};
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
@@ -21,6 +25,13 @@ class NotificationViewModel extends ChangeNotifier {
   bool _isPermissionGranted = false;
   bool _isTopicSubscribed = false;
   bool _fcmInitialized = false;
+
+  // Notification Settings state variables
+  bool _isSoundEnabled = true;
+  bool _isVibrationEnabled = true;
+  bool _isChatNotificationsEnabled = true;
+  bool _isTradeNotificationsEnabled = true;
+  bool _isSystemNotificationsEnabled = true;
 
   // Getters
   List<AppNotification.Notification> get notifications => _notifications;
@@ -36,11 +47,21 @@ class NotificationViewModel extends ChangeNotifier {
   bool get isTopicSubscribed => _isTopicSubscribed;
   bool get fcmInitialized => _fcmInitialized;
 
+  // Notification Settings Getters
+  bool get isSoundEnabled => _isSoundEnabled;
+  bool get isVibrationEnabled => _isVibrationEnabled;
+  bool get isChatNotificationsEnabled => _isChatNotificationsEnabled;
+  bool get isTradeNotificationsEnabled => _isTradeNotificationsEnabled;
+  bool get isSystemNotificationsEnabled => _isSystemNotificationsEnabled;
+
   /// Bildirimleri yükler
   Future<void> loadNotifications() async {
     try {
       _setLoading(true);
       _clearError();
+      
+      // Okundu olarak işaretlenen bildirim ID'lerini yükle
+      await _loadReadNotificationIds();
 
       // Kullanıcı token'ını al
       final userToken = await _userService.getUserToken();
@@ -70,7 +91,16 @@ class NotificationViewModel extends ChangeNotifier {
       );
 
       if (response.isSuccess && response.data != null) {
-        _notifications = List<AppNotification.Notification>.from(response.data!);
+        final newNotifications = List<AppNotification.Notification>.from(response.data!);
+        
+        // Yeni bildirimleri kontrol et ve okunmamış olarak işaretle
+        for (final notification in newNotifications) {
+          if (!_readNotificationIds.contains(notification.id)) {
+            // Bu yeni bir bildirim, okunmamış olarak kalacak
+          }
+        }
+        
+        _notifications = newNotifications;
         _clearError();
       } else {
         _setError(response.error ?? 'Bildirimler yüklenemedi');
@@ -87,6 +117,9 @@ class NotificationViewModel extends ChangeNotifier {
     try {
       _setRefreshing(true);
       _clearError();
+      
+      // Okundu olarak işaretlenen bildirim ID'lerini yükle
+      await _loadReadNotificationIds();
 
       // Kullanıcı token'ını al
       final userToken = await _userService.getUserToken();
@@ -116,7 +149,16 @@ class NotificationViewModel extends ChangeNotifier {
       );
 
       if (response.isSuccess && response.data != null) {
-        _notifications = List<AppNotification.Notification>.from(response.data!);
+        final newNotifications = List<AppNotification.Notification>.from(response.data!);
+        
+        // Yeni bildirimleri kontrol et ve okunmamış olarak işaretle
+        for (final notification in newNotifications) {
+          if (!_readNotificationIds.contains(notification.id)) {
+            // Bu yeni bir bildirim, okunmamış olarak kalacak
+          }
+        }
+        
+        _notifications = newNotifications;
         _clearError();
       } else {
         _setError(response.error ?? 'Bildirimler yenilenemedi');
@@ -155,17 +197,166 @@ class NotificationViewModel extends ChangeNotifier {
 
   /// Okunmamış bildirim sayısını alır
   int get unreadCount {
-    // Şimdilik tüm bildirimleri okunmamış sayıyoruz
-    // Gelecekte notification model'ine isRead field'ı eklenebilir
-    return _notifications.length;
+    // Okundu olarak işaretlenen bildirimleri çıkar
+    return _notifications.where((notification) => 
+      !_readNotificationIds.contains(notification.id)
+    ).length;
+  }
+
+  /// Okundu olarak işaretlenen bildirim ID'lerini SharedPreferences'a kaydeder
+  Future<void> _saveReadNotificationIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final readIdsList = _readNotificationIds.toList();
+      await prefs.setStringList('readNotificationIds', 
+        readIdsList.map((id) => id.toString()).toList()
+      );
+      Logger.debug('Okundu bildirim ID\'leri kaydedildi: $_readNotificationIds', tag: _tag);
+    } catch (e) {
+      Logger.error('Okundu bildirim ID\'leri kaydedilemedi: $e', tag: _tag);
+    }
+  }
+
+  /// SharedPreferences'dan okundu olarak işaretlenen bildirim ID'lerini yükler
+  Future<void> _loadReadNotificationIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final readIdsList = prefs.getStringList('readNotificationIds') ?? [];
+      _readNotificationIds = readIdsList
+          .map((id) => int.tryParse(id))
+          .where((id) => id != null)
+          .cast<int>()
+          .toSet();
+      Logger.debug('Okundu bildirim ID\'leri yüklendi: $_readNotificationIds', tag: _tag);
+    } catch (e) {
+      Logger.error('Okundu bildirim ID\'leri yüklenemedi: $e', tag: _tag);
+    }
   }
 
   /// Bildirimleri okundu olarak işaretler (badge'i sıfırlar)
-  void markAllAsRead() {
-    // Şimdilik sadece bildirimleri temizliyoruz
-    // Gelecekte API'ye bildirimleri okundu olarak işaretleme isteği gönderilebilir
-    _notifications.clear();
-    notifyListeners();
+  Future<void> markAllAsRead() async {
+    try {
+      Logger.info('Tüm bildirimler okundu olarak işaretleniyor...', tag: _tag);
+      
+      // Kullanıcı token'ını al
+      final userToken = await _userService.getUserToken();
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('Kullanıcı token bulunamadı', tag: _tag);
+        return;
+      }
+
+      // API'ye bildirimleri okundu olarak işaretleme isteği gönder
+      final response = await _notificationService.markAllNotificationsAsRead(
+        userToken: userToken,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Tüm bildirimler başarıyla okundu olarak işaretlendi', tag: _tag);
+        // Tüm mevcut bildirimleri okundu olarak işaretle
+        for (final notification in _notifications) {
+          _readNotificationIds.add(notification.id);
+        }
+        // SharedPreferences'a kaydet
+        await _saveReadNotificationIds();
+        notifyListeners();
+      } else {
+        Logger.error('Bildirimler okundu olarak işaretlenemedi: ${response.error}', tag: _tag);
+        // Hata durumunda da tüm bildirimleri okundu olarak işaretle (kullanıcı deneyimi için)
+        for (final notification in _notifications) {
+          _readNotificationIds.add(notification.id);
+        }
+        // SharedPreferences'a kaydet
+        await _saveReadNotificationIds();
+        notifyListeners();
+      }
+    } catch (e) {
+      Logger.error('Mark all as read error: $e', tag: _tag);
+      // Hata durumunda da tüm bildirimleri okundu olarak işaretle (kullanıcı deneyimi için)
+      for (final notification in _notifications) {
+        _readNotificationIds.add(notification.id);
+      }
+      // SharedPreferences'a kaydet
+      await _saveReadNotificationIds();
+      notifyListeners();
+    }
+  }
+
+  /// Tüm bildirimleri siler
+  Future<void> deleteAllNotifications() async {
+    try {
+      Logger.info('Tüm bildirimler siliniyor...', tag: _tag);
+      
+      // Kullanıcı token'ını al
+      final userToken = await _userService.getUserToken();
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('Kullanıcı token bulunamadı', tag: _tag);
+        return;
+      }
+
+      // API'ye tüm bildirimleri silme isteği gönder
+      final response = await _notificationService.deleteAllNotifications(
+        userToken: userToken,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Tüm bildirimler başarıyla silindi', tag: _tag);
+        // Local state'i temizle
+        _notifications.clear();
+        _readNotificationIds.clear();
+        // SharedPreferences'dan da temizle
+        await _clearReadNotificationIds();
+        notifyListeners();
+      } else {
+        Logger.error('Bildirimler silinemedi: ${response.error}', tag: _tag);
+      }
+    } catch (e) {
+      Logger.error('Delete all notifications error: $e', tag: _tag);
+    }
+  }
+
+  /// Belirli bir bildirimi siler
+  Future<void> deleteNotification(int notificationId) async {
+    try {
+      Logger.info('Bildirim siliniyor: $notificationId', tag: _tag);
+      
+      // Kullanıcı token'ını al
+      final userToken = await _userService.getUserToken();
+      if (userToken == null || userToken.isEmpty) {
+        Logger.error('Kullanıcı token bulunamadı', tag: _tag);
+        return;
+      }
+
+      // API'ye bildirim silme isteği gönder
+      final response = await _notificationService.deleteNotification(
+        userToken: userToken,
+        notificationId: notificationId,
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Bildirim başarıyla silindi: $notificationId', tag: _tag);
+        // Local state'den kaldır
+        _notifications.removeWhere((notification) => notification.id == notificationId);
+        _readNotificationIds.remove(notificationId);
+        // SharedPreferences'dan da kaldır
+        await _saveReadNotificationIds();
+        notifyListeners();
+      } else {
+        Logger.error('Bildirim silinemedi: ${response.error}', tag: _tag);
+      }
+    } catch (e) {
+      Logger.error('Delete notification error: $e', tag: _tag);
+    }
+  }
+
+  /// SharedPreferences'dan okundu bildirim ID'lerini temizler
+  Future<void> _clearReadNotificationIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('readNotificationIds');
+      Logger.debug('Okundu bildirim ID\'leri temizlendi', tag: _tag);
+    } catch (e) {
+      Logger.error('Okundu bildirim ID\'leri temizlenemedi: $e', tag: _tag);
+    }
   }
 
   /// State management methods
@@ -432,5 +623,100 @@ class NotificationViewModel extends ChangeNotifier {
   void dispose() {
     _notifications.clear();
     super.dispose();
+  }
+
+  // MARK: - Notification Settings Methods
+
+  /// Bildirim ayarlarını yükler
+  Future<void> loadNotificationSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      _isSoundEnabled = prefs.getBool('notification_sound') ?? true;
+      _isVibrationEnabled = prefs.getBool('notification_vibration') ?? true;
+      _isChatNotificationsEnabled = prefs.getBool('notification_chat') ?? true;
+      _isTradeNotificationsEnabled = prefs.getBool('notification_trade') ?? true;
+      _isSystemNotificationsEnabled = prefs.getBool('notification_system') ?? true;
+      
+      notifyListeners();
+    } catch (e) {
+      Logger.error('Bildirim ayarları yüklenirken hata: $e', tag: _tag);
+    }
+  }
+
+  /// Bildirim ayarını günceller
+  Future<void> updateNotificationSetting(String key, bool value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(key, value);
+      
+      // State'i güncelle
+      switch (key) {
+        case 'notification_sound':
+          _isSoundEnabled = value;
+          break;
+        case 'notification_vibration':
+          _isVibrationEnabled = value;
+          break;
+        case 'notification_chat':
+          _isChatNotificationsEnabled = value;
+          break;
+        case 'notification_trade':
+          _isTradeNotificationsEnabled = value;
+          break;
+        case 'notification_system':
+          _isSystemNotificationsEnabled = value;
+          break;
+      }
+      
+      notifyListeners();
+      Logger.info('Bildirim ayarı güncellendi: $key = $value', tag: _tag);
+    } catch (e) {
+      Logger.error('Bildirim ayarı güncellenirken hata: $e', tag: _tag);
+    }
+  }
+
+  /// Tüm bildirim ayarlarını sıfırlar
+  Future<void> resetNotificationSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      await prefs.remove('notification_sound');
+      await prefs.remove('notification_vibration');
+      await prefs.remove('notification_chat');
+      await prefs.remove('notification_trade');
+      await prefs.remove('notification_system');
+      
+      // State'i varsayılan değerlere sıfırla
+      _isSoundEnabled = true;
+      _isVibrationEnabled = true;
+      _isChatNotificationsEnabled = true;
+      _isTradeNotificationsEnabled = true;
+      _isSystemNotificationsEnabled = true;
+      
+      notifyListeners();
+      Logger.info('Bildirim ayarları sıfırlandı', tag: _tag);
+    } catch (e) {
+      Logger.error('Bildirim ayarları sıfırlanırken hata: $e', tag: _tag);
+    }
+  }
+
+  /// Bildirim izin durumunu kontrol eder
+  Future<bool> checkNotificationPermission() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.getNotificationSettings();
+      
+      final hasPermission = settings.authorizationStatus == AuthorizationStatus.authorized ||
+                           settings.authorizationStatus == AuthorizationStatus.provisional;
+      
+      _isPermissionGranted = hasPermission;
+      notifyListeners();
+      
+      return hasPermission;
+    } catch (e) {
+      Logger.error('Bildirim izni kontrol edilirken hata: $e', tag: _tag);
+      return false;
+    }
   }
 } 

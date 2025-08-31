@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/http_client.dart';
+import '../core/constants.dart';
 import '../models/notification.dart' as AppNotification;
 import '../utils/logger.dart';
 import 'error_handler_service.dart';
@@ -184,30 +185,36 @@ class NotificationService {
       categoryIdentifier = 'notification_$type';
     }
 
+    // Varsayılan notification details oluştur
+    final notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _androidChannel.id,
+        _androidChannel.name,
+        channelDescription: _androidChannel.description,
+        icon: '@drawable/ic_notification',
+        importance: Importance.high,
+        priority: Priority.high,
+        // Android için özel ses ve titreşim
+        enableVibration: true,
+        playSound: true,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        categoryIdentifier: categoryIdentifier,
+        threadIdentifier: type.isNotEmpty ? type : 'default',
+      ),
+    );
+
+    // Kullanıcı ayarlarını uygula
+    final finalDetails = await _applyNotificationSettings(notificationDetails);
+
     await _fln.show(
       m.hashCode,
       title,
       body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _androidChannel.id,
-          _androidChannel.name,
-          channelDescription: _androidChannel.description,
-          icon: '@drawable/ic_notification',
-          importance: Importance.high,
-          priority: Priority.high,
-          // Android için özel ses ve titreşim
-          enableVibration: true,
-          playSound: true,
-        ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          categoryIdentifier: categoryIdentifier,
-          threadIdentifier: type.isNotEmpty ? type : 'default',
-        ),
-      ),
+      finalDetails,
       payload: payload,
     );
   }
@@ -501,6 +508,158 @@ class NotificationService {
       return ApiResponse<List<AppNotification.Notification>>.error(
         'Bildirimler yüklenemedi: $e',
       );
+    }
+  }
+
+  /// Tüm bildirimleri siler
+  /// POST /service/user/account/notification/allDelete
+  Future<ApiResponse<bool>> deleteAllNotifications({
+    required String userToken,
+  }) async {
+    try {
+      Logger.info('Tüm bildirimler siliniyor...', tag: _tag);
+      
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.deleteAllNotifications,
+        body: {
+          'userToken': userToken,
+        },
+        useBasicAuth: true,
+        fromJson: (json) {
+          if (json is Map<String, dynamic>) {
+            // API response kontrolü
+            final bool apiSuccess = json['success'] == true;
+            final bool hasError = json['error'] == true;
+            
+            // 410 status code başarılı sayılıyor
+            if (apiSuccess && !hasError) {
+              return true;
+            }
+            
+            // Error message kontrolü
+            if (json.containsKey('error_message') && 
+                json['error_message'].toString().isNotEmpty) {
+              throw Exception(json['error_message'].toString());
+            }
+            
+            return false;
+          }
+          return false;
+        },
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Tüm bildirimler başarıyla silindi', tag: _tag);
+        return ApiResponse.success(true);
+      } else {
+        Logger.error('Bildirimler silinemedi: ${response.error}', tag: _tag);
+        return ApiResponse.error(response.error ?? 'Bildirimler silinemedi');
+      }
+    } catch (e) {
+      Logger.error('Delete all notifications error: $e', tag: _tag);
+      return ApiResponse.error('Bildirimler silinirken hata oluştu: $e');
+    }
+  }
+
+  /// Belirli bir bildirimi siler
+  /// POST /service/user/account/notification/delete
+  Future<ApiResponse<bool>> deleteNotification({
+    required String userToken,
+    required int notificationId,
+  }) async {
+    try {
+      Logger.info('Bildirim siliniyor: $notificationId', tag: _tag);
+      
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.deleteNotification,
+        body: {
+          'userToken': userToken,
+          'notID': notificationId,
+        },
+        useBasicAuth: true,
+        fromJson: (json) {
+          if (json is Map<String, dynamic>) {
+            // API response kontrolü
+            final bool apiSuccess = json['success'] == true;
+            final bool hasError = json['error'] == true;
+            
+            // 410 status code başarılı sayılıyor
+            if (apiSuccess && !hasError) {
+              return true;
+            }
+            
+            // Error message kontrolü
+            if (json.containsKey('error_message') && 
+                json['error_message'].toString().isNotEmpty) {
+              throw Exception(json['error_message'].toString());
+            }
+            
+            return false;
+          }
+          return false;
+        },
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Bildirim başarıyla silindi: $notificationId', tag: _tag);
+        return ApiResponse.success(true);
+      } else {
+        Logger.error('Bildirim silinemedi: ${response.error}', tag: _tag);
+        return ApiResponse.error(response.error ?? 'Bildirim silinemedi');
+      }
+    } catch (e) {
+      Logger.error('Delete notification error: $e', tag: _tag);
+      return ApiResponse.error('Bildirim silinirken hata oluştu: $e');
+    }
+  }
+
+  /// Tüm bildirimleri okundu olarak işaretler
+  /// POST /service/user/account/notification/allRead
+  Future<ApiResponse<bool>> markAllNotificationsAsRead({
+    required String userToken,
+  }) async {
+    try {
+      Logger.info('Tüm bildirimler okundu olarak işaretleniyor...', tag: _tag);
+      
+      final response = await _httpClient.postWithBasicAuth(
+        ApiConstants.markAllNotificationsAsRead,
+        body: {
+          'userToken': userToken,
+        },
+        useBasicAuth: true,
+        fromJson: (json) {
+          if (json is Map<String, dynamic>) {
+            // API response kontrolü
+            final bool apiSuccess = json['success'] == true;
+            final bool hasError = json['error'] == true;
+            
+            // 410 status code başarılı sayılıyor
+            if (apiSuccess && !hasError) {
+              return true;
+            }
+            
+            // Error message kontrolü
+            if (json.containsKey('error_message') && 
+                json['error_message'].toString().isNotEmpty) {
+              throw Exception(json['error_message'].toString());
+            }
+            
+            return false;
+          }
+          return false;
+        },
+      );
+
+      if (response.isSuccess) {
+        Logger.info('Tüm bildirimler başarıyla okundu olarak işaretlendi', tag: _tag);
+        return ApiResponse.success(true);
+      } else {
+        Logger.error('Bildirimler okundu olarak işaretlenemedi: ${response.error}', tag: _tag);
+        return ApiResponse.error(response.error ?? 'Bildirimler okundu olarak işaretlenemedi');
+      }
+    } catch (e) {
+      Logger.error('Mark all notifications as read error: $e', tag: _tag);
+      return ApiResponse.error('Bildirimler okundu olarak işaretlenirken hata oluştu: $e');
     }
   }
 
@@ -799,56 +958,52 @@ class NotificationService {
           break;
       }
 
-      // iOS için özel test bildirimi
+      // Test bildirimi için notification details oluştur
+      NotificationDetails notificationDetails;
+      
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        await _fln.show(
-          999,
-          title,
-          body,
-          NotificationDetails(
-            iOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-              badgeNumber: 1,
-              attachments: null,
-              categoryIdentifier: 'notification_$testType',
-              threadIdentifier: testType,
-            ),
+        notificationDetails = NotificationDetails(
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            badgeNumber: 1,
+            attachments: null,
+            categoryIdentifier: 'notification_$testType',
+            threadIdentifier: testType,
           ),
-          payload: jsonEncode({
-            'type': testType,
-            'id': testId,
-            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-            'platform': 'ios',
-          }),
         );
       } else {
-        // Android için normal bildirim
-        await _fln.show(
-          999,
-          title,
-          body,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              _androidChannel.id,
-              _androidChannel.name,
-              channelDescription: _androidChannel.description,
-              icon: '@drawable/ic_notification',
-              importance: Importance.high,
-              priority: Priority.high,
-              enableVibration: true,
-              playSound: true,
-            ),
-            iOS: const DarwinNotificationDetails(),
+        notificationDetails = NotificationDetails(
+          android: AndroidNotificationDetails(
+            _androidChannel.id,
+            _androidChannel.name,
+            channelDescription: _androidChannel.description,
+            icon: '@drawable/ic_notification',
+            importance: Importance.high,
+            priority: Priority.high,
+            enableVibration: true,
+            playSound: true,
           ),
-          payload: jsonEncode({
-            'type': testType,
-            'id': testId,
-            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          }),
+          iOS: const DarwinNotificationDetails(),
         );
       }
+
+      // Kullanıcı ayarlarını uygula
+      final finalDetails = await _applyNotificationSettings(notificationDetails);
+
+      await _fln.show(
+        999,
+        title,
+        body,
+        finalDetails,
+        payload: jsonEncode({
+          'type': testType,
+          'id': testId,
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+          'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+        }),
+      );
 
       return true;
     } catch (e) {
@@ -858,12 +1013,17 @@ class NotificationService {
   }
 
   // Chat mesajını işle
-  void _handleChatMessage(RemoteMessage message) {
+  void _handleChatMessage(RemoteMessage message) async {
     try {
       final data = message.data;
       final type = data['type'] as String?;
 
       if (type == 'chat_message') {
+        // Chat bildirimleri açık mı kontrol et
+        if (!await _isChatNotificationsEnabled()) {
+          return;
+        }
+
         final chatId = data['chatId'] as String?;
         final senderId = data['senderId'] as String?;
 
@@ -875,6 +1035,97 @@ class NotificationService {
       }
     } catch (e) {
       Logger.error('Chat mesaj işleme hatası: $e', tag: _tag);
+    }
+  }
+
+  // MARK: - Notification Settings Methods
+
+  /// Chat bildirimleri açık mı kontrol eder
+  Future<bool> _isChatNotificationsEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('notification_chat') ?? true;
+    } catch (e) {
+      Logger.error('Chat bildirim ayarı kontrol edilirken hata: $e', tag: _tag);
+      return true; // Hata durumunda varsayılan olarak açık
+    }
+  }
+
+  /// Takas bildirimleri açık mı kontrol eder
+  Future<bool> _isTradeNotificationsEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('notification_trade') ?? true;
+    } catch (e) {
+      Logger.error('Takas bildirim ayarı kontrol edilirken hata: $e', tag: _tag);
+      return true; // Hata durumunda varsayılan olarak açık
+    }
+  }
+
+  /// Sistem bildirimleri açık mı kontrol eder
+  Future<bool> _isSystemNotificationsEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('notification_system') ?? true;
+    } catch (e) {
+      Logger.error('Sistem bildirim ayarı kontrol edilirken hata: $e', tag: _tag);
+      return true; // Hata durumunda varsayılan olarak açık
+    }
+  }
+
+  /// Ses ayarı açık mı kontrol eder
+  Future<bool> _isSoundEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('notification_sound') ?? true;
+    } catch (e) {
+      Logger.error('Ses ayarı kontrol edilirken hata: $e', tag: _tag);
+      return true; // Hata durumunda varsayılan olarak açık
+    }
+  }
+
+  /// Titreşim ayarı açık mı kontrol eder
+  Future<bool> _isVibrationEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('notification_vibration') ?? true;
+    } catch (e) {
+      Logger.error('Titreşim ayarı kontrol edilirken hata: $e', tag: _tag);
+      return true; // Hata durumunda varsayılan olarak açık
+    }
+  }
+
+  /// Bildirim gösterirken ayarları uygular
+  Future<NotificationDetails> _applyNotificationSettings(NotificationDetails details) async {
+    try {
+      final isSoundEnabled = await _isSoundEnabled();
+      final isVibrationEnabled = await _isVibrationEnabled();
+
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        // Android için yeni notification details oluştur
+        if (details.android != null) {
+          final androidDetails = AndroidNotificationDetails(
+            details.android!.channelId,
+            details.android!.channelName,
+            channelDescription: details.android!.channelDescription,
+            icon: details.android!.icon,
+            importance: details.android!.importance,
+            priority: details.android!.priority,
+            playSound: isSoundEnabled,
+            enableVibration: isVibrationEnabled,
+          );
+          
+          return NotificationDetails(
+            android: androidDetails,
+            iOS: details.iOS,
+          );
+        }
+      }
+      
+      return details;
+    } catch (e) {
+      Logger.error('Bildirim ayarları uygulanırken hata: $e', tag: _tag);
+      return details;
     }
   }
 

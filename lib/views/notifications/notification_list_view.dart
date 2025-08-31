@@ -51,6 +51,81 @@ class _NotificationListViewState extends State<NotificationListView> {
         iconTheme: const IconThemeData(color: AppTheme.textPrimary),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
         actions: [
+          // Tümünü Sil butonu
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red[200]!),
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.delete_sweep_rounded,
+                size: 20,
+                color: Colors.red[600],
+              ),
+              onPressed: () async {
+                // Onay dialog'u göster
+                final shouldDelete = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Tüm Bildirimleri Sil'),
+                    content: Text('Tüm bildirimleri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: Text('İptal'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: Text('Sil'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (shouldDelete == true) {
+                  final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
+                  await viewModel.deleteAllNotifications();
+                }
+              },
+              tooltip: 'Tümünü Sil',
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
+            ),
+          ),
+          // Tümünü Okundu İşaretle butonu
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.mark_email_read_rounded,
+                size: 20,
+                color: Colors.grey[600],
+              ),
+              onPressed: () async {
+                final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
+                await viewModel.markAllAsRead();
+              },
+              tooltip: 'Tümünü Okundu İşaretle',
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
+            ),
+          ),
+          // Yenile butonu
           Container(
             margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
@@ -296,19 +371,74 @@ class _NotificationListViewState extends State<NotificationListView> {
                   ),
                 ),
                 
-                // Sağ taraf - Arrow
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: Colors.grey[400],
-                  ),
+                // Sağ taraf - Silme butonu ve Arrow
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Silme butonu
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.red[200]!, width: 1),
+                      ),
+                      child: IconButton(
+                        onPressed: () async {
+                          // Onay dialog'u göster
+                          final shouldDelete = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Bildirimi Sil'),
+                              content: Text('Bu bildirimi silmek istediğinizden emin misiniz?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: Text('İptal'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                  child: Text('Sil'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (shouldDelete == true) {
+                            final viewModel = Provider.of<NotificationViewModel>(context, listen: false);
+                            await viewModel.deleteNotification(notification.id);
+                          }
+                        },
+                        icon: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 14,
+                          color: Colors.red[600],
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 24,
+                          minHeight: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Arrow
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 16,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

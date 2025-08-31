@@ -937,7 +937,7 @@ class HomeAppBar extends StatelessWidget {
                   ],
                 ),
                 child: IconButton(
-                  onPressed: () {
+                  onPressed: () async {
                     Logger.debug('Bildirimler ikonuna tıklandı');
                     // Bildirimleri okundu olarak işaretle
                     final notificationViewModel =
@@ -945,7 +945,7 @@ class HomeAppBar extends StatelessWidget {
                           context,
                           listen: false,
                         );
-                    notificationViewModel.markAllAsRead();
+                    await notificationViewModel.markAllAsRead();
 
                     Navigator.push(
                       context,

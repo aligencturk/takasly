@@ -319,78 +319,85 @@ class _EditProductViewState extends State<EditProductView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('İlanı Düzenle'),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: Consumer<ProductViewModel>(
-        builder: (context, productViewModel, child) {
-          if (_isLoadingProductDetail) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'İlan detayları yükleniyor...',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return Stack(
-            children: [
-              Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSponsorSection(),
-                      const SizedBox(height: 16),
-                      _buildBasicInfoSection(),
-                      const SizedBox(height: 16),
-                      _buildCategorySection(),
-                      const SizedBox(height: 16),
-                      _buildLocationSection(),
-                      const SizedBox(height: 16),
-                      _buildImagesSection(),
-                      const SizedBox(height: 16),
-                      _buildContactSection(),
-                      const SizedBox(height: 32),
-                      _buildUpdateButton(),
-                    ],
-                  ),
+      body: GestureDetector(
+        onTap: () {
+          // Boş alana tıklandığında klavyeyi kapat
+          FocusScope.of(context).unfocus();
+        },
+        child: Consumer<ProductViewModel>(
+          builder: (context, productViewModel, child) {
+            if (_isLoadingProductDetail) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'İlan detayları yükleniyor...',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
                 ),
-              ),
+              );
+            }
 
-              if (_isUpdating)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black45,
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text(
-                            'İlan güncelleniyor...',
-                            style: TextStyle(color: Colors.white, fontSize: 16),
-                          ),
-                        ],
-                      ),
+            return Stack(
+              children: [
+                Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSponsorSection(),
+                        const SizedBox(height: 16),
+                        _buildBasicInfoSection(),
+                        const SizedBox(height: 16),
+                        _buildCategorySection(),
+                        const SizedBox(height: 16),
+                        _buildLocationSection(),
+                        const SizedBox(height: 16),
+                        _buildImagesSection(),
+                        const SizedBox(height: 16),
+                        _buildContactSection(),
+                        const SizedBox(height: 32),
+                        _buildUpdateButton(),
+                      ],
                     ),
                   ),
                 ),
-            ],
-          );
-        },
+
+                if (_isUpdating)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black45,
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text(
+                              'İlan güncelleniyor...',
+                              style: TextStyle(color: Colors.white, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -424,6 +431,10 @@ class _EditProductViewState extends State<EditProductView> {
                 textCapitalization: TextCapitalization.sentences,
                 sensitivity: 'high',
                 validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
+                onSubmitted: (_) {
+                  // Enter'a basıldığında klavyeyi kapat
+                  FocusScope.of(context).unfocus();
+                },
               ),
               const SizedBox(height: 12),
               ProfanityCheckTextField(
@@ -433,15 +444,48 @@ class _EditProductViewState extends State<EditProductView> {
                 textCapitalization: TextCapitalization.sentences,
                 sensitivity: 'high',
                 validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
+                onSubmitted: (_) {
+                  // Enter'a basıldığında klavyeyi kapat
+                  FocusScope.of(context).unfocus();
+                },
               ),
               const SizedBox(height: 12),
               ProfanityCheckTextField(
                 controller: _tradePreferencesController,
-                labelText: 'Takas Tercihleri (virgülle ayırın)',
+                labelText: 'Takas Tercihleri (Opsiyonel)',
                 hintText: 'Örn: telefon, laptop, kitap',
                 maxLines: 2,
                 textCapitalization: TextCapitalization.sentences,
                 sensitivity: 'medium',
+                onSubmitted: (_) {
+                  // Enter'a basıldığında klavyeyi kapat
+                  FocusScope.of(context).unfocus();
+                },
+              ),
+              const SizedBox(height: 12),
+              // Info card
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Bu alan zorunlu değildir. Daha spesifik olursanız, uygun takas teklifleri alma şansınız artar.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.blue.shade700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1462,12 +1506,12 @@ class _EditProductViewState extends State<EditProductView> {
     try {
       final int totalExistingImages =
           _existingImages.length + _newImages.length;
-      final int remainingSlots = 5 - totalExistingImages;
+      final int remainingSlots = 10 - totalExistingImages;
 
       if (remainingSlots <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Maksimum 5 fotoğraf olabilir'),
+            content: Text('Maksimum 10 fotoğraf olabilir'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -1552,12 +1596,12 @@ class _EditProductViewState extends State<EditProductView> {
     try {
       final int totalExistingImages =
           _existingImages.length + _newImages.length;
-      final int remainingSlots = 5 - totalExistingImages;
+      final int remainingSlots = 10 - totalExistingImages;
 
       if (remainingSlots <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Maksimum 5 fotoğraf olabilir'),
+            content: Text('Maksimum 10 fotoğraf olabilir'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -1627,7 +1671,7 @@ class _EditProductViewState extends State<EditProductView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${pickedFiles.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 5 resim)',
+                '${pickedFiles.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 10 resim)',
               ),
               backgroundColor: Colors.orange,
             ),

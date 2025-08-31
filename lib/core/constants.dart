@@ -98,6 +98,11 @@ class ApiConstants {
   // User Block Service Endpoints
   static const String userBlocked = '/service/user/account/userBlocked';
   static const String userUnBlocked = '/service/user/account/userUnBlocked';
+  
+  // Notification Service Endpoints
+  static const String markAllNotificationsAsRead = '/service/user/account/notification/allRead';
+  static const String deleteAllNotifications = '/service/user/account/notification/allDelete';
+  static const String deleteNotification = '/service/user/account/notification/delete';
   static const String blockedUsers =
       '/service/user/account/{userId}/blockedUsers';
 

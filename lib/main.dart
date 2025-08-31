@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:upgrader/upgrader.dart';
 import 'firebase_options.dart';
+import 'core/upgrader_messages.dart';
 import 'core/app_theme.dart';
 import 'core/constants.dart';
 import 'services/cache_service.dart';
@@ -237,11 +239,15 @@ class MyApp extends StatelessWidget {
           },
         ),
       ],
-      child: MaterialApp(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        navigatorKey: ErrorHandlerService.navigatorKey, // Navigator key ekle
+      child: UpgradeAlert(
+        upgrader: Upgrader(
+          messages: TurkishUpgraderMessages(),
+        ),
+        child: MaterialApp(
+          title: AppConstants.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          navigatorKey: ErrorHandlerService.navigatorKey, // Navigator key ekle
         home: Builder(
           builder: (context) {
             // ViewModel'ler arasında bağlantı kur
@@ -413,9 +419,10 @@ class MyApp extends StatelessWidget {
           );
         },
       ),
-    );
+        ),
+      );
+    }
   }
-}
 
 // ProductId ile product detayını yükleyip EditProductView'a yönlendiren widget
 class _ProductDetailLoader extends StatefulWidget {

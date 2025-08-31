@@ -68,21 +68,28 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppTheme.background,
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          // Step Progress Header
-          _buildStepProgressHeader(),
+      body: GestureDetector(
+        onTap: () {
+          // Boş alana tıklandığında klavyeyi kapat
+          FocusScope.of(context).unfocus();
+        },
+        child: Column(
+          children: [
+            // Step Progress Header
+            _buildStepProgressHeader(),
 
-          // Main Content
-          Expanded(
-            child: Form(key: _formKey, child: _buildCurrentStep()),
-          ),
+            // Main Content
+            Expanded(
+              child: Form(key: _formKey, child: _buildCurrentStep()),
+            ),
 
-          // Navigation Buttons
-          _buildNavigationButtons(),
-        ],
+            // Navigation Buttons
+            _buildNavigationButtons(),
+          ],
+        ),
       ),
     );
   }
@@ -409,6 +416,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             onChanged: (value) {
               setState(() {}); // Trigger rebuild for button state
             },
+            onFieldSubmitted: (_) {
+              // Enter'a basıldığında klavyeyi kapat
+              FocusScope.of(context).unfocus();
+            },
           ),
 
           const SizedBox(height: 24),
@@ -511,6 +522,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             validator: _validateVerificationCode,
             onChanged: (value) {
               setState(() {}); // Trigger rebuild for button state
+            },
+            onFieldSubmitted: (_) {
+              // Enter'a basıldığında klavyeyi kapat
+              FocusScope.of(context).unfocus();
             },
           ),
 
@@ -643,6 +658,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             onChanged: (value) {
               setState(() {}); // Trigger rebuild for button state
             },
+            onFieldSubmitted: (_) {
+              // Enter'a basıldığında klavyeyi kapat
+              FocusScope.of(context).unfocus();
+            },
           ),
 
           const SizedBox(height: 24),
@@ -687,6 +706,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             validator: _validateConfirmPassword,
             onChanged: (value) {
               setState(() {}); // Trigger rebuild for button state
+            },
+            onFieldSubmitted: (_) {
+              // Enter'a basıldığında klavyeyi kapat
+              FocusScope.of(context).unfocus();
             },
           ),
 

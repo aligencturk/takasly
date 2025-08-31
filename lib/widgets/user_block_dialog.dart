@@ -159,6 +159,10 @@ class _UserBlockDialogState extends State<UserBlockDialog> {
                 }
                 return null;
               },
+              onFieldSubmitted: (_) {
+                // Enter'a basıldığında klavyeyi kapat
+                FocusScope.of(context).unfocus();
+              },
             ),
             SizedBox(height: 16),
             Container(

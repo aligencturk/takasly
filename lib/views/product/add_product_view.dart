@@ -61,7 +61,7 @@ class _AddProductViewState extends State<AddProductView> {
     'Ürün Detayları',
     'Kategorizasyon',
     'Konum',
-    'Takas Tercihleri',
+    'Takas Tercihleri (Opsiyonel)',
     'İletişim Ayarları',
   ];
 
@@ -234,7 +234,7 @@ class _AddProductViewState extends State<AddProductView> {
         canGo = _currentPosition != null || _selectedCityId != null;
         break;
       case 4: // Takas Tercihleri
-        canGo = _tradeForController.text.trim().isNotEmpty;
+        canGo = true; // Takas tercihi opsiyonel, her zaman geçilebilir
         break;
       case 5: // İletişim Ayarları
         canGo = true; // Bu adım her zaman geçilebilir
@@ -352,7 +352,7 @@ class _AddProductViewState extends State<AddProductView> {
         }
         break;
       case 4: // Takas Tercihleri
-        errorMessage = 'Lütfen takas tercihlerini girin';
+        errorMessage = 'Bu adım opsiyonel, herhangi bir hata yok';
         break;
       case 5: // İletişim Ayarları
         errorMessage = 'Lütfen iletişim ayarlarını yapın';
@@ -869,6 +869,7 @@ class _AddProductViewState extends State<AddProductView> {
         return await _showExitConfirmationDialog();
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: const Text('İlan Ekle'),
           centerTitle: true,
@@ -883,19 +884,25 @@ class _AddProductViewState extends State<AddProductView> {
             },
           ),
         ),
-        body: Column(
-          children: [
-            // Step Progress Header
-            _buildStepProgressHeader(),
+        body: GestureDetector(
+          onTap: () {
+            // Boş alana tıklandığında klavyeyi kapat
+            FocusScope.of(context).unfocus();
+          },
+          child: Column(
+            children: [
+              // Step Progress Header
+              _buildStepProgressHeader(),
 
-            // Main Content
-            Expanded(
-              child: Form(key: _formKey, child: _buildCurrentStep()),
-            ),
+              // Main Content
+              Expanded(
+                child: Form(key: _formKey, child: _buildCurrentStep()),
+              ),
 
-            // Navigation Buttons
-            _buildNavigationButtons(),
-          ],
+              // Navigation Buttons
+              _buildNavigationButtons(),
+            ],
+          ),
         ),
       ),
     );
@@ -1100,7 +1107,7 @@ class _AddProductViewState extends State<AddProductView> {
             (_selectedCityId !=
                 null); // İl bilgisi varsa adım tamamlanmış sayılır
       case 4:
-        return _tradeForController.text.trim().isNotEmpty;
+        return true; // Takas tercihi opsiyonel
       case 5:
         return false; // Bu adım hiçbir zaman otomatik tamamlanmış sayılmaz
       default:
@@ -1228,6 +1235,10 @@ class _AddProductViewState extends State<AddProductView> {
             sensitivity: 'high',
             validator: (v) => v!.isEmpty ? 'Başlık zorunludur' : null,
             onChanged: (value) => setState(() {}),
+            onSubmitted: (_) {
+              // Enter'a basıldığında klavyeyi kapat
+              FocusScope.of(context).unfocus();
+            },
           ),
           const SizedBox(height: 24),
           ProfanityCheckTextField(
@@ -1240,6 +1251,10 @@ class _AddProductViewState extends State<AddProductView> {
             sensitivity: 'high',
             validator: (v) => v!.isEmpty ? 'Açıklama zorunludur' : null,
             onChanged: (value) => setState(() {}),
+            onSubmitted: (_) {
+              // Enter'a basıldığında klavyeyi kapat
+              FocusScope.of(context).unfocus();
+            },
           ),
         ],
       ),
@@ -1585,13 +1600,13 @@ class _AddProductViewState extends State<AddProductView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Takas Tercihleri',
+                      'Takas Tercihleri (Opsiyonel)',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Ne ile takas etmek istediğinizi belirtin',
+                      'Ne ile takas etmek istediğinizi belirtin (zorunlu değil)',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey.shade600,
                       ),
@@ -1607,13 +1622,17 @@ class _AddProductViewState extends State<AddProductView> {
           // Form fields
           ProfanityCheckTextField(
             controller: _tradeForController,
-            labelText: 'Ne ile takas etmek istersin?',
+            labelText: 'Ne ile takas etmek istersin? (Opsiyonel)',
             hintText: 'Örn: İhtiyacınız olan veya istediğiniz bir ürün...',
             maxLines: 4,
             textCapitalization: TextCapitalization.sentences,
             sensitivity: 'medium',
-            validator: (v) => v!.isEmpty ? 'Takas tercihi zorunludur' : null,
+            validator: (v) => null, // Takas tercihi opsiyonel
             onChanged: (value) => setState(() {}),
+            onSubmitted: (_) {
+              // Enter'a basıldığında klavyeyi kapat
+              FocusScope.of(context).unfocus();
+            },
           ),
           const SizedBox(height: 24),
 
@@ -1625,16 +1644,29 @@ class _AddProductViewState extends State<AddProductView> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.blue.withOpacity(0.3)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.lightbulb_outline, color: Colors.blue),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Daha spesifik olursanız, uygun takas teklifleri alma şansınız artar',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.blue.shade700,
+                Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline, color: Colors.blue),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Takas Tercihleri (Opsiyonel)',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Bu alan zorunlu değildir. Daha spesifik olursanız, uygun takas teklifleri alma şansınız artar.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.blue.shade700,
                   ),
                 ),
               ],
@@ -2334,7 +2366,7 @@ class _AddProductViewState extends State<AddProductView> {
         ],
 
         Text(
-          'En az 1, en fazla 5 fotoğraf ekleyebilirsiniz. Yıldız ikonuna tıklayarak kapak resmi seçebilirsiniz.',
+          'En az 1, en fazla 10 fotoğraf ekleyebilirsiniz. Yıldız ikonuna tıklayarak kapak resmi seçebilirsiniz.',
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
@@ -2354,7 +2386,7 @@ class _AddProductViewState extends State<AddProductView> {
         border: Border.all(color: Colors.grey.shade300, width: 2),
       ),
       child: InkWell(
-        onTap: _selectedImages.length < 5 ? _showImageSourceDialog : null,
+        onTap: _selectedImages.length < 10 ? _showImageSourceDialog : null,
         borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -2362,7 +2394,7 @@ class _AddProductViewState extends State<AddProductView> {
             Icon(
               Icons.add_photo_alternate_outlined,
               size: 32,
-              color: _selectedImages.length < 5
+              color: _selectedImages.length < 10
                   ? AppTheme.primary
                   : Colors.grey.shade400,
             ),
@@ -2372,7 +2404,7 @@ class _AddProductViewState extends State<AddProductView> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: _selectedImages.length < 5
+                color: _selectedImages.length < 10
                     ? AppTheme.primary
                     : Colors.grey.shade400,
                 fontWeight: FontWeight.w500,
@@ -2773,11 +2805,11 @@ class _AddProductViewState extends State<AddProductView> {
 
   Future<void> _pickMultipleImages() async {
     try {
-      final int remainingSlots = 5 - _selectedImages.length;
+      final int remainingSlots = 10 - _selectedImages.length;
       if (remainingSlots <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Maksimum 5 fotoğraf seçebilirsiniz'),
+            content: Text('Maksimum 10 fotoğraf seçebilirsiniz'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -2931,7 +2963,7 @@ class _AddProductViewState extends State<AddProductView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${imageBytesList.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 5 resim)',
+                '${imageBytesList.length} resim seçtiniz, ancak sadece $remainingSlots tanesi eklendi (maksimum 10 resim)',
               ),
               backgroundColor: Colors.orange,
             ),
