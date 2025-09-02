@@ -459,6 +459,16 @@ class _NotificationListViewState extends State<NotificationListView> {
           );
         }
         break;
+      case 'sponsor_expired':
+        // Ürün detay sayfasına yönlendir
+        if (notification.typeId.isNotEmpty) {
+          Navigator.pushNamed(
+            context,
+            '/product-detail',
+            arguments: {'productId': notification.typeId},
+          );
+        }
+        break;
       default:
         // Varsayılan olarak hiçbir şey yapma
     }

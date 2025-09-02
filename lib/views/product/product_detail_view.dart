@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 import 'dart:io';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/chat_viewmodel.dart';
@@ -25,6 +26,7 @@ import 'edit_product_view.dart';
 import '../../utils/logger.dart';
 import '../../widgets/native_ad_detail_footer.dart';
 import '../../widgets/report_dialog.dart';
+import '../../services/admob_service.dart';
 
 // Tam ekran görsel görüntüleme sayfası
 class FullScreenImageView extends StatefulWidget {
@@ -152,6 +154,11 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   int _currentImageIndex = 0;
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0.0;
+  final AdMobService _adMobService = AdMobService();
+  bool _isProcessingSponsor = false;
+  DateTime? _scheduledSponsorUntil;
+  Timer? _scheduledActivationTimer;
+  Timer? _scheduledCountdownTimer;
 
   @override
   void initState() {
@@ -163,6 +170,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         listen: false,
       ).getProductDetail(widget.productId);
     });
+    _initializeAdMob();
   }
 
   void _onScroll() {
@@ -171,6 +179,325 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         _scrollOffset = _scrollController.offset;
       });
     }
+  }
+
+  Future<void> _initializeAdMob() async {
+    try {
+      await _adMobService.initialize();
+      await _adMobService.loadRewardedAd();
+      Logger.info('✅ ProductDetailView - AdMob başlatıldı ve ödüllü reklam yüklendi');
+    } catch (e) {
+      Logger.error('❌ ProductDetailView - AdMob başlatma hatası: $e');
+    }
+  }
+
+  Future<void> _handleSponsorProcess(Product product) async {
+    try {
+      setState(() {
+        _isProcessingSponsor = true;
+      });
+
+      Logger.info('🎁 ProductDetailView - Sponsor işlemi başlatılıyor...');
+
+      final shouldProceed = await _showSponsorConfirmationDialog();
+      if (!shouldProceed) {
+        Logger.info('👤 ProductDetailView - Kullanıcı sponsor işlemini iptal etti');
+        return;
+      }
+
+      final rewardEarned = await _adMobService.showRewardedAd();
+
+      if (rewardEarned) {
+        Logger.info('🎉 ProductDetailView - Ödül kazanıldı, aktivasyon 1 saat sonra planlanıyor...');
+        final scheduledTime = DateTime.now().add(const Duration(hours: 1));
+        if (mounted) {
+          setState(() {
+            _scheduledSponsorUntil = scheduledTime;
+          });
+        }
+        _startScheduledCountdown();
+        _scheduleSponsorActivation(product.id, scheduledTime);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('İlanınız 1 saat sonra öne çıkarılacak.'),
+              backgroundColor: Colors.blue,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        Logger.warning('⚠️ ProductDetailView - Ödül kazanılmadı, sponsor işlemi iptal edildi');
+        _adMobService.setAutoReloadRewardedAd(false);
+        _showSponsorRetryMessage();
+      }
+    } catch (e) {
+      Logger.error('❌ ProductDetailView - Sponsor işlemi hatası: $e');
+      _showSponsorErrorMessage();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingSponsor = false;
+        });
+      }
+    }
+  }
+
+  void _startScheduledCountdown() {
+    _scheduledCountdownTimer?.cancel();
+    if (_scheduledSponsorUntil == null) return;
+    _scheduledCountdownTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) return;
+      setState(() {});
+      if (_scheduledSponsorUntil != null && DateTime.now().isAfter(_scheduledSponsorUntil!)) {
+        _scheduledCountdownTimer?.cancel();
+      }
+    });
+  }
+
+  void _scheduleSponsorActivation(String productId, DateTime activationTime) {
+    _scheduledActivationTimer?.cancel();
+    final delay = activationTime.difference(DateTime.now());
+    if (delay.isNegative) {
+      _activateSponsorNow(productId);
+      return;
+    }
+    _scheduledActivationTimer = Timer(delay, () async {
+      await _activateSponsorNow(productId);
+    });
+  }
+
+  Future<void> _activateSponsorNow(String productId) async {
+    try {
+      final vm = Provider.of<ProductViewModel>(context, listen: false);
+      final success = await vm.sponsorProduct(productId);
+      if (success) {
+        Logger.info('✅ ProductDetailView - Planlanan sponsor aktivasyonu tamamlandı');
+        await vm.getProductDetail(widget.productId);
+        if (mounted) {
+          setState(() {
+            _scheduledSponsorUntil = null;
+          });
+        }
+        _showSponsorSuccessMessage();
+      } else {
+        final errorMessage = vm.errorMessage ?? '';
+        if (errorMessage.contains('Zaten aktif öne çıkarılmış') ||
+            errorMessage.contains('Bir saat içinde sadece bir ürün')) {
+          _showSponsorLimitErrorMessage(errorMessage);
+        } else {
+          _showSponsorErrorMessage();
+        }
+      }
+    } catch (e) {
+      Logger.error('❌ ProductDetailView - Planlı aktivasyon hatası: $e');
+      _showSponsorErrorMessage();
+    }
+  }
+
+  Future<bool> _showSponsorConfirmationDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.star, color: Colors.blue.shade600, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'İlanı Öne Çıkar',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue.shade600,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Ödüllü reklam izleyerek ilanınızı 1 saat boyunca öne çıkarmak ister misiniz?\n\nİlanınız anasayfada en üstte mavi çerçeve ile gösterilecek.',
+            style: TextStyle(fontSize: 14, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'İptal',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+              child: const Text(
+                'Reklam İzle',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  void _showSponsorSuccessMessage() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.star, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'İlanınız başarıyla öne çıkarıldı! 1 saat boyunca en üstte görünecek.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.blue.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _showSponsorErrorMessage() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.error_outline, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Öne çıkarma işlemi başarısız oldu. Lütfen daha sonra tekrar deneyin.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _showSponsorRetryMessage() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.refresh, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Öne çıkarma işlemi tamamlanamadı. Tekrar denemek için butona tıklayın.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Tekrar Dene',
+            textColor: Colors.white,
+            onPressed: () {
+              _adMobService.setAutoReloadRewardedAd(true);
+              final vm = Provider.of<ProductViewModel>(context, listen: false);
+              final product = vm.selectedProduct;
+              if (product != null) {
+                _handleSponsorProcess(product);
+              }
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showSponsorLimitErrorMessage(String errorMessage) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.schedule, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Zaten aktif öne çıkarılmış ürününüz var. Bir saat içinde sadece bir ürün öne çıkarılabilir.',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Tamam',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  String _formatRemaining(DateTime until) {
+    final diff = until.difference(DateTime.now());
+    if (diff.isNegative) return '0 dk';
+    final h = diff.inHours;
+    final m = diff.inMinutes % 60;
+    if (h > 0) return '${h} sa ${m} dk';
+    return '${m} dk';
   }
 
  
@@ -463,6 +790,8 @@ Takasly uygulamasından paylaşıldı.
   void dispose() {
     _pageController.dispose();
     _scrollController.dispose();
+    _scheduledActivationTimer?.cancel();
+    _scheduledCountdownTimer?.cancel();
     super.dispose();
   }
 
@@ -566,6 +895,11 @@ Takasly uygulamasından paylaşıldı.
               _ActionBar(
                 product: product,
                 onShowSnackBar: widget.onShowSnackBar,
+                onSponsorPressed: () => _handleSponsorProcess(product),
+                isProcessingSponsor: _isProcessingSponsor,
+                scheduledRemaining: _scheduledSponsorUntil != null
+                    ? _formatRemaining(_scheduledSponsorUntil!)
+                    : null,
               ),
             ],
           ),
@@ -960,9 +1294,7 @@ class _ProductInfoState extends State<_ProductInfo> {
               // 1. En önemli bilgiler (üst sırada)
               _InfoRow(
                 'İlan Sahibi :',
-                widget.product.userFullname ??
-                    widget.product.owner?.name ??
-                    'Belirtilmemiş',
+                widget.product.userFullname ?? widget.product.owner.name,
               ),
               if (widget.product.isShowContact == true &&
                   widget.product.userPhone != null &&
@@ -1446,8 +1778,7 @@ class _ProductInfoState extends State<_ProductInfo> {
 
   Widget _buildUserSummary(BuildContext context, Product product) {
     // Yeni API'den gelen kullanıcı bilgilerini kullan
-    final userName =
-        product.userFullname ?? product.owner?.name ?? 'Bilinmeyen Kullanıcı';
+    final userName = product.userFullname ?? product.owner.name;
     final owner = product.owner;
     final userPhone = product.userPhone;
 
@@ -1761,8 +2092,11 @@ class _ProductInfoState extends State<_ProductInfo> {
 class _ActionBar extends StatelessWidget {
   final Product product;
   final void Function(String message, {bool error})? onShowSnackBar;
+  final VoidCallback? onSponsorPressed;
+  final bool isProcessingSponsor;
+  final String? scheduledRemaining;
 
-  const _ActionBar({required this.product, this.onShowSnackBar});
+  const _ActionBar({required this.product, this.onShowSnackBar, this.onSponsorPressed, this.isProcessingSponsor = false, this.scheduledRemaining});
 
   Future<void> _startChat(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
@@ -1942,6 +2276,34 @@ class _ActionBar extends StatelessWidget {
   }
 
   Widget _buildOwnProductActions(BuildContext context) {
+    String _formatSponsorEndTime(String sponsorUntil) {
+      try {
+        final endTime = DateTime.parse(sponsorUntil);
+        final now = DateTime.now();
+        final difference = endTime.difference(now);
+        if (difference.isNegative) return 'Süre doldu';
+        final hours = difference.inHours;
+        final minutes = difference.inMinutes % 60;
+        if (hours > 0) {
+          return '${hours} saat ${minutes} dakika';
+        }
+        return '${minutes} dakika';
+      } catch (_) {
+        return 'Bilinmiyor';
+      }
+    }
+    // Sponsor durumu
+    bool isSponsorActive = false;
+    String? sponsorUntil = product.sponsorUntil;
+    if (product.isSponsor == true && sponsorUntil != null && sponsorUntil.isNotEmpty) {
+      try {
+        final end = DateTime.parse(sponsorUntil);
+        isSponsorActive = DateTime.now().isBefore(end);
+      } catch (_) {
+        isSponsorActive = false;
+      }
+    }
+
     return Column(
       children: [
         Row(
@@ -1961,9 +2323,100 @@ class _ActionBar extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
+
+        // Sponsor bilgi kartı
+        if (isSponsorActive)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.star, color: Colors.orange.shade600, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'İlanınız şu anda öne çıkarılmış',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade800,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (sponsorUntil != null && sponsorUntil.isNotEmpty)
+                        Text(
+                          'Bitiş: ${_formatSponsorEndTime(sponsorUntil)}',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        if (isSponsorActive) const SizedBox(height: 8),
+
+        // Öne çıkar butonu (planlandıysa kilitli metin)
         SizedBox(
           width: double.infinity,
-          height: 50,
+          height: 45,
+          child: ElevatedButton.icon(
+            onPressed: (isProcessingSponsor || scheduledRemaining != null)
+                ? null
+                : onSponsorPressed,
+            icon: isProcessingSponsor
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.play_arrow, size: 16),
+            label: Text(
+              isProcessingSponsor
+                  ? 'İşleniyor...'
+                  : (isSponsorActive
+                      ? 'Vitrin Aktif'
+                      : (scheduledRemaining != null
+                          ? 'Tekrar Öne Çıkarmak İçin: $scheduledRemaining'
+                          : 'Reklam İzle ve Öne Çıkar')),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  isSponsorActive
+                      ? Colors.orange.shade600
+                      : (scheduledRemaining != null
+                          ? Colors.blueGrey
+                          : AppTheme.primary),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppTheme.borderRadius,
+              ),
+              elevation: 0,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Düzenle butonu
+        SizedBox(
+          width: double.infinity,
+          height: 45,
           child: OutlinedButton.icon(
             onPressed: () {
               Navigator.push(

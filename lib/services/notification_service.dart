@@ -273,6 +273,13 @@ class NotificationService {
         }
         break;
 
+      case 'product_detail':
+        // Deep link ile gelen ürün detay yönlendirmesi
+        if (id.isNotEmpty) {
+          _navigateToProductDetail(id);
+        }
+        break;
+
       default:
         // Varsayılan olarak bildirimler sayfasına git
         _navigateToNotifications();
@@ -381,11 +388,30 @@ class NotificationService {
       // Önce keysandvalues içindeki JSON'u kontrol et
       final raw = data['keysandvalues'];
       if (raw is String && raw.isNotEmpty && raw != '{}') {
-        final m = jsonDecode(raw) as Map<String, dynamic>;
-        final type = (m['type'] ?? '').toString();
-        final id = (m['id'] ?? '').toString();
-        if (type.isNotEmpty) {
-          return (type, id);
+        Map<String, dynamic>? m;
+        try {
+          m = jsonDecode(raw) as Map<String, dynamic>;
+        } catch (e) {
+          // Sunucudan bozuk JSON geldiyse (ör: "url": ) normalize etmeyi dene
+          try {
+            String fixed = raw;
+            // "url": } -> "url": "" }
+            fixed = fixed.replaceAll(RegExp(r'"url"\s*:\s*\}'), '"url": ""}');
+            // trailing comma: , } -> }
+            fixed = fixed.replaceAll(RegExp(r',\s*\}'), '}');
+            // Tekli trailing virgül senaryolarını düzelt
+            fixed = fixed.replaceAll(RegExp(r',\s*\]'), ']');
+            m = jsonDecode(fixed) as Map<String, dynamic>;
+          } catch (e2) {
+            Logger.warning('keysandvalues JSON normalize edilemedi: $e2', tag: _tag);
+          }
+        }
+        if (m != null) {
+          final type = (m['type'] ?? '').toString();
+          final id = (m['id'] ?? '').toString();
+          if (type.isNotEmpty) {
+            return (type, id);
+          }
         }
       }
 
@@ -394,6 +420,35 @@ class NotificationService {
       final directId = (data['id'] ?? '').toString();
       if (directType.isNotEmpty) {
         return (directType, directId);
+      }
+
+      // Link tabanlı yönlendirmeler: link/deep_link/url alanlarını işle
+      final candidateLink = (data['link'] ?? data['deep_link'] ?? data['url'])?.toString();
+      if (candidateLink != null && candidateLink.isNotEmpty) {
+        try {
+          final uri = Uri.parse(candidateLink);
+          // HTTPS/HTTP ve custom scheme destekle
+          final isWebStyle = (uri.scheme == 'https' || uri.scheme == 'http') &&
+              uri.host == 'www.takasly.tr' &&
+              uri.pathSegments.isNotEmpty &&
+              uri.pathSegments.first == 'ilan';
+          final isCustomScheme = uri.scheme == 'takasly' && uri.host == 'ilan';
+
+          if (isWebStyle || isCustomScheme) {
+            // Ürün ID: path /ilan/{id} formatında ikinci segment
+            String? productId;
+            if (isWebStyle && uri.pathSegments.length >= 2) {
+              productId = uri.pathSegments[1];
+            } else if (isCustomScheme && uri.pathSegments.isNotEmpty) {
+              productId = uri.pathSegments.first;
+            }
+            if (productId != null && productId.isNotEmpty) {
+              return ('product_detail', productId);
+            }
+          }
+        } catch (e) {
+          Logger.warning('Link parse edilirken hata: $e', tag: _tag);
+        }
       }
 
       // Notification title'dan bildirim türünü çıkarmaya çalış
