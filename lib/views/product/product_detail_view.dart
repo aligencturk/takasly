@@ -2372,7 +2372,7 @@ class _ActionBar extends StatelessWidget {
           width: double.infinity,
           height: 45,
           child: ElevatedButton.icon(
-            onPressed: (isProcessingSponsor || scheduledRemaining != null)
+            onPressed: (isProcessingSponsor || scheduledRemaining != null || isSponsorActive || (product.isSponsor == true))
                 ? null
                 : onSponsorPressed,
             icon: isProcessingSponsor

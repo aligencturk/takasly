@@ -720,13 +720,40 @@ class FirebaseChatService {
   // Kullanıcı kaydet/güncelle
   Future<void> saveUser(User user) async {
     try {
-      final userData = user.toJson();
-      userData['createdAt'] = user.createdAt.millisecondsSinceEpoch;
-      userData['updatedAt'] = user.updatedAt.millisecondsSinceEpoch;
+      final userRef = _database.child('users/${user.id}');
 
-      await _database.child('users/${user.id}').set(userData);
+      // Mevcut createdAt değerini koru (varsa)
+      int? existingCreatedAtMs;
+      try {
+        final existingSnapshot = await userRef.get();
+        if (existingSnapshot.value != null && existingSnapshot.value is Map) {
+          final existing = Map<String, dynamic>.from(
+            existingSnapshot.value as Map,
+          );
+          final created = existing['createdAt'];
+          if (created is int) {
+            existingCreatedAtMs = created;
+          } else if (created is String) {
+            // ISO8601 olarak tutulmuş olabilir
+            final parsed = DateTime.tryParse(created);
+            if (parsed != null) {
+              existingCreatedAtMs = parsed.millisecondsSinceEpoch;
+            }
+          }
+        }
+      } catch (_) {}
 
-      Logger.info('Kullanıcı kaydedildi: ${user.id}', tag: _tag);
+      // Kullanıcı verisini hazırla (alt düğümleri ezmemek için update kullanılacak)
+      final Map<String, dynamic> userData = user.toJson();
+
+      // Timestamp'leri server-side ayarla
+      userData['updatedAt'] = ServerValue.timestamp;
+      userData['createdAt'] = existingCreatedAtMs ?? ServerValue.timestamp;
+
+      // Alt düğümleri (ör. fcmToken) ezmemek için update kullan
+      await userRef.update(userData);
+
+      Logger.info('Kullanıcı güncellendi: ${user.id}', tag: _tag);
     } catch (e) {
       Logger.error('Kullanıcı kaydetme hatası: $e', tag: _tag);
       rethrow;
