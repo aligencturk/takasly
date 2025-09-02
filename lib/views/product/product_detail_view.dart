@@ -185,7 +185,9 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     try {
       await _adMobService.initialize();
       await _adMobService.loadRewardedAd();
-      Logger.info('✅ ProductDetailView - AdMob başlatıldı ve ödüllü reklam yüklendi');
+      Logger.info(
+        '✅ ProductDetailView - AdMob başlatıldı ve ödüllü reklam yüklendi',
+      );
     } catch (e) {
       Logger.error('❌ ProductDetailView - AdMob başlatma hatası: $e');
     }
@@ -201,14 +203,18 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
 
       final shouldProceed = await _showSponsorConfirmationDialog();
       if (!shouldProceed) {
-        Logger.info('👤 ProductDetailView - Kullanıcı sponsor işlemini iptal etti');
+        Logger.info(
+          '👤 ProductDetailView - Kullanıcı sponsor işlemini iptal etti',
+        );
         return;
       }
 
       final rewardEarned = await _adMobService.showRewardedAd();
 
       if (rewardEarned) {
-        Logger.info('🎉 ProductDetailView - Ödül kazanıldı, ürün sponsor ediliyor...');
+        Logger.info(
+          '🎉 ProductDetailView - Ödül kazanıldı, ürün sponsor ediliyor...',
+        );
 
         final vm = Provider.of<ProductViewModel>(context, listen: false);
         final sponsorSuccess = await vm.sponsorProduct(product.id);
@@ -232,7 +238,9 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
           }
         }
       } else {
-        Logger.warning('⚠️ ProductDetailView - Ödül kazanılmadı, sponsor işlemi iptal edildi');
+        Logger.warning(
+          '⚠️ ProductDetailView - Ödül kazanılmadı, sponsor işlemi iptal edildi',
+        );
         _adMobService.setAutoReloadRewardedAd(false);
         _showSponsorRetryMessage();
       }
@@ -254,7 +262,8 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     _scheduledCountdownTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!mounted) return;
       setState(() {});
-      if (_scheduledSponsorUntil != null && DateTime.now().isAfter(_scheduledSponsorUntil!)) {
+      if (_scheduledSponsorUntil != null &&
+          DateTime.now().isAfter(_scheduledSponsorUntil!)) {
         _scheduledCountdownTimer?.cancel();
       }
     });
@@ -277,7 +286,9 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
       final vm = Provider.of<ProductViewModel>(context, listen: false);
       final success = await vm.sponsorProduct(productId);
       if (success) {
-        Logger.info('✅ ProductDetailView - Planlanan sponsor aktivasyonu tamamlandı');
+        Logger.info(
+          '✅ ProductDetailView - Planlanan sponsor aktivasyonu tamamlandı',
+        );
         await vm.getProductDetail(widget.productId);
         if (mounted) {
           setState(() {
@@ -504,8 +515,6 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     if (h > 0) return '${h} sa ${m} dk';
     return '${m} dk';
   }
-
- 
 
   void _shareProduct(BuildContext context, Product product) {
     // API'den gelen shareLink'i kullan, yoksa varsayılan link oluştur
@@ -882,37 +891,39 @@ Takasly uygulamasından paylaşıldı.
               ),
             ],
           ),
-          body: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  controller: _scrollController,
-                  children: [
-                    _ImageCarousel(
-                      product: product,
-                      images: product.images,
-                      pageController: _pageController,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentImageIndex = index;
-                        });
-                      },
-                      currentIndex: _currentImageIndex,
-                    ),
-                    _ProductInfo(product: product),
-                  ],
+          body: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    controller: _scrollController,
+                    children: [
+                      _ImageCarousel(
+                        product: product,
+                        images: product.images,
+                        pageController: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentImageIndex = index;
+                          });
+                        },
+                        currentIndex: _currentImageIndex,
+                      ),
+                      _ProductInfo(product: product),
+                    ],
+                  ),
                 ),
-              ),
-              _ActionBar(
-                product: product,
-                onShowSnackBar: widget.onShowSnackBar,
-                onSponsorPressed: () => _handleSponsorProcess(product),
-                isProcessingSponsor: _isProcessingSponsor,
-                scheduledRemaining: _scheduledSponsorUntil != null
-                    ? _formatRemaining(_scheduledSponsorUntil!)
-                    : null,
-              ),
-            ],
+                _ActionBar(
+                  product: product,
+                  onShowSnackBar: widget.onShowSnackBar,
+                  onSponsorPressed: () => _handleSponsorProcess(product),
+                  isProcessingSponsor: _isProcessingSponsor,
+                  scheduledRemaining: _scheduledSponsorUntil != null
+                      ? _formatRemaining(_scheduledSponsorUntil!)
+                      : null,
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -1078,9 +1089,7 @@ class _ProductInfoState extends State<_ProductInfo> {
       context: context,
       builder: (context) => ReportDialog(
         reportedUserID: int.parse(product.ownerId),
-        reportedUserName:
-            product.userFullname ??
-            product.owner.name,
+        reportedUserName: product.userFullname ?? product.owner.name,
         productID: int.tryParse(product.id),
       ),
     );
@@ -1313,8 +1322,7 @@ class _ProductInfoState extends State<_ProductInfo> {
                 _InfoRow('İletişim :', widget.product.userPhone!),
               _InfoRow(
                 'Durum :',
-                widget.product.productCondition ??
-                    widget.product.condition,
+                widget.product.productCondition ?? widget.product.condition,
               ),
               _InfoRow('Kategori :', _getCategoryDisplayName(widget.product)),
 
@@ -2107,7 +2115,13 @@ class _ActionBar extends StatelessWidget {
   final bool isProcessingSponsor;
   final String? scheduledRemaining;
 
-  const _ActionBar({required this.product, this.onShowSnackBar, this.onSponsorPressed, this.isProcessingSponsor = false, this.scheduledRemaining});
+  const _ActionBar({
+    required this.product,
+    this.onShowSnackBar,
+    this.onSponsorPressed,
+    this.isProcessingSponsor = false,
+    this.scheduledRemaining,
+  });
 
   Future<void> _startChat(BuildContext context) async {
     final authViewModel = context.read<AuthViewModel>();
@@ -2274,8 +2288,12 @@ class _ActionBar extends StatelessWidget {
     final authViewModel = context.read<AuthViewModel>();
     final isOwnProduct = authViewModel.currentUser?.id == product.ownerId;
 
+    // Redmi ve diğer cihazlarda sanal tuşlar için bottom padding
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final additionalPadding = bottomPadding > 0 ? bottomPadding + 8.0 : 16.0;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, additionalPadding),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         boxShadow: AppTheme.cardShadow,
@@ -2303,10 +2321,13 @@ class _ActionBar extends StatelessWidget {
         return 'Bilinmiyor';
       }
     }
+
     // Sponsor durumu
     bool isSponsorActive = false;
     String? sponsorUntil = product.sponsorUntil;
-    if (product.isSponsor == true && sponsorUntil != null && sponsorUntil.isNotEmpty) {
+    if (product.isSponsor == true &&
+        sponsorUntil != null &&
+        sponsorUntil.isNotEmpty) {
       try {
         final end = DateTime.parse(sponsorUntil);
         isSponsorActive = DateTime.now().isBefore(end);
@@ -2383,7 +2404,11 @@ class _ActionBar extends StatelessWidget {
           width: double.infinity,
           height: 45,
           child: ElevatedButton.icon(
-            onPressed: (isProcessingSponsor || scheduledRemaining != null || isSponsorActive || (product.isSponsor == true))
+            onPressed:
+                (isProcessingSponsor ||
+                    scheduledRemaining != null ||
+                    isSponsorActive ||
+                    (product.isSponsor == true))
                 ? null
                 : onSponsorPressed,
             icon: isProcessingSponsor
@@ -2400,19 +2425,18 @@ class _ActionBar extends StatelessWidget {
               isProcessingSponsor
                   ? 'İşleniyor...'
                   : (isSponsorActive
-                      ? 'Vitrin Aktif'
-                      : (scheduledRemaining != null
-                          ? 'Tekrar Öne Çıkarmak İçin: $scheduledRemaining'
-                          : 'Reklam İzle ve Öne Çıkar')),
+                        ? 'Vitrin Aktif'
+                        : (scheduledRemaining != null
+                              ? 'Tekrar Öne Çıkarmak İçin: $scheduledRemaining'
+                              : 'Reklam İzle ve Öne Çıkar')),
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isSponsorActive
-                      ? Colors.orange.shade600
-                      : (scheduledRemaining != null
-                          ? Colors.blueGrey
-                          : AppTheme.primary),
+              backgroundColor: isSponsorActive
+                  ? Colors.orange.shade600
+                  : (scheduledRemaining != null
+                        ? Colors.blueGrey
+                        : AppTheme.primary),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: AppTheme.borderRadius,
