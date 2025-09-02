@@ -208,23 +208,28 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
       final rewardEarned = await _adMobService.showRewardedAd();
 
       if (rewardEarned) {
-        Logger.info('🎉 ProductDetailView - Ödül kazanıldı, aktivasyon 1 saat sonra planlanıyor...');
-        final scheduledTime = DateTime.now().add(const Duration(hours: 1));
-        if (mounted) {
-          setState(() {
-            _scheduledSponsorUntil = scheduledTime;
-          });
-        }
-        _startScheduledCountdown();
-        _scheduleSponsorActivation(product.id, scheduledTime);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('İlanınız 1 saat sonra öne çıkarılacak.'),
-              backgroundColor: Colors.blue,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+        Logger.info('🎉 ProductDetailView - Ödül kazanıldı, ürün sponsor ediliyor...');
+
+        final vm = Provider.of<ProductViewModel>(context, listen: false);
+        final sponsorSuccess = await vm.sponsorProduct(product.id);
+
+        if (sponsorSuccess) {
+          Logger.info('✅ ProductDetailView - Ürün başarıyla sponsor edildi');
+          await vm.getProductDetail(widget.productId);
+          if (mounted) {
+            setState(() {
+              _scheduledSponsorUntil = null; // planlama kullanılmıyor
+            });
+          }
+          _showSponsorSuccessMessage();
+        } else {
+          final errorMessage = vm.errorMessage ?? '';
+          if (errorMessage.contains('Zaten aktif öne çıkarılmış') ||
+              errorMessage.contains('Bir saat içinde sadece bir ürün')) {
+            _showSponsorLimitErrorMessage(errorMessage);
+          } else {
+            _showSponsorErrorMessage();
+          }
         }
       } else {
         Logger.warning('⚠️ ProductDetailView - Ödül kazanılmadı, sponsor işlemi iptal edildi');
