@@ -1283,11 +1283,7 @@ class ProductViewModel extends ChangeNotifier {
       return false;
     }
 
-    if (tradePreferences.isEmpty) {
-    
-      _setError('Takas tercihlerinizi belirtmelisiniz');
-      return false;
-    }
+    // Takas tercihleri opsiyoneldir; boş olabilir
 
  
     _setLoading(true);
@@ -1923,11 +1919,7 @@ class ProductViewModel extends ChangeNotifier {
       return false;
     }
 
-    if (tradeFor.trim().isEmpty) {
-     
-      _setError('Takas tercihi belirtmelisiniz');
-      return false;
-    }
+    // Takas tercihi opsiyoneldir; boş olabilir
 
     // Resim validasyonu - en az bir resim gerekli
     if (productImages.isEmpty) {
