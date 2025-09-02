@@ -517,7 +517,13 @@ Takasly uygulamasından paylaşıldı.
 
 ''';
 
-    // WhatsApp ve diğer platformlar için özel paylaşım seçenekleri
+    // iOS: doğrudan sistem paylaşımı, Android: özel alt sayfa
+    if (Platform.isIOS) {
+      _shareToOtherApps(shareText, product.title);
+      return;
+    }
+
+    // Android için WhatsApp ve diğer platformlar seçenekleri
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -545,7 +551,7 @@ Takasly uygulamasından paylaşıldı.
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // WhatsApp Paylaşım
+                  // WhatsApp Paylaşım (sadece Android)
                   ListTile(
                     leading: Container(
                       width: 40,
