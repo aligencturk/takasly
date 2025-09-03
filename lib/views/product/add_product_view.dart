@@ -664,10 +664,10 @@ class _AddProductViewState extends State<AddProductView> {
         Logger.warning(
           '⚠️ AddProductView - Ödül kazanılmadı, sponsor işlemi iptal edildi',
         );
-        
+
         // Ödüllü reklam iptal edildikten sonra otomatik yükleme durdur
         _adMobService.setAutoReloadRewardedAd(false);
-        
+
         _showSponsorRetryMessage();
       }
     } catch (e) {
@@ -1107,7 +1107,8 @@ class _AddProductViewState extends State<AddProductView> {
             (_selectedCityId !=
                 null); // İl bilgisi varsa adım tamamlanmış sayılır
       case 4:
-        return true; // Takas tercihi opsiyonel
+        // Takas tercihi opsiyonel; sadece kullanıcı metin girdiyse tamamlandı say
+        return _tradeForController.text.trim().isNotEmpty;
       case 5:
         return false; // Bu adım hiçbir zaman otomatik tamamlanmış sayılmaz
       default:
@@ -1665,9 +1666,9 @@ class _AddProductViewState extends State<AddProductView> {
                 const SizedBox(height: 8),
                 Text(
                   'Bu alan zorunlu değildir. Daha spesifik olursanız, uygun takas teklifleri alma şansınız artar.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.blue.shade700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.blue.shade700),
                 ),
               ],
             ),
