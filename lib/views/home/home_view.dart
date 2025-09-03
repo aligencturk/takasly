@@ -392,8 +392,28 @@ class _HomeViewState extends State<HomeView> {
           listen: false,
         );
 
-        // Mevcut filtreleri koruyarak yenile
-        await productViewModel.refreshProducts();
+        try {
+          // Pull-to-refresh: konum izni varsa otomatik en yakın sıralamasını uygula
+          final locationService = LocationService();
+          final hasPermission = await locationService.checkLocationPermission();
+          final isLocationEnabled =
+              hasPermission && await locationService.isLocationServiceEnabled();
+
+          if (isLocationEnabled) {
+            Logger.info('📍 Pull-to-refresh: En yakın sıralaması uygulanıyor');
+            await productViewModel.applyFilter(
+              productViewModel.currentFilter.copyWith(sortType: 'location'),
+            );
+          } else {
+            Logger.warning(
+              '⚠️ Pull-to-refresh: Konum izni/servisi yok, varsayılan yenileme',
+            );
+            await productViewModel.refreshProducts();
+          }
+        } catch (e) {
+          Logger.error('❌ Pull-to-refresh sırasında hata: $e', error: e);
+          await productViewModel.refreshProducts();
+        }
 
         // UI'ın yenilenmesini garanti altına al
         if (mounted) {
