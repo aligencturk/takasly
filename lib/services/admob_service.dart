@@ -9,20 +9,22 @@ class AdMobService {
   factory AdMobService() => _instance;
   AdMobService._internal();
 
-
-
-
-
   bool _isInitialized = false;
 
   // Production Ad Unit IDs
-  static const String _androidNativeAdUnitIdProd = 'ca-app-pub-3600325889588673/5822213790';
-  static const String _androidBannerAdUnitIdProd = 'ca-app-pub-3600325889588673/7805712447';
-  static const String _androidRewardedAdUnitIdProd = 'ca-app-pub-3600325889588673/8337136804';
+  static const String _androidNativeAdUnitIdProd =
+      'ca-app-pub-3600325889588673/5822213790';
+  static const String _androidBannerAdUnitIdProd =
+      'ca-app-pub-3600325889588673/7805712447';
+  static const String _androidRewardedAdUnitIdProd =
+      'ca-app-pub-3600325889588673/4220640906';
 
-  static const String _iosNativeAdUnitIdProd = 'ca-app-pub-3600325889588673/1202018911';
-  static const String _iosBannerAdUnitIdProd = 'ca-app-pub-3600325889588673/3365147820';
-  static const String _iosRewardedAdUnitIdProd = 'ca-app-pub-3600325889588673/1633441360';
+  static const String _iosNativeAdUnitIdProd =
+      'ca-app-pub-3600325889588673/1202018911';
+  static const String _iosBannerAdUnitIdProd =
+      'ca-app-pub-3600325889588673/3365147820';
+  static const String _iosRewardedAdUnitIdProd =
+      'ca-app-pub-3600325889588673/1633441360';
 
   // Native Ad değişkenleri
   NativeAd? _nativeAd;
@@ -32,7 +34,9 @@ class AdMobService {
   Timer? _retryTimer;
   int _retryCount = 0;
   static const int _maxRetries = 5; // iOS için daha fazla deneme
-  static const Duration _retryDelay = Duration(seconds: 10); // iOS için daha uzun bekleme
+  static const Duration _retryDelay = Duration(
+    seconds: 10,
+  ); // iOS için daha uzun bekleme
 
   // Rewarded Ad değişkenleri
   RewardedAd? _rewardedAd;
@@ -68,10 +72,8 @@ class AdMobService {
     _isInitializing = true;
 
     try {
-
       // WidgetsFlutterBinding'in hazır olduğundan emin ol
       if (!WidgetsBinding.instance.isRootWidgetAttached) {
-        
         await Future.delayed(const Duration(milliseconds: 1000));
       }
 
@@ -85,9 +87,7 @@ class AdMobService {
       try {
         await MobileAds.instance.setAppMuted(true);
         await MobileAds.instance.setAppVolume(0.0);
-      } catch (e) {
-      
-      }
+      } catch (e) {}
 
       // GEÇİCİ TEST modunda config - Production reklamlar aktif olduğunda kaldır
       RequestConfiguration requestConfig = RequestConfiguration(
@@ -102,11 +102,10 @@ class AdMobService {
 
       _isInitialized = true;
       _initCompleter.complete();
-      
+
       // Platform bilgilerini logla
       if (Platform.isIOS) {
-      } else if (Platform.isAndroid) {
-      }
+      } else if (Platform.isAndroid) {}
     } catch (e) {
       _isInitialized = false;
       _initCompleter.completeError(e);
@@ -114,7 +113,6 @@ class AdMobService {
       _isInitializing = false;
     }
   }
-
 
   /// Native Ad Unit ID'sini al (Production only)
   String get nativeAdUnitId {
@@ -168,7 +166,6 @@ class AdMobService {
 
     // Eğer daha önce hata aldıysak ve maksimum deneme sayısına ulaştıysak, tekrar deneme
     if (_hasFailed && _retryCount >= _maxRetries) {
-   
       return;
     }
 
@@ -184,12 +181,9 @@ class AdMobService {
     _retryCount++;
 
     try {
-  
-
       // Reklam yükleme işlemini arka planda yap
       await _loadAdInBackground();
     } catch (e) {
-    
       _handleLoadError();
     } finally {
       _isLoading = false;
@@ -206,7 +200,6 @@ class AdMobService {
 
       return true;
     } catch (e) {
-      
       return false;
     }
   }
@@ -239,34 +232,21 @@ class AdMobService {
         request: adRequest,
         listener: NativeAdListener(
           onAdLoaded: (ad) {
-          
             _isAdLoaded = true;
             _hasFailed = false;
             _retryCount = 0; // Başarılı yüklemede sayacı sıfırla
           },
           onAdFailedToLoad: (ad, error) {
-            
-            
             // iOS için özel hata yönetimi
-            if (Platform.isIOS) {
-              
-            }
-            
+            if (Platform.isIOS) {}
+
             _handleLoadError();
             _safeDisposeAd(ad as NativeAd);
           },
-          onAdClicked: (ad) {
-           
-          },
-          onAdImpression: (ad) {
-           
-          },
-          onAdOpened: (ad) {
-           
-          },
-          onAdClosed: (ad) {
-           
-          },
+          onAdClicked: (ad) {},
+          onAdImpression: (ad) {},
+          onAdOpened: (ad) {},
+          onAdClosed: (ad) {},
         ),
       );
 
@@ -278,7 +258,6 @@ class AdMobService {
         },
       );
     } catch (e) {
-      
       // Hata durumunda reklamı temizle
       await _disposeCurrentAd();
       rethrow;
@@ -289,9 +268,7 @@ class AdMobService {
   void _safeDisposeAd(NativeAd ad) {
     try {
       ad.dispose();
-    } catch (e) {
-
-    }
+    } catch (e) {}
   }
 
   // Hata durumunu işle
@@ -304,7 +281,6 @@ class AdMobService {
 
     // Eğer maksimum deneme sayısına ulaşmadıysak, tekrar dene
     if (_retryCount < _maxRetries) {
-      
       _retryTimer?.cancel();
       _retryTimer = Timer(_retryDelay, () {
         if (!_isLoading) {
@@ -317,12 +293,9 @@ class AdMobService {
   // Mevcut reklamı temizle
   Future<void> _disposeCurrentAd() async {
     if (_nativeAd != null) {
-      
       try {
         _nativeAd!.dispose();
-      } catch (e) {
-        
-      }
+      } catch (e) {}
       _nativeAd = null;
       _isAdLoaded = false;
     }
@@ -333,12 +306,10 @@ class AdMobService {
     try {
       // Eğer nativeAd objesi varsa ama _isAdLoaded false ise, true döndür
       if (_nativeAd != null && !_isAdLoaded && _isAdValid()) {
-        
         _isAdLoaded = true;
       }
       return _isAdLoaded && _isAdValid();
     } catch (e) {
-      
       return false;
     }
   }
@@ -351,7 +322,6 @@ class AdMobService {
       }
       return null;
     } catch (e) {
-      
       return null;
     }
   }
@@ -359,24 +329,20 @@ class AdMobService {
   /// Ödüllü reklam yükle
   Future<void> loadRewardedAd() async {
     if (!_isInitialized) {
-      
       await initialize();
     }
 
     // Eğer zaten yükleniyorsa veya yüklüyse, bekle
     if (_isRewardedAdLoading) {
-      
       return;
     }
 
     if (_isRewardedAdLoaded && _rewardedAd != null) {
-      
       return;
     }
 
     // Maksimum deneme sayısına ulaştıysak, çık
     if (_rewardedAdFailed && _rewardedAdRetryCount >= _maxRetries) {
-     
       return;
     }
 
@@ -384,8 +350,6 @@ class AdMobService {
     _rewardedAdRetryCount++;
 
     try {
-     
-
       // Eski reklamı temizle
       if (_rewardedAd != null) {
         _rewardedAd!.dispose();
@@ -405,7 +369,6 @@ class AdMobService {
         request: adRequest,
         rewardedAdLoadCallback: RewardedAdLoadCallback(
           onAdLoaded: (RewardedAd ad) {
-
             _rewardedAd = ad;
             _isRewardedAdLoaded = true;
             _rewardedAdFailed = false;
@@ -413,27 +376,21 @@ class AdMobService {
             _isRewardedAdLoading = false;
           },
           onAdFailedToLoad: (LoadAdError error) {
-    
-            
             // iOS için özel hata yönetimi
-            if (Platform.isIOS) {
-            
-            }
-            
+            if (Platform.isIOS) {}
+
             _rewardedAdFailed = true;
             _isRewardedAdLoaded = false;
             _isRewardedAdLoading = false;
 
             // Retry logic
             if (_rewardedAdRetryCount < _maxRetries) {
-             
               Timer(_retryDelay, () => loadRewardedAd());
             }
           },
         ),
       );
     } catch (e) {
-    
       _rewardedAdFailed = true;
       _isRewardedAdLoaded = false;
       _isRewardedAdLoading = false;
@@ -458,8 +415,10 @@ class AdMobService {
           Logger.info('🎬 AdMobService - Ödüllü reklam tam ekran gösterildi');
         },
         onAdDismissedFullScreenContent: (RewardedAd ad) {
-          Logger.info('🎬 AdMobService - Ödüllü reklam kapatıldı, ödül: $rewardEarned');
-          
+          Logger.info(
+            '🎬 AdMobService - Ödüllü reklam kapatıldı, ödül: $rewardEarned',
+          );
+
           ad.dispose();
           _rewardedAd = null;
           _isRewardedAdLoaded = false;
@@ -471,15 +430,21 @@ class AdMobService {
 
           // Sadece ödül kazanıldıysa otomatik yeni reklam yükle
           if (_autoReloadRewardedAd && rewardEarned) {
-            Logger.info('🔄 AdMobService - Ödül kazanıldı, yeni reklam yükleniyor...');
+            Logger.info(
+              '🔄 AdMobService - Ödül kazanıldı, yeni reklam yükleniyor...',
+            );
             Future.microtask(() => loadRewardedAd());
           } else {
-            Logger.info('⏸️ AdMobService - Ödül kazanılmadı, otomatik reklam yükleme durduruldu');
+            Logger.info(
+              '⏸️ AdMobService - Ödül kazanılmadı, otomatik reklam yükleme durduruldu',
+            );
           }
         },
         onAdFailedToShowFullScreenContent: (RewardedAd ad, AdError error) {
-          Logger.error('❌ AdMobService - Ödüllü reklam gösterilemedi: ${error.message}');
-          
+          Logger.error(
+            '❌ AdMobService - Ödüllü reklam gösterilemedi: ${error.message}',
+          );
+
           ad.dispose();
           _rewardedAd = null;
           _isRewardedAdLoaded = false;
@@ -492,7 +457,9 @@ class AdMobService {
 
       await _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-          Logger.info('🎉 AdMobService - Ödül kazanıldı: ${reward.amount} ${reward.type}');
+          Logger.info(
+            '🎉 AdMobService - Ödül kazanıldı: ${reward.amount} ${reward.type}',
+          );
           rewardEarned = true;
         },
       );
@@ -514,7 +481,6 @@ class AdMobService {
 
   /// Reklamı temizle
   void dispose() {
-   
     _retryTimer?.cancel();
     _disposeCurrentAd();
 
@@ -528,7 +494,6 @@ class AdMobService {
 
   /// Yeni reklam yükle (mevcut reklamı temizleyip)
   Future<void> reloadAd() async {
-   
     _retryTimer?.cancel();
     _retryCount = 0;
     _hasFailed = false;
@@ -538,7 +503,6 @@ class AdMobService {
 
   /// Hata durumunu sıfırla (yeniden deneme için)
   void resetFailedState() {
-  
     _retryTimer?.cancel();
     _hasFailed = false;
     _retryCount = 0;
@@ -551,16 +515,20 @@ class AdMobService {
 
   /// Ödüllü reklam otomatik yükleme durumunu kontrol et
   bool get autoReloadRewardedAd => _autoReloadRewardedAd;
-  
+
   /// Ödüllü reklam otomatik yükleme durumunu ayarla
   void setAutoReloadRewardedAd(bool enabled) {
     _autoReloadRewardedAd = enabled;
-    Logger.info('🔄 AdMobService - Ödüllü reklam otomatik yükleme: ${enabled ? "açık" : "kapalı"}');
+    Logger.info(
+      '🔄 AdMobService - Ödüllü reklam otomatik yükleme: ${enabled ? "açık" : "kapalı"}',
+    );
   }
-  
+
   /// Ödüllü reklamı manuel olarak yeniden yükle
   Future<void> reloadRewardedAd() async {
-    Logger.info('🔄 AdMobService - Ödüllü reklam manuel olarak yeniden yükleniyor...');
+    Logger.info(
+      '🔄 AdMobService - Ödüllü reklam manuel olarak yeniden yükleniyor...',
+    );
     await loadRewardedAd();
   }
 }
