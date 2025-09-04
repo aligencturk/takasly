@@ -387,7 +387,10 @@ class _EditProductViewState extends State<EditProductView> {
                             SizedBox(height: 16),
                             Text(
                               'İlan güncelleniyor...',
-                              style: TextStyle(color: Colors.white, fontSize: 16),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
                             ),
                           ],
                         ),
@@ -2293,10 +2296,10 @@ class _EditProductViewState extends State<EditProductView> {
         Logger.warning(
           '⚠️ EditProductView - Ödül kazanılmadı, sponsor işlemi iptal edildi',
         );
-        
+
         // Ödüllü reklam iptal edildikten sonra otomatik yükleme durdur
         _adMobService.setAutoReloadRewardedAd(false);
-        
+
         _showSponsorRetryMessage();
       }
     } catch (e) {
@@ -2333,7 +2336,7 @@ class _EditProductViewState extends State<EditProductView> {
             ],
           ),
           content: Text(
-            'Ödüllü reklam izleyerek ilanınızı 1 saat boyunca öne çıkarmak istiyor musunuz?\n\nİlanınız anasayfada en üstte mavi çerçeve ile gösterilecek.',
+            'Ödüllü reklam izleyerek ilanınızı 1 saat boyunca öne çıkarmak istiyor musunuz?\n\nİlanınız anasayfada en üstte özel renkli çerçeve ile gösterilecek.',
             style: TextStyle(fontSize: 14, height: 1.4),
           ),
           actions: [

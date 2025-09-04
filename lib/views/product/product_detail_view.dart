@@ -334,7 +334,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
             ],
           ),
           content: const Text(
-            'Ödüllü reklam izleyerek ilanınızı 1 saat boyunca öne çıkarmak ister misiniz?\n\nİlanınız anasayfada en üstte mavi çerçeve ile gösterilecek.',
+            'Ödüllü reklam izleyerek ilanınızı 1 saat boyunca öne çıkarmak ister misiniz?\n\nİlanınız anasayfada en üstte özel renkli çerçeve ile gösterilecek.',
             style: TextStyle(fontSize: 14, height: 1.4),
           ),
           actions: [
