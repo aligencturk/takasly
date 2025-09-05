@@ -363,7 +363,7 @@ class AdMobService {
         nonPersonalizedAds: false,
       );
 
-      // Ödüllü reklam yükle
+      // Ödüllü reklam yükle - timeout ile
       await RewardedAd.load(
         adUnitId: rewardedAdUnitId,
         request: adRequest,
@@ -389,6 +389,11 @@ class AdMobService {
             }
           },
         ),
+      ).timeout(
+        const Duration(seconds: 10), // Daha kısa timeout
+        onTimeout: () {
+          throw TimeoutException('Ödüllü reklam yükleme zaman aşımı');
+        },
       );
     } catch (e) {
       _rewardedAdFailed = true;
@@ -454,6 +459,15 @@ class AdMobService {
           }
         },
       );
+
+      // Android'de üstte boşluk kalmaması için immersive mode aktif et
+      if (Platform.isAndroid) {
+        try {
+          await _rewardedAd!.setImmersiveMode(true);
+        } catch (e) {
+          Logger.warning('⚠️ AdMobService - Immersive mode ayarlanamadı: $e');
+        }
+      }
 
       await _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {

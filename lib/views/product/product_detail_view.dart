@@ -154,8 +154,9 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   int _currentImageIndex = 0;
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0.0;
-  final AdMobService _adMobService = AdMobService();
+  late final AdMobService _adMobService;
   bool _isProcessingSponsor = false;
+  bool _isRewardedAdReady = false;
   DateTime? _scheduledSponsorUntil;
   Timer? _scheduledActivationTimer;
   Timer? _scheduledCountdownTimer;
@@ -163,6 +164,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   @override
   void initState() {
     super.initState();
+    _adMobService = AdMobService(); // Singleton instance
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ProductViewModel>(
@@ -184,12 +186,34 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   Future<void> _initializeAdMob() async {
     try {
       await _adMobService.initialize();
-      await _adMobService.loadRewardedAd();
-      Logger.info(
-        '✅ ProductDetailView - AdMob başlatıldı ve ödüllü reklam yüklendi',
-      );
+      
+      // Reklamı arka planda yükle, UI'ı bloklamasın
+      _adMobService.loadRewardedAd().then((_) {
+        if (mounted) {
+          setState(() {
+            _isRewardedAdReady = _adMobService.isRewardedAdLoaded;
+          });
+        }
+        Logger.info(
+          '✅ ProductDetailView - Ödüllü reklam yüklendi: $_isRewardedAdReady',
+        );
+      }).catchError((e) {
+        Logger.error('❌ ProductDetailView - Reklam yükleme hatası: $e');
+        if (mounted) {
+          setState(() {
+            _isRewardedAdReady = false;
+          });
+        }
+      });
+      
+      Logger.info('✅ ProductDetailView - AdMob başlatıldı, reklam yükleniyor...');
     } catch (e) {
       Logger.error('❌ ProductDetailView - AdMob başlatma hatası: $e');
+      if (mounted) {
+        setState(() {
+          _isRewardedAdReady = false;
+        });
+      }
     }
   }
 
@@ -209,6 +233,30 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         return;
       }
 
+      // Reklam durumunu kontrol et ve gerekirse yükle
+      if (!_isRewardedAdReady) {
+        Logger.warning(
+          '⚠️ ProductDetailView - Reklam henüz yüklenmemiş, anında yükleniyor...',
+        );
+        
+        // Reklamı anında yüklemeye çalış
+        await _adMobService.loadRewardedAd();
+        
+        if (mounted) {
+          setState(() {
+            _isRewardedAdReady = _adMobService.isRewardedAdLoaded;
+          });
+        }
+        
+        if (!_isRewardedAdReady) {
+          Logger.error('❌ ProductDetailView - Reklam yüklenemedi');
+          _showSponsorErrorMessage(
+            'Reklam yüklenemedi. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.',
+          );
+          return;
+        }
+      }
+
       final rewardEarned = await _adMobService.showRewardedAd();
 
       if (rewardEarned) {
@@ -225,9 +273,19 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
           if (mounted) {
             setState(() {
               _scheduledSponsorUntil = null; // planlama kullanılmıyor
+              _isRewardedAdReady = false; // Reklam kullanıldı, yeniden yükle
             });
           }
           _showSponsorSuccessMessage();
+
+          // Yeni reklam yükle
+          _adMobService.loadRewardedAd().then((_) {
+            if (mounted) {
+              setState(() {
+                _isRewardedAdReady = _adMobService.isRewardedAdLoaded;
+              });
+            }
+          });
         } else {
           final errorMessage = vm.errorMessage ?? '';
           if (errorMessage.contains('Zaten aktif öne çıkarılmış') ||
@@ -404,18 +462,19 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
     }
   }
 
-  void _showSponsorErrorMessage() {
+  void _showSponsorErrorMessage([String? customMessage]) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
-            children: const [
-              Icon(Icons.error_outline, color: Colors.white, size: 20),
-              SizedBox(width: 12),
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Öne çıkarma işlemi başarısız oldu. Lütfen daha sonra tekrar deneyin.',
-                  style: TextStyle(fontSize: 16),
+                  customMessage ??
+                      'Öne çıkarma işlemi başarısız oldu. Lütfen daha sonra tekrar deneyin.',
+                  style: const TextStyle(fontSize: 16),
                 ),
               ),
             ],
@@ -460,6 +519,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
             textColor: Colors.white,
             onPressed: () {
               _adMobService.setAutoReloadRewardedAd(true);
+              
               final vm = Provider.of<ProductViewModel>(context, listen: false);
               final product = vm.selectedProduct;
               if (product != null) {
@@ -918,6 +978,7 @@ Takasly uygulamasından paylaşıldı.
                   onShowSnackBar: widget.onShowSnackBar,
                   onSponsorPressed: () => _handleSponsorProcess(product),
                   isProcessingSponsor: _isProcessingSponsor,
+                  isRewardedAdReady: _isRewardedAdReady,
                   scheduledRemaining: _scheduledSponsorUntil != null
                       ? _formatRemaining(_scheduledSponsorUntil!)
                       : null,
@@ -2113,6 +2174,7 @@ class _ActionBar extends StatelessWidget {
   final void Function(String message, {bool error})? onShowSnackBar;
   final VoidCallback? onSponsorPressed;
   final bool isProcessingSponsor;
+  final bool isRewardedAdReady;
   final String? scheduledRemaining;
 
   const _ActionBar({
@@ -2120,6 +2182,7 @@ class _ActionBar extends StatelessWidget {
     this.onShowSnackBar,
     this.onSponsorPressed,
     this.isProcessingSponsor = false,
+    this.isRewardedAdReady = false,
     this.scheduledRemaining,
   });
 
