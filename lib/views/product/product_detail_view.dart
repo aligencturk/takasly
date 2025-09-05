@@ -186,27 +186,32 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
   Future<void> _initializeAdMob() async {
     try {
       await _adMobService.initialize();
-      
+
       // Reklamı arka planda yükle, UI'ı bloklamasın
-      _adMobService.loadRewardedAd().then((_) {
-        if (mounted) {
-          setState(() {
-            _isRewardedAdReady = _adMobService.isRewardedAdLoaded;
+      _adMobService
+          .loadRewardedAd()
+          .then((_) {
+            if (mounted) {
+              setState(() {
+                _isRewardedAdReady = _adMobService.isRewardedAdLoaded;
+              });
+            }
+            Logger.info(
+              '✅ ProductDetailView - Ödüllü reklam yüklendi: $_isRewardedAdReady',
+            );
+          })
+          .catchError((e) {
+            Logger.error('❌ ProductDetailView - Reklam yükleme hatası: $e');
+            if (mounted) {
+              setState(() {
+                _isRewardedAdReady = false;
+              });
+            }
           });
-        }
-        Logger.info(
-          '✅ ProductDetailView - Ödüllü reklam yüklendi: $_isRewardedAdReady',
-        );
-      }).catchError((e) {
-        Logger.error('❌ ProductDetailView - Reklam yükleme hatası: $e');
-        if (mounted) {
-          setState(() {
-            _isRewardedAdReady = false;
-          });
-        }
-      });
-      
-      Logger.info('✅ ProductDetailView - AdMob başlatıldı, reklam yükleniyor...');
+
+      Logger.info(
+        '✅ ProductDetailView - AdMob başlatıldı, reklam yükleniyor...',
+      );
     } catch (e) {
       Logger.error('❌ ProductDetailView - AdMob başlatma hatası: $e');
       if (mounted) {
@@ -238,16 +243,16 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         Logger.warning(
           '⚠️ ProductDetailView - Reklam henüz yüklenmemiş, anında yükleniyor...',
         );
-        
+
         // Reklamı anında yüklemeye çalış
         await _adMobService.loadRewardedAd();
-        
+
         if (mounted) {
           setState(() {
             _isRewardedAdReady = _adMobService.isRewardedAdLoaded;
           });
         }
-        
+
         if (!_isRewardedAdReady) {
           Logger.error('❌ ProductDetailView - Reklam yüklenemedi');
           _showSponsorErrorMessage(
@@ -257,7 +262,13 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
         }
       }
 
+      // Immersive mode'u aktif et
+      await _adMobService.enableImmersiveMode();
+
       final rewardEarned = await _adMobService.showRewardedAd();
+
+      // Immersive mode'u deaktif et
+      await _adMobService.disableImmersiveMode();
 
       if (rewardEarned) {
         Logger.info(
@@ -519,7 +530,7 @@ class _ProductDetailBodyState extends State<_ProductDetailBody> {
             textColor: Colors.white,
             onPressed: () {
               _adMobService.setAutoReloadRewardedAd(true);
-              
+
               final vm = Provider.of<ProductViewModel>(context, listen: false);
               final product = vm.selectedProduct;
               if (product != null) {

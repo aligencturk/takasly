@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:takasly/utils/logger.dart';
 
@@ -57,6 +58,9 @@ class AdMobService {
 
   // Ödüllü reklam otomatik yükleme kontrolü
   bool _autoReloadRewardedAd = true;
+
+  // Method channel for immersive mode
+  static const MethodChannel _channel = MethodChannel('takasly/immersive_mode');
 
   /// AdMob'u başlat
   Future<void> initialize() async {
@@ -460,13 +464,12 @@ class AdMobService {
         },
       );
 
-      // Android'de üstte boşluk kalmaması için immersive mode aktif et
-      if (Platform.isAndroid) {
-        try {
-          await _rewardedAd!.setImmersiveMode(true);
-        } catch (e) {
-          Logger.warning('⚠️ AdMobService - Immersive mode ayarlanamadı: $e');
-        }
+      // Tam ekran için immersive mode aktif et
+      try {
+        await _rewardedAd!.setImmersiveMode(true);
+        Logger.info('🎬 AdMobService - Immersive mode aktif edildi');
+      } catch (e) {
+        Logger.warning('⚠️ AdMobService - Immersive mode ayarlanamadı: $e');
       }
 
       await _rewardedAd!.show(
@@ -544,5 +547,29 @@ class AdMobService {
       '🔄 AdMobService - Ödüllü reklam manuel olarak yeniden yükleniyor...',
     );
     await loadRewardedAd();
+  }
+
+  /// Immersive mode'u aktif et
+  Future<void> enableImmersiveMode() async {
+    try {
+      if (Platform.isAndroid) {
+        await _channel.invokeMethod('enableImmersiveMode');
+        Logger.info('🎬 AdMobService - Immersive mode aktif edildi');
+      }
+    } catch (e) {
+      Logger.warning('⚠️ AdMobService - Immersive mode aktif edilemedi: $e');
+    }
+  }
+
+  /// Immersive mode'u deaktif et
+  Future<void> disableImmersiveMode() async {
+    try {
+      if (Platform.isAndroid) {
+        await _channel.invokeMethod('disableImmersiveMode');
+        Logger.info('🎬 AdMobService - Immersive mode deaktif edildi');
+      }
+    } catch (e) {
+      Logger.warning('⚠️ AdMobService - Immersive mode deaktif edilemedi: $e');
+    }
   }
 }
