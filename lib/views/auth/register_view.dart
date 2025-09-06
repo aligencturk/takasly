@@ -127,20 +127,6 @@ class _RegisterFormState extends State<_RegisterForm> {
   Future<void> _submitRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Önce üyelik sözleşmesi göster
-    final membershipAccepted = await _showMembershipDialog();
-
-    // Eğer üyelik sözleşmesi reddedildiyse işlemi durdur
-    if (membershipAccepted != true) {
-      _showErrorSnackBar(
-        'Kayıt işlemi için üyelik sözleşmesi kabul edilmelidir.',
-      );
-      return;
-    }
-
-    // KVKK metni zaten _showMembershipDialog içinde gösterildi
-    // Burada sadece kayıt işlemini başlat
-
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
     Logger.debug('🚀 Kayıt işlemi başlatılıyor...', tag: 'RegisterView');
@@ -153,14 +139,15 @@ class _RegisterFormState extends State<_RegisterForm> {
       tag: 'RegisterView',
     );
 
+    // Önce kayıt işlemini dene (sözleşmeler olmadan)
     final success = await authViewModel.register(
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
       phone: PhoneFormatter.prepareForApi(_phoneController.text.trim()),
-      policy: true, // Üyelik sözleşmesi kabul edildi
-      kvkk: true, // KVKK kabul edildi
+      policy: false, // Geçici olarak false
+      kvkk: false, // Geçici olarak false
     );
 
     Logger.debug('📊 Kayıt sonucu: $success', tag: 'RegisterView');
@@ -175,27 +162,42 @@ class _RegisterFormState extends State<_RegisterForm> {
 
     if (mounted) {
       if (success) {
-        // Kayıt başarılı -> codeToken mutlaka alınmalı, aksi halde yönlendirme yapılmaz
+        // Kayıt başarılı, şimdi sözleşmeleri göster
         Logger.debug(
-          '✅ Kayıt başarılı, doğrulama kodu gönderilecek ve codeToken alınacak...',
+          '✅ Kayıt başarılı, sözleşmeler gösteriliyor...',
           tag: 'RegisterView',
         );
 
-        // Kayıt başarılı, doğrudan email verification sayfasına yönlendir
-        Logger.debug(
-          '✅ Kayıt başarılı, email verification sayfasına yönlendiriliyor...',
-          tag: 'RegisterView',
-        );
+        // Sözleşmeleri göster
+        final membershipAccepted = await _showMembershipDialog();
 
-        // Email verification sayfasına yönlendir
-        Navigator.of(context).pushReplacementNamed(
-          '/email-verification',
-          arguments: {
-            'email': _emailController.text.trim(),
-            'codeToken':
-                null, // codeToken email verification sayfasında alınacak
-          },
-        );
+        // Eğer sözleşmeler kabul edildiyse email verification'a git
+        if (membershipAccepted == true) {
+          Logger.debug(
+            '✅ Sözleşmeler kabul edildi, email verification sayfasına yönlendiriliyor...',
+            tag: 'RegisterView',
+          );
+
+          // Email verification sayfasına yönlendir
+          Navigator.of(context).pushReplacementNamed(
+            '/email-verification',
+            arguments: {
+              'email': _emailController.text.trim(),
+              'codeToken':
+                  null, // codeToken email verification sayfasında alınacak
+            },
+          );
+        } else {
+          // Sözleşmeler reddedildi, kullanıcıyı bilgilendir
+          Logger.debug(
+            '❌ Sözleşmeler reddedildi, kayıt iptal ediliyor...',
+            tag: 'RegisterView',
+          );
+
+          _showErrorSnackBar(
+            'Kayıt işlemi için sözleşmeler kabul edilmelidir.',
+          );
+        }
       } else {
         // Hata mesajını daha detaylı göster
         String errorMessage =
@@ -296,6 +298,32 @@ class _RegisterFormState extends State<_RegisterForm> {
     }
   }
 
+  // Sadece görüntüleme amaçlı sözleşme dialog'u
+  Future<void> _showMembershipDialogForViewing() async {
+    try {
+      Logger.info(
+        '📋 Üyelik sözleşmesi görüntüleme dialog\'u açılıyor...',
+        tag: 'RegisterView',
+      );
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => MembershipContractView(
+            onContractAccepted: (accepted) {
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      Logger.error(
+        '❌ Üyelik sözleşmesi görüntüleme dialog hatası: $e',
+        tag: 'RegisterView',
+      );
+      _showErrorSnackBar('Sözleşme açılırken hata oluştu: $e');
+    }
+  }
+
   Future<void> _showKvkkDialog() async {
     try {
       Logger.info('🔒 KVKK dialog\'u açılıyor...', tag: 'RegisterView');
@@ -368,6 +396,29 @@ class _RegisterFormState extends State<_RegisterForm> {
       }
     } catch (e) {
       Logger.error('❌ KVKK dialog hatası: $e', tag: 'RegisterView');
+      _showErrorSnackBar('KVKK metni açılırken hata oluştu: $e');
+    }
+  }
+
+  // Sadece görüntüleme amaçlı KVKK dialog'u
+  Future<void> _showKvkkDialogForViewing() async {
+    try {
+      Logger.info(
+        '🔒 KVKK görüntüleme dialog\'u açılıyor...',
+        tag: 'RegisterView',
+      );
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => KvkkContractView(
+            onContractAccepted: (accepted) {
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      Logger.error('❌ KVKK görüntüleme dialog hatası: $e', tag: 'RegisterView');
       _showErrorSnackBar('KVKK metni açılırken hata oluştu: $e');
     }
   }
@@ -578,7 +629,7 @@ class _RegisterFormState extends State<_RegisterForm> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     GestureDetector(
-                      onTap: _showMembershipDialog,
+                      onTap: () => _showMembershipDialogForViewing(),
                       child: Text(
                         'Üyelik Sözleşmesi',
                         style: TextStyle(
@@ -594,7 +645,7 @@ class _RegisterFormState extends State<_RegisterForm> {
                       style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
                     GestureDetector(
-                      onTap: _showKvkkDialog,
+                      onTap: () => _showKvkkDialogForViewing(),
                       child: Text(
                         'KVKK Aydınlatma Metni',
                         style: TextStyle(
@@ -635,7 +686,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               );
             },
           ),
-          
+
           // Klavye açıldığında alt boşluk ekle
           if (isKeyboardOpen) SizedBox(height: 20),
         ],
