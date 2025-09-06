@@ -221,6 +221,9 @@ class AuthViewModel extends ChangeNotifier {
     // Ürün verilerini de temizle (kullanıcı değişikliği)
     _productViewModel?.clearAllProductData();
 
+    // Favori cache'ini de temizle
+    await _productViewModel?.clearFavoriteCache();
+
     try {
       final response = await _authService.login(email, password);
 
@@ -280,6 +283,9 @@ class AuthViewModel extends ChangeNotifier {
 
     // Ürün verilerini de temizle (kullanıcı değişikliği)
     _productViewModel?.clearAllProductData();
+
+    // Favori cache'ini de temizle
+    await _productViewModel?.clearFavoriteCache();
 
     try {
       final response = await _authService.loginSocial(
@@ -1029,6 +1035,9 @@ class AuthViewModel extends ChangeNotifier {
 
         // Çıkış yapılırken ürün verilerini de temizle
         _productViewModel?.clearAllProductData();
+
+        // Favori cache'ini de temizle
+        await _productViewModel?.clearFavoriteCache();
 
         _setLoading(false);
         return true;

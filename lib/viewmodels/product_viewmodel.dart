@@ -19,6 +19,7 @@ import '../services/error_handler_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../services/location_service.dart';
+import '../utils/logger.dart';
 
 class ProductViewModel extends ChangeNotifier {
   final ProductService _productService = ProductService();
@@ -117,7 +118,6 @@ class ProductViewModel extends ChangeNotifier {
     await Future.wait([loadCategories(), loadConditions()]);
 
     // İlk girişte konum bazlı filtreleme yap
-    
 
     try {
       // Konum servislerini kontrol et
@@ -128,21 +128,16 @@ class ProductViewModel extends ChangeNotifier {
         final isLocationEnabled = await locationService
             .isLocationServiceEnabled();
         if (isLocationEnabled) {
-          
-
           // Konum bazlı filtreleme ile ürünleri yükle
           final locationFilter = _currentFilter.copyWith(sortType: 'location');
           await applyFilter(locationFilter);
         } else {
-          
           await loadAllProducts();
         }
       } else {
-        
         await loadAllProducts();
       }
     } catch (e) {
-     
       // Hata durumunda varsayılan yükleme yap
       await loadAllProducts();
     }
@@ -153,13 +148,10 @@ class ProductViewModel extends ChangeNotifier {
     int limit = AppConstants.defaultPageSize,
     bool refresh = false,
   }) async {
-    
-
     if (refresh) {
       _currentPage = 1;
       _hasMore = true;
       _products.clear();
-      
     } else {
       // Refresh değilse ve ilk sayfa ise sayfa numarasını 1'e ayarla
       if (_currentPage == 1) {
@@ -168,33 +160,26 @@ class ProductViewModel extends ChangeNotifier {
     }
 
     if (_isLoading || _isLoadingMore) {
-     
       return;
     }
 
     if (_currentPage == 1) {
       _setLoading(true);
-      
     } else {
       _setLoadingMore(true);
-      
     }
 
     _clearError();
 
     try {
-      
       final response = await _productService.getAllProducts(
         page: _currentPage,
         limit: limit,
       );
 
-
-
       if (response.isSuccess && response.data != null) {
         final paginatedData = response.data!;
         final newProducts = paginatedData.products;
-       
 
         if (_currentPage == 1) {
           // Null safety kontrolü
@@ -202,10 +187,8 @@ class ProductViewModel extends ChangeNotifier {
             _products = newProducts
                 .where((product) => product.id.isNotEmpty)
                 .toList();
-           
           } else {
             _products = [];
-           
           }
         } else {
           // Null safety kontrolü ile ekleme
@@ -213,40 +196,33 @@ class ProductViewModel extends ChangeNotifier {
               .where((product) => product.id.isNotEmpty)
               .toList();
           _products.addAll(validProducts);
-          
         }
 
         // API'den gelen sayfalama bilgilerini kullan
         _hasMore = paginatedData.hasMore; // currentPage < totalPages
         _currentPage = paginatedData.currentPage + 1; // Bir sonraki sayfa
-       
 
         // Engellenen kullanıcıların ilanlarını filtrele
         if (_currentPage == 1) {
           _products = _filterBlockedUsersProducts(_products);
-          
         }
       } else {
-        
-
         // 403 hatası kontrolü
         if (response.error != null &&
             (response.error!.contains('403') ||
                 response.error!.contains('Erişim reddedildi') ||
                 response.error!.contains('Hesabınızın süresi doldu'))) {
-          
           ErrorHandlerService.handleForbiddenError(null);
         }
 
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-     
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
       _setLoadingMore(false);
-      
+
       notifyListeners(); // UI'ı güncelle
     }
   }
@@ -258,23 +234,18 @@ class ProductViewModel extends ChangeNotifier {
     String? condition,
     bool refresh = false,
   }) async {
-   
-
     if (refresh) {
       _currentPage = 1;
       _hasMore = true;
       _products.clear();
-
     } else {
       // Refresh değilse ve ilk sayfa ise sayfa numarasını 1'e ayarla
       if (_currentPage == 1) {
         _hasMore = true;
-       
       }
     }
 
     if (_isLoading || _isLoadingMore) {
-     
       return;
     }
 
@@ -282,31 +253,24 @@ class ProductViewModel extends ChangeNotifier {
     _currentsearchText = searchText;
     _currentCity = city;
     _currentCondition = condition;
-    
 
     if (_currentPage == 1) {
       _setLoading(true);
-     
     } else {
       _setLoadingMore(true);
-     
     }
 
     _clearError();
 
     try {
-     
       final response = await _productService.getAllProducts(
         page: _currentPage,
         limit: AppConstants.defaultPageSize,
       );
 
-     
-
       if (response.isSuccess && response.data != null) {
         final paginatedData = response.data!;
         final newProducts = paginatedData.products;
-       
 
         if (_currentPage == 1) {
           // Null safety kontrolü
@@ -314,10 +278,8 @@ class ProductViewModel extends ChangeNotifier {
             _products = newProducts
                 .where((product) => product.id.isNotEmpty)
                 .toList();
-           
           } else {
             _products = [];
-           
           }
         } else {
           // Null safety kontrolü ile ekleme
@@ -325,45 +287,35 @@ class ProductViewModel extends ChangeNotifier {
               .where((product) => product.id.isNotEmpty)
               .toList();
           _products.addAll(validProducts);
-         
         }
 
         // API'den gelen sayfalama bilgilerini kullan
         _hasMore = paginatedData.hasMore;
         _currentPage = paginatedData.currentPage + 1;
-
-
       } else {
         // 403 hatası kontrolü
         if (response.error != null &&
             (response.error!.contains('403') ||
                 response.error!.contains('Erişim reddedildi') ||
                 response.error!.contains('Hesabınızın süresi doldu'))) {
-          
           ErrorHandlerService.handleForbiddenError(null);
         }
 
-      
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-    
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
       _setLoadingMore(false);
       notifyListeners();
-     
     }
   }
 
   Future<void> loadMoreProducts() async {
     if (!_hasMore || _isLoadingMore) {
-     
       return;
     }
-
-   
 
     _setLoadingMore(true);
     _clearError();
@@ -373,50 +325,38 @@ class ProductViewModel extends ChangeNotifier {
 
       // Eğer aktif filtreler varsa filtrelenmiş ürünleri yükle
       if (_currentFilter.hasActiveFilters) {
-       
         response = await _productService.getAllProductsWithFilter(
           filter: _currentFilter,
           page: _currentPage,
           limit: AppConstants.defaultPageSize,
         );
       } else {
-       
         response = await _productService.getAllProducts(
           page: _currentPage,
           limit: AppConstants.defaultPageSize,
         );
       }
 
-     
-
       if (response.isSuccess && response.data != null) {
         final paginatedData = response.data!;
         final newProducts = paginatedData.products;
-       
 
         // Yeni ürünleri mevcut listeye ekle
         _products.addAll(newProducts);
         _hasMore = paginatedData.hasMore;
         _currentPage = paginatedData.currentPage + 1;
-
-
       } else {
-       
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-     
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoadingMore(false);
       notifyListeners();
-     
     }
   }
 
   Future<void> refreshProducts() async {
-   
-
     try {
       // Mevcut filtreleri koruyarak ürünleri yenile
       await loadAllProducts(page: 1, refresh: true);
@@ -430,26 +370,20 @@ class ProductViewModel extends ChangeNotifier {
       // Benim ilanlarımı da filtrele
       _myProducts = _filterBlockedUsersProducts(_myProducts);
 
-     
       notifyListeners();
     } catch (e) {
-     
       _setError('Ürünler yenilenirken hata oluştu');
     }
   }
 
   Future<void> searchProducts(String query) async {
-   
-   
-
     _currentsearchText = query;
     // Sayfa numarasını sıfırla
     _currentPage = 1;
     _hasMore = true;
-    
+
     notifyListeners();
 
-   
     await loadProducts(
       categoryId: _currentCategoryId,
       searchText: query,
@@ -457,13 +391,10 @@ class ProductViewModel extends ChangeNotifier {
       condition: _currentCondition,
       refresh: true,
     );
-
-   
   }
 
   // Canlı arama
   Future<void> liveSearch(String query) async {
-   
     _liveQuery = query;
     if (query.trim().length < 2) {
       _liveResults = [];
@@ -502,7 +433,6 @@ class ProductViewModel extends ChangeNotifier {
         _liveResults = [];
       }
     } catch (e) {
-     
       _liveResults = [];
     } finally {
       _isLiveSearching = false;
@@ -512,13 +442,10 @@ class ProductViewModel extends ChangeNotifier {
 
   // Arama geçmişini getir
   Future<void> loadSearchHistory() async {
-
-
     try {
       final currentUser = await _authService.getCurrentUser();
 
       if (currentUser == null || currentUser.id.isEmpty) {
-
         await _loadLocalHistoryFallback();
         notifyListeners();
         return;
@@ -527,15 +454,12 @@ class ProductViewModel extends ChangeNotifier {
       final userId = int.tryParse(currentUser.id);
 
       if (userId == null) {
-
         await _loadLocalHistoryFallback();
         notifyListeners();
         return;
       }
 
-
       final resp = await _userService.getSearchHistory(userId: userId);
-
 
       if (resp.isSuccess && resp.data != null && resp.data!.items.isNotEmpty) {
         _searchHistory = resp.data!.items;
@@ -547,10 +471,8 @@ class ProductViewModel extends ChangeNotifier {
         await _loadLocalHistoryFallback();
       }
     } catch (e) {
-
       await _loadLocalHistoryFallback();
     } finally {
-
       notifyListeners();
     }
   }
@@ -590,7 +512,6 @@ class ProductViewModel extends ChangeNotifier {
         await prefs.remove(AppConstants.localSearchHistoryKey);
       }
     } catch (e) {
-
       _searchHistory = [];
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(AppConstants.localSearchHistoryKey);
@@ -648,7 +569,6 @@ class ProductViewModel extends ChangeNotifier {
       }
       await _saveLocalHistory(_searchHistory);
     } catch (e) {
-
     } finally {
       notifyListeners();
     }
@@ -711,8 +631,6 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> filterByCategory(String? categoryId) async {
-
-
     // Sayfa numarasını sıfırla
     _currentPage = 1;
     _hasMore = true;
@@ -720,16 +638,10 @@ class ProductViewModel extends ChangeNotifier {
     // Yeni filtreleme sistemi kullan
     final newFilter = _currentFilter.copyWith(categoryId: categoryId);
 
-
     await applyFilter(newFilter);
-
-
   }
 
   Future<void> sortProducts(SortOption sortOption) async {
-
-
-
     _currentSortOption = sortOption;
     // Sayfa numarasını sıfırla
     _currentPage = 1;
@@ -737,7 +649,6 @@ class ProductViewModel extends ChangeNotifier {
 
     notifyListeners();
 
-  
     await loadProducts(
       categoryId: _currentCategoryId,
       searchText: _currentsearchText,
@@ -745,12 +656,9 @@ class ProductViewModel extends ChangeNotifier {
       condition: _currentCondition,
       refresh: true,
     );
-
-    
   }
 
   Future<void> loadProductById(String productId) async {
- 
     _setLoading(true);
     _clearError();
 
@@ -758,78 +666,61 @@ class ProductViewModel extends ChangeNotifier {
       // Yeni mantık: sadece yeni endpoint ile getir (Basic Auth + userToken)
       final userToken = await _authService.getToken();
       if (userToken == null || userToken.isEmpty) {
-    
         _setError('Kullanıcı oturumu bulunamadı');
         return;
       }
 
-   
       final response = await _productService.getProductDetail(
         userToken: userToken,
         productId: productId,
       );
 
-    
-
       if (response.isSuccess && response.data != null) {
         _selectedProduct = response.data;
-   
 
         // View count'u artır (arka planda)
-     
+
         _productService.incrementViewCount(productId);
       } else {
         if (response.error != null &&
             (response.error!.contains('403') ||
                 response.error!.contains('Erişim reddedildi') ||
                 response.error!.contains('Hesabınızın süresi doldu'))) {
-        
           ErrorHandlerService.handleForbiddenError(null);
         }
-      
+
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-  
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
-   
     }
   }
 
   Future<void> loadUserProducts(String userId) async {
-  
     _setLoading(true);
     _clearError();
 
     try {
       final response = await _productService.getProductsByUserId(userId);
-   
 
       if (response.isSuccess) {
         _myProducts = response.data ?? [];
-    
 
         // Yüklenen ürünlerin adres bilgilerini kontrol et
         for (int i = 0; i < _myProducts.length; i++) {
           final product = _myProducts[i];
-            
-         
         }
       } else {
         final errorMessage = response.error ?? ErrorMessages.unknownError;
         _setError(errorMessage);
-       
-      
       }
     } catch (e) {
       final errorMessage = ErrorMessages.unknownError;
       _setError(errorMessage);
-      
     } finally {
       _setLoading(false);
-    
     }
   }
 
@@ -837,83 +728,88 @@ class ProductViewModel extends ChangeNotifier {
     // Kullanıcı giriş yapmamışsa favorileri yükleme
     final currentUser = await _authService.getCurrentUser();
     if (currentUser == null) {
-
       // Favorileri temizle
       _favoriteProducts.clear();
       notifyListeners();
       return;
     }
 
+    // Kullanıcı değişmişse cache'i temizle
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedUserId = prefs.getString('favorite_products_user_id');
+      if (cachedUserId != null && cachedUserId != currentUser.id) {
+        Logger.info(
+          '🔄 ProductViewModel - Kullanıcı değişmiş, favori cache temizleniyor',
+        );
+        await clearFavoriteCache();
+      }
+    } catch (e) {
+      Logger.warning('⚠️ ProductViewModel - Cache kontrol hatası: $e');
+    }
+
     // Eğer favoriler zaten yüklüyse ve loading değilse, tekrar yükleme
     if (_favoriteProducts.isNotEmpty && !_isLoadingFavorites) {
-   
       return;
     }
 
- 
     _setLoadingFavorites(true);
     _clearFavoriteError();
 
     try {
       // Önce kategorileri yükle (kategori adları için gerekli)
       if (_categories.isEmpty) {
-    
         await loadCategories();
       }
 
-  
       final response = await _productService.getFavoriteProducts();
 
-  
-  
-
       if (response.isSuccess && response.data != null) {
-        
         _favoriteProducts = response.data!;
-     
+
+        // Kullanıcı ID'sini cache'e kaydet
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('favorite_products_user_id', currentUser.id);
+          Logger.info(
+            '✅ ProductViewModel - Favori cache kullanıcı ID kaydedildi: ${currentUser.id}',
+          );
+        } catch (e) {
+          Logger.warning('⚠️ ProductViewModel - Cache kaydetme hatası: $e');
+        }
 
         // Favori ürünlerin detaylarını logla
         for (int i = 0; i < _favoriteProducts.length; i++) {
           final product = _favoriteProducts[i];
-
         }
-        
       } else {
         final errorMessage = response.error ?? ErrorMessages.unknownError;
-     
+
         _setFavoriteError(errorMessage);
       }
     } catch (e) {
-  
       _setFavoriteError(ErrorMessages.unknownError);
     } finally {
       _setLoadingFavorites(false);
-    
     }
   }
 
   Future<void> loadCategories() async {
-  
-
     // Eğer kategoriler zaten yüklüyse ve boş değilse, tekrar yükleme
     if (_categories.isNotEmpty) {
-    
       return;
     }
 
     try {
       final response = await _productService.getCategories();
-     
 
       if (response.isSuccess && response.data != null) {
         _categories = response.data ?? [];
-     
 
         // Kategori detaylarını logla
-     
+
         for (int i = 0; i < _categories.length; i++) {
           final category = _categories[i];
-      
 
           // Kategori ikonlarını önceden cache'le
           if (category.icon.isNotEmpty) {
@@ -923,11 +819,9 @@ class ProductViewModel extends ChangeNotifier {
 
         notifyListeners();
       } else {
-     
         _setError(response.error ?? 'Kategoriler yüklenemedi');
       }
     } catch (e) {
-  
       _setError('Kategoriler yüklenirken hata oluştu');
     }
   }
@@ -935,7 +829,6 @@ class ProductViewModel extends ChangeNotifier {
   void _preloadCategoryIcon(String iconUrl) {
     // Eğer global cache'de zaten varsa yükleme
     if (CategoryIconCache.hasIcon(iconUrl)) {
-      
       return;
     }
 
@@ -947,14 +840,12 @@ class ProductViewModel extends ChangeNotifier {
             CategoryIconCache.setIcon(iconUrl, downloadedIcon);
           }
         })
-        .catchError((error) {
-        });
+        .catchError((error) {});
   }
 
   /// Popüler kategorileri yükler
   Future<void> loadPopularCategories() async {
     try {
-
       final response = await _productService.getPopularCategories();
 
       if (response.isSuccess && response.data != null) {
@@ -962,36 +853,31 @@ class ProductViewModel extends ChangeNotifier {
 
         notifyListeners();
       } else {
-      
         _popularCategories.clear();
         notifyListeners();
       }
     } catch (e) {
-        _popularCategories.clear();
+      _popularCategories.clear();
       notifyListeners();
     }
   }
 
   Future<void> loadSubCategories(String parentCategoryId) async {
-   
     try {
       final response = await _productService.getSubCategories(parentCategoryId);
-  
 
       if (response.isSuccess && response.data != null) {
         _subCategories = response.data ?? [];
         _selectedParentCategoryId = parentCategoryId;
-       
+
         _subCategories.forEach((cat) => print('  - ${cat.name} (${cat.id})'));
         notifyListeners();
       } else {
-       
         _subCategories.clear();
         _selectedParentCategoryId = null;
         notifyListeners();
       }
     } catch (e) {
-     
       _subCategories.clear();
       _selectedParentCategoryId = null;
       notifyListeners();
@@ -1009,12 +895,10 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadSubSubCategories(String parentSubCategoryId) async {
-   
     try {
       final response = await _productService.getSubSubCategories(
         parentSubCategoryId,
       );
-     
 
       if (response.isSuccess && response.data != null) {
         _subSubCategories = response.data ?? [];
@@ -1023,20 +907,18 @@ class ProductViewModel extends ChangeNotifier {
         _subSubCategories.forEach(
           (cat) => print('  - ${cat.name} (${cat.id})'),
         );
-       
+
         notifyListeners();
       } else {
-       
         _subSubCategories.clear();
         _selectedSubCategoryId = null;
-       
+
         notifyListeners();
       }
     } catch (e) {
-     
       _subSubCategories.clear();
       _selectedSubCategoryId = null;
-      
+
       notifyListeners();
     }
   }
@@ -1081,13 +963,10 @@ class ProductViewModel extends ChangeNotifier {
   String getCategoryNameById(String categoryId) {
     if (categoryId.isEmpty) return 'Kategori Yok';
 
-    
-  
     // Tüm kategorilerin ID'lerini yazdır
-   
+
     for (int i = 0; i < _categories.length; i++) {
       final category = _categories[i];
-     
     }
 
     try {
@@ -1102,22 +981,14 @@ class ProductViewModel extends ChangeNotifier {
         ),
       );
 
-      
-
       if (category.name.isNotEmpty &&
           category.name != 'Kategori Yok' &&
           category.name != 'Kategori' &&
           category.name != 'null') {
-      
         return category.name;
-      } else {
-      
-      }
-    } catch (e) {
-      
-    }
+      } else {}
+    } catch (e) {}
 
-  
     return 'Kategori Yok';
   }
 
@@ -1137,80 +1008,60 @@ class ProductViewModel extends ChangeNotifier {
         ),
       );
     } catch (e) {
-     
       return null;
     }
   }
 
   Future<void> loadCities() async {
-  
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       final response = await _productService.getCities();
-  
 
       if (response.isSuccess && response.data != null) {
         _cities = response.data ?? [];
- 
 
         // Tüm şehirleri logla
         if (_cities.isNotEmpty) {
-   
           for (int i = 0; i < _cities.length; i++) {
             final city = _cities[i];
-      
           }
-        } else {
-       
-        }
+        } else {}
 
         _isLoading = false;
         notifyListeners();
       } else {
-     
-     
         _isLoading = false;
         _setError(response.error ?? 'İller yüklenemedi');
       }
     } catch (e) {
-  
       _isLoading = false;
       _setError('İller yüklenirken hata oluştu');
     }
   }
 
   Future<void> loadDistricts(String cityId) async {
-  
     try {
       final response = await _productService.getDistricts(cityId);
-   
 
       if (response.isSuccess && response.data != null) {
         _districts = response.data ?? [];
-   
 
         // Tüm ilçeleri logla
         if (_districts.isNotEmpty) {
-          
           for (int i = 0; i < _districts.length; i++) {
             final district = _districts[i];
-      
           }
-        } else {
-        
-        }
+        } else {}
 
         notifyListeners();
       } else {
-     
         _districts = []; // Boş liste ata, hata gösterme
         notifyListeners();
       }
     } catch (e) {
-   
       _districts = []; // Boş liste ata, hata gösterme
       notifyListeners();
     }
@@ -1222,33 +1073,24 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadConditions() async {
-  
     try {
       final response = await _productService.getConditions();
-   
 
       if (response.isSuccess && response.data != null) {
         _conditions = response.data ?? [];
-    
 
         // Tüm durumları logla
         if (_conditions.isNotEmpty) {
-         
           for (int i = 0; i < _conditions.length; i++) {
             final condition = _conditions[i];
-        
           }
-        } else {
-       
-        }
+        } else {}
 
         notifyListeners();
       } else {
-     
         _setError(response.error ?? 'Ürün durumları yüklenemedi');
       }
     } catch (e) {
-   
       _setError('Ürün durumları yüklenirken hata oluştu');
     }
   }
@@ -1268,29 +1110,22 @@ class ProductViewModel extends ChangeNotifier {
     String? districtId,
     String? districtTitle,
   }) async {
-  
-    
-
     if (title.trim().isEmpty || description.trim().isEmpty) {
-  
       _setError(ErrorMessages.fieldRequired);
       return false;
     }
 
     if (images.isEmpty) {
-      
       _setError('En az bir resim eklemelisiniz');
       return false;
     }
 
     // Takas tercihleri opsiyoneldir; boş olabilir
 
- 
     _setLoading(true);
     _clearError();
 
     try {
- 
       final response = await _productService.createProduct(
         title: title,
         description: description,
@@ -1307,21 +1142,17 @@ class ProductViewModel extends ChangeNotifier {
         districtTitle: districtTitle,
       );
 
-  
-
       if (response.isSuccess && response.data != null) {
         _myProducts.insert(0, response.data!);
- 
+
         _setLoading(false);
         return true;
       } else {
- 
         _setError(response.error ?? ErrorMessages.unknownError);
         _setLoading(false);
         return false;
       }
     } catch (e) {
-  
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
@@ -1329,12 +1160,10 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> toggleFavorite(String productId) async {
- 
     try {
       // Kullanıcının kendi ürünü olup olmadığını kontrol et
       final isOwnProduct = _myProducts.any((p) => p.id == productId);
       if (isOwnProduct) {
-  
         return {
           'success': false,
           'wasFavorite': false,
@@ -1343,23 +1172,15 @@ class ProductViewModel extends ChangeNotifier {
       }
 
       final isFavorite = _favoriteProducts.any((p) => p.id == productId);
-  
-
-  
 
       if (isFavorite) {
         // Favorilerden çıkar
- 
 
         final response = await _productService.removeFromFavorites(productId);
-  
-  
+
         if (response.isSuccess) {
- 
           _favoriteProducts.removeWhere((p) => p.id == productId);
-        
-       
-       
+
           notifyListeners();
           return {
             'success': true,
@@ -1367,9 +1188,8 @@ class ProductViewModel extends ChangeNotifier {
             'message': 'Ürün favorilerden çıkarıldı',
           };
         } else {
-
           // API başarısız olsa bile local list'ten çıkar (kullanıcı deneyimi için)
-         
+
           _favoriteProducts.removeWhere((p) => p.id == productId);
           notifyListeners();
           return {
@@ -1380,7 +1200,7 @@ class ProductViewModel extends ChangeNotifier {
         }
       } else {
         // Favorilere ekle
-    
+
         final response = await _productService.addToFavorites(productId);
         if (response.isSuccess) {
           // Favorilere eklenen ürünü bulup listeye ekle
@@ -1389,15 +1209,11 @@ class ProductViewModel extends ChangeNotifier {
           // Önce _products listesinde ara
           try {
             productToAdd = _products.firstWhere((p) => p.id == productId);
-
           } catch (e) {
-           
             // _products'da bulunamazsa _myProducts'da ara
             try {
               productToAdd = _myProducts.firstWhere((p) => p.id == productId);
-
             } catch (e) {
-              
               // Hiçbir listede bulunamazsa favorileri yeniden yükle
               await loadFavoriteProducts();
               notifyListeners();
@@ -1411,7 +1227,7 @@ class ProductViewModel extends ChangeNotifier {
 
           // productToAdd burada null olamaz; doğrudan ekle
           _favoriteProducts.add(productToAdd);
-          
+
           notifyListeners();
           return {
             'success': true,
@@ -1419,7 +1235,6 @@ class ProductViewModel extends ChangeNotifier {
             'message': 'Ürün favorilere eklendi',
           };
         } else {
-       
           return {
             'success': false,
             'wasFavorite': false,
@@ -1428,7 +1243,6 @@ class ProductViewModel extends ChangeNotifier {
         }
       }
     } catch (e) {
-   
       return {
         'success': false,
         'wasFavorite': _favoriteProducts.any((p) => p.id == productId),
@@ -1438,6 +1252,11 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   bool isFavorite(String productId) {
+    // Eğer favori listesi boşsa false döndür
+    if (_favoriteProducts.isEmpty) {
+      return false;
+    }
+
     return _favoriteProducts.any((p) => p.id == productId);
   }
 
@@ -1448,7 +1267,6 @@ class ProductViewModel extends ChangeNotifier {
 
   /// Kullanıcı değişikliği durumunda tüm ürün listelerini temizler
   void clearAllProductData() {
-  
     _products.clear();
     _myProducts.clear();
     _favoriteProducts.clear();
@@ -1462,7 +1280,26 @@ class ProductViewModel extends ChangeNotifier {
     _currentCondition = null;
     _clearError();
     notifyListeners();
-  
+  }
+
+  /// Kullanıcı değişikliği durumunda favori cache'ini temizler
+  Future<void> clearFavoriteCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Favori ile ilgili tüm cache'leri temizle
+      await prefs.remove('favorite_products_cache');
+      await prefs.remove('favorite_products_timestamp');
+      await prefs.remove('favorite_products_user_id');
+
+      // Memory'deki favori listesini de temizle
+      _favoriteProducts.clear();
+
+      Logger.info('✅ ProductViewModel - Favori cache temizlendi');
+      notifyListeners();
+    } catch (e) {
+      Logger.error('❌ ProductViewModel - Favori cache temizleme hatası: $e');
+    }
   }
 
   void clearError() {
@@ -1514,36 +1351,25 @@ class ProductViewModel extends ChangeNotifier {
     required String tradeFor,
     required List<File> productImages,
   }) async {
-
-   
-  
-    
-   
-
     if (productTitle.trim().isEmpty) {
-   
       _setError('Ürün başlığı boş olamaz');
       return false;
     }
 
     if (productDescription.trim().isEmpty) {
-   
       _setError('Ürün açıklaması boş olamaz');
       return false;
     }
 
     if (productImages.isEmpty) {
-   
       _setError('En az bir ürün resmi seçmelisiniz');
       return false;
     }
 
- 
     _setLoading(true);
     _clearError();
 
     try {
-     
       final response = await _productService.addProduct(
         userToken: userToken,
         userId: userId,
@@ -1555,26 +1381,20 @@ class ProductViewModel extends ChangeNotifier {
         productImages: productImages,
       );
 
-    
-
       if (response.isSuccess && response.data != null) {
         final responseData = response.data!;
         final productId = responseData['productID']?.toString() ?? 'unknown';
         final message = responseData['message']?.toString() ?? 'İlan eklendi';
 
-     
-
         // Başarılı olduktan sonra ürün listesini yenile
-    
+
         await refreshProducts();
         return true;
       } else {
-    
         _setError(response.error ?? 'İlan eklenemedi');
         return false;
       }
     } catch (e) {
-   
       _setError(ErrorMessages.unknownError);
       _setLoading(false);
       return false;
@@ -1583,8 +1403,6 @@ class ProductViewModel extends ChangeNotifier {
 
   // Ürün silme metodu
   Future<bool> deleteUserProduct(String productId) async {
- 
-
     _setLoading(true);
     _clearError();
 
@@ -1592,41 +1410,29 @@ class ProductViewModel extends ChangeNotifier {
       // Current user'ı al
       final currentUser = await _authService.getCurrentUser();
       if (currentUser == null) {
-        
         _setError('Kullanıcı oturumu bulunamadı');
         _setLoading(false);
         return false;
       }
-     
 
       // User token'ı al ve detaylı kontrol et
       final userToken = await _authService.getToken();
       if (userToken == null || userToken.isEmpty) {
-     
         _setError('Kullanıcı token\'ı bulunamadı');
         _setLoading(false);
         return false;
       }
 
-    
-
       // Token geçerliliğini kontrol et - zaten currentUser var, tekrar almaya gerek yok
-    
 
       // API'de ownership kontrolü yapılacağı için client-side kontrol kaldırıldı
-  
+
       final response = await _productService.deleteUserProduct(
         userToken: userToken,
         productId: productId,
       );
 
-     
-
       if (response.isSuccess) {
-
-
-       
-
         // Optimistic UI update: remove the product from both local lists immediately
         final originalProductIndex = _myProducts.indexWhere(
           (p) => p.id == productId,
@@ -1651,13 +1457,10 @@ class ProductViewModel extends ChangeNotifier {
         bool isVerified = await _verifyDeletion(productId);
 
         if (isVerified) {
-       
-
           // Ana sayfa ürün listesini de yenile
-         
+
           await refreshProducts();
         } else {
-       
           // Rollback: add the product back to both lists if verification fails
           if (removedProduct != null && originalProductIndex != -1) {
             _myProducts.insert(originalProductIndex, removedProduct);
@@ -1674,13 +1477,11 @@ class ProductViewModel extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-       
         _setError(response.error ?? 'Ürün silinemedi');
         _setLoading(false);
         return false;
       }
     } catch (e, stackTrace) {
-     
       _setError('Ürün silinirken hata oluştu: $e');
       _setLoading(false);
       return false;
@@ -1705,9 +1506,6 @@ class ProductViewModel extends ChangeNotifier {
     String? productLong,
     bool? isShowContact,
   }) async {
-
-   
-
     _setLoading(true);
     _clearError();
 
@@ -1715,7 +1513,6 @@ class ProductViewModel extends ChangeNotifier {
       // Current user'ı al
       final currentUser = await _authService.getCurrentUser();
       if (currentUser == null) {
-    
         _setError('Kullanıcı bilgileri bulunamadı');
         _setLoading(false);
         return false;
@@ -1724,17 +1521,13 @@ class ProductViewModel extends ChangeNotifier {
       // Token'ı AuthService'den al
       final userToken = await _authService.getToken();
       if (userToken?.isEmpty ?? true) {
-     
         _setError('Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.');
         _setLoading(false);
         return false;
       }
 
-     
-
       // Null check for userToken
       if (userToken == null) {
-  
         _setError('Kullanıcı token\'ı bulunamadı. Lütfen tekrar giriş yapın.');
         _setLoading(false);
         return false;
@@ -1742,7 +1535,6 @@ class ProductViewModel extends ChangeNotifier {
 
       // Token geçerliliğini kontrol et (basit kontrol)
       if (userToken.length < 20) {
-      
         _setError('Kullanıcı token\'ı geçersiz. Lütfen tekrar giriş yapın.');
         _setLoading(false);
         return false;
@@ -1768,18 +1560,14 @@ class ProductViewModel extends ChangeNotifier {
         isShowContact: isShowContact,
       );
 
-   
-
       if (response.isSuccess) {
         // API'den gelen yanıt kontrolü
         if (response.data != null) {
           final updatedProduct = response.data!;
-         
 
           // API'den dönen ürün verisi eksikse (sadece ID varsa), güncel veriyi çek
           if (updatedProduct.title.isEmpty ||
               updatedProduct.description.isEmpty) {
-        
             await _loadUpdatedProduct(productId);
           } else {
             // Güncellenmiş ürünü listelerde güncelle
@@ -1791,24 +1579,20 @@ class ProductViewModel extends ChangeNotifier {
             }
           }
         } else {
-          
           // API'den ürün verisi dönmediğinde, sadece o ürünü yeniden yükle
-       
+
           await _loadUpdatedProduct(productId);
         }
 
         _setLoading(false);
         return true;
       } else {
-      
-
         // Token hatası kontrolü
         if (response.error != null &&
             (response.error!.contains('Hesabınızın süresi doldu') ||
                 response.error!.contains('Üye doğrulama bilgileri hatalı') ||
                 response.error!.contains('403') ||
                 response.error!.contains('Forbidden'))) {
-       
           _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
 
           // Kullanıcıyı logout yap
@@ -1823,7 +1607,6 @@ class ProductViewModel extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      
       _setError('Ürün güncellenirken hata oluştu: $e');
       _setLoading(false);
       return false;
@@ -1832,12 +1615,10 @@ class ProductViewModel extends ChangeNotifier {
 
   // Güncellenmiş ürünü yeniden yükle
   Future<void> _loadUpdatedProduct(String productId) async {
-   
     try {
       // Yeni mantık: yalnızca yeni ürün detay endpoint'i
       final userToken = await _authService.getToken();
       if (userToken == null || userToken.isEmpty) {
-       
         await refreshProducts();
         return;
       }
@@ -1849,17 +1630,15 @@ class ProductViewModel extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
         final updatedProduct = response.data!;
-      
+
         _updateProductInLists(updatedProduct);
         if (_selectedProduct?.id == productId) {
           _selectedProduct = updatedProduct;
         }
       } else {
-      
         await refreshProducts();
       }
     } catch (e) {
-     
       await refreshProducts();
     }
   }
@@ -1870,7 +1649,6 @@ class ProductViewModel extends ChangeNotifier {
     final productIndex = _products.indexWhere((p) => p.id == updatedProduct.id);
     if (productIndex != -1) {
       _products[productIndex] = updatedProduct;
-     
     }
 
     // Kullanıcının ürünleri listesinde güncelle
@@ -1879,7 +1657,6 @@ class ProductViewModel extends ChangeNotifier {
     );
     if (myProductIndex != -1) {
       _myProducts[myProductIndex] = updatedProduct;
-     
     }
 
     // Favori ürünler listesinde güncelle
@@ -1888,7 +1665,6 @@ class ProductViewModel extends ChangeNotifier {
     );
     if (favoriteIndex != -1) {
       _favoriteProducts[favoriteIndex] = updatedProduct;
-     
     }
 
     notifyListeners();
@@ -1910,11 +1686,8 @@ class ProductViewModel extends ChangeNotifier {
     double? userProvidedLatitude,
     double? userProvidedLongitude,
   }) async {
-   
-
     // Validasyonlar
     if (productTitle.trim().isEmpty || productDescription.trim().isEmpty) {
-     
       _setError('Başlık ve açıklama zorunludur');
       return false;
     }
@@ -1923,14 +1696,12 @@ class ProductViewModel extends ChangeNotifier {
 
     // Resim validasyonu - en az bir resim gerekli
     if (productImages.isEmpty) {
-
       _setError('En az bir fotoğraf eklemelisiniz');
       return false;
     }
 
     // Resim durumu kontrolü
-    for (int i = 0; i < productImages.length; i++) {
-    }
+    for (int i = 0; i < productImages.length; i++) {}
 
     _setLoading(true);
     _clearError();
@@ -1950,7 +1721,6 @@ class ProductViewModel extends ChangeNotifier {
         return false;
       }
 
-
       final response = await _productService.addProduct(
         userToken: userToken,
         userId: currentUser.id,
@@ -1969,33 +1739,26 @@ class ProductViewModel extends ChangeNotifier {
         userProvidedLongitude: userProvidedLongitude,
       );
 
-
       if (response.isSuccess && response.data != null) {
         final responseData = response.data!;
         final productId = responseData['productID']?.toString() ?? 'unknown';
         final message = responseData['message']?.toString() ?? 'İlan eklendi';
 
-
-
         // Son eklenen ürün ID'sini sakla (sponsor için)
         _lastAddedProductId = productId;
-      
 
         // Başarılı olduktan sonra ürün listesini yenile
-    
+
         await refreshProducts();
         return true;
       } else {
-  
         _setError(response.error ?? 'İlan eklenemedi');
         return false;
       }
     } catch (e, stackTrace) {
- 
       _setError('İlan eklenirken hata oluştu: $e');
       return false;
     } finally {
-
       _setLoading(false);
     }
   }
@@ -2017,45 +1780,33 @@ class ProductViewModel extends ChangeNotifier {
         limit: AppConstants.defaultPageSize,
       );
 
-
       if (response.isSuccess && response.data != null) {
         final paginatedData = response.data!;
         final newProducts = paginatedData.products;
-   
 
         // Null safety kontrolü
         if (newProducts.isNotEmpty) {
           _products = newProducts
               .where((product) => product.id.isNotEmpty)
               .toList();
-       
         } else {
           _products = [];
-       
         }
         _hasMore = paginatedData.hasMore;
         _currentPage = paginatedData.currentPage + 1; // Bir sonraki sayfa
-
-    
       } else {
-     
         _setError(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {
-  
       _setError(ErrorMessages.unknownError);
     } finally {
       _setLoading(false);
-   
+
       notifyListeners();
     }
   }
 
   Future<void> clearFilters() async {
-
-    
-   
-
     // Tüm filtreleri sıfırla
     _currentFilter = const ProductFilter();
     _currentPage = 1;
@@ -2068,42 +1819,24 @@ class ProductViewModel extends ChangeNotifier {
     _currentCity = null;
     _currentCondition = null;
 
-    
-    
-     
-
     await loadAllProducts(refresh: true);
 
     // Letgo gibi: Kullanıcı giriş yapmışsa otomatik olarak "en yakın" filtresini uygula
     final currentUser = await _authService.getCurrentUser();
     if (currentUser != null) {
-  
-
       try {
         // Konum bazlı filtreleme uygula
         final locationFilter = _currentFilter.copyWith(sortType: 'location');
-    
 
         await applyFilter(locationFilter);
-
-
       } catch (e) {
-        
         // Hata durumunda varsayılan sıralamaya geri dön
-        
 
         try {
           await applyFilter(_currentFilter.copyWith(sortType: 'default'));
-
-        } catch (e2) {
-         
-        }
+        } catch (e2) {}
       }
-    } else {
-      
-    }
-
-
+    } else {}
   }
 
   Future<bool> _verifyDeletion(
@@ -2111,76 +1844,53 @@ class ProductViewModel extends ChangeNotifier {
     int retries = 3,
     Duration delay = const Duration(seconds: 1),
   }) async {
-  
-  
-
     for (int i = 0; i < retries; i++) {
-   
       final currentUser = await _authService.getCurrentUser();
       if (currentUser == null) {
-        
         return false; // Should not happen
       }
 
-  
       await loadUserProducts(currentUser.id);
       final productStillExists = _myProducts.any((p) => p.id == productId);
 
       if (!productStillExists) {
-    
         return true; // Verified!
       }
 
-    
-     
       await Future.delayed(delay * (i + 1)); // Increasing delay
     }
 
-  
     return false; // Failed after all retries
   }
 
   /// Ürün detayını getirir (detay sayfası için)
   /// Kullanıcının giriş durumuna göre API endpoint'ini dinamik olarak yönetir
   Future<product_model.Product?> getProductDetail(String productId) async {
-    
     _setLoading(true);
     _clearError();
     try {
-    
       final userToken = await _authService.getToken();
       if (userToken == null || userToken.isEmpty) {
+      } else {}
 
-      } else {
-      
-      }
-
-     
       final response = await _productService.getProductDetail(
         userToken: userToken, // Token yoksa null gönderilecek
         productId: productId,
       );
 
-  
-
-
-      if (response.data != null) {
- 
-      }
+      if (response.data != null) {}
 
       if (response.isSuccess && response.data != null) {
         _selectedProduct = response.data;
-   
+
         _setLoading(false);
         return response.data;
       } else {
-    
         _setError(response.error ?? 'Ürün detayı alınamadı');
         _setLoading(false);
         return null;
       }
     } catch (e) {
-    
       _setError('Ürün detayı alınamadı: $e');
       _setLoading(false);
       return null;
@@ -2189,38 +1899,27 @@ class ProductViewModel extends ChangeNotifier {
 
   /// Ürünü sponsor yapar (ödüllü reklam sonrası)
   Future<bool> sponsorProduct(String productId) async {
- 
-
     try {
       // User token'ı al
       final userToken = await _authService.getToken();
       if (userToken == null || userToken.isEmpty) {
- 
         _setError('Kullanıcı oturumu bulunamadı');
         return false;
       }
 
- 
-
       // Product ID'yi integer'a çevir
       final int? productIdInt = int.tryParse(productId);
       if (productIdInt == null) {
- 
         _setError('Geçersiz ürün ID\'si');
         return false;
       }
 
- 
       final response = await _productService.sponsorProduct(
         userToken: userToken,
         productId: productIdInt,
       );
 
- 
-
       if (response.isSuccess && response.data != null) {
- 
-
         // Response'dan sponsor bilgilerini al
         final responseData = response.data!;
         final sponsorUntil = responseData['sponsorUntil']?.toString();
@@ -2228,20 +1927,16 @@ class ProductViewModel extends ChangeNotifier {
             responseData['message']?.toString() ??
             'Ürününüz başarıyla öne çıkarıldı.';
 
- 
-
         // Local listelerdeki ürünü güncelle
         await _updateProductSponsorStatus(productId, sponsorUntil);
 
         // Success message'ı göster (UI katmanında kullanılabilir)
         return true;
       } else {
-        
         _setError(response.error ?? 'Ürün öne çıkarılamadı');
         return false;
       }
     } catch (e) {
-  
       _setError('Ürün öne çıkarılırken hata oluştu: $e');
       return false;
     }
@@ -2252,9 +1947,6 @@ class ProductViewModel extends ChangeNotifier {
     String productId,
     String? sponsorUntil,
   ) async {
-  
-   
-
     // Ana ürün listesinde güncelle
     final productIndex = _products.indexWhere((p) => p.id == productId);
     if (productIndex != -1) {
@@ -2262,7 +1954,6 @@ class ProductViewModel extends ChangeNotifier {
         isSponsor: true,
         sponsorUntil: sponsorUntil,
       );
-   
     }
 
     // Kullanıcının ürünleri listesinde güncelle
@@ -2272,7 +1963,6 @@ class ProductViewModel extends ChangeNotifier {
         isSponsor: true,
         sponsorUntil: sponsorUntil,
       );
-      
     }
 
     // Favori ürünler listesinde güncelle
@@ -2282,7 +1972,6 @@ class ProductViewModel extends ChangeNotifier {
     if (favoriteIndex != -1) {
       _favoriteProducts[favoriteIndex] = _favoriteProducts[favoriteIndex]
           .copyWith(isSponsor: true, sponsorUntil: sponsorUntil);
-      
     }
 
     // Seçili ürünü güncelle
@@ -2291,11 +1980,9 @@ class ProductViewModel extends ChangeNotifier {
         isSponsor: true,
         sponsorUntil: sponsorUntil,
       );
-    
     }
 
     notifyListeners();
-    
   }
 
   @override
@@ -2309,8 +1996,6 @@ class ProductViewModel extends ChangeNotifier {
     double longitude,
   ) async {
     try {
-     
-
       // Önce şehirler yüklenmemişse yükle
       if (_cities.isEmpty) {
         await loadCities();
@@ -2324,15 +2009,12 @@ class ProductViewModel extends ChangeNotifier {
       );
 
       if (locationInfo == null) {
-       
         return null;
       }
 
       final cityName = locationInfo['city'];
       final districtName = locationInfo['district'];
       final fullAddress = locationInfo['fullAddress'];
-
-    
 
       // İl ID'sini bul
       String? cityId;
@@ -2343,10 +2025,7 @@ class ProductViewModel extends ChangeNotifier {
         cityId = _findCityIdByName(normalizedCityName);
 
         if (cityId != null) {
-        
-        } else {
-         
-        }
+        } else {}
       }
 
       // İlçe ID'sini bul (eğer il bulunduysa ve ilçe bilgisi varsa)
@@ -2363,15 +2042,10 @@ class ProductViewModel extends ChangeNotifier {
         districtId = _findDistrictIdByName(normalizedDistrictName);
 
         if (districtId != null) {
-         
         } else {
-         
-
           // İlçe bulunamadıysa, ilçe listesini kontrol et ve logla
-         
 
           // Alternatif arama yöntemleri dene
-
 
           // 1. Kısmi eşleşme ara (daha esnek)
           final partialMatch = _findDistrictByPartialMatch(
@@ -2379,7 +2053,6 @@ class ProductViewModel extends ChangeNotifier {
           );
           if (partialMatch != null) {
             districtId = partialMatch;
-      
           }
 
           // 2. Benzer isim ara
@@ -2389,13 +2062,10 @@ class ProductViewModel extends ChangeNotifier {
             );
             if (similarMatch != null) {
               districtId = similarMatch;
-     
             }
           }
         }
-      } else if (cityId != null) {
- 
-      }
+      } else if (cityId != null) {}
 
       if (cityId != null) {
         final result = {
@@ -2405,13 +2075,11 @@ class ProductViewModel extends ChangeNotifier {
           'districtName': districtName ?? '',
         };
 
- 
         return result;
       }
 
       return null;
     } catch (e) {
-    
       return null;
     }
   }
@@ -2442,7 +2110,6 @@ class ProductViewModel extends ChangeNotifier {
         );
         return city.id;
       } catch (e) {
-
         return null;
       }
     }
@@ -2474,7 +2141,6 @@ class ProductViewModel extends ChangeNotifier {
         );
         return district.id;
       } catch (e) {
-  
         return null;
       }
     }
@@ -2549,7 +2215,6 @@ class ProductViewModel extends ChangeNotifier {
         if (similarity > bestScore) {
           bestScore = similarity;
           bestMatch = district.id;
-     
         }
       }
 
@@ -2583,7 +2248,6 @@ class ProductViewModel extends ChangeNotifier {
       final blockedUserIds = _getBlockedUserIds();
 
       if (blockedUserIds.isEmpty) {
-   
         return products;
       }
 
@@ -2592,26 +2256,20 @@ class ProductViewModel extends ChangeNotifier {
         try {
           final ownerId = int.tryParse(product.ownerId);
           if (ownerId == null) {
-     
             return true; // Geçersiz ID'li ürünleri göster
           }
 
           final isBlocked = blockedUserIds.contains(ownerId);
-          if (isBlocked) {
- 
-          }
+          if (isBlocked) {}
 
           return !isBlocked;
         } catch (e) {
-     
           return true; // Hata durumunda ürünü göster
         }
       }).toList();
 
-
       return filteredProducts;
     } catch (e) {
-  
       return products; // Hata durumunda tüm ürünleri göster
     }
   }
@@ -2637,10 +2295,8 @@ class ProductViewModel extends ChangeNotifier {
           .cast<int>()
           .toList();
 
-    
       return blockedUserIds;
     } catch (e) {
-     
       return [];
     }
   }
