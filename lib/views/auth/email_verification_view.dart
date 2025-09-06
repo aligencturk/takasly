@@ -440,7 +440,7 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
               ),
               onPressed: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pop();
+                _handleSkipVerification();
               },
               child: const Text('Devam Et'),
             ),
@@ -448,6 +448,16 @@ class _EmailVerificationViewState extends State<EmailVerificationView> {
         );
       },
     );
+  }
+
+  void _handleSkipVerification() async {
+    Logger.debug(
+      'E-posta doğrulama atlanıyor, ana sayfaya yönlendiriliyor...',
+      tag: 'EmailVerificationView',
+    );
+
+    // Doğrulamayı atla - her durumda ana sayfaya yönlendir
+    Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
   }
 
   void _resendVerificationCode() async {
