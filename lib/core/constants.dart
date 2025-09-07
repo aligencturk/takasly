@@ -133,7 +133,9 @@ class ApiConstants {
 
 class AppConstants {
   static const String appName = 'Takasly';
-  static const String appVersion = '1.0.0';
+  // appVersion artık dinamik olarak alınacak - AppVersionUtils.getAppVersion() kullanın
+  // iOS: Info.plist'ten CFBundleShortVersionString değerini alır
+  // Android: build.gradle'dan versionName değerini alır
 
   // SharedPreferences Keys
   static const String userTokenKey = 'user_token';

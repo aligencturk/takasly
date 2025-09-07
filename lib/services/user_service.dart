@@ -8,7 +8,7 @@ import '../models/user_profile_detail.dart';
 import '../models/live_search.dart';
 import '../models/user_block.dart';
 import '../models/blocked_user.dart';
-import '../utils/logger.dart';
+import '../utils/app_version_utils.dart';
 
 class UserService {
   final HttpClient _httpClient = HttpClient();
@@ -23,7 +23,7 @@ class UserService {
     try {
       // Platform detection
       final detectedPlatform = platform ?? getPlatform();
-      final appVersion = version ?? AppConstants.appVersion;
+      final appVersion = version ?? await AppVersionUtils.getAppVersion();
 
       final response = await _httpClient.putWithBasicAuth(
         ApiConstants.userProfile,
@@ -346,7 +346,7 @@ class UserService {
     try {
       // Platform detection
       final detectedPlatform = platform ?? getPlatform();
-      final appVersion = version ?? AppConstants.appVersion;
+      final appVersion = version ?? await AppVersionUtils.getAppVersion();
 
       final response = await _httpClient.putWithBasicAuth(
         ApiConstants.userProfile,
@@ -497,7 +497,7 @@ class UserService {
             try {
               final user = User.fromJson(transformedData);
               return user;
-            } catch (e, stackTrace) {
+            } catch (e) {
               rethrow;
             }
           }
