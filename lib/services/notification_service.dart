@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/http_client.dart';
 import '../core/constants.dart';
@@ -38,10 +39,10 @@ class NotificationService {
   DateTime? _lastNavigationTime;
   static const Duration _navigationCooldown = Duration(seconds: 2);
 
-  // Uygulama içinde yönlendirme için callback (type, id)
-  void Function(String type, String id)? onNavigate;
+  // Uygulama içinde yönlendirme için callback (type, id, url)
+  void Function(String type, String id, String url)? onNavigate;
 
-  Future<void> init({void Function(String, String)? onNavigate}) async {
+  Future<void> init({void Function(String, String, String)? onNavigate}) async {
     if (_isInitialized) return;
 
     this.onNavigate = onNavigate;
@@ -179,7 +180,7 @@ class NotificationService {
     final payload = _buildPayload(m);
 
     // Bildirim türüne göre özel kategori belirle
-    final (type, _) = _extractData(m.data);
+    final (type, _, __) = _extractData(m.data);
     String? categoryIdentifier;
     if (type.isNotEmpty) {
       categoryIdentifier = 'notification_$type';
@@ -223,7 +224,7 @@ class NotificationService {
   void _handleMessageTap(RemoteMessage m) {
     final data = _extractData(m.data);
     if (data.$1.isNotEmpty) {
-      _navigateBasedOnType(data.$1, data.$2);
+      _navigateBasedOnType(data.$1, data.$2, data.$3);
     }
   }
 
@@ -233,17 +234,24 @@ class NotificationService {
       final map = jsonDecode(payload) as Map<String, dynamic>;
       final type = (map['type'] ?? '').toString();
       final id = (map['id'] ?? '').toString();
+      final url = (map['url'] ?? '').toString();
       if (type.isNotEmpty) {
-        _navigateBasedOnType(type, id);
+        _navigateBasedOnType(type, id, url);
       }
     } catch (_) {}
   }
 
   /// Bildirim türüne göre yönlendirme yapar
-  void _navigateBasedOnType(String type, String id) {
+  void _navigateBasedOnType(String type, String id, String url) {
     // Eğer custom navigation callback varsa önce onu kullan
     if (onNavigate != null) {
-      onNavigate!(type, id);
+      onNavigate!(type, id, url);
+      return;
+    }
+
+    // id: -1 geldiğinde URL açma (marketing, güncelleme vs.)
+    if (id == '-1' && url.isNotEmpty) {
+      _openExternalUrl(url);
       return;
     }
 
@@ -277,6 +285,16 @@ class NotificationService {
         // Deep link ile gelen ürün detay yönlendirmesi
         if (id.isNotEmpty) {
           _navigateToProductDetail(id);
+        }
+        break;
+
+      case 'marketing':
+        // Marketing bildirimleri için URL açma
+        if (url.isNotEmpty) {
+          _openExternalUrl(url);
+        } else {
+          // URL yoksa bildirimler sayfasına git
+          _navigateToNotifications();
         }
         break;
 
@@ -358,6 +376,35 @@ class NotificationService {
     }
   }
 
+  /// Dış URL'yi açar (browser'da)
+  Future<void> _openExternalUrl(String url) async {
+    try {
+      Logger.info('Dış URL açılıyor: $url', tag: _tag);
+      
+      final uri = Uri.parse(url);
+      
+      // URL'nin geçerli olup olmadığını kontrol et
+      if (!uri.hasScheme || (!uri.scheme.startsWith('http'))) {
+        Logger.warning('Geçersiz URL formatı: $url', tag: _tag);
+        return;
+      }
+      
+      // URL'yi varsayılan browser'da aç
+      final canLaunch = await canLaunchUrl(uri);
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication, // Uygulama dışında aç
+        );
+        Logger.info('URL başarıyla açıldı: $url', tag: _tag);
+      } else {
+        Logger.error('URL açılamadı: $url', tag: _tag);
+      }
+    } catch (e) {
+      Logger.error('URL açma hatası: $e', tag: _tag, error: e);
+    }
+  }
+
   /// Mevcut context'i al
   BuildContext? _getCurrentContext() {
     // ErrorHandlerService'den navigator key kullan
@@ -381,9 +428,9 @@ class NotificationService {
   }
 
   /// Server tarafı `data.keysandvalues` içinde JSON **string** yolluyor.
-  /// Burada parse edip (type,id) döndürüyoruz.
+  /// Burada parse edip (type,id,url) döndürüyoruz.
   /// Eğer keysandvalues boşsa, data içindeki type ve id'yi direkt kontrol eder.
-  (String, String) _extractData(Map<String, dynamic> data) {
+  (String, String, String) _extractData(Map<String, dynamic> data) {
     try {
       // Önce keysandvalues içindeki JSON'u kontrol et
       final raw = data['keysandvalues'];
@@ -409,8 +456,9 @@ class NotificationService {
         if (m != null) {
           final type = (m['type'] ?? '').toString();
           final id = (m['id'] ?? '').toString();
+          final url = (m['url'] ?? '').toString();
           if (type.isNotEmpty) {
-            return (type, id);
+            return (type, id, url);
           }
         }
       }
@@ -418,8 +466,9 @@ class NotificationService {
       // Eğer keysandvalues boşsa, data içindeki type ve id'yi direkt kontrol et
       final directType = (data['type'] ?? '').toString();
       final directId = (data['id'] ?? '').toString();
+      final directUrl = (data['url'] ?? '').toString();
       if (directType.isNotEmpty) {
-        return (directType, directId);
+        return (directType, directId, directUrl);
       }
 
       // Link tabanlı yönlendirmeler: link/deep_link/url alanlarını işle
@@ -443,7 +492,7 @@ class NotificationService {
               productId = uri.pathSegments.first;
             }
             if (productId != null && productId.isNotEmpty) {
-              return ('product_detail', productId);
+              return ('product_detail', productId, '');
             }
           }
         } catch (e) {
@@ -456,31 +505,31 @@ class NotificationService {
       if (title is String) {
         if (title.contains('Yeni Takas Teklifi') ||
             title.contains('New Trade Offer')) {
-          return ('new_trade_offer', directId);
+          return ('new_trade_offer', directId, '');
         } else if (title.contains('Takas Onaylandı') ||
             title.contains('Trade Approved')) {
-          return ('trade_offer_approved', directId);
+          return ('trade_offer_approved', directId, '');
         } else if (title.contains('Teklif Reddedildi') ||
             title.contains('Trade Rejected')) {
-          return ('trade_offer_rejected', directId);
+          return ('trade_offer_rejected', directId, '');
         } else if (title.contains('Takas Tamamlandı') ||
             title.contains('Trade Completed')) {
-          return ('trade_completed', directId);
+          return ('trade_completed', directId, '');
         } else if (title.contains('Süre doldu') ||
             title.contains('Sponsor Expired') ||
             title.contains('Öne Çıkarma')) {
-          return ('sponsor_expired', directId);
+          return ('sponsor_expired', directId, '');
         }
       }
     } catch (e) {
       Logger.error('Extract data error: $e', tag: _tag);
     }
-    return ('', '');
+    return ('', '', '');
   }
 
   String _buildPayload(RemoteMessage m) {
-    final (type, id) = _extractData(m.data);
-    return jsonEncode({'type': type, 'id': id});
+    final (type, id, url) = _extractData(m.data);
+    return jsonEncode({'type': type, 'id': id, 'url': url});
   }
 
   /// Kullanıcının bildirimlerini API'den alır
