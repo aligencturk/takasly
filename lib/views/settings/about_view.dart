@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_theme.dart';
 import '../../utils/logger.dart';
@@ -30,7 +31,7 @@ class _AboutViewState extends State<AboutView> {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final platformInfo = await _getPlatformInfo();
-      
+
       setState(() {
         _packageInfo = packageInfo;
         _platformInfo = platformInfo;
@@ -68,8 +69,10 @@ class _AboutViewState extends State<AboutView> {
     try {
       // Basit güncelleme kontrolü - gerçek implementasyon için upgrader'ın kendi dialog'u kullanılabilir
       // Şimdilik manuel kontrol yapıyoruz
-      await Future.delayed(const Duration(seconds: 2)); // Simüle edilmiş kontrol
-      
+      await Future.delayed(
+        const Duration(seconds: 2),
+      ); // Simüle edilmiş kontrol
+
       // Burada gerçek güncelleme kontrolü yapılacak
       // Şimdilik rastgele güncelleme var gibi gösteriyoruz
       final random = DateTime.now().millisecond % 2;
@@ -114,10 +117,7 @@ class _AboutViewState extends State<AboutView> {
             const SizedBox(height: 8),
             Text(
               'Mağazadan en son versiyonu indirebilirsiniz.',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
             ),
           ],
         ),
@@ -202,7 +202,7 @@ class _AboutViewState extends State<AboutView> {
   void _launchStore() {
     // Mağaza URL'lerini platform'a göre ayarla
     final packageName = _packageInfo?.packageName ?? 'com.rivorya.takaslyapp';
-    
+
     if (Theme.of(context).platform == TargetPlatform.iOS) {
       // iOS App Store
       _launchUrl('https://apps.apple.com/app/id6749484217');
@@ -258,7 +258,6 @@ class _AboutViewState extends State<AboutView> {
                     const SizedBox(height: 24),
                     _buildLegalInfo(),
                     const SizedBox(height: 24),
-                    _buildContactInfo(),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -388,11 +387,7 @@ class _AboutViewState extends State<AboutView> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                Icon(Icons.info_outline, color: AppTheme.primary, size: 24),
                 const SizedBox(width: 12),
                 Text(
                   'Uygulama Bilgileri',
@@ -420,17 +415,14 @@ class _AboutViewState extends State<AboutView> {
           _buildInfoItem(
             icon: Icons.android_outlined,
             title: 'Platform',
-            subtitle: _platformInfo.isNotEmpty ? _platformInfo : 'Android & iOS',
+            subtitle: _platformInfo.isNotEmpty
+                ? _platformInfo
+                : 'Android & iOS',
           ),
           _buildInfoItem(
             icon: Icons.update_outlined,
             title: 'Son Güncelleme',
             subtitle: 'Aralık 2024',
-          ),
-          _buildInfoItem(
-            icon: Icons.apps_outlined,
-            title: 'Paket Adı',
-            subtitle: _packageInfo?.packageName ?? 'Bilinmiyor',
           ),
         ],
       ),
@@ -459,11 +451,7 @@ class _AboutViewState extends State<AboutView> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Icon(
-                  Icons.system_update,
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                Icon(Icons.system_update, color: AppTheme.primary, size: 24),
                 const SizedBox(width: 12),
                 Text(
                   'Güncelleme',
@@ -483,10 +471,7 @@ class _AboutViewState extends State<AboutView> {
               children: [
                 Text(
                   'Uygulama güncellemelerini kontrol edin',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                  ),
+                  style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -499,12 +484,16 @@ class _AboutViewState extends State<AboutView> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Icon(Icons.system_update, size: 20),
                     label: Text(
-                      _isCheckingUpdate ? 'Kontrol Ediliyor...' : 'Güncelleme Kontrol Et',
+                      _isCheckingUpdate
+                          ? 'Kontrol Ediliyor...'
+                          : 'Güncelleme Kontrol Et',
                       style: const TextStyle(fontSize: 16),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -573,9 +562,9 @@ class _AboutViewState extends State<AboutView> {
           _buildInfoItem(
             icon: Icons.web_outlined,
             title: 'Website',
-            subtitle: 'www.rivorya.com',
+            subtitle: 'takasly.tr',
             isClickable: true,
-            onTap: () => _launchUrl('https://www.rivorya.com'),
+            onTap: () => _launchUrl('https://takasly.tr'),
           ),
           _buildInfoItem(
             icon: Icons.email_outlined,
@@ -616,11 +605,7 @@ class _AboutViewState extends State<AboutView> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Icon(
-                  Icons.gavel_outlined,
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
+                Icon(Icons.gavel_outlined, color: AppTheme.primary, size: 24),
                 const SizedBox(width: 12),
                 Text(
                   'Yasal Bilgiler',
@@ -661,71 +646,7 @@ class _AboutViewState extends State<AboutView> {
     );
   }
 
-  Widget _buildContactInfo() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: AppTheme.borderRadius,
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primary.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.support_agent_outlined,
-                  color: AppTheme.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Destek',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(height: 1, color: Colors.grey[200]),
-          _buildInfoItem(
-            icon: Icons.help_outline,
-            title: 'Yardım',
-            subtitle: 'Sık Sorulan Sorular',
-            isClickable: true,
-            onTap: () => _showHelpDialog(),
-          ),
-          _buildInfoItem(
-            icon: Icons.bug_report_outlined,
-            title: 'Hata Bildir',
-            subtitle: 'Sorun bildirmek için tıklayın',
-            isClickable: true,
-            onTap: () => _launchEmail('support@rivorya.com'),
-          ),
-          _buildInfoItem(
-            icon: Icons.feedback_outlined,
-            title: 'Geri Bildirim',
-            subtitle: 'Önerilerinizi paylaşın',
-            isClickable: true,
-            onTap: () => _launchEmail('feedback@rivorya.com'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Destek bölümü kaldırıldı
 
   Widget _buildInfoItem({
     required IconData icon,
@@ -784,9 +705,13 @@ class _AboutViewState extends State<AboutView> {
     );
   }
 
-  void _launchUrl(String url) {
-    // URL launcher implementasyonu burada yapılacak
-    Logger.info('Launching URL: $url', tag: 'AboutView');
+  void _launchUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      Logger.error('URL açılamadı: $url - $e', tag: 'AboutView');
+    }
   }
 
   void _launchEmail(String email) {
@@ -801,7 +726,7 @@ class _AboutViewState extends State<AboutView> {
         title: const Text('Kullanım Şartları'),
         content: const Text(
           'Takasly uygulamasını kullanarak, kullanım şartlarını kabul etmiş sayılırsınız. '
-          'Detaylı bilgi için www.rivorya.com adresini ziyaret ediniz.',
+          'Detaylı bilgi için takasly.tr adresini ziyaret ediniz.',
         ),
         actions: [
           TextButton(
@@ -820,7 +745,7 @@ class _AboutViewState extends State<AboutView> {
         title: const Text('Yardım'),
         content: const Text(
           'Takasly uygulaması hakkında yardım için info@rivorya.com '
-          'adresine e-posta gönderebilir veya www.rivorya.com adresini ziyaret edebilirsiniz.',
+          'adresine e-posta gönderebilir veya takasly.tr adresini ziyaret edebilirsiniz.',
         ),
         actions: [
           TextButton(

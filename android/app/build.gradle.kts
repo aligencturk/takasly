@@ -35,8 +35,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         
         // Dinamik sürüm yönetimi - Flutter'dan bağımsız
-        versionCode = 36  // Her build'de artırılacak
-        versionName = "1.0.5"  // Semantic version
+        versionCode = 38  // Her build'de artırılacak
+        versionName = "1.0.7"  // Semantic version
     }
 
     // Load keystore properties if present (android/key.properties)
