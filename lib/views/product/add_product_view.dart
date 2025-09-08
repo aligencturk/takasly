@@ -2120,23 +2120,7 @@ class _AddProductViewState extends State<AddProductView> {
           position.longitude,
         );
 
-        // Kullanıcıya başarı mesajı göster
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white, size: 16),
-                  const SizedBox(width: 8),
-                  const Text('Konum başarıyla alındı'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        // Başarı snackbari kaldırıldı (sessizce güncelle)
       } else {
         // Hata durumunda kullanıcıya bilgi ver
         if (mounted) {

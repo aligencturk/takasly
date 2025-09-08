@@ -244,10 +244,10 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-          title: AppConstants.appName,
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          navigatorKey: ErrorHandlerService.navigatorKey, // Navigator key ekle
+        title: AppConstants.appName,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        navigatorKey: ErrorHandlerService.navigatorKey, // Navigator key ekle
         home: DeepLinkHandler(
           child: Builder(
             builder: (context) {
@@ -267,7 +267,10 @@ class MyApp extends StatelessWidget {
                     listen: false,
                   );
                   final notificationViewModel =
-                      Provider.of<NotificationViewModel>(context, listen: false);
+                      Provider.of<NotificationViewModel>(
+                        context,
+                        listen: false,
+                      );
                   authViewModel.setNotificationViewModel(notificationViewModel);
                   // Uygulama açılışında iOS/Android fark etmeksizin FCM'i başlatmayı dene
                   // Kullanıcı login ise, topic aboneliği ve izin akışı kurulacak
@@ -388,10 +391,10 @@ class MyApp extends StatelessWidget {
           // Kalın metin ve text scaling kontrolü
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(
-              textScaleFactor: 1.0, // Text scaling'i devre dışı bırak
               boldText: false, // Kalın metin ayarını devre dışı bırak
               // Font weight kontrolü
               platformBrightness: MediaQuery.of(context).platformBrightness,
+              textScaler: TextScaler.linear(1.0),
             ),
             child: Theme(
               data: Theme.of(context).copyWith(

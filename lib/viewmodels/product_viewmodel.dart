@@ -47,6 +47,7 @@ class ProductViewModel extends ChangeNotifier {
   String? _selectedSubSubCategoryId;
   List<City> _cities = [];
   List<District> _districts = [];
+  String? _lastDistrictsRequestedCityId;
   List<Condition> _conditions = [];
   product_model.Product? _selectedProduct;
 
@@ -1043,18 +1044,27 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   Future<void> loadDistricts(String cityId) async {
+    // Şehir değiştiğinde önce mevcut ilçe listesini boşalt ve UI'ı temizle
+    _lastDistrictsRequestedCityId = cityId;
+    _districts = [];
+    notifyListeners();
     try {
       final response = await _productService.getDistricts(cityId);
+
+      // Eğer bu arada farklı bir şehir için istek yapılmışsa, bu yanıtı yoksay
+      if (_lastDistrictsRequestedCityId != cityId) {
+        return;
+      }
 
       if (response.isSuccess && response.data != null) {
         _districts = response.data ?? [];
 
-        // Tüm ilçeleri logla
+        // Tüm ilçeleri logla (gerekirse)
         if (_districts.isNotEmpty) {
           for (int i = 0; i < _districts.length; i++) {
             final district = _districts[i];
           }
-        } else {}
+        }
 
         notifyListeners();
       } else {
@@ -1062,7 +1072,8 @@ class ProductViewModel extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      _districts = []; // Boş liste ata, hata gösterme
+      // Hata durumunda da listeyi boş tut
+      _districts = [];
       notifyListeners();
     }
   }
@@ -2031,10 +2042,8 @@ class ProductViewModel extends ChangeNotifier {
       // İlçe ID'sini bul (eğer il bulunduysa ve ilçe bilgisi varsa)
       String? districtId;
       if (cityId != null && districtName != null && districtName.isNotEmpty) {
-        // İlçeler yüklenmemişse yükle
-        if (_districts.isEmpty) {
-          await loadDistricts(cityId);
-        }
+        // Her durumda doğru şehir için ilçeleri yeniden yükle (stale listeyi önle)
+        await loadDistricts(cityId);
 
         // Türkçe karakterleri normalize et
         final normalizedDistrictName = _normalizeTurkishText(districtName);

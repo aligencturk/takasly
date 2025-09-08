@@ -14,6 +14,7 @@ import 'package:takasly/services/image_optimization_service.dart';
 import 'package:takasly/services/pick_crop_service.dart';
 import 'package:takasly/services/admob_service.dart';
 import 'package:takasly/services/auth_service.dart';
+import 'package:takasly/services/location_service.dart';
 import 'package:takasly/utils/logger.dart';
 import 'package:takasly/widgets/profanity_check_text_field.dart';
 import '../auth/login_view.dart';
@@ -2091,6 +2092,26 @@ class _EditProductViewState extends State<EditProductView> {
 
       String? conditionId = _selectedConditionId;
 
+      // Şehir/ilçe seçimine göre yaklaşık koordinat üret (ilan ekleme ile aynı mantık)
+      String? computedLat;
+      String? computedLong;
+      try {
+        if (cityTitle != null && cityTitle.isNotEmpty) {
+          final locationService = LocationService();
+          final position = await locationService.getLocationFromCityName(
+            districtTitle != null && districtTitle.isNotEmpty
+                ? '$districtTitle, $cityTitle, Turkey'
+                : '$cityTitle, Turkey',
+          );
+          if (position != null) {
+            computedLat = position.latitude.toString();
+            computedLong = position.longitude.toString();
+          }
+        }
+      } catch (e) {
+        Logger.warning('Konum geocoding başarısız: $e');
+      }
+
       final success = await productViewModel.updateProduct(
         productId: _currentProduct?.id ?? widget.product.id,
         title: _titleController.text.trim(),
@@ -2108,8 +2129,8 @@ class _EditProductViewState extends State<EditProductView> {
         cityTitle: cityTitle,
         districtId: districtId,
         districtTitle: districtTitle,
-        productLat: _currentProduct?.productLat ?? widget.product.productLat,
-        productLong: _currentProduct?.productLong ?? widget.product.productLong,
+        productLat: computedLat,
+        productLong: computedLong,
         isShowContact: _isShowContact,
       );
 

@@ -147,8 +147,9 @@ class CacheService {
       int deletedSize = 0;
 
       for (final entry in sortedFiles) {
-        if (currentSize - deletedSize <= _maxDiskCacheSize * 0.8)
+        if (currentSize - deletedSize <= _maxDiskCacheSize * 0.8) {
           break; // %80'e düşür
+        }
 
         final fileSize = await entry.key.length();
         await entry.key.delete();

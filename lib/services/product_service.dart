@@ -21,8 +21,6 @@ class ProductService {
     required String searchText,
   }) async {
     try {
-      
-
       final body = {'searchText': searchText};
 
       final response = await _httpClient.postWithBasicAuth<LiveSearchResponse>(
@@ -33,7 +31,6 @@ class ProductService {
           try {
             return LiveSearchResponse.fromJson(json);
           } catch (e) {
-           
             return LiveSearchResponse.empty(searchText);
           }
         },
@@ -41,7 +38,6 @@ class ProductService {
 
       return response;
     } catch (e) {
-      
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -51,24 +47,18 @@ class ProductService {
     int limit = AppConstants.defaultPageSize,
   }) async {
     try {
-
       final fullUrl = '${ApiConstants.fullUrl}${ApiConstants.allProducts}';
-      
 
       // POST request ile dene (API POST method kullanıyor)
-      
 
       // User token'ı al
       String userToken = '';
       try {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
-        
-         
-      // ignore: empty_catches
-      } catch (e) {
-       
-      }
+
+        // ignore: empty_catches
+      } catch (e) {}
 
       // POST body hazırla
       final body = {
@@ -82,18 +72,14 @@ class ProductService {
         'sortType': 'default',
         'page': page,
       };
-    
 
       final response = await _httpClient.postWithBasicAuth<PaginatedProducts>(
         ApiConstants.allProducts,
         body: body,
         useBasicAuth: true,
         fromJson: (json) {
-       
-
           // JSON yapısını kontrol et
           if (json == null) {
-            
             return PaginatedProducts(
               products: [],
               currentPage: page,
@@ -104,18 +90,14 @@ class ProductService {
           }
 
           if (json['data'] == null) {
-            
-            
-
             // Alternatif formatları kontrol et
             if (json['products'] != null) {
-
               final productsList = json['products'] as List;
-              
+
               final products = productsList
                   .map((item) => _transformApiProductToModel(item))
                   .toList();
-             
+
               return PaginatedProducts.fromJson({
                 'data': {
                   'products': productsList,
@@ -128,11 +110,10 @@ class ProductService {
 
             // Eğer response direkt bir liste ise
             if (json is List) {
-              
               final products = json
                   .map((item) => _transformApiProductToModel(item))
                   .toList();
-            
+
               return PaginatedProducts.fromJson({
                 'data': {
                   'products': json,
@@ -154,8 +135,6 @@ class ProductService {
           }
 
           if (json['data']['products'] == null) {
-           
-          
             return PaginatedProducts.fromJson({
               'data': {
                 'products': [],
@@ -167,7 +146,6 @@ class ProductService {
           }
 
           final productsList = json['data']['products'] as List;
-         
 
           // Sayfalama bilgilerini al
           final currentPage = json['data']['page'] as int? ?? page;
@@ -176,11 +154,8 @@ class ProductService {
               json['data']['totalItems'] as int? ?? productsList.length;
           final hasMore = currentPage < totalPages;
 
-         
-
           // İlk birkaç ürünü logla
           if (productsList.isNotEmpty) {
-            
             for (
               int i = 0;
               i < (productsList.length > 3 ? 3 : productsList.length);
@@ -209,7 +184,6 @@ class ProductService {
               .map((item) => _transformNewApiProductToModel(item))
               .toList();
 
-          
           // PaginatedProducts.fromJson kullanarak parse et
           return PaginatedProducts.fromJson(json as Map<String, dynamic>);
         },
@@ -217,7 +191,6 @@ class ProductService {
 
       return response;
     } catch (e) {
-     
       return ApiResponse<PaginatedProducts>.error(ErrorMessages.unknownError);
     }
   }
@@ -228,41 +201,32 @@ class ProductService {
     int limit = AppConstants.defaultPageSize,
   }) async {
     try {
-      
-      
       final fullUrl = '${ApiConstants.fullUrl}${ApiConstants.allProducts}';
-      
 
       // User token'ı al
       String userToken = '';
       try {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
-
-      } catch (e) {
-       
-      }
+      } catch (e) {}
 
       // Konum bilgilerini al (eğer location sorting seçiliyse)
       String? userLat;
       String? userLong;
 
       if (filter.sortType == 'location') {
-      
         final locationService = LocationService();
 
         try {
           // Önce konum izinlerini kontrol et
           final hasPermission = await locationService.checkLocationPermission();
           if (!hasPermission) {
-           
             filter = filter.copyWith(sortType: 'default');
           } else {
             // GPS servisinin açık olup olmadığını kontrol et
             final isLocationEnabled = await locationService
                 .isLocationServiceEnabled();
             if (!isLocationEnabled) {
-             
               filter = filter.copyWith(sortType: 'default');
             } else {
               // Konumu al
@@ -271,15 +235,12 @@ class ProductService {
               if (locationData != null) {
                 userLat = locationData['latitude'];
                 userLong = locationData['longitude'];
-               
               } else {
-               
                 filter = filter.copyWith(sortType: 'default');
               }
             }
           }
         } catch (e) {
-         
           filter = filter.copyWith(sortType: 'default');
         }
       }
@@ -291,18 +252,14 @@ class ProductService {
         userLat: userLat,
         userLong: userLong,
       );
-    
 
       final response = await _httpClient.postWithBasicAuth<PaginatedProducts>(
         ApiConstants.allProducts,
         body: body,
         useBasicAuth: true,
         fromJson: (json) {
-        
-
           // JSON yapısını kontrol et
           if (json == null) {
-           
             return PaginatedProducts(
               products: [],
               currentPage: page,
@@ -318,14 +275,10 @@ class ProductService {
             'data': final Map<String, dynamic> data,
           }) {
             if (data['products'] case final List<dynamic> productsList) {
-             
-             
-
               final products = productsList
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
 
-             
               // PaginatedProducts.fromJson kullanarak parse et
               return PaginatedProducts.fromJson(json as Map<String, dynamic>);
             }
@@ -333,14 +286,13 @@ class ProductService {
 
           // 410 status code için özel handling
           if (json case {'error': false, '410': 'Gone'}) {
-
             if (json['data'] != null && json['data']['products'] != null) {
               final productsList = json['data']['products'] as List;
-            
+
               final products = productsList
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
-            
+
               return PaginatedProducts.fromJson({
                 'data': {
                   'products': productsList,
@@ -362,7 +314,6 @@ class ProductService {
 
           // Boş success response
           if (json case {'error': false, '200': 'OK'}) {
-         
             return PaginatedProducts.fromJson({
               'data': {
                 'products': [],
@@ -373,7 +324,6 @@ class ProductService {
             });
           }
 
-       
           return PaginatedProducts.fromJson({
             'data': {
               'products': [],
@@ -387,7 +337,6 @@ class ProductService {
 
       return response;
     } catch (e) {
-     
       return ApiResponse<PaginatedProducts>.error(ErrorMessages.unknownError);
     }
   }
@@ -416,24 +365,20 @@ class ProductService {
       if (userLatitude != null) queryParams['userLatitude'] = userLatitude;
       if (userLongitude != null) queryParams['userLongitude'] = userLongitude;
 
-    
       print(
         '🌐 ProductService - Full URL: ${ApiConstants.fullUrl}${ApiConstants.allProducts}',
       );
-     
+
       final response = await _httpClient.getWithBasicAuth(
         ApiConstants.allProducts,
         queryParams: queryParams,
         fromJson: (json) {
-        
-
           // Yeni API formatını kontrol et
           if (json case {
             'success': true,
             'data': final Map<String, dynamic> data,
           }) {
             if (data['products'] case final List<dynamic> productsList) {
-             
               print(
                 '🔍 ProductService - Page info: ${data['page']}/${data['totalPages']}, Total: ${data['totalItems']}',
               );
@@ -442,14 +387,12 @@ class ProductService {
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
 
-            
               return products;
             }
           }
 
           // Eski format kontrolü (backward compatibility)
           if (json case {'data': {'products': final List<dynamic> list}}) {
-           
             final products = list
                 .map((item) => _transformApiProductToModel(item))
                 .toList();
@@ -458,13 +401,11 @@ class ProductService {
 
           // Eğer sadece success mesajı geliyorsa (ürün yok)
           if (json case {'error': false, '200': 'OK'}) {
-         
             return <Product>[];
           }
 
           // 410 status code için özel handling
           if (json case {'error': false, '410': 'Gone'}) {
-           
             // 410 response'unda da ürünler olabilir, kontrol et
             if (json['data'] != null && json['data']['products'] != null) {
               final productsList = json['data']['products'] as List;
@@ -472,7 +413,7 @@ class ProductService {
               final products = productsList
                   .map((item) => _transformNewApiProductToModel(item))
                   .toList();
-           
+
               return products;
             }
             return <Product>[];
@@ -498,8 +439,6 @@ class ProductService {
         }, // Product ID'yi body'de gönder
         useBasicAuth: true,
         fromJson: (json) {
-          
-
           // API response formatını kontrol et
           if (json is Map<String, dynamic>) {
             // Eğer data field'ı varsa ve içinde product varsa
@@ -514,7 +453,6 @@ class ProductService {
             try {
               return Product.fromJson(json);
             } catch (e) {
-             
               throw Exception('Ürün verisi parse edilemedi');
             }
           }
@@ -524,7 +462,6 @@ class ProductService {
 
       return response;
     } catch (e) {
-     
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -538,9 +475,6 @@ class ProductService {
     required String productId,
   }) async {
     try {
-     
-    
-
       // Kullanıcının giriş durumuna göre endpoint'i hazırla
       String endpoint;
       Map<String, dynamic>? queryParams;
@@ -549,32 +483,23 @@ class ProductService {
         // Giriş yapmış kullanıcı - userToken query parameter olarak ekle
         endpoint = '${ApiConstants.productDetail}/$productId/productDetail';
         queryParams = {'userToken': userToken};
-
       } else {
         // Giriş yapmamış kullanıcı - sadece endpoint
         endpoint = '${ApiConstants.productDetail}/$productId/productDetail';
-       
       }
 
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
         queryParams: queryParams,
         fromJson: (json) {
-         
-
           // Puan bilgilerini kontrol et
-          if (json is Map<String, dynamic>) {
-       
-           
-          }
+          if (json is Map<String, dynamic>) {}
 
           // 410: Gone -> başarı
           if (json is Map<String, dynamic> &&
               (json['410'] == 'Gone' || json['success'] == true)) {
             final productJson = json['data']?['product'];
             if (productJson != null) {
-            
-             
               // Yeni API yanıtını Product modeline dönüştür
               return Product.fromJson(productJson);
             }
@@ -592,7 +517,6 @@ class ProductService {
       );
       return response;
     } catch (e) {
-      
       return ApiResponse.error(e.toString());
     }
   }
@@ -600,27 +524,18 @@ class ProductService {
   Future<ApiResponse<List<Product>>> getProductsByUserId(String userId) async {
     try {
       final endpoint = '${ApiConstants.userProducts}/$userId/productList';
-     
-     
-     
-     
-     
 
       // Çalışan categories endpoint ile karşılaştırma için
-     
 
       // Basic auth ile dene (endpoint basic auth gerektiriyor)
       final response = await _httpClient.getWithBasicAuth(
         endpoint,
         fromJson: (json) {
-         
           // API'den dönen response formatına göre parsing
           if (json case {'data': {'products': final List<dynamic> list}}) {
-           
             final products = list
                 .map((item) => _transformApiProductToModel(item))
                 .toList();
-                      
 
             return products;
           }
@@ -709,57 +624,30 @@ class ProductService {
 
   // Yeni API formatını Product model formatına dönüştürür
   Product _transformNewApiProductToModel(Map<String, dynamic> apiProduct) {
-   
-
     // Kategori verilerini debug et
 
-    
-      
-   
- 
-    
-   
-   
-     
-    
-    
     apiProduct.forEach((key, value) {
       if (key.toString().toLowerCase().contains('categor') ||
-          key.toString().toLowerCase().contains('cat')) {
-    
-      }
+          key.toString().toLowerCase().contains('cat')) {}
     });
 
     // 3 katmanlı kategori sistemi için tüm alanları kontrol et
-  
-  
-  
 
     if (apiProduct['categoryList'] != null) {
       final categoryList = apiProduct['categoryList'] as List;
 
       for (int i = 0; i < categoryList.length; i++) {
         final category = categoryList[i];
-  
 
-        if (category is Map) {
-          
-         
-        }
+        if (category is Map) {}
       }
-    } else {
-     
-    }
+    } else {}
 
     // Resim URL'ini debug et
     final imageUrl = apiProduct['productImage'];
-   
 
     // Görsel URL'lerini tam URL'e dönüştür
     final images = <String>[];
-
-   
-   
 
     // Ana resim işleme
     final productImage = apiProduct['productImage']?.toString();
@@ -777,15 +665,12 @@ class ProductService {
           ? productImage
           : '${ApiConstants.baseUrl}$productImage';
       images.add(fullImageUrl);
-
-    } else {
-    
-    }
+    } else {}
 
     // extraImages varsa onları da ekle
     if (apiProduct['extraImages'] != null) {
       final extraImages = apiProduct['extraImages'] as List;
-   
+
       for (final extraImage in extraImages) {
         final extraImageStr = extraImage?.toString();
         if (extraImageStr != null &&
@@ -801,18 +686,9 @@ class ProductService {
               ? extraImageStr
               : '${ApiConstants.baseUrl}$extraImageStr';
           images.add(fullImageUrl);
-
-        } else {
-
-        
-        }
+        } else {}
       }
     }
-
-
-
-
-    
 
     // categoryList'ten kategori bilgilerini parse et
     String? mainCategoryName;
@@ -824,38 +700,34 @@ class ProductService {
 
     if (apiProduct['categoryList'] != null) {
       final categoryList = apiProduct['categoryList'] as List;
-    
 
       if (categoryList.length >= 1) {
         // İlk kategori ana kategori olarak kabul edilir
         final mainCat = categoryList[0];
-     
+
         if (mainCat is Map) {
           mainCategoryId = mainCat['catID']?.toString();
           mainCategoryName = mainCat['catName']?.toString();
-         
         }
       }
 
       if (categoryList.length >= 2) {
         // İkinci kategori üst kategori olarak kabul edilir
         final parentCat = categoryList[1];
-     
+
         if (parentCat is Map) {
           parentCategoryId = parentCat['catID']?.toString();
           parentCategoryName = parentCat['catName']?.toString();
-         
         }
       }
 
       if (categoryList.length >= 3) {
         // Üçüncü kategori alt kategori olarak kabul edilir
         final subCat = categoryList[2];
-     
+
         if (subCat is Map) {
           subCategoryId = subCat['catID']?.toString();
           subCategoryName = subCat['catName']?.toString();
-        
         }
       }
 
@@ -866,7 +738,7 @@ class ProductService {
         if (lastCategory is Map) {
           final lastCategoryId = lastCategory['catID']?.toString();
           final lastCategoryName = lastCategory['catName']?.toString();
-          
+
           // categoryId'yi güncelle (Product modelinde bu alan var)
           apiProduct['categoryID'] = lastCategoryId;
           // categoryTitle'ı da güncelle
@@ -890,9 +762,6 @@ class ProductService {
       subCategoryName = apiProduct['subCategoryTitle']?.toString();
       subCategoryId = apiProduct['subCategoryID']?.toString();
     }
-
-  
-
 
     final product = Product(
       id: apiProduct['productID']?.toString() ?? '',
@@ -960,7 +829,6 @@ class ProductService {
     );
 
     // Adres bilgilerini debug et
-  
 
     return product;
   }
@@ -980,9 +848,7 @@ class ProductService {
         final year = int.parse(parts[2]);
         return DateTime(year, month, day);
       }
-    } catch (e) {
-   
-    }
+    } catch (e) {}
 
     return DateTime.now();
   }
@@ -991,8 +857,6 @@ class ProductService {
   Product _transformApiProductToModel(Map<String, dynamic> apiProduct) {
     final categoryId = apiProduct['productCatID']?.toString() ?? '';
     final categoryName = apiProduct['productCatname'] ?? '';
-
-
 
     // Görsel URL'lerini tam URL'e dönüştür
     final images = <String>[];
@@ -1012,13 +876,12 @@ class ProductService {
           ? productImage
           : '${ApiConstants.baseUrl}$productImage';
       images.add(fullImageUrl);
-    
     }
 
     // extraImages varsa onları da ekle
     if (apiProduct['extraImages'] != null) {
       final extraImages = apiProduct['extraImages'] as List;
-     
+
       for (final extraImage in extraImages) {
         final extraImageStr = extraImage?.toString();
         if (extraImageStr != null &&
@@ -1034,30 +897,17 @@ class ProductService {
               ? extraImageStr
               : '${ApiConstants.baseUrl}$extraImageStr';
           images.add(fullImageUrl);
-
-        } else {
-        
-        }
+        } else {}
       }
     }
-
-  
-   
 
     // Adres bilgilerini debug et
     final cityTitle = apiProduct['cityTitle'] ?? '';
     final districtTitle = apiProduct['districtTitle'] ?? '';
-    
-  
-
- 
 
     // Sponsor bilgilerini kontrol et
     final isSponsor = apiProduct['isSponsor'] as bool? ?? false;
     final sponsorUntil = apiProduct['sponsorUntil']?.toString();
-
-  
-   
 
     return Product(
       id: apiProduct['productID']?.toString() ?? '',
@@ -1204,8 +1054,6 @@ class ProductService {
     String? productLong,
     bool? isShowContact,
   }) async {
-  
-
     // Token geçerliliğini kontrol et
     if (userToken.isEmpty) {
       return ApiResponse.error('Kullanıcı token\'ı bulunamadı');
@@ -1233,47 +1081,42 @@ class ProductService {
       if (title != null && title.isNotEmpty) {
         body['productTitle'] = title;
       } else {
-    
         return ApiResponse.error('Ürün başlığı zorunludur');
       }
 
       if (description != null && description.isNotEmpty) {
         body['productDesc'] = description;
       } else {
-      
         return ApiResponse.error('Ürün açıklaması zorunludur');
       }
 
       if (categoryId != null && categoryId.isNotEmpty) {
         body['categoryID'] = int.tryParse(categoryId) ?? categoryId;
       } else {
-    
         return ApiResponse.error('Kategori seçimi zorunludur');
       }
 
       if (conditionId != null && conditionId.isNotEmpty) {
         body['conditionID'] = int.tryParse(conditionId) ?? conditionId;
       } else {
-     
         return ApiResponse.error('Ürün durumu seçimi zorunludur');
       }
 
-      // Konum bilgileri - API integer bekliyor
+      // Konum bilgileri - sadece sağlanırsa gönder
       if (cityId != null && cityId.isNotEmpty) {
-        body['productCity'] = int.tryParse(cityId) ?? 35;
-      } else {
-        body['productCity'] = 35; // Varsayılan İzmir
+        body['productCity'] = int.tryParse(cityId) ?? cityId;
       }
-
       if (districtId != null && districtId.isNotEmpty) {
-        body['productDistrict'] = int.tryParse(districtId) ?? 4158;
-      } else {
-        body['productDistrict'] = 4158; // Varsayılan ilçe
+        body['productDistrict'] = int.tryParse(districtId) ?? districtId;
       }
 
-      // Koordinat bilgileri - API string bekliyor
-      body['productLat'] = productLat ?? '38.4192'; // İzmir varsayılan enlem
-      body['productLong'] = productLong ?? '27.1287'; // İzmir varsayılan boylam
+      // Koordinat bilgileri - sadece sağlanırsa gönder
+      if (productLat != null && productLat.isNotEmpty) {
+        body['productLat'] = productLat;
+      }
+      if (productLong != null && productLong.isNotEmpty) {
+        body['productLong'] = productLong;
+      }
 
       // İletişim bilgisi - API integer bekliyor (1 veya 0)
       body['isShowContact'] = isShowContact == true ? 1 : 0;
@@ -1288,7 +1131,6 @@ class ProductService {
       // Endpoint: service/user/product/{userId}/editProduct
       final endpoint = '${ApiConstants.editProduct}/$currentUserId/editProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
-   
 
       // Form-data için fields hazırla - API'nin beklediği formatta
       final fields = <String, String>{};
@@ -1308,9 +1150,6 @@ class ProductService {
       // Resimler için files hazırla (eğer varsa) - files zaten üstte tanımlı
       final newImageFiles = <File>[];
 
-  
-    
-
       // Sadece yeni dosyalar için file işleme (images artık sadece dosya yolları içeriyor)
       if (images != null && images.isNotEmpty) {
         for (int i = 0; i < images.length; i++) {
@@ -1322,7 +1161,6 @@ class ProductService {
             final file = File(imagePath);
             if (await file.exists()) {
               newImageFiles.add(file);
-          
             } else {
               print('⚠️ File not found: $imagePath');
             }
@@ -1343,22 +1181,16 @@ class ProductService {
       // STRATEJİ 3: Mevcut URL'leri download edip file olarak gönder (keepImages[] çalışmadı!)
       int totalFileIndex = 0;
 
-  
-
       // Önce mevcut resimleri download et ve file olarak ekle
       if (urlsToKeep.isNotEmpty) {
         for (final url in urlsToKeep) {
-       
           final downloadedFile = await _downloadImageAsFile(url);
           if (downloadedFile != null) {
             files['productImages[$totalFileIndex]'] = downloadedFile;
-           
+
             totalFileIndex++;
-          } else {
-       
-          }
+          } else {}
         }
-       
       }
 
       // Sonra yeni dosyaları ekle
@@ -1368,25 +1200,19 @@ class ProductService {
 
           totalFileIndex++;
         }
-       
       }
 
-    
-
       // Final debug - artık sadece files var (field'larda resim yok)
-   
+
       fields.forEach((key, value) {
-        if (!key.startsWith('keepImages') && !key.startsWith('productImages')) {
-        
-        }
+        if (!key.startsWith('keepImages') &&
+            !key.startsWith('productImages')) {}
       });
 
-    
       files.forEach((key, file) {
         final isDownloaded = file.path.contains('temp_');
         final icon = isDownloaded ? '📥' : '📸';
         final type = isDownloaded ? 'downloaded' : 'new';
-      
       });
 
       // Multipart form-data ile gönder (multipleFiles kullanmıyoruz artık)
@@ -1396,19 +1222,14 @@ class ProductService {
         files: files.isNotEmpty ? files : null,
         multipleFiles: null, // artık kullanmıyoruz
         fromJson: (json) {
-        
-
           // API response'unu detaylı analiz et
-        
 
           // Özel format: {"error": false, "200": "OK"} - Bu başarılı güncelleme anlamına gelir
           if (json.containsKey('error') && json.containsKey('200')) {
             final errorValue = json['error'];
             final statusValue = json['200'];
-           
 
             if (errorValue == false && statusValue == 'OK') {
-             
               return null;
             }
           }
@@ -1416,19 +1237,17 @@ class ProductService {
           // success field'ını kontrol et
           if (json.containsKey('success')) {
             final successValue = json['success'];
-            
           }
 
           // message field'ını kontrol et
           if (json.containsKey('message')) {
             final messageValue = json['message'];
-           
           }
 
           // data field'ını kontrol et
           if (json.containsKey('data')) {
             final dataValue = json['data'];
-            
+
             // data her zaman Map olarak bekleniyor, tür kontrolü gereksiz
             try {
               return Product.fromJson(dataValue as Map<String, dynamic>);
@@ -1446,15 +1265,11 @@ class ProductService {
         useBasicAuth: true,
       );
 
-     
-
       // Cleanup: Download edilen temporary dosyaları sil
       _cleanupTemporaryFiles(files);
 
       return response;
     } catch (e) {
-     
-
       // Exception durumunda da cleanup yap
       _cleanupTemporaryFiles(files);
 
@@ -1479,11 +1294,8 @@ class ProductService {
     required String userToken,
     required String productId,
   }) async {
-    
-
     // Token geçerliliğini kontrol et
     if (userToken.isEmpty) {
-     
       return ApiResponse.error('Kullanıcı token\'ı bulunamadı');
     }
 
@@ -1492,16 +1304,13 @@ class ProductService {
       final prefs = await SharedPreferences.getInstance();
 
       final currentUserId = prefs.getString(AppConstants.userIdKey);
-    
 
       // Token'ın geçerliliğini kontrol et
-     
 
       // Doğru endpoint formatını kullan - userId kullanılmalı
       final endpoint =
           '${ApiConstants.deleteProduct}/$currentUserId/deleteProduct';
       final fullUrl = '${ApiConstants.fullUrl}$endpoint';
-    
 
       // API'nin beklediği format: {"userToken": "...", "productID": 1}
       final body = {
@@ -1509,85 +1318,69 @@ class ProductService {
         'productID': int.parse(productId), // API integer bekliyor
       };
 
-
       // Alternatif format 1: productId string olarak
       final bodyAlt1 = {
         'userToken': userToken,
         'productID': productId, // String olarak
       };
-      
 
       // Alternatif format 2: productId yerine id
       final bodyAlt2 = {'userToken': userToken, 'id': int.parse(productId)};
-    
 
       // DELETE HTTP metodunu basic auth ile kullan
-    
 
       // Önce orijinal formatı dene
-      var response = await _httpClient.deleteWithBasicAuth<Map<String, dynamic>>(
-        endpoint,
-        body: body,
-        fromJson: (json) {
-         
-
-          // Hata mesajlarını özel olarak kontrol et
-          if (json is Map<String, dynamic>) {
-            if (json.containsKey('message')) {
-              final message = json['message']?.toString() ?? '';
-              if (message.contains('Erişim reddedildi') ||
-                  message.contains('Access denied') ||
-                  message.contains('Unauthorized') ||
-                  message.contains('403')) {
-               
+      var response = await _httpClient
+          .deleteWithBasicAuth<Map<String, dynamic>>(
+            endpoint,
+            body: body,
+            fromJson: (json) {
+              // Hata mesajlarını özel olarak kontrol et
+              if (json is Map<String, dynamic>) {
+                if (json.containsKey('message')) {
+                  final message = json['message']?.toString() ?? '';
+                  if (message.contains('Erişim reddedildi') ||
+                      message.contains('Access denied') ||
+                      message.contains('Unauthorized') ||
+                      message.contains('403')) {}
+                }
               }
-            }
-          }
 
-          // API response'unu detaylı analiz et
-          if (json is Map<String, dynamic>) {
-          
+              // API response'unu detaylı analiz et
+              if (json is Map<String, dynamic>) {
+                // success field'ını kontrol et - type safety için
+                if (json.containsKey('success')) {
+                  final successValue = json['success'];
+                }
 
-            // success field'ını kontrol et - type safety için
-            if (json.containsKey('success')) {
-              final successValue = json['success'];
-            
-            }
+                // error field'ını kontrol et - type safety için
+                if (json.containsKey('error')) {
+                  final errorValue = json['error'];
+                }
 
-            // error field'ını kontrol et - type safety için
-            if (json.containsKey('error')) {
-              final errorValue = json['error'];
-             
-            }
+                // message field'ını kontrol et - type safety için
+                if (json.containsKey('message')) {
+                  final messageValue = json['message'];
+                }
 
-            // message field'ını kontrol et - type safety için
-            if (json.containsKey('message')) {
-              final messageValue = json['message'];
-             
-            }
+                // data field'ını kontrol et
+                if (json.containsKey('data')) {
+                  final dataValue = json['data'];
 
-            // data field'ını kontrol et
-            if (json.containsKey('data')) {
-              final dataValue = json['data'];
-             
-              if (dataValue is Map<String, dynamic>) {
-                return dataValue;
+                  if (dataValue is Map<String, dynamic>) {
+                    return dataValue;
+                  }
+                }
               }
-            }
-          }
 
-         
-
-          // Safe casting
-          if (json is Map<String, dynamic>) {
-            return json;
-          } else {
-            return <String, dynamic>{'rawResponse': json};
-          }
-        },
-      );
-
-
+              // Safe casting
+              if (json is Map<String, dynamic>) {
+                return json;
+              } else {
+                return <String, dynamic>{'rawResponse': json};
+              }
+            },
+          );
 
       // 403 hatası alındıysa alternatif formatları dene
       if (!response.isSuccess &&
@@ -1596,16 +1389,13 @@ class ProductService {
               response.error!.contains('Forbidden') ||
               response.error!.contains('Invalid user token') ||
               response.error!.contains('Üye doğrulama bilgileri hatalı'))) {
-    
-
         // Format 1: productID as string
-    
+
         var altResponse1 = await _httpClient
             .deleteWithBasicAuth<Map<String, dynamic>>(
               endpoint,
               body: bodyAlt1,
               fromJson: (json) {
-          
                 if (json is Map<String, dynamic>) {
                   return json;
                 } else {
@@ -1615,18 +1405,16 @@ class ProductService {
             );
 
         if (altResponse1.isSuccess) {
-       
           return altResponse1;
         }
 
         // Format 2: id instead of productID
-     
+
         var altResponse2 = await _httpClient
             .deleteWithBasicAuth<Map<String, dynamic>>(
               endpoint,
               body: bodyAlt2,
               fromJson: (json) {
-            
                 if (json is Map<String, dynamic>) {
                   return json;
                 } else {
@@ -1636,69 +1424,52 @@ class ProductService {
             );
 
         if (altResponse2.isSuccess) {
-      
           return altResponse2;
         }
-
-   
       }
 
       // KRITIK: API response'unu detaylı analiz et
       if (response.isSuccess) {
-       
         if (response.data != null) {
           final data = response.data!;
-         
 
           // Başarı mesajlarını kontrol et - type safety ile
           if (data.containsKey('message')) {
             final message = data['message'];
-           
           }
           if (data.containsKey('success')) {
             final success = data['success'];
-          
 
             // Boolean veya string olabilir, her ikisini de kontrol et
             if (success == false || success == 'false' || success == '0') {
-             
               final errorMsg = data['message']?.toString() ?? 'Ürün silinemedi';
               return ApiResponse.error(errorMsg);
             }
           }
         }
-      } else {
-       
-      }
+      } else {}
 
       return response;
     } catch (e, stackTrace) {
-     
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
 
   Future<ApiResponse<List<Category>>> getCategories() async {
-   
     try {
       final response = await _httpClient.getWithBasicAuth(
         ApiConstants.categoriesList,
         fromJson: (json) {
-        
-
           if (json['data'] == null || json['data']['categories'] == null) {
-          
             return <Category>[];
           }
 
           final categoriesList = json['data']['categories'] as List;
-         
 
           // Kategori verilerini detaylı logla
-         
+
           for (int i = 0; i < categoriesList.length; i++) {
             final category = categoriesList[i];
-
           }
 
           final parsedCategories = categoriesList
@@ -1715,10 +1486,8 @@ class ProductService {
               )
               .toList();
 
-        
           for (int i = 0; i < parsedCategories.length; i++) {
             final category = parsedCategories[i];
-         
           }
 
           return parsedCategories;
@@ -1727,7 +1496,6 @@ class ProductService {
 
       return response;
     } catch (e) {
-   
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -1735,8 +1503,6 @@ class ProductService {
   /// Popüler kategorileri getirir
   Future<ApiResponse<List<PopularCategory>>> getPopularCategories() async {
     try {
-    
-
       final response = await _httpClient
           .getWithBasicAuth<List<PopularCategory>>(
             ApiConstants.popularCategories,
@@ -1748,16 +1514,13 @@ class ProductService {
 
                 if (!popularCategoriesResponse.success ||
                     popularCategoriesResponse.error) {
-                 
                   return <PopularCategory>[];
                 }
 
                 final categories = popularCategoriesResponse.data.categories;
-                
 
                 return categories;
               } catch (e) {
-              
                 return <PopularCategory>[];
               }
             },
@@ -1765,7 +1528,6 @@ class ProductService {
 
       return response;
     } catch (e) {
-   
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -1803,30 +1565,23 @@ class ProductService {
   Future<ApiResponse<List<Category>>> getSubSubCategories(
     String parentSubCategoryId,
   ) async {
-  
     try {
       final response = await _httpClient.getWithBasicAuth(
         '${ApiConstants.subSubCategories}/$parentSubCategoryId',
         fromJson: (json) {
-         
-
           if (json == null) {
-           
             return <Category>[];
           }
 
           if (json['data'] == null) {
-          
             return <Category>[];
           }
 
           if (json['data']['categories'] == null) {
-          
             return <Category>[];
           }
 
           final categoriesList = json['data']['categories'] as List;
-        
 
           final categories = categoriesList
               .map(
@@ -1842,19 +1597,14 @@ class ProductService {
               )
               .toList();
 
-          
-          for (var cat in categories) {
-         
-          }
+          for (var cat in categories) {}
 
           return categories;
         },
       );
 
-     
       return response;
     } catch (e) {
-  
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -1905,87 +1655,67 @@ class ProductService {
   }
 
   Future<ApiResponse<List<City>>> getCities() async {
-   
     final fullUrl = '${ApiConstants.fullUrl}service/general/general/cities/all';
- 
 
     try {
       final response = await _httpClient.getWithBasicAuth(
         ApiConstants.cities,
         fromJson: (json) {
-       
-
           // JSON yapısını kontrol et
           if (json == null) {
-           
             return <City>[];
           }
 
           if (json['data'] == null) {
-           
-           
             return <City>[];
           }
 
           if (json['data']['cities'] == null) {
-           
-            
             return <City>[];
           }
 
           final citiesList = json['data']['cities'] as List;
-          
 
           // İlk birkaç şehri logla
           if (citiesList.isNotEmpty) {
-           
             for (
               int i = 0;
               i < (citiesList.length > 5 ? 5 : citiesList.length);
               i++
             ) {
               final city = citiesList[i];
-              
             }
           }
 
           final cities = citiesList.map((item) => City.fromJson(item)).toList();
 
-         
           return cities;
         },
       );
 
       return response;
     } catch (e) {
-     
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
 
   Future<ApiResponse<List<District>>> getDistricts(String cityId) async {
-   
     try {
       final response = await _httpClient.getWithBasicAuth(
         '${ApiConstants.districts}/$cityId',
         fromJson: (json) {
-          
-
           // Farklı yanıt formatlarını kontrol et
           if (json['data'] != null && json['data']['districts'] != null) {
             final districtsList = json['data']['districts'] as List;
-         
 
             // İlk birkaç ilçeyi logla
             if (districtsList.isNotEmpty) {
-           
               for (
                 int i = 0;
                 i < (districtsList.length > 5 ? 5 : districtsList.length);
                 i++
               ) {
                 final district = districtsList[i];
-             
               }
             }
 
@@ -1998,7 +1728,6 @@ class ProductService {
                 .map((item) => District.fromJson(item, cityId: cityId))
                 .toList();
           } else {
-       
             return <District>[];
           }
         },
@@ -2006,50 +1735,37 @@ class ProductService {
 
       return response;
     } catch (e) {
-   
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
 
   Future<ApiResponse<List<Condition>>> getConditions() async {
-  
     final fullUrl =
         '${ApiConstants.fullUrl}/service/general/general/productConditions';
-  
 
     try {
       final response = await _httpClient.getWithBasicAuth(
         ApiConstants.productConditions,
         fromJson: (json) {
-       
-
           // JSON yapısını kontrol et
           if (json == null) {
-         
             return <Condition>[];
           }
 
           if (json['data'] == null) {
-         
-         
             return <Condition>[];
           }
 
           if (json['data']['conditions'] == null) {
-     
-         
             return <Condition>[];
           }
 
           final conditionsList = json['data']['conditions'] as List;
-         
 
           // İlk birkaç durumu logla
           if (conditionsList.isNotEmpty) {
-            
             for (int i = 0; i < conditionsList.length; i++) {
               final condition = conditionsList[i];
-             
             }
           }
 
@@ -2057,14 +1773,12 @@ class ProductService {
               .map((item) => Condition.fromJson(item))
               .toList();
 
-         
           return conditions;
         },
       );
 
       return response;
     } catch (e) {
-     
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -2078,14 +1792,12 @@ class ProductService {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
         userId = prefs.getString(AppConstants.userIdKey) ?? '';
-       
-      // ignore: empty_catches
-      } catch (e) {
-      }
+
+        // ignore: empty_catches
+      } catch (e) {}
 
       // Kullanıcının kendi ürünü olup olmadığını kontrol et
       try {
-   
         final productDetailResponse = await getProductDetail(
           userToken: userToken,
           productId: productId,
@@ -2094,12 +1806,10 @@ class ProductService {
             productDetailResponse.data != null) {
           final product = productDetailResponse.data!;
           if (product.ownerId == userId) {
-           
             return ApiResponse.error('Kendi ürününüzü favoriye ekleyemezsiniz');
           }
         }
       } catch (e) {
-        
         // Ürün sahipliği kontrolü başarısız olsa bile devam et
       }
 
@@ -2110,7 +1820,6 @@ class ProductService {
         ApiConstants.addFavorite,
         body: body,
         fromJson: (json) {
-          
           return null;
         },
         useBasicAuth: true,
@@ -2123,8 +1832,6 @@ class ProductService {
   }
 
   Future<ApiResponse<void>> removeFromFavorites(String productId) async {
-
-  
     try {
       // User token ve userId'yi al
       String userToken = '';
@@ -2133,9 +1840,7 @@ class ProductService {
         final prefs = await SharedPreferences.getInstance();
         userToken = prefs.getString(AppConstants.userTokenKey) ?? '';
         userId = prefs.getString(AppConstants.userIdKey) ?? '';
-  
-      } catch (e) {
-      }
+      } catch (e) {}
 
       // API body'sini hazırla
       final body = {'userToken': userToken, 'productID': productId};
@@ -2630,11 +2335,8 @@ class ProductService {
         },
       );
 
-  
-
       return response;
     } catch (e) {
-      
       return ApiResponse.error(ErrorMessages.unknownError);
     }
   }
@@ -2686,11 +2388,8 @@ class ProductService {
     required String userToken,
     required int productId,
   }) async {
-  
-
     try {
       final body = {'userToken': userToken, 'productID': productId};
-
 
       final response = await _httpClient
           .postWithBasicAuth<Map<String, dynamic>>(
@@ -2700,12 +2399,9 @@ class ProductService {
             useBasicAuth: true,
           );
 
-    
       if (response.isSuccess && response.data != null) {
-       
         return response;
       } else {
-      
         return ApiResponse.error(response.error ?? ErrorMessages.unknownError);
       }
     } catch (e) {

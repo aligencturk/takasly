@@ -1591,7 +1591,7 @@ class _ProductInfoState extends State<_ProductInfo> {
       final lat = double.tryParse(product.productLat ?? '');
       final lng = double.tryParse(product.productLong ?? '');
 
-      if (lat == null || lng == null) {
+      if (lat == null || lng == null || lat == 0.0 || lng == 0.0) {
         return Container(
           height: 200,
           decoration: BoxDecoration(
@@ -1713,7 +1713,7 @@ class _ProductInfoState extends State<_ProductInfo> {
       final lat = double.tryParse(product.productLat ?? '');
       final lng = double.tryParse(product.productLong ?? '');
 
-      if (lat == null || lng == null) {
+      if (lat == null || lng == null || lat == 0.0 || lng == 0.0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Konum bilgisi bulunamadı'),
@@ -1748,7 +1748,7 @@ class _ProductInfoState extends State<_ProductInfo> {
       final lat = double.tryParse(product.productLat ?? '');
       final lng = double.tryParse(product.productLong ?? '');
 
-      if (lat == null || lng == null) {
+      if (lat == null || lng == null || lat == 0.0 || lng == 0.0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Konum bilgisi bulunamadı'),
@@ -2527,13 +2527,17 @@ class _ActionBar extends StatelessWidget {
           width: double.infinity,
           height: 45,
           child: OutlinedButton.icon(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final vm = context.read<ProductViewModel>();
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => EditProductView(product: product),
                 ),
               );
+              if (result == true) {
+                await vm.getProductDetail(product.id);
+              }
             },
             icon: const Icon(Icons.edit, size: 14),
             label: const Text(
