@@ -27,6 +27,7 @@ import '../../widgets/custom_bottom_nav.dart';
 import '../../utils/logger.dart';
 import '../product/product_detail_view.dart';
 import '../../services/location_service.dart';
+import '../../viewmodels/app_update_viewmodel.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -143,6 +144,17 @@ class _HomeViewState extends State<HomeView> {
         await AnnouncementDialog.showIfNeeded(context);
       } catch (e) {
         Logger.error('❌ Remote Config duyuru kontrolü hatası: $e', error: e);
+      }
+    });
+
+    // Uygulama güncelleme kontrolü - ana sayfada tetikle
+    Future.microtask(() async {
+      try {
+        if (!mounted) return;
+        final updater = context.read<AppUpdateViewModel>();
+        await updater.checkForUpdate(context);
+      } catch (e) {
+        Logger.error('❌ HomeView - Güncelleme kontrolü hatası: $e');
       }
     });
   }

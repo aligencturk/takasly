@@ -7,9 +7,8 @@ import 'package:flutter/foundation.dart'
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:takasly/widgets/deep_link_handler.dart';
-import 'package:upgrader/upgrader.dart';
+// import 'package:upgrader/upgrader.dart';
 import 'firebase_options.dart';
-import 'core/upgrader_messages.dart';
 import 'core/app_theme.dart';
 import 'core/constants.dart';
 import 'services/cache_service.dart';
@@ -28,6 +27,7 @@ import 'viewmodels/contract_viewmodel.dart';
 import 'viewmodels/remote_config_viewmodel.dart';
 import 'viewmodels/onboarding_viewmodel.dart';
 import 'viewmodels/deep_link_viewmodel.dart';
+import 'viewmodels/app_update_viewmodel.dart';
 import 'views/splash_view.dart';
 import 'views/home/home_view.dart';
 import 'views/auth/login_view.dart';
@@ -227,6 +227,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ContractViewModel()),
         ChangeNotifierProvider(create: (_) => OnboardingViewModel()),
         ChangeNotifierProvider(create: (_) => DeepLinkViewModel()),
+        ChangeNotifierProvider(create: (_) => AppUpdateViewModel()),
         ChangeNotifierProvider(
           create: (context) {
             final remoteConfigViewModel = RemoteConfigViewModel();
@@ -242,11 +243,7 @@ class MyApp extends StatelessWidget {
           },
         ),
       ],
-      child: UpgradeAlert(
-        upgrader: Upgrader(
-          messages: TurkishUpgraderMessages(),
-        ),
-        child: MaterialApp(
+      child: MaterialApp(
           title: AppConstants.appName,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
@@ -424,10 +421,9 @@ class MyApp extends StatelessWidget {
           );
         },
       ),
-        ),
-      );
-    }
+    );
   }
+}
 
 // ProductId ile product detayını yükleyip EditProductView'a yönlendiren widget
 class _ProductDetailLoader extends StatefulWidget {
