@@ -1,3 +1,6 @@
+// Sentinel nesnesi: copyWith içinde explicit null ile field temizlemeyi ayırt etmek için kullanılır
+const Object _unset = Object();
+
 class ProductFilter {
   final String? categoryId;
   final String? subCategoryId;
@@ -24,27 +27,39 @@ class ProductFilter {
   });
 
   ProductFilter copyWith({
-    String? categoryId,
-    String? subCategoryId,
-    String? subSubCategoryId,
-    String? subSubSubCategoryId,
+    Object? categoryId = _unset,
+    Object? subCategoryId = _unset,
+    Object? subSubCategoryId = _unset,
+    Object? subSubSubCategoryId = _unset,
     List<String>? conditionIds,
-    String? cityId,
-    String? districtId,
+    Object? cityId = _unset,
+    Object? districtId = _unset,
     String? sortType,
-    String? searchText,
+    Object? searchText = _unset,
     String? viewType,
   }) {
     return ProductFilter(
-      categoryId: categoryId ?? this.categoryId,
-      subCategoryId: subCategoryId ?? this.subCategoryId,
-      subSubCategoryId: subSubCategoryId ?? this.subSubCategoryId,
-      subSubSubCategoryId: subSubSubCategoryId ?? this.subSubSubCategoryId,
+      categoryId: categoryId != _unset
+          ? categoryId as String?
+          : this.categoryId,
+      subCategoryId: subCategoryId != _unset
+          ? subCategoryId as String?
+          : this.subCategoryId,
+      subSubCategoryId: subSubCategoryId != _unset
+          ? subSubCategoryId as String?
+          : this.subSubCategoryId,
+      subSubSubCategoryId: subSubSubCategoryId != _unset
+          ? subSubSubCategoryId as String?
+          : this.subSubSubCategoryId,
       conditionIds: conditionIds ?? this.conditionIds,
-      cityId: cityId ?? this.cityId,
-      districtId: districtId ?? this.districtId,
+      cityId: cityId != _unset ? cityId as String? : this.cityId,
+      districtId: districtId != _unset
+          ? districtId as String?
+          : this.districtId,
       sortType: sortType ?? this.sortType,
-      searchText: searchText ?? this.searchText,
+      searchText: searchText != _unset
+          ? searchText as String?
+          : this.searchText,
       viewType: viewType ?? this.viewType,
     );
   }
@@ -68,11 +83,14 @@ class ProductFilter {
     String? userLong,
   }) {
     // En spesifik kategori ID'sini kullan
-    String? finalCategoryId = subSubSubCategoryId ?? subSubCategoryId ?? subCategoryId ?? categoryId;
-    
+    String? finalCategoryId =
+        subSubSubCategoryId ?? subSubCategoryId ?? subCategoryId ?? categoryId;
+
     return {
       'userToken': userToken,
-      'categoryID': finalCategoryId != null ? int.tryParse(finalCategoryId) ?? 0 : 0,
+      'categoryID': finalCategoryId != null
+          ? int.tryParse(finalCategoryId) ?? 0
+          : 0,
       'conditionIDs': conditionIds.map((id) => int.tryParse(id) ?? 0).toList(),
       'cityID': cityId != null ? int.tryParse(cityId!) ?? 0 : 0,
       'districtID': districtId != null ? int.tryParse(districtId!) ?? 0 : 0,
