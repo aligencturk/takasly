@@ -16,7 +16,6 @@ class MembershipContractView extends StatefulWidget {
 }
 
 class _MembershipContractViewState extends State<MembershipContractView> {
-  bool _isContractAccepted = false;
   bool _isLoading = true;
   String _contractContent = '';
 
@@ -74,23 +73,6 @@ class _MembershipContractViewState extends State<MembershipContractView> {
     }
   }
 
-  void _onAcceptContract() {
-    if (_isContractAccepted) {
-      widget.onContractAccepted(true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Devam etmek için sözleşmeyi kabul etmelisiniz'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _onDeclineContract() {
-    widget.onContractAccepted(false);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,46 +116,6 @@ class _MembershipContractViewState extends State<MembershipContractView> {
                             ),
                           },
                         ),
-                        const SizedBox(height: 20),
-                        // Checkbox
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[300]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Checkbox(
-                                value: _isContractAccepted,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isContractAccepted = value ?? false;
-                                  });
-                                },
-                                activeColor: AppTheme.primary,
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isContractAccepted =
-                                          !_isContractAccepted;
-                                    });
-                                  },
-                                  child: const Text(
-                                    'Üyelik sözleşmesini okudum ve kabul ediyorum',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   )
@@ -199,51 +141,6 @@ class _MembershipContractViewState extends State<MembershipContractView> {
                       ],
                     ),
                   ),
-          ),
-
-          // Accept/Decline buttons
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _onDeclineContract,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Colors.red),
-                      foregroundColor: Colors.red,
-                    ),
-                    child: const Text(
-                      'Reddet',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isContractAccepted ? _onAcceptContract : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      disabledBackgroundColor: Colors.grey.shade300,
-                    ),
-                    child: const Text(
-                      'Kabul Et',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

@@ -55,9 +55,7 @@ class RegisterView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Kayıt Formu
-                      const Expanded(
-                        child: SingleChildScrollView(child: _RegisterForm()),
-                      ),
+                      const Expanded(child: _RegisterForm()),
 
                       // Giriş Yap Butonu
                       Visibility(
@@ -139,15 +137,20 @@ class _RegisterFormState extends State<_RegisterForm> {
       tag: 'RegisterView',
     );
 
-    // Önce kayıt işlemini dene (sözleşmeler olmadan)
+    // Kayıt işlemini yap (sözleşmeler otomatik kabul edilmiş sayılır)
+    Logger.debug(
+      '✅ Sözleşmeler otomatik kabul edilmiş sayılıyor, kayıt işlemi başlatılıyor...',
+      tag: 'RegisterView',
+    );
+
     final success = await authViewModel.register(
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
       phone: PhoneFormatter.prepareForApi(_phoneController.text.trim()),
-      policy: false, // Geçici olarak false
-      kvkk: false, // Geçici olarak false
+      policy: true, // Otomatik kabul edilmiş sayılır
+      kvkk: true, // Otomatik kabul edilmiş sayılır
     );
 
     Logger.debug('📊 Kayıt sonucu: $success', tag: 'RegisterView');
@@ -162,42 +165,21 @@ class _RegisterFormState extends State<_RegisterForm> {
 
     if (mounted) {
       if (success) {
-        // Kayıt başarılı, şimdi sözleşmeleri göster
+        // Kayıt başarılı, email verification'a git
         Logger.debug(
-          '✅ Kayıt başarılı, sözleşmeler gösteriliyor...',
+          '✅ Kayıt başarılı, email verification sayfasına yönlendiriliyor...',
           tag: 'RegisterView',
         );
 
-        // Sözleşmeleri göster
-        final membershipAccepted = await _showMembershipDialog();
-
-        // Eğer sözleşmeler kabul edildiyse email verification'a git
-        if (membershipAccepted == true) {
-          Logger.debug(
-            '✅ Sözleşmeler kabul edildi, email verification sayfasına yönlendiriliyor...',
-            tag: 'RegisterView',
-          );
-
-          // Email verification sayfasına yönlendir
-          Navigator.of(context).pushReplacementNamed(
-            '/email-verification',
-            arguments: {
-              'email': _emailController.text.trim(),
-              'codeToken':
-                  null, // codeToken email verification sayfasında alınacak
-            },
-          );
-        } else {
-          // Sözleşmeler reddedildi, kullanıcıyı bilgilendir
-          Logger.debug(
-            '❌ Sözleşmeler reddedildi, kayıt iptal ediliyor...',
-            tag: 'RegisterView',
-          );
-
-          _showErrorSnackBar(
-            'Kayıt işlemi için sözleşmeler kabul edilmelidir.',
-          );
-        }
+        // Email verification sayfasına yönlendir
+        Navigator.of(context).pushReplacementNamed(
+          '/email-verification',
+          arguments: {
+            'email': _emailController.text.trim(),
+            'codeToken':
+                null, // codeToken email verification sayfasında alınacak
+          },
+        );
       } else {
         // Hata mesajını daha detaylı göster
         String errorMessage =
@@ -224,77 +206,39 @@ class _RegisterFormState extends State<_RegisterForm> {
     );
   }
 
-  Future<bool?> _showMembershipDialog() async {
+  Future<void> _signUpWithGoogle() async {
     try {
-      Logger.info(
-        '📋 Üyelik sözleşmesi dialog\'u açılıyor...',
+      Logger.debug(
+        '🚀 Google ile kayıt işlemi başlatılıyor...',
         tag: 'RegisterView',
       );
 
-      // Loading state göster
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text('Sözleşme yükleniyor...'),
-              ],
-            ),
-            backgroundColor: Colors.blue,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      // Google Sign-In paketini import etmek gerekiyor
+      // import 'package:google_sign_in/google_sign_in.dart';
 
-      final result = await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => MembershipContractView(
-            onContractAccepted: (accepted) {
-              Logger.info(
-                '📋 Üyelik sözleşmesi sonucu: $accepted',
-                tag: 'RegisterView',
-              );
-              Navigator.of(context).pop(accepted);
-            },
-          ),
-        ),
-      );
-
-      Logger.info(
-        '📋 Üyelik sözleşmesi dialog sonucu: $result',
-        tag: 'RegisterView',
-      );
-
-      if (result == true) {
-        // Üyelik sözleşmesi kabul edildi, KVKK'ya geç
-        Logger.info(
-          '✅ Üyelik sözleşmesi kabul edildi, KVKK dialog\'u açılıyor...',
-          tag: 'RegisterView',
-        );
-        await _showKvkkDialog();
-        return true;
-      } else {
-        // Üyelik sözleşmesi reddedildi
-        Logger.info('❌ Üyelik sözleşmesi reddedildi', tag: 'RegisterView');
-        return false;
-      }
+      // Geçici olarak hata mesajı göster
+      _showErrorSnackBar('Google ile kayıt özelliği yakında eklenecek');
     } catch (e) {
-      Logger.error(
-        '❌ Üyelik sözleşmesi dialog hatası: $e',
+      Logger.error('❌ Google kayıt hatası: $e', tag: 'RegisterView');
+      _showErrorSnackBar('Google ile kayıt sırasında hata oluştu: $e');
+    }
+  }
+
+  Future<void> _signUpWithApple() async {
+    try {
+      Logger.debug(
+        '🚀 Apple ile kayıt işlemi başlatılıyor...',
         tag: 'RegisterView',
       );
-      _showErrorSnackBar('Sözleşme açılırken hata oluştu: $e');
-      return false;
+
+      // Sign in with Apple paketini import etmek gerekiyor
+      // import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+      // Geçici olarak hata mesajı göster
+      _showErrorSnackBar('Apple ile kayıt özelliği yakında eklenecek');
+    } catch (e) {
+      Logger.error('❌ Apple kayıt hatası: $e', tag: 'RegisterView');
+      _showErrorSnackBar('Apple ile kayıt sırasında hata oluştu: $e');
     }
   }
 
@@ -321,82 +265,6 @@ class _RegisterFormState extends State<_RegisterForm> {
         tag: 'RegisterView',
       );
       _showErrorSnackBar('Sözleşme açılırken hata oluştu: $e');
-    }
-  }
-
-  Future<void> _showKvkkDialog() async {
-    try {
-      Logger.info('🔒 KVKK dialog\'u açılıyor...', tag: 'RegisterView');
-
-      // Loading state göster
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text('KVKK metni yükleniyor...'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-
-      final result = await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => KvkkContractView(
-            onContractAccepted: (accepted) {
-              Logger.info('🔒 KVKK sonucu: $accepted', tag: 'RegisterView');
-              Navigator.of(context).pop(accepted);
-            },
-          ),
-        ),
-      );
-
-      Logger.info('🔒 KVKK dialog sonucu: $result', tag: 'RegisterView');
-
-      if (result == true) {
-        // KVKK kabul edildi
-        Logger.info(
-          '✅ KVKK aydınlatma metni kabul edildi',
-          tag: 'RegisterView',
-        );
-
-        // Başarı mesajı göster
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 20),
-                  SizedBox(width: 12),
-                  Text('Sözleşmeler kabul edildi!'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        // KVKK reddedildi
-        Logger.info('❌ KVKK aydınlatma metni reddedildi', tag: 'RegisterView');
-      }
-    } catch (e) {
-      Logger.error('❌ KVKK dialog hatası: $e', tag: 'RegisterView');
-      _showErrorSnackBar('KVKK metni açılırken hata oluştu: $e');
     }
   }
 
@@ -434,7 +302,7 @@ class _RegisterFormState extends State<_RegisterForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Ad Soyad - klavye açıldığında daha az üst boşluk
-          SizedBox(height: isKeyboardOpen ? 120 : 280),
+          SizedBox(height: isKeyboardOpen ? 100 : 220),
           Row(
             children: [
               Expanded(
@@ -492,7 +360,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // E-posta
           TextFormField(
@@ -517,7 +385,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Telefon
           TextFormField(
@@ -543,7 +411,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Şifre
           TextFormField(
@@ -575,7 +443,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Şifre Tekrar
           TextFormField(
@@ -612,11 +480,11 @@ class _RegisterFormState extends State<_RegisterForm> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Sözleşme Link'leri
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Column(
               children: [
                 Text(
@@ -662,6 +530,8 @@ class _RegisterFormState extends State<_RegisterForm> {
             ),
           ),
 
+          const SizedBox(height: 8),
+
           // Kayıt Ol Butonu
           Consumer<AuthViewModel>(
             builder: (context, authViewModel, _) {
@@ -686,6 +556,126 @@ class _RegisterFormState extends State<_RegisterForm> {
               );
             },
           ),
+
+          const SizedBox(height: 12),
+
+          // Ayırıcı çizgi
+          Row(
+            children: [
+              Expanded(child: Container(height: 1, color: Colors.grey[300])),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'veya',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ),
+              Expanded(child: Container(height: 1, color: Colors.grey[300])),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Google ile Kayıt Ol
+          Consumer<AuthViewModel>(
+            builder: (context, authViewModel, _) {
+              return Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: authViewModel.isLoading ? null : _signUpWithGoogle,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/icons/google_icon.png',
+                          width: 16,
+                          height: 16,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return SizedBox(width: 16, height: 16);
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Google ile Kayıt Ol',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // Apple ile Kayıt Ol (sadece iOS'ta)
+          if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+            const SizedBox(height: 8),
+            Consumer<AuthViewModel>(
+              builder: (context, authViewModel, _) {
+                return Container(
+                  width: double.infinity,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: authViewModel.isLoading ? null : _signUpWithApple,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.apple,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Apple ile Kayıt Ol',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
 
           // Klavye açıldığında alt boşluk ekle
           if (isKeyboardOpen) SizedBox(height: 20),
