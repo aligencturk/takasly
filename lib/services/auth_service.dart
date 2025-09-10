@@ -6,6 +6,7 @@ import '../core/constants.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
 import '../utils/logger.dart';
+import '../utils/app_version_utils.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../services/notification_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -150,10 +151,13 @@ class AuthService {
       // Eski kullanıcı verilerini temizle
       await _clearUserData();
 
+      // Dinamik versiyon numarasını al
+      final appVersion = await AppVersionUtils.getAppVersion();
+
       final Map<String, dynamic> body = {
         'platform': platform,
         'deviceID': deviceID,
-        'version': '1.0.0',
+        'version': appVersion,
       };
 
       // devicePlatform parametresini ekle
@@ -307,10 +311,11 @@ class AuthService {
   }) async {
     try {
       final platform = await _getPlatform();
+      final appVersion = await AppVersionUtils.getAppVersion();
 
       Logger.info('📝 REGISTER ATTEMPT: $email');
       Logger.debug(
-        '📤 Register Request Body: {"userFirstname": "$firstName", "userLastname": "$lastName", "userEmail": "$email", "userPhone": "$phone", "userPassword": "$password", "version": "1.0", "platform": "$platform", "policy": $policy, "kvkk": $kvkk}',
+        '📤 Register Request Body: {"userFirstname": "$firstName", "userLastname": "$lastName", "userEmail": "$email", "userPhone": "$phone", "userPassword": "$password", "version": "$appVersion", "platform": "$platform", "policy": $policy, "kvkk": $kvkk}',
       );
 
       final response = await _httpClient.postWithBasicAuth(
@@ -321,7 +326,7 @@ class AuthService {
           'userEmail': email,
           'userPhone': phone,
           'userPassword': password,
-          'version': '1.0',
+          'version': appVersion,
           'platform': platform,
           'policy': policy,
           'kvkk': kvkk,
