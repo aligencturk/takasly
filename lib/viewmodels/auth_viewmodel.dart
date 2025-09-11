@@ -382,7 +382,6 @@ class AuthViewModel extends ChangeNotifier {
     required String lastName,
     required String email,
     required String password,
-    required String phone,
     required bool policy,
     required bool kvkk,
   }) async {
@@ -391,15 +390,14 @@ class AuthViewModel extends ChangeNotifier {
       tag: 'AuthViewModel',
     );
     Logger.debug(
-      '📝 Parametreler: firstName=$firstName, lastName=$lastName, email=$email, phone=$phone',
+      '📝 Parametreler: firstName=$firstName, lastName=$lastName, email=$email',
       tag: 'AuthViewModel',
     );
 
     if (firstName.trim().isEmpty ||
         lastName.trim().isEmpty ||
         email.trim().isEmpty ||
-        password.trim().isEmpty ||
-        phone.trim().isEmpty) {
+        password.trim().isEmpty) {
       Logger.warning('❌ Boş alan hatası', tag: 'AuthViewModel');
       _setError(ErrorMessages.fieldRequired);
       return false;
@@ -458,7 +456,6 @@ class AuthViewModel extends ChangeNotifier {
         lastName: lastName,
         email: email,
         password: password,
-        phone: phone,
         policy: policy,
         kvkk: kvkk,
       );

@@ -305,7 +305,6 @@ class AuthService {
     required String lastName,
     required String email,
     required String password,
-    required String phone,
     required bool policy,
     required bool kvkk,
   }) async {
@@ -315,7 +314,7 @@ class AuthService {
 
       Logger.info('📝 REGISTER ATTEMPT: $email');
       Logger.debug(
-        '📤 Register Request Body: {"userFirstname": "$firstName", "userLastname": "$lastName", "userEmail": "$email", "userPhone": "$phone", "userPassword": "$password", "version": "$appVersion", "platform": "$platform", "policy": $policy, "kvkk": $kvkk}',
+        '📤 Register Request Body: {"userFirstname": "$firstName", "userLastname": "$lastName", "userEmail": "$email", "userPassword": "$password", "version": "$appVersion", "platform": "$platform", "policy": $policy, "kvkk": $kvkk}',
       );
 
       final response = await _httpClient.postWithBasicAuth(
@@ -324,7 +323,6 @@ class AuthService {
           'userFirstname': firstName,
           'userLastname': lastName,
           'userEmail': email,
-          'userPhone': phone,
           'userPassword': password,
           'version': appVersion,
           'platform': platform,
@@ -353,7 +351,7 @@ class AuthService {
               firstName: userData['userFirstname'] ?? firstName,
               lastName: userData['userLastname'] ?? lastName,
               email: userData['userEmail'] ?? email,
-              phone: userData['userPhone'] ?? phone,
+              phone: userData['userPhone'],
               isVerified:
                   userData['userVerified'] ??
                   false, // Email verification gerekli
