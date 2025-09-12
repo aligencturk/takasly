@@ -8,7 +8,7 @@ import '../../utils/device_id.dart';
 import 'membership_contract_view.dart';
 import 'kvkk_contract_view.dart';
 import '../../utils/logger.dart';
-import '../../utils/phone_formatter.dart';
+// import '../../utils/phone_formatter.dart';
 
 class RegisterView extends StatelessWidget {
   const RegisterView({super.key});
@@ -108,7 +108,6 @@ class _RegisterFormState extends State<_RegisterForm> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -120,7 +119,6 @@ class _RegisterFormState extends State<_RegisterForm> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -136,10 +134,7 @@ class _RegisterFormState extends State<_RegisterForm> {
       '📧 Email: ${_emailController.text.trim()}',
       tag: 'RegisterView',
     );
-    Logger.debug(
-      '📱 Telefon: ${_phoneController.text.trim()}',
-      tag: 'RegisterView',
-    );
+    // Telefon alanı kaldırıldı
 
     // Kayıt işlemini yap (sözleşmeler otomatik kabul edilmiş sayılır)
     Logger.debug(
@@ -152,7 +147,6 @@ class _RegisterFormState extends State<_RegisterForm> {
       lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
-      phone: PhoneFormatter.prepareForApi(_phoneController.text.trim()),
       policy: true, // Otomatik kabul edilmiş sayılır
       kvkk: true, // Otomatik kabul edilmiş sayılır
     );
@@ -556,31 +550,7 @@ class _RegisterFormState extends State<_RegisterForm> {
           ),
           const SizedBox(height: 8),
 
-          // Telefon
-          TextFormField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            // Maskeyi kaldırıyoruz; kullanıcı tamamen serbest girsin
-            inputFormatters: const [],
-            style: const TextStyle(fontSize: 14),
-            decoration: const InputDecoration(
-              labelText: 'Telefon',
-              prefixIcon: Icon(Icons.phone_outlined, size: 20),
-              hintText: '05XXXXXXXXX',
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              isDense: true,
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Telefon numarası gerekli';
-              }
-              if (!PhoneFormatter.isValidPhoneNumber(value)) {
-                return 'Geçerli bir telefon numarası girin (0(5XX) XXX XX XX)';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 8),
+          // Telefon alanı kaldırıldı
 
           // Şifre
           TextFormField(
@@ -735,7 +705,7 @@ class _RegisterFormState extends State<_RegisterForm> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  'veya',
+                  ' HIZLI KAYIT OL',
                   style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
               ),
