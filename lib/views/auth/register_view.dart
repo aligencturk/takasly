@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/user_viewmodel.dart';
+import '../../services/social_auth_service.dart';
+import '../../services/notification_service.dart';
+import '../../utils/device_id.dart';
 import 'membership_contract_view.dart';
 import 'kvkk_contract_view.dart';
 import '../../utils/logger.dart';
@@ -198,7 +202,10 @@ class _RegisterFormState extends State<_RegisterForm> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Theme.of(context).colorScheme.error,
@@ -208,37 +215,199 @@ class _RegisterFormState extends State<_RegisterForm> {
 
   Future<void> _signUpWithGoogle() async {
     try {
-      Logger.debug(
-        '🚀 Google ile kayıt işlemi başlatılıyor...',
+      Logger.info('Google ile kayıt/giriş başlatılıyor', tag: 'RegisterView');
+
+      // Loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Google ile işleminiz sürüyor...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final authVm = Provider.of<AuthViewModel>(context, listen: false);
+
+      final tokens = await SocialAuthService.instance
+          .signInWithGoogleAndGetTokens();
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (tokens == null ||
+          tokens['accessToken'] == null ||
+          tokens['idToken'] == null) {
+        Logger.warning('Google tokenları alınamadı', tag: 'RegisterView');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Google oturum açılamadı. Lütfen tekrar deneyin.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      final String accessToken = tokens['accessToken']!;
+      final String idToken = tokens['idToken']!;
+
+      final String deviceID = await DeviceIdHelper.getOrCreateDeviceId();
+      final String? fcmToken = await NotificationService.instance.getFCMToken();
+
+      Logger.info(
+        'Google tokenları alındı, backend çağrılıyor',
         tag: 'RegisterView',
       );
 
-      // Google Sign-In paketini import etmek gerekiyor
-      // import 'package:google_sign_in/google_sign_in.dart';
+      final success = await authVm.loginWithGoogle(
+        googleAccessToken: accessToken,
+        googleIdToken: idToken,
+        deviceID: deviceID,
+        fcmToken: fcmToken,
+      );
 
-      // Geçici olarak hata mesajı göster
-      _showErrorSnackBar('Google ile kayıt özelliği yakında eklenecek');
-    } catch (e) {
-      Logger.error('❌ Google kayıt hatası: $e', tag: 'RegisterView');
-      _showErrorSnackBar('Google ile kayıt sırasında hata oluştu: $e');
+      if (!mounted) return;
+
+      if (success) {
+        final userViewModel = Provider.of<UserViewModel>(
+          context,
+          listen: false,
+        );
+        if (authVm.currentUser != null) {
+          userViewModel.setCurrentUser(authVm.currentUser!);
+        }
+        Logger.info('Google ile kayıt/giriş başarılı', tag: 'RegisterView');
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Logger.error(
+          'Google işlem başarısız: ${authVm.errorMessage}',
+          tag: 'RegisterView',
+        );
+        _showErrorSnackBar(
+          authVm.errorMessage ?? 'Google ile işlem başarısız oldu.',
+        );
+      }
+    } catch (e, s) {
+      Logger.error(
+        '❌ Google kayıt/giriş hatası: $e',
+        stackTrace: s,
+        tag: 'RegisterView',
+      );
+      if (mounted) {
+        _showErrorSnackBar('Beklenmeyen hata: ${e.toString()}');
+      }
     }
   }
 
   Future<void> _signUpWithApple() async {
     try {
-      Logger.debug(
-        '🚀 Apple ile kayıt işlemi başlatılıyor...',
+      Logger.info('Apple ile kayıt/giriş başlatılıyor', tag: 'RegisterView');
+
+      // Loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Apple ile işleminiz sürüyor...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final authVm = Provider.of<AuthViewModel>(context, listen: false);
+
+      final tokens = await SocialAuthService.instance
+          .signInWithAppleAndGetTokens();
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (tokens == null || tokens['idToken'] == null) {
+        Logger.warning('Apple idToken alınamadı', tag: 'RegisterView');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Apple oturumu açılamadı. Lütfen tekrar deneyin.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      final String idToken = tokens['idToken']!;
+
+      final String deviceID = await DeviceIdHelper.getOrCreateDeviceId();
+      final String? fcmToken = await NotificationService.instance.getFCMToken();
+
+      Logger.info(
+        'Apple token alındı, backend çağrılıyor',
         tag: 'RegisterView',
       );
 
-      // Sign in with Apple paketini import etmek gerekiyor
-      // import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+      final success = await authVm.loginWithApple(
+        appleIdToken: idToken,
+        deviceID: deviceID,
+        fcmToken: fcmToken,
+      );
 
-      // Geçici olarak hata mesajı göster
-      _showErrorSnackBar('Apple ile kayıt özelliği yakında eklenecek');
-    } catch (e) {
-      Logger.error('❌ Apple kayıt hatası: $e', tag: 'RegisterView');
-      _showErrorSnackBar('Apple ile kayıt sırasında hata oluştu: $e');
+      if (!mounted) return;
+
+      if (success) {
+        final userViewModel = Provider.of<UserViewModel>(
+          context,
+          listen: false,
+        );
+        if (authVm.currentUser != null) {
+          userViewModel.setCurrentUser(authVm.currentUser!);
+        }
+        Logger.info('Apple ile kayıt/giriş başarılı', tag: 'RegisterView');
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Logger.error(
+          'Apple işlem başarısız: ${authVm.errorMessage}',
+          tag: 'RegisterView',
+        );
+        _showErrorSnackBar(
+          authVm.errorMessage ?? 'Apple ile işlem başarısız oldu.',
+        );
+      }
+    } catch (e, s) {
+      Logger.error(
+        '❌ Apple kayıt/giriş hatası: $e',
+        stackTrace: s,
+        tag: 'RegisterView',
+      );
+      if (mounted) {
+        _showErrorSnackBar('Beklenmeyen hata: ${e.toString()}');
+      }
     }
   }
 
